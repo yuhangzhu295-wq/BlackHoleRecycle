@@ -1,13 +1,14 @@
 /**
  * 可吸附压缩物体组件 (CompressibleObject.ts)
- * 具备 IDLE -> ATTRACTED -> SUCKING -> ABSORBED -> RECYCLED 完整状态机
+ * 具备真实可见 3D 网格渲染、等级锁标指示与 IDLE -> ATTRACTED -> SUCKING -> ABSORBED -> RECYCLED 完整状态机
  */
-import { _decorator, Component, Node, Vec3 } from 'cc';
-import { IObjectTemplate, ObjectTier, OBJECT_TEMPLATES } from '../data/GameConfig';
+import { _decorator, Component, Node, Vec3, MeshRenderer } from 'cc';
+import { IObjectTemplate, ObjectTier, OBJECT_TEMPLATES, ObjectShape } from '../data/GameConfig';
 import { SuctionMotionCalculator } from './SuctionMotion';
 import { FSM } from '../core/FSM';
+import { MeshFactory } from '../core/MeshFactory';
 
-const { ccclass, property } = _decorator;
+const { ccclass } = _decorator;
 
 export type ObjectMotionState = 'IDLE' | 'ATTRACTED' | 'SUCKING' | 'ABSORBED' | 'RECYCLED';
 
@@ -21,8 +22,34 @@ export class CompressibleObject extends Component {
   private isLockAlertActive: boolean = false;
   private lockTimer: number = 0;
 
+  private visualNode: Node | null = null;
+  private lockIndicatorNode: Node | null = null;
+  private meshRenderer: MeshRenderer | null = null;
+
   onLoad(): void {
+    this.buildVisibleNode();
     this.initFSM();
+  }
+
+  private buildVisibleNode(): void {
+    if (this.visualNode) return;
+
+    this.visualNode = new Node('Visual');
+    this.node.addChild(this.visualNode);
+
+    this.lockIndicatorNode = new Node('LockIndicator');
+    this.lockIndicatorNode.setPosition(0, 0.8, 0);
+    this.node.addChild(this.lockIndicatorNode);
+
+    // 锁标：小型红色高亮标记
+    MeshFactory.attachMesh(
+      this.lockIndicatorNode,
+      MeshFactory.getBoxMesh(0.3, 0.3, 0.1),
+      '#e11d48',
+      0.3,
+      0.5
+    );
+    this.lockIndicatorNode.active = false;
   }
 
   private initFSM(): void {
@@ -31,14 +58,18 @@ export class CompressibleObject extends Component {
         enter: () => {
           this.suckTimer = 0;
           this.node.setScale(Vec3.ONE);
+          if (this.lockIndicatorNode) this.lockIndicatorNode.active = false;
         }
       })
       .registerState('ATTRACTED', {
-        enter: () => {}
+        enter: () => {
+          if (this.lockIndicatorNode) this.lockIndicatorNode.active = false;
+        }
       })
       .registerState('SUCKING', {
         enter: () => {
           this.suckTimer = 0;
+          if (this.lockIndicatorNode) this.lockIndicatorNode.active = false;
         }
       })
       .registerState('ABSORBED', {
@@ -62,7 +93,43 @@ export class CompressibleObject extends Component {
     this.suckTimer = 0;
     this.isLockAlertActive = false;
     this.lockTimer = 0;
+
+    this.buildVisibleNode();
+    this.applyTemplateMesh();
     this.fsm.setState('IDLE');
+  }
+
+  private applyTemplateMesh(): void {
+    if (!this.visualNode) return;
+
+    const t = this.template;
+    let mesh;
+
+    switch (t.shape) {
+      case ObjectShape.BOX: {
+        const s = t.size || [0.6, 0.5, 0.6];
+        mesh = MeshFactory.getBoxMesh(s[0], s[1], s[2]);
+        break;
+      }
+      case ObjectShape.CYLINDER: {
+        mesh = MeshFactory.getCylinderMesh(t.radius, t.radius, t.height || 0.5);
+        break;
+      }
+      case ObjectShape.SPHERE: {
+        mesh = MeshFactory.getSphereMesh(t.radius);
+        break;
+      }
+      case ObjectShape.CONE: {
+        mesh = MeshFactory.getConeMesh(t.radius, t.height || 0.7);
+        break;
+      }
+      default: {
+        mesh = MeshFactory.getBoxMesh(0.5, 0.5, 0.5);
+        break;
+      }
+    }
+
+    this.meshRenderer = MeshFactory.attachMesh(this.visualNode, mesh, t.color, 0.5, 0.1);
   }
 
   public getState(): ObjectMotionState {
@@ -73,6 +140,9 @@ export class CompressibleObject extends Component {
     if (this.lockTimer > 0) return;
     this.isLockAlertActive = true;
     this.lockTimer = 1.0;
+    if (this.lockIndicatorNode) {
+      this.lockIndicatorNode.active = true;
+    }
   }
 
   public isShowingLockAlert(): boolean {
@@ -94,6 +164,7 @@ export class CompressibleObject extends Component {
       this.lockTimer -= dt;
       if (this.lockTimer <= 0) {
         this.isLockAlertActive = false;
+        if (this.lockIndicatorNode) this.lockIndicatorNode.active = false;
       }
     }
 

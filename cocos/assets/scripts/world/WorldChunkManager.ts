@@ -1,13 +1,14 @@
 /**
- * 无尽分块世界流式管理器 (WorldChunk.ts & WorldChunkManager.ts)
+ * 无尽分块世界流式管理器与 3D 卧室场景构建 (WorldChunkManager.ts)
  */
 import { _decorator, Component, Node, Vec3 } from 'cc';
 import { IRegionThemeConfig, REGION_THEMES, ObjectTier } from '../data/GameConfig';
 import { ChunkItemGenerator, IChunkSpawnItem } from './ChunkConfig';
 import { CompressibleObject } from '../gameplay/CompressibleObject';
 import { ObjectPool } from '../core/ObjectPool';
+import { MeshFactory } from '../core/MeshFactory';
 
-const { ccclass, property } = _decorator;
+const { ccclass } = _decorator;
 
 export class WorldChunk {
   public index: number = 0;
@@ -23,6 +24,45 @@ export class WorldChunk {
     this.index = index;
     this.centerZ = centerZ;
     this.length = length;
+    this.buildVisibleEnvironment();
+  }
+
+  /**
+   * 构建真实可见的 3D 地面、墙壁与卧室家具装饰
+   */
+  private buildVisibleEnvironment(): void {
+    // 1. 地面 (Ground)
+    const ground = new Node('Ground');
+    ground.setPosition(0, 0, this.centerZ);
+    this.chunkNode.addChild(ground);
+    MeshFactory.attachMesh(ground, MeshFactory.getBoxMesh(18.0, 0.1, this.length), this.theme.groundColor, 0.8, 0.05);
+
+    // 2. 两侧围墙 (Left & Right Walls)
+    const wallL = new Node('Wall_Left');
+    wallL.setPosition(-9.0, 1.2, this.centerZ);
+    this.chunkNode.addChild(wallL);
+    MeshFactory.attachMesh(wallL, MeshFactory.getBoxMesh(0.4, 2.4, this.length), '#e2e8f0');
+
+    const wallR = new Node('Wall_Right');
+    wallR.setPosition(9.0, 1.2, this.centerZ);
+    this.chunkNode.addChild(wallR);
+    MeshFactory.attachMesh(wallR, MeshFactory.getBoxMesh(0.4, 2.4, this.length), '#e2e8f0');
+
+    // 3. 卧室家具低模装饰 (Furniture: Bed, Desk, Wardrobe)
+    const bed = new Node('Bed');
+    bed.setPosition(-6.0, 0.4, this.centerZ - 10.0);
+    this.chunkNode.addChild(bed);
+    MeshFactory.attachMesh(bed, MeshFactory.getBoxMesh(3.0, 0.7, 4.5), '#64748b');
+
+    const desk = new Node('Desk');
+    desk.setPosition(6.5, 0.5, this.centerZ + 5.0);
+    this.chunkNode.addChild(desk);
+    MeshFactory.attachMesh(desk, MeshFactory.getBoxMesh(2.2, 1.0, 4.0), '#475569');
+
+    const wardrobe = new Node('Wardrobe');
+    wardrobe.setPosition(-6.8, 1.5, this.centerZ + 12.0);
+    this.chunkNode.addChild(wardrobe);
+    MeshFactory.attachMesh(wardrobe, MeshFactory.getBoxMesh(2.2, 3.0, 3.5), '#334155');
   }
 
   public populate(items: IChunkSpawnItem[], objectPool: ObjectPool<CompressibleObject>): void {
@@ -46,23 +86,33 @@ export class WorldChunk {
 @ccclass('WorldChunkManager')
 export class WorldChunkManager extends Component {
   public static readonly CHUNK_LENGTH = 40.0;
-  public static readonly ACTIVE_CHUNK_COUNT = 4;
+  public static readonly ACTIVE_CHUNK_COUNT = 3;
 
   public activeChunks: WorldChunk[] = [];
   public currentTheme: IRegionThemeConfig = REGION_THEMES[0];
   private nextChunkIndex: number = 0;
   private objectPool: ObjectPool<CompressibleObject> | null = null;
+  private objectRootNode: Node | null = null;
 
   public init(objectFactory: () => CompressibleObject): void {
+    this.objectRootNode = new Node('TrashObjectPoolRoot');
+    this.node.addChild(this.objectRootNode);
+
     this.objectPool = new ObjectPool<CompressibleObject>(
-      objectFactory,
+      () => {
+        const obj = objectFactory();
+        if (this.objectRootNode && obj.node.parent !== this.objectRootNode) {
+          this.objectRootNode.addChild(obj.node);
+        }
+        return obj;
+      },
       (obj) => obj.recycle(),
       40,
       250
     );
 
-    // 初始生成前 3 个分块
-    for (let i = 0; i < 3; i++) {
+    // 初始生成前 2 个分块
+    for (let i = 0; i < 2; i++) {
       this.spawnNextChunk();
     }
   }
@@ -100,7 +150,7 @@ export class WorldChunkManager extends Component {
 
     // 1. 检查前方生成
     const forwardMostChunk = this.activeChunks[this.activeChunks.length - 1];
-    if (playerZ < forwardMostChunk.centerZ + WorldChunkManager.CHUNK_LENGTH) {
+    if (playerZ < forwardMostChunk.centerZ + WorldChunkManager.CHUNK_LENGTH * 0.5) {
       this.spawnNextChunk();
     }
 

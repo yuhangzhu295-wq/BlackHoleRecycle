@@ -1,12 +1,12 @@
 /**
- * 游戏主控制器 (GameManager.ts)
- * 驱动 Cocos Creator 3.8.x 核心玩法主循环
+ * 游戏主控制器与运行时生命周期驱动 (GameManager.ts)
  */
-import { _decorator, Component, Node, Camera, Vec3, math } from 'cc';
+import { _decorator, Component, Node, Camera, Vec3, math, director } from 'cc';
 import { BlackHoleMachine } from '../machine/BlackHoleMachine';
 import { WorldChunkManager } from '../world/WorldChunkManager';
 import { CompressibleObject } from './CompressibleObject';
 import { HUDView } from '../ui/HUDView';
+import { PlayerController } from './PlayerController';
 import { eventBus } from '../core/EventBus';
 import { saveService } from '../data/SaveService';
 import { analyticsService } from '../analytics/AnalyticsService';
@@ -31,22 +31,70 @@ export class GameManager extends Component {
   public score: number = 0;
   public totalAbsorbedCount: number = 0;
   public currentCoins: number = 0;
-  private cameraOffset: Vec3 = new Vec3(0, 16, 11);
+
+  // 9:16 竖屏友好等轴相机偏移 (高 16m, 后 11m)
+  private cameraOffset: Vec3 = new Vec3(0, 16.0, 11.0);
   private cameraTarget: Vec3 = new Vec3();
 
   onLoad(): void {
     platformAdapter.init();
     this.currentCoins = saveService.data.coins;
+    this.autoBindDependencies();
     this.bindEvents();
     this.initWorld();
   }
 
+  start(): void {
+    // 3 秒运行时健康自检
+    this.scheduleOnce(() => {
+      this.performRuntimeHealthCheck();
+    }, 3.0);
+  }
+
+  /**
+   * 自动容错绑定场景中可能未在 Inspector 拖拽的关键组件
+   */
+  private autoBindDependencies(): void {
+    const scene = director.getScene();
+    if (!scene) return;
+
+    if (!this.mainCamera) {
+      const camNode = scene.getChildByName('Main Camera') || this.node.scene?.getChildByName('Main Camera');
+      if (camNode) {
+        this.mainCamera = camNode.getComponent(Camera);
+      }
+    }
+
+    if (!this.machine) {
+      const machineNode = scene.getChildByName('BlackHoleMachine') || this.node.getChildByName('BlackHoleMachine');
+      if (machineNode) {
+        this.machine = machineNode.getComponent(BlackHoleMachine);
+      } else {
+        // 场景中若无机器节点，则自动在 GameRoot 下挂载
+        const mNode = new Node('BlackHoleMachine');
+        mNode.setPosition(0, 0, 4.0); // 初始位于画面下方
+        this.node.addChild(mNode);
+        this.machine = mNode.addComponent(BlackHoleMachine);
+        mNode.addComponent(PlayerController);
+      }
+    }
+
+    if (!this.chunkManager) {
+      this.chunkManager = this.node.getComponent(WorldChunkManager) || this.node.addComponent(WorldChunkManager);
+    }
+
+    if (!this.hud) {
+      const hudNode = scene.getChildByName('Canvas') || this.node.getChildByName('HUD');
+      if (hudNode) {
+        this.hud = hudNode.getComponent(HUDView);
+      }
+    }
+  }
+
   private initWorld(): void {
     if (this.chunkManager) {
-      // 提供对象工厂方法创建 CompressibleObject
       this.chunkManager.init(() => {
         const objNode = new Node('CompressibleObject');
-        this.node.addChild(objNode);
         const comp = objNode.addComponent(CompressibleObject);
         return comp;
       });
@@ -55,6 +103,8 @@ export class GameManager extends Component {
     analyticsService.track('endless_start', {
       initialCoins: this.currentCoins
     });
+
+    console.log('🎮 [GameManager] Cocos 3D World Initialized successfully!');
   }
 
   private bindEvents(): void {
@@ -86,17 +136,17 @@ export class GameManager extends Component {
 
     const machinePos = this.machine.node.getPosition();
 
-    // 1. 摄像机等轴平滑跟随
+    // 1. 摄像机等轴平滑跟随 (保持机器位于画面下方 40%)
     if (this.mainCamera) {
       this.cameraTarget.set(
-        machinePos.x * 0.4,
+        machinePos.x * 0.45,
         machinePos.y + this.cameraOffset.y,
         machinePos.z + this.cameraOffset.z
       );
       const camPos = this.mainCamera.node.getPosition();
-      camPos.x = math.lerp(camPos.x, this.cameraTarget.x, dt * 6.0);
-      camPos.y = math.lerp(camPos.y, this.cameraTarget.y, dt * 6.0);
-      camPos.z = math.lerp(camPos.z, this.cameraTarget.z, dt * 6.0);
+      camPos.x = math.lerp(camPos.x, this.cameraTarget.x, dt * 5.0);
+      camPos.y = math.lerp(camPos.y, this.cameraTarget.y, dt * 5.0);
+      camPos.z = math.lerp(camPos.z, this.cameraTarget.z, dt * 5.0);
       this.mainCamera.node.setPosition(camPos);
     }
 
@@ -123,7 +173,7 @@ export class GameManager extends Component {
     this.totalAbsorbedCount++;
     this.score += t.value * 10;
 
-    // 质量累加与检查升级
+    // 质量真实累加与检查进化
     this.machine.addMass(t.mass);
 
     // 金币产出
@@ -149,6 +199,46 @@ export class GameManager extends Component {
         this.machine.currentConfig.title,
         this.currentCoins
       );
+    }
+  }
+
+  /**
+   * 运行时健康自检 (Health Check)
+   */
+  private performRuntimeHealthCheck(): void {
+    let passed = true;
+    const errors: string[] = [];
+
+    if (!this.machine || !this.machine.node.active) {
+      passed = false;
+      errors.push('Machine Node does not exist or inactive');
+    }
+
+    if (!this.chunkManager || this.chunkManager.activeChunks.length === 0) {
+      passed = false;
+      errors.push('WorldChunkManager active chunks count is 0');
+    }
+
+    let activeTrashCount = 0;
+    if (this.chunkManager) {
+      for (const chunk of this.chunkManager.activeChunks) {
+        activeTrashCount += chunk.objects.filter(o => o.node.active).length;
+      }
+    }
+    if (activeTrashCount < 10) {
+      passed = false;
+      errors.push(`Active visible trash count too low: ${activeTrashCount} < 10`);
+    }
+
+    if (!this.mainCamera) {
+      passed = false;
+      errors.push('Main Camera reference is missing');
+    }
+
+    if (passed) {
+      console.log(`✅ [Runtime Health Check] PASS (Machine: LV.${this.machine?.currentLevel}, Active Chunks: ${this.chunkManager?.activeChunks.length}, Visible Trash: ${activeTrashCount})`);
+    } else {
+      console.error('❌ [Runtime Health Check] FAILED:', errors.join('; '));
     }
   }
 }
