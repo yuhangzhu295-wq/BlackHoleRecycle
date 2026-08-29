@@ -1,0 +1,12 @@
+{
+  "setting": {
+    "urlCheck": false,
+    "es6": true,
+    "postcss": false,
+    "minified": true,
+    "newFeature": true
+  },
+  "compileType": "game",
+  "appid": "touristappid",
+  "projectname": "minigame-douyin"
+}
