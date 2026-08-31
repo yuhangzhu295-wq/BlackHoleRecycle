@@ -1,7 +1,10 @@
 /**
- * 《黑洞回收站》 Cocos Creator 3.8.x Bedroom Vertical Slice 自动化验证套件
+ * 《黑洞回收站》Bedroom Vertical Slice 逻辑回归套件
+ *
+ * 该脚本在 Node.js mock 环境中验证配置与核心动力学规则；它不是 Cocos
+ * Creator 运行时测试，不能作为编辑器预览或设备实机验收的证据。
  * 验证目标：
- * 1. 真实 Cocos 3.8.x TypeScript 架构初始化
+ * 1. TypeScript 配置与核心玩法规则一致性
  * 2. Bedroom Chunk (20+ T1 物品, 5+ T2 物品)
  * 3. LV1 机器控制与射线移动
  * 4. T1 物体贝塞尔切向力螺旋吸附与吞噬
@@ -28,7 +31,7 @@ const ObjectTier = {
   T5: 5
 };
 
-// Mock Minimal Cocos Engine Classes for Node.js Simulation Runner
+// Minimal Cocos-shaped mocks used only by this Node.js logic regression runner.
 class MockVec3 {
   constructor(x = 0, y = 0, z = 0) {
     this.x = x;
@@ -103,11 +106,11 @@ global.cc = {
 
 async function runVerticalSliceTest() {
   console.log('====================================================');
-  console.log('🚀 启动 Cocos Creator 3.8.x Vertical Slice 自动化验证');
+  console.log('🚀 启动 BlackHoleRecycle Vertical Slice 逻辑回归（非 Cocos 运行时）');
   console.log('====================================================\n');
 
   let testLog = `====================================================\n`;
-  testLog += `Cocos Creator 3.8.x Bedroom Vertical Slice 验收日志\n`;
+  testLog += `BlackHoleRecycle Bedroom Vertical Slice 逻辑回归日志（非 Cocos 运行时验收）\n`;
   testLog += `执行时间: ${new Date().toISOString()}\n`;
   testLog += `====================================================\n\n`;
 
@@ -272,7 +275,7 @@ async function runVerticalSliceTest() {
 
     record('TEST_LV1_TO_LV2_EVOLUTION',
       machineLevel === 2 && turbineNode.active === true && suctionRadius === 3.4 && machineMaxTier === ObjectTier.T2,
-      `真实吸入 ${absorbedT1Count} 个 T1 物品，质量增至 ${machineMass}kg ➔ 自动触发 LV2 (磁力涡轮开启, 半径提升至 3.4m, MaxTier 升为 T2)`
+      `模拟吸入 ${absorbedT1Count} 个 T1 物品，质量增至 ${machineMass}kg ➔ 触发 LV2 规则 (磁力涡轮开启, 半径提升至 3.4m, MaxTier 升为 T2)`
     );
 
     // 7. 测试 LV2 机器再次靠近 T2 物品（成功吞噬验证）
@@ -304,15 +307,15 @@ async function runVerticalSliceTest() {
 
     record('TEST_LV2_SUCTION_T2_OBJECT',
       t2AbsorbedAtLv2 === true,
-      `LV2 吸附卡车成功吞噬此前无法吸附的 T2 物品 (质量累加至 ${machineMass}kg)`
+      `LV2 规则允许吞噬此前受限的 T2 物品 (质量累加至 ${machineMass}kg)`
     );
 
     testLog += `\n----------------------------------------------------\n`;
-    testLog += `Vertical Slice 验收结论: 全部用例 100% 验证 PASS\n`;
+    testLog += `逻辑回归结论: 全部用例通过；仍需 Creator 运行时与设备实机验收。\n`;
     testLog += `----------------------------------------------------\n`;
     fs.writeFileSync(path.join(evidenceDir, 'cocos-vertical-slice.log'), testLog, 'utf8');
 
-    console.log('\n🎉 [PASS] Cocos Creator 3.8.x Bedroom Vertical Slice 验收成功！\n');
+    console.log('\n🎉 [PASS] Bedroom Vertical Slice 逻辑回归通过（非 Cocos 运行时验收）！\n');
   } catch (e) {
     console.error('❌ Vertical Slice 验收失败:', e.message);
     testLog += `\n❌ 失败原因: ${e.message}\n`;
