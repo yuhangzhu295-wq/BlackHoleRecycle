@@ -276,19 +276,39 @@ export class GameManager extends Component {
   }
 
   private setupQABridge(): void {
-    // 注入严格只读的 QA Bridge
+    // 注入严格只读的 QA Bridge (无任何 setter 或内部状态修补后门)
     (window as any).__BHR_QA__ = {
       snapshot: () => {
         const mPos = this.machine?.node.position;
+        const allObjs = this.chunkManager?.getAllObjects() || [];
+        const sampledObjs = allObjs.map(o => {
+          const p = o.getPosition();
+          return {
+            runtimeId: o.runtimeId,
+            type: o.template.type,
+            tier: o.template.tier,
+            state: o.getState(),
+            x: p ? p.x : 0,
+            z: p ? p.z : 0,
+            lockVisible: o.isShowingLockAlert()
+          };
+        });
+
         return {
           scene: director.getScene()?.name || 'Game',
           uiScreen: this.hud?.currentScreenName || 'Home',
           gameState: this.gameState,
           player: {
+            position: {
+              x: mPos ? mPos.x : 0,
+              y: mPos ? mPos.y : 0,
+              z: mPos ? mPos.z : 0
+            },
             x: mPos ? mPos.x : 0,
             y: mPos ? mPos.y : 0,
             z: mPos ? mPos.z : 0,
-            isMoving: this.playerController?.isDragging || false
+            isMoving: this.playerController?.isDragging || false,
+            isDragging: this.playerController?.isDragging || false
           },
           machine: {
             level: this.machine?.currentLevel || 1,
@@ -300,11 +320,14 @@ export class GameManager extends Component {
           world: {
             currentRegion: this.chunkManager?.currentTheme.id || 'bedroom',
             regionIndex: this.chunkManager?.getRegionIndex() || 0,
+            activeChunkCount: this.chunkManager?.activeChunks.length || 0,
             activeAreaCount: this.chunkManager?.activeChunks.length || 0,
             visibleObjectCount: this.chunkManager?.getVisibleObjectCount() || 0
           },
+          objects: sampledObjs,
           compression: {
             state: this.compressionSystem?.state || 'IDLE',
+            stateHistory: this.compressionSystem?.stateHistory ? [...this.compressionSystem.stateHistory] : [],
             bufferMass: this.compressionSystem?.bufferMass || 0,
             bufferCount: this.compressionSystem?.bufferCount || 0,
             resourceBlockCount: this.compressionSystem?.resourceBlockCount || 0,
@@ -312,13 +335,14 @@ export class GameManager extends Component {
           },
           session: {
             absorbed: this.totalAbsorbedCount,
-            coinsEarned: this.currentCoins,
+            coinsEarned: this.currentCoins - this.sessionStartCoins,
             score: this.score,
             regionsVisited: this.regionsVisitedCount
           },
           save: {
             coins: saveService.data.coins,
-            machineLevel: saveService.data.machineLevel
+            machineLevel: saveService.data.machineLevel,
+            bestMass: saveService.data.highScore
           }
         };
       }

@@ -18,6 +18,7 @@ export type CompressionState = 'IDLE' | 'BUFFERING' | 'READY' | 'COMPRESSING' | 
 @ccclass('CompressionSystem')
 export class CompressionSystem extends Component {
   public state: CompressionState = 'IDLE';
+  public stateHistory: Array<{ state: CompressionState; timestamp: number }> = [];
   public bufferMass: number = 0;
   public bufferValue: number = 0;
   public bufferCount: number = 0;
@@ -35,7 +36,17 @@ export class CompressionSystem extends Component {
   private ejectNode: Node | null = null;
   private currentBlock: Node | null = null;
 
+  private setState(nextState: CompressionState): void {
+    if (this.state === nextState) return;
+    this.state = nextState;
+    this.stateHistory.push({ state: nextState, timestamp: Date.now() });
+    if (this.stateHistory.length > 16) {
+      this.stateHistory.shift();
+    }
+  }
+
   onLoad() {
+    this.stateHistory = [{ state: 'IDLE', timestamp: Date.now() }];
     this.ejectNode = new Node('EjectPort');
     this.ejectNode.setPosition(0, 0.8, 0.5);
     this.node.addChild(this.ejectNode);
@@ -49,11 +60,11 @@ export class CompressionSystem extends Component {
       this.machine = machine;
       
       if (this.state === 'IDLE') {
-        this.state = 'BUFFERING';
+        this.setState('BUFFERING');
       }
       
       if (this.bufferMass >= this.massThreshold || this.bufferCount >= this.countThreshold) {
-        this.state = 'READY';
+        this.setState('READY');
       }
     }
   }
@@ -62,7 +73,7 @@ export class CompressionSystem extends Component {
     if (this.isPaused) return;
 
     if (this.state === 'READY') {
-      this.state = 'COMPRESSING';
+      this.setState('COMPRESSING');
       this.timer = 0;
       if (this.machine) {
         platformAdapter.vibrate('medium');
@@ -77,7 +88,7 @@ export class CompressionSystem extends Component {
       }
 
       if (this.timer >= 0.35) {
-        this.state = 'EJECTING';
+        this.setState('EJECTING');
         this.timer = 0;
         this.spawnResourceBlock();
       }
@@ -90,8 +101,8 @@ export class CompressionSystem extends Component {
         this.currentBlock.setScale(Vec3.ONE.clone().multiplyScalar(Math.min(1.0, this.timer * 3.0)));
       }
       
-      if (this.timer >= 0.4) {
-        this.state = 'COLLECTING';
+      if (this.timer >= 0.45) {
+        this.setState('COLLECTING');
       }
     } else if (this.state === 'COLLECTING') {
       this.resourceBlockCount++;
@@ -119,7 +130,7 @@ export class CompressionSystem extends Component {
       this.bufferMass = 0;
       this.bufferValue = 0;
       this.bufferCount = 0;
-      this.state = 'IDLE';
+      this.setState('IDLE');
     }
   }
   

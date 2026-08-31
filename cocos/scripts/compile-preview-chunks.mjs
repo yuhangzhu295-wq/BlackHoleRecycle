@@ -107,10 +107,20 @@ for (const [fileUrl, chunkRelPath] of Object.entries(map.imports || {})) {
 
   const destPath = path.resolve(baseDir, chunkRelPath);
   const destDir = path.dirname(destPath);
-  if (!fs.existsSync(destDir)) fs.mkdirSync(destDir, { recursive: true });
-
   fs.writeFileSync(destPath, transpiled);
   console.log(`[OK] ${path.basename(localPath)} (${compUuid || 'no-meta'}) -> ${chunkRelPath}`);
+}
+
+// 自动更新 prerequisite-imports 模块分块，确保浏览器预览启动时优先加载并注册所有脚本
+if (map.imports && map.imports['cce:/internal/x/prerequisite-imports']) {
+  const prereqChunkRel = map.imports['cce:/internal/x/prerequisite-imports'].replace(/^\.\//, '');
+  const prereqDestPath = path.resolve(baseDir, prereqChunkRel);
+  const allScriptUrls = Object.keys(map.imports).filter(k => k.startsWith('file:///'));
+  const setters = allScriptUrls.map(() => 'function () {}').join(', ');
+  const deps = allScriptUrls.map(u => JSON.stringify(u)).join(', ');
+  const prereqContent = `System.register([${deps}], function (_export, _context) {\n  "use strict";\n  return {\n    setters: [${setters}],\n    execute: function () {}\n  };\n});\n`;
+  fs.writeFileSync(prereqDestPath, prereqContent, 'utf8');
+  console.log(`[OK] prerequisite-imports (${allScriptUrls.length} scripts) -> ${prereqChunkRel}`);
 }
 
 console.log('✅ All chunks mapped, class IDs registered, and cache written successfully!');

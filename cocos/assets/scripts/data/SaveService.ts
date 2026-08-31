@@ -88,10 +88,10 @@ export class SaveService {
   public load(): ISaveData {
     try {
       let raw: string | null = null;
-      if (typeof sys !== 'undefined' && sys.localStorage) {
-        raw = sys.localStorage.getItem(SAVE_KEY);
-      } else if (typeof localStorage !== 'undefined') {
+      if (typeof localStorage !== 'undefined' && typeof localStorage.getItem === 'function') {
         raw = localStorage.getItem(SAVE_KEY);
+      } else if (typeof sys !== 'undefined' && sys && sys.localStorage && typeof sys.localStorage.getItem === 'function') {
+        raw = sys.localStorage.getItem(SAVE_KEY);
       }
 
       if (raw) {
@@ -114,10 +114,10 @@ export class SaveService {
   public save(): void {
     try {
       const raw = JSON.stringify(this.data);
-      if (typeof sys !== 'undefined' && sys.localStorage) {
-        sys.localStorage.setItem(SAVE_KEY, raw);
-      } else if (typeof localStorage !== 'undefined') {
+      if (typeof localStorage !== 'undefined' && typeof localStorage.setItem === 'function') {
         localStorage.setItem(SAVE_KEY, raw);
+      } else if (typeof sys !== 'undefined' && sys && sys.localStorage && typeof sys.localStorage.setItem === 'function') {
+        sys.localStorage.setItem(SAVE_KEY, raw);
       }
     } catch (e) {
       console.error('[SaveService] Save failed', e);

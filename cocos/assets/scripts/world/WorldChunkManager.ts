@@ -7,6 +7,7 @@ import { ChunkItemGenerator, IChunkSpawnItem } from './ChunkConfig';
 import { CompressibleObject } from '../gameplay/CompressibleObject';
 import { ObjectPool } from '../core/ObjectPool';
 import { MeshFactory } from '../core/MeshFactory';
+import { eventBus } from '../core/EventBus';
 
 const { ccclass } = _decorator;
 
@@ -99,6 +100,63 @@ export class WorldChunk {
       promo.setPosition(9.5, 1.0, this.centerZ + 6.0);
       this.chunkNode.addChild(promo);
       MeshFactory.attachMesh(promo, MeshFactory.getBoxMesh(3.5, 2.0, 7.0), '#38bdf8');
+
+    } else if (this.theme.id === 'parking') {
+      // 停车场白色分格车位线
+      const lines = new Node('Decor_ParkingLines');
+      lines.setPosition(0, 0.06, this.centerZ);
+      this.chunkNode.addChild(lines);
+      MeshFactory.attachMesh(lines, MeshFactory.getBoxMesh(16.0, 0.02, 18.0), '#f8fafc', 0.9, 0.0);
+
+      // 新能源快速充电桩 (靠左侧)
+      const charger = new Node('Decor_Charger');
+      charger.setPosition(-11.0, 1.2, this.centerZ - 8.0);
+      this.chunkNode.addChild(charger);
+      MeshFactory.attachMesh(charger, MeshFactory.getBoxMesh(1.2, 2.4, 1.0), '#10b981');
+
+      // 太阳能路灯 (靠右侧)
+      const streetLight = new Node('Decor_StreetLight');
+      streetLight.setPosition(12.0, 2.5, this.centerZ + 10.0);
+      this.chunkNode.addChild(streetLight);
+      MeshFactory.attachMesh(streetLight, MeshFactory.getBoxMesh(0.6, 5.0, 0.6), '#94a3b8');
+
+    } else if (this.theme.id === 'construction') {
+      // 重型钢筋与工业管材堆 (靠左侧)
+      const rebar = new Node('Decor_RebarStack');
+      rebar.setPosition(-10.5, 0.8, this.centerZ - 10.0);
+      this.chunkNode.addChild(rebar);
+      MeshFactory.attachMesh(rebar, MeshFactory.getBoxMesh(4.0, 1.6, 6.0), '#d97706');
+
+      // 柴油发电机组与脚手架 (靠右侧)
+      const scaffold = new Node('Decor_Scaffold');
+      scaffold.setPosition(11.0, 2.0, this.centerZ + 8.0);
+      this.chunkNode.addChild(scaffold);
+      MeshFactory.attachMesh(scaffold, MeshFactory.getBoxMesh(3.0, 4.0, 5.0), '#ef4444');
+
+      // 施工安全围挡
+      const fence = new Node('Decor_Fence');
+      fence.setPosition(0, 0.6, this.centerZ + 20.0);
+      this.chunkNode.addChild(fence);
+      MeshFactory.attachMesh(fence, MeshFactory.getBoxMesh(12.0, 1.2, 0.4), '#f59e0b');
+
+    } else if (this.theme.id === 'city') {
+      // 霓虹全息广告牌 (靠左侧)
+      const neon = new Node('Decor_NeonBillboard');
+      neon.setPosition(-11.5, 2.8, this.centerZ - 12.0);
+      this.chunkNode.addChild(neon);
+      MeshFactory.attachMesh(neon, MeshFactory.getBoxMesh(3.0, 5.5, 6.0), '#ec4899', 0.2, 0.8);
+
+      // 街头自动售货机 (靠右侧)
+      const vending = new Node('Decor_Vending');
+      vending.setPosition(10.5, 1.2, this.centerZ + 6.0);
+      this.chunkNode.addChild(vending);
+      MeshFactory.attachMesh(vending, MeshFactory.getBoxMesh(1.8, 2.4, 1.5), '#06b6d4');
+
+      // 斑马线
+      const crosswalk = new Node('Decor_Crosswalk');
+      crosswalk.setPosition(0, 0.06, this.centerZ);
+      this.chunkNode.addChild(crosswalk);
+      MeshFactory.attachMesh(crosswalk, MeshFactory.getBoxMesh(18.0, 0.02, 6.0), '#f1f5f9');
     }
   }
 
@@ -106,7 +164,7 @@ export class WorldChunk {
     for (const item of items) {
       const obj = objectPool.get();
       const worldZ = this.centerZ + item.localZ;
-      obj.spawn(item.template, item.localX, worldZ, 0.35);
+      obj.spawn(item.template, item.localX, worldZ, 0.35, item.customId);
       this.objects.push(obj);
     }
   }
@@ -229,6 +287,7 @@ export class WorldChunkManager extends Component {
     if (currentChunk && this.currentTheme.id !== currentChunk.theme.id) {
       this.currentTheme = currentChunk.theme;
       this.currentRegionIndex = REGION_THEMES.findIndex(t => t.id === currentChunk.theme.id);
+      eventBus.emit('UI_REGION_CHANGED', { region: this.currentTheme.name, regionId: this.currentTheme.id });
     }
   }
 
@@ -257,6 +316,18 @@ export class WorldChunkManager extends Component {
         }
       }
     }
+  }
+
+  public getAllObjects(): CompressibleObject[] {
+    const list: CompressibleObject[] = [];
+    for (const chunk of this.activeChunks) {
+      for (const obj of chunk.objects) {
+        if (obj && obj.node && obj.node.isValid) {
+          list.push(obj);
+        }
+      }
+    }
+    return list;
   }
 
   public getVisibleObjectCount(): number {

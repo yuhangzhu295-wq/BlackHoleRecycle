@@ -7,6 +7,7 @@ export interface IChunkSpawnItem {
   readonly template: IObjectTemplate;
   readonly localX: number;
   readonly localZ: number;
+  readonly customId?: string;
 }
 
 export class ChunkItemGenerator {
@@ -29,12 +30,14 @@ export class ChunkItemGenerator {
       let template: IObjectTemplate;
       let localX: number;
       let localZ: number;
+      let customId: string | undefined = undefined;
 
       if (chunkIndex === 0 && i === 0 && available.some(t => t.tier === ObjectTier.T2)) {
         // Chunk 0 首个特定物体：T2 中型纸箱 (用于 Tier Lock 验收)
         template = available.find(t => t.tier === ObjectTier.T2) || available[0];
         localX = 0.0;
         localZ = -8.0;
+        customId = 't2_target_bed_box';
       } else {
         // 保证前几个分块中 75% 为 T1 基础可吸附物，25% 为高 Tier 目标
         const isHighTier = (i % 4 === 0) && available.some(t => t.tier >= ObjectTier.T2);

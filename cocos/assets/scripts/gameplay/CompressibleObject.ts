@@ -15,6 +15,7 @@ export type ObjectMotionState = 'IDLE' | 'ATTRACTED' | 'SUCKING' | 'ABSORBED' | 
 @ccclass('CompressibleObject')
 export class CompressibleObject extends Component {
   public template: IObjectTemplate = OBJECT_TEMPLATES[0];
+  public runtimeId: string = '';
 
   private fsm: FSM<ObjectMotionState> = new FSM<ObjectMotionState>('IDLE', this);
   private currentPos: Vec3 = new Vec3();
@@ -25,6 +26,14 @@ export class CompressibleObject extends Component {
   private visualNode: Node | null = null;
   private lockIndicatorNode: Node | null = null;
   private meshRenderer: MeshRenderer | null = null;
+
+  public getState(): ObjectMotionState {
+    return this.fsm.getState();
+  }
+
+  public getPosition(): Vec3 {
+    return this.currentPos;
+  }
 
   onLoad(): void {
     this.buildVisibleNode();
@@ -63,6 +72,7 @@ export class CompressibleObject extends Component {
       })
       .registerState('ATTRACTED', {
         enter: () => {
+          this.suckTimer = 0;
           if (this.lockIndicatorNode) this.lockIndicatorNode.active = false;
         }
       })
@@ -74,6 +84,7 @@ export class CompressibleObject extends Component {
       })
       .registerState('ABSORBED', {
         enter: () => {
+          this.node.setScale(Vec3.ZERO);
           this.node.active = false;
         }
       })
@@ -84,8 +95,9 @@ export class CompressibleObject extends Component {
       });
   }
 
-  public spawn(template: IObjectTemplate, x: number, z: number, y: number = 0.35): void {
+  public spawn(template: IObjectTemplate, x: number, z: number, y: number = 0.35, customId?: string): void {
     this.template = template;
+    this.runtimeId = customId || `${template.type}_${Math.round(x * 10)}_${Math.round(z * 10)}`;
     this.currentPos.set(x, y, z);
     this.node.setPosition(this.currentPos);
     this.node.setScale(Vec3.ONE);
