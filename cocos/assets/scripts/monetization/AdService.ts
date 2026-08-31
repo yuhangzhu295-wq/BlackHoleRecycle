@@ -60,7 +60,9 @@ export class WeChatAdAdapter implements IAdAdapter {
       // 真实微信激励视频调用
       try {
         const ad = wx.createRewardedVideoAd({ adUnitId: 'wx_real_unit_placeholder' });
-        ad.show().catch(() => ad.load().then(() => ad.show()).catch(err => onFail && onFail(err.errMsg)));
+        ad.show().catch(() => ad.load().then(() => ad.show()).catch((err: { errMsg?: string }) => {
+          if (onFail) onFail(err.errMsg ?? 'AD_SHOW_FAILED');
+        }));
         ad.onClose((res: any) => {
           if (res && res.isEnded) onSuccess();
           else if (onFail) onFail('AD_CANCELLED_BY_USER');
@@ -97,7 +99,9 @@ export class DouyinAdAdapter implements IAdAdapter {
     if (tt && typeof tt.createRewardedVideoAd === 'function') {
       try {
         const ad = tt.createRewardedVideoAd({ adUnitId: 'tt_real_unit_placeholder' });
-        ad.show().catch(() => ad.load().then(() => ad.show()).catch(err => onFail && onFail(err.errMsg)));
+        ad.show().catch(() => ad.load().then(() => ad.show()).catch((err: { errMsg?: string }) => {
+          if (onFail) onFail(err.errMsg ?? 'AD_SHOW_FAILED');
+        }));
         ad.onClose((res: any) => {
           if (res && res.isEnded) onSuccess();
           else if (onFail) onFail('AD_CANCELLED_BY_USER');

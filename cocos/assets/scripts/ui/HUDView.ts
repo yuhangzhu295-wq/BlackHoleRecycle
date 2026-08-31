@@ -3,7 +3,7 @@
  * 包含：Home、ModeSelect、Gameplay、Pause、Settlement 5 大核心界面
  */
 import {
-  _decorator, Component, Label, Button, Node, Canvas, UITransform, Widget, Layers, Color, view, HorizontalTextAlignment, Graphics, director, js, input, Input, EventTouch, EventMouse, Vec3
+  _decorator, Component, Label, Button, Node, Canvas, UITransform, Widget, Layers, Color, view, HorizontalTextAlignment, Graphics, director, input, Input, EventTouch, EventMouse, Vec3
 } from 'cc';
 import { eventBus } from '../core/EventBus';
 import { saveService } from '../data/SaveService';
@@ -321,6 +321,3 @@ export class HUDView extends Component {
     }
   }
 }
-
-js.setClassName('679abvk+jtLlL14cyMtoApA', HUDView);
-js.setClassName('HUDView', HUDView);

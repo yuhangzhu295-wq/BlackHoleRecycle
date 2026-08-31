@@ -27,10 +27,6 @@ export class CompressibleObject extends Component {
   private lockIndicatorNode: Node | null = null;
   private meshRenderer: MeshRenderer | null = null;
 
-  public getState(): ObjectMotionState {
-    return this.fsm.getState();
-  }
-
   public getPosition(): Vec3 {
     return this.currentPos;
   }

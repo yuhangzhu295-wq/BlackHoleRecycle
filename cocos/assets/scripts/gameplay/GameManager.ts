@@ -1,7 +1,7 @@
 /**
  * 游戏主控制器与运行时生命周期驱动 (GameManager.ts)
  */
-import { _decorator, Component, Node, Camera, Vec3, math, director, DirectionalLight, Color, js } from 'cc';
+import { _decorator, Component, Node, Camera, Vec3, math, director, DirectionalLight, Color } from 'cc';
 import { BlackHoleMachine } from '../machine/BlackHoleMachine';
 import { WorldChunkManager } from '../world/WorldChunkManager';
 import { CompressibleObject } from './CompressibleObject';
@@ -388,6 +388,3 @@ export class GameManager extends Component {
     this.mainCamera.node.setRotationFromEuler(-45, 0, 0);
   }
 }
-
-js.setClassName('034d659rXBCsaNldSUXm+bY', GameManager);
-js.setClassName('GameManager', GameManager);
