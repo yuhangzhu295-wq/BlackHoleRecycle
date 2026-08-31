@@ -3,7 +3,7 @@
  * 包含：Home、ModeSelect、Gameplay、Pause、Settlement 5 大核心界面
  */
 import {
-  _decorator, Component, Label, Button, Node, Canvas, UITransform, Widget, Layers, Color, view, HorizontalTextAlignment, Graphics, director, js
+  _decorator, Component, Label, Button, Node, Canvas, UITransform, Widget, Layers, Color, view, HorizontalTextAlignment, Graphics, director, js, input, Input, EventTouch, EventMouse, Vec3
 } from 'cc';
 import { eventBus } from '../core/EventBus';
 import { saveService } from '../data/SaveService';
@@ -26,10 +26,55 @@ export class HUDView extends Component {
   onLoad(): void {
     this.ensureNativeHUD();
     this.showScreen('Home');
+
+    input.on(Input.EventType.TOUCH_END, this.handleGlobalTouch, this);
+    input.on(Input.EventType.MOUSE_UP, this.handleGlobalMouse, this);
+  }
+
+  onDestroy(): void {
+    input.off(Input.EventType.TOUCH_END, this.handleGlobalTouch, this);
+    input.off(Input.EventType.MOUSE_UP, this.handleGlobalMouse, this);
+  }
+
+  private handleGlobalTouch(event: EventTouch): void {
+    this.checkButtonHit(event.getUILocation());
+  }
+
+  private handleGlobalMouse(event: EventMouse): void {
+    this.checkButtonHit(event.getUILocation());
+  }
+
+  private checkButtonHit(uiLoc: { x: number; y: number }): void {
+    const screenNode = this.screens.get(this.currentScreenName);
+    if (!screenNode || !screenNode.active) return;
+
+    // 若在 Gameplay 界面点击右上角区域，精准触发暂停
+    if (this.currentScreenName === 'Gameplay') {
+      if (uiLoc.x > 480 && uiLoc.y > 450) {
+        eventBus.emit('UI_TRIGGER_PAUSE');
+        return;
+      }
+    }
+
+    for (const child of screenNode.children) {
+      if (child.name.startsWith('Btn_') && child.active) {
+        const trans = child.getComponent(UITransform);
+        if (trans) {
+          const local = trans.convertToNodeSpaceAR(new Vec3(uiLoc.x, uiLoc.y, 0));
+          const hw = (trans.width / 2) + 30;
+          const hh = (trans.height / 2) + 30;
+          if (local.x >= -hw && local.x <= hw && local.y >= -hh && local.y <= hh) {
+            child.emit(Node.EventType.TOUCH_END);
+            break;
+          }
+        }
+      }
+    }
   }
 
   private ensureNativeHUD(): void {
-    let canvasNode = this.node.getChildByName('RuntimeHUDCanvas');
+    const scene = director.getScene();
+    let canvasNode = scene?.getChildByName('Canvas') || this.node.getChildByName('RuntimeHUDCanvas');
     if (!canvasNode) {
       canvasNode = new Node('RuntimeHUDCanvas');
       canvasNode.layer = Layers.Enum.UI_2D;
@@ -88,7 +133,11 @@ export class HUDView extends Component {
       eventBus.emit('UI_TRIGGER_PAUSE');
     });
     
-    this.createButton(pauseScreen, 'Btn_PauseHome', '返回首页', 0, -70, 200, 56, () => {
+    this.createButton(pauseScreen, 'Btn_PauseSettle', '结束本局并结算', 0, -50, 220, 54, () => {
+      eventBus.emit('GAME_TRIGGER_SETTLEMENT');
+    });
+
+    this.createButton(pauseScreen, 'Btn_PauseHome', '直接返回首页', 0, -120, 180, 46, () => {
       eventBus.emit('GAME_RETURN_HOME');
       this.showScreen('Home');
     });
@@ -100,8 +149,8 @@ export class HUDView extends Component {
     
     this.settlementStatsLabel = this.createLabel(
       settlementScreen,
-      '吸入物品: 0\n获得金币: 0\n机器等级: LV.1\n探索区域: 1',
-      0, 40, false, Color.WHITE, 22, true
+      '吸入物品: 0\n获得金币: 0\n机器等级: LV.1\n探索区域: 1\n本局质量: 0 kg',
+      0, 30, false, Color.WHITE, 20, true
     );
     
     this.createButton(settlementScreen, 'Btn_Restart', '再来一局', 0, -70, 200, 54, () => {
@@ -235,17 +284,25 @@ export class HUDView extends Component {
     node.on(Button.EventType.CLICK, callback, this);
     node.on(Node.EventType.TOUCH_END, callback, this);
 
-    const w = node.addComponent(Widget);
     if (isCenter) {
+      node.setPosition(x, y, 0);
+      const w = node.addComponent(Widget);
       w.isAlignVerticalCenter = true;
       w.verticalCenter = y;
       w.isAlignHorizontalCenter = true;
       w.horizontalCenter = x;
+      w.updateAlignment();
     } else {
+      const vs = view.getVisibleSize();
+      const halfW = (vs.width > 0 ? vs.width : 960) / 2;
+      const halfH = (vs.height > 0 ? vs.height : 640) / 2;
+      node.setPosition(halfW - (width / 2) - x, halfH - (height / 2) - y, 0);
+      const w = node.addComponent(Widget);
       w.isAlignTop = true;
       w.top = y;
       w.isAlignRight = true;
       w.right = x;
+      w.updateAlignment();
     }
 
     return node;
@@ -258,9 +315,9 @@ export class HUDView extends Component {
     if (this.regionLabel && regionName) this.regionLabel.string = `【${regionName}】`;
   }
 
-  public updateSettlement(absorbed: number, coins: number, level: number, regions: number): void {
+  public updateSettlement(absorbed: number, coins: number, level: number, regions: number, mass: number = 0): void {
     if (this.settlementStatsLabel) {
-      this.settlementStatsLabel.string = `吸入物品: ${absorbed}\n获得金币: ${coins}\n最终等级: LV.${level}\n探索区域数: ${regions}`;
+      this.settlementStatsLabel.string = `吸入物品: ${absorbed}\n获得金币: ${coins}\n最终等级: LV.${level}\n探索区域数: ${regions}\n本局质量: ${Math.round(mass)} kg`;
     }
   }
 }

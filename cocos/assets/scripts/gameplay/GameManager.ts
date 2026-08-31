@@ -160,10 +160,16 @@ export class GameManager extends Component {
       this.returnToHome();
     });
 
+    eventBus.on('GAME_TRIGGER_SETTLEMENT', () => {
+      this.triggerSettlement();
+    });
+
     eventBus.on('UI_TRIGGER_PAUSE', () => {
       this.togglePause();
     });
   }
+
+  private sessionStartCoins: number = 0;
 
   public startEndlessGame(): void {
     this.gameState = 'PLAYING';
@@ -175,6 +181,7 @@ export class GameManager extends Component {
     this.totalAbsorbedCount = 0;
     this.score = 0;
     this.regionsVisitedCount = 1;
+    this.sessionStartCoins = this.currentCoins;
 
     // 将机器归位
     if (this.machine) {
@@ -185,6 +192,10 @@ export class GameManager extends Component {
     analyticsService.track('endless_start', {
       initialCoins: this.currentCoins
     });
+
+    if (this.hud) {
+      this.hud.showScreen('Gameplay');
+    }
 
     this.updateHUD();
   }
@@ -223,9 +234,10 @@ export class GameManager extends Component {
     if (this.hud) {
       this.hud.updateSettlement(
         this.totalAbsorbedCount,
-        this.currentCoins - saveService.data.coins,
+        Math.max(0, this.currentCoins - this.sessionStartCoins),
         this.machine?.currentLevel || 1,
-        this.regionsVisitedCount
+        this.regionsVisitedCount,
+        this.machine?.currentMass || 0
       );
       this.hud.showScreen('Settlement');
     }

@@ -158,9 +158,15 @@ export class WorldChunkManager extends Component {
   }
 
   public spawnNextChunk(): WorldChunk {
-    // 区域序列：Chunk 0-1 (Bedroom), Chunk 2-3 (Warehouse), Chunk 4+ (Supermarket)
+    // 区域序列：Chunk 0-1 (Bedroom), Chunk 2-3 (Warehouse), Chunk 4-5 (Supermarket), Chunk 6-7 (Parking), Chunk 8-9 (Construction), Chunk 10+ (City)
     let chunkThemeIndex = 0;
-    if (this.nextChunkIndex >= 4) {
+    if (this.nextChunkIndex >= 10) {
+      chunkThemeIndex = 5; // City
+    } else if (this.nextChunkIndex >= 8) {
+      chunkThemeIndex = 4; // Construction
+    } else if (this.nextChunkIndex >= 6) {
+      chunkThemeIndex = 3; // Parking
+    } else if (this.nextChunkIndex >= 4) {
       chunkThemeIndex = 2; // Supermarket
     } else if (this.nextChunkIndex >= 2) {
       chunkThemeIndex = 1; // Warehouse
@@ -183,7 +189,7 @@ export class WorldChunkManager extends Component {
     );
 
     const items = ChunkItemGenerator.generateChunkItems(
-      this.currentTheme,
+      chunkTheme,
       this.nextChunkIndex,
       WorldChunkManager.CHUNK_LENGTH
     );
