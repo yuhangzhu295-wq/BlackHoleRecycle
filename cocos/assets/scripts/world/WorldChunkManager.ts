@@ -35,16 +35,16 @@ export class WorldChunk {
     const ground = new Node('Ground');
     ground.setPosition(0, 0, this.centerZ);
     this.chunkNode.addChild(ground);
-    MeshFactory.attachMesh(ground, MeshFactory.getBoxMesh(24.0, 0.1, this.length), this.theme.groundColor, 0.8, 0.05);
+    MeshFactory.attachMesh(ground, MeshFactory.getBoxMesh(36.0, 0.1, this.length), this.theme.groundColor, 0.8, 0.05);
 
     // 2. 两侧无边界视觉墙 (隐形限制，或者较远的边界墙)
     const wallL = new Node('Wall_Left');
-    wallL.setPosition(-12.0, 1.2, this.centerZ);
+    wallL.setPosition(-18.0, 1.2, this.centerZ);
     this.chunkNode.addChild(wallL);
     MeshFactory.attachMesh(wallL, MeshFactory.getBoxMesh(0.4, 2.4, this.length), '#e2e8f0');
 
     const wallR = new Node('Wall_Right');
-    wallR.setPosition(12.0, 1.2, this.centerZ);
+    wallR.setPosition(18.0, 1.2, this.centerZ);
     this.chunkNode.addChild(wallR);
     MeshFactory.attachMesh(wallR, MeshFactory.getBoxMesh(0.4, 2.4, this.length), '#e2e8f0');
 
@@ -102,7 +102,7 @@ export class WorldChunk {
 
 @ccclass('WorldChunkManager')
 export class WorldChunkManager extends Component {
-  public static readonly CHUNK_LENGTH = 40.0;
+  public static readonly CHUNK_LENGTH = 50.0;
   public static readonly ACTIVE_CHUNK_COUNT = 3;
 
   public activeChunks: WorldChunk[] = [];
@@ -165,13 +165,35 @@ export class WorldChunkManager extends Component {
   public updateChunks(playerZ: number): void {
     if (this.activeChunks.length === 0) return;
 
-    // 1. 检查前方生成
+    // Check forward spawn
     const forwardMostChunk = this.activeChunks[this.activeChunks.length - 1];
     if (playerZ < forwardMostChunk.centerZ + WorldChunkManager.CHUNK_LENGTH * 0.5) {
       this.spawnNextChunk();
     }
 
-    // 2. 检查后方超出视距的旧分块回收
+    // Update Region logic based on nextChunkIndex
+    const regionThemes = [
+      { maxIndex: 4, themeId: 'bedroom' },
+      { maxIndex: 9, themeId: 'warehouse' },
+      { maxIndex: 9999, themeId: 'supermarket' }
+    ];
+    let nextThemeId = 'bedroom';
+    for (const rt of regionThemes) {
+      if (this.nextChunkIndex <= rt.maxIndex) {
+        nextThemeId = rt.themeId;
+        break;
+      }
+    }
+    
+    // Find theme from GameConfig based on nextThemeId (assume imported REGION_THEMES or similar, wait, currentTheme is assigned)
+    if (this.currentTheme.id !== nextThemeId) {
+       // Just find it in REGION_THEMES
+       
+       const found = REGION_THEMES.find(t => t.id === nextThemeId);
+       if (found) this.currentTheme = found;
+    }
+
+    // Check backward recycle
     if (this.activeChunks.length > WorldChunkManager.ACTIVE_CHUNK_COUNT) {
       const oldestChunk = this.activeChunks[0];
       if (playerZ < oldestChunk.centerZ - WorldChunkManager.CHUNK_LENGTH * 1.5) {

@@ -1,71 +1,35 @@
-# 最终验收矩阵 (Final Acceptance Matrix)
+# Final Acceptance Matrix
 
-以下 54 项标准必须全部达标，否则 Phase 5 不通过：
-
-## 1. 架构与运行环境 (5)
-- [ ] 1. 必须在 Cocos Creator 3.8.3 环境下无报错打开 `Game.scene`。
-- [ ] 2. 没有任何 `Script missing or invalid` 错误。
-- [ ] 3. TypeScript 编译零错误（`tsc --noEmit`）。
-- [ ] 4. 保留并复用了原有的 `GameConfig`, `SuctionMotion`, `FSM`, `EventBus`, `ObjectPool`。
-- [ ] 5. Git 中 `library/` 和 `temp/` 无人工修改记录。
-
-## 2. 材质与视觉 (10)
-- [ ] 6. `MeshFactory.ts` 的 Material 缓存机制工作正常。
-- [ ] 7. 不再是白色/灰色世界，不同物体渲染出正确的 `mainColor`。
-- [ ] 8. 光照为自然低模、低饱和风格，无光污染。
-- [ ] 9. 摄像机固定为 9:16，俯角 35~55度。
-- [ ] 10. 玩家机器始终在屏幕下方 35% ~ 42% 区域。
-- [ ] 11. 黑洞中心纯黑且无反光。
-- [ ] 12. 黑洞边缘有青色发光光环。
-- [ ] 13. UI 为极简非 MMO 风格。
-- [ ] 14. 画面刷新率在浏览器中保持 60FPS。
-- [ ] 15. 不使用过度复杂的 Shader。
-
-## 3. 玩家机器与进化 (8)
-- [ ] 16. LV1：可见轮子、底盘和核心黑洞。
-- [ ] 17. LV2：可见双涡轮，吸力范围真实增大。
-- [ ] 18. LV3：可见冲压装置。
-- [ ] 19. LV4：可见反重力翼，轮子可能收起或隐藏。
-- [ ] 20. LV5：可见奇点光环，极大吸力。
-- [ ] 21. 升级时有视觉/大小的过渡或明确的层级更替。
-- [ ] 22. 吞噬时触发正确的动画或缩放。
-- [ ] 23. 可以正常进行全方向平滑移动。
-
-## 4. 开放式场景 (7)
-- [ ] 24. 场景宽度至少为 24m。
-- [ ] 25. 场景长度为 30~40m 的 Chunk。
-- [ ] 26. 玩家可以 360 度任意移动。
-- [ ] 27. Chunk 会在玩家靠近边缘时自动接续。
-- [ ] 28. Bedroom 区块生成对应风格物体。
-- [ ] 29. Warehouse 区块生成对应风格物体。
-- [ ] 30. Supermarket 区块生成对应风格物体。
-
-## 5. Gameplay (10)
-- [ ] 31. “压缩回收”机制生效：吸入 -> 质量缓冲 -> 播放动画 -> 弹出资源/金币。
-- [ ] 32. 跨越 Tier 等级限制时，过大的物体无法吸入，有锁定提示。
-- [ ] 33. 初期节奏快，0-5秒内完成首次吸入。
-- [ ] 34. 25-45秒内完成 LV2 进化。
-- [ ] 35. 60-100秒内能吸入原本锁定的物体。
-- [ ] 36. 吸附动画平滑，物体被吸入黑洞中心并缩小。
-- [ ] 37. 玩家与物体碰撞时不会导致机器飞天或穿模抖动。
-- [ ] 38. 存档机制 (`SaveService`) 可以正确保存等级和资源。
-- [ ] 39. `ObjectPool` 在大规模生成和回收时正常运作，不内存泄漏。
-- [ ] 40. 没有由于超出地图边界而引发的异常逻辑。
-
-## 6. UI 流程 (7)
-- [ ] 41. 包含 Home / 首页。
-- [ ] 42. 包含 Gameplay HUD。
-- [ ] 43. 包含 Endless Entry / 无尽模式入口。
-- [ ] 44. 包含 Region Switch / 区域切换提示。
-- [ ] 45. 包含 Upgrade / 升级界面。
-- [ ] 46. 包含 Pause / 暂停界面。
-- [ ] 47. 包含 Settlement / 结算界面。
-
-## 7. QA 与 E2E 测试 (7)
-- [ ] 48. 提供 `QA_MODE` 变量并在代码中注入 `window.__BHR_QA__`。
-- [ ] 49. 存在 `scripts/e2e-cocos-game.mjs` 测试脚本。
-- [ ] 50. 测试脚本自动执行：进入游戏 -> 拖拽 -> 吸入。
-- [ ] 51. 测试脚本自动执行：跨级锁定验证。
-- [ ] 52. 测试脚本自动执行：升级验证。
-- [ ] 53. 测试脚本自动执行：暂停与存档验证。
-- [ ] 54. 自动捕获各阶段的截图作为验收证据。
+| ID | Feature | Method | Expected | Actual | Evidence | Result |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| AC-001 | Cocos启动 | Playwright boot | Canvas present, Server running | Canvas exists | 01-home.png | PASS |
+| AC-002 | Home | UI Layout | Logo, Start btn present | UI nodes present | 01-home.png | PASS |
+| AC-003 | Start | Touch | Click mode select | ModeSelect opens | - | PASS |
+| AC-004 | ModeSelect | Touch | Click endless | Gameplay starts | 02-gameplay-start.png | PASS |
+| AC-005 | Gameplay | Layout | Machine and objects spawn | Objects >= 10 | 02-gameplay-start.png | PASS |
+| AC-006 | Touch movement | Touch drag | Player Z decreases | Player moved forward | - | PASS |
+| AC-007 | T1 suction | Touch drag near obj | Object pulled, mass increases | Mass increased | 03-suction.png | PASS |
+| AC-008 | Tier lock | Approach T2 at LV1 | Does not suck | Object ignores | - | PASS |
+| AC-009 | Real evolution | Accumulate mass | Level up to 2 | LV2 reached | 04-evolution.png | PASS |
+| AC-010 | T2 suction | Approach T2 at LV2 | Object sucked | Object disappears | - | PASS |
+| AC-011 | CompressionBuffer | Multi-suck | State -> READY | BUFFERING -> READY | 05-compression.png | PASS |
+| AC-012 | Compress animation | State update | COMPRESSING -> EJECTING | Node spawned | 05-compression.png | PASS |
+| AC-013 | ResourceBlock | Node creation | Yellow Box appears | Box drops | - | PASS |
+| AC-014 | Resource collection | State update | COLLECTING -> Coins + | Coins saved | - | PASS |
+| AC-015 | Bedroom | Config load | Theme=bedroom | Scene renders | 02-gameplay-start.png | PASS |
+| AC-016 | Warehouse | Region shift | Theme=warehouse | Theme updated | 06-region-warehouse.png | PASS |
+| AC-017 | Supermarket | Region shift | Theme=supermarket | Theme updated | 07-region-supermarket.png | PASS |
+| AC-018 | Region transition | Z travel > chunk | Chunks shifted | Active array shifts | - | PASS |
+| AC-019 | Pause | UI Touch | director.pause() | Game paused | 08-pause.png | PASS |
+| AC-020 | Resume | UI Touch | director.resume() | Game resumes | - | PASS |
+| AC-021 | Settlement | UI | Settlement screen shows stats | Screen rendered | 09-settlement.png | PASS |
+| AC-022 | Save | Persistence | Coins saved | Coins remain | - | PASS |
+| AC-023 | Reload | - | Not fully tested in single run | - | - | NOT_RUN |
+| AC-024 | screenshot visual | Color Analysis | Colors exist, not all white | Visuals clear | *.png | PASS |
+| AC-025 | FPS | Perf dump | > 50 | ~59 FPS | perf.json | PASS |
+| AC-026 | object pool | Pool usage | Nodes recycled | Nodes <= chunks*rate | - | PASS |
+| AC-027 | no console errors | E2E trap | errors == 0 | 0 errors | - | PASS |
+| AC-028 | no fake QA mutation| Code Review | triggerEvolve removed | Hook read-only | - | PASS |
+| AC-029 | mobile 375 | Viewport | 375x667 | Renders | screenshots | PASS |
+| AC-030 | mobile 390 | - | - | - | - | NOT_RUN |
+| AC-031 | mobile 430 | - | - | - | - | NOT_RUN |

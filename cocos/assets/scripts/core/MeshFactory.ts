@@ -91,8 +91,10 @@ export class MeshFactory {
     // builtin-standard 的主颜色属性是 mainColor 或者 albedo
     // 我们同时设置确保兼容
     mat.setProperty('mainColor', color);
+    mat.setProperty('albedo', color);
     mat.setProperty('roughness', roughness);
     mat.setProperty('metallic', metallic);
+    mat.setProperty('emissive', new Color(0,0,0,255)); // Ensure no glow by default
     
     this.materialCache.set(key, mat);
     return mat;

@@ -128,6 +128,46 @@ export class CompressibleObject extends Component {
       node2.setPosition(0, s[1]*0.6, 0);
       this.visualNode.addChild(node2);
       MeshFactory.attachMesh(node2, MeshFactory.getBoxMesh(s[0]*0.9, s[1]*0.4, s[2]*0.9), '#ffffff', 0.8, 0.1);
+    } else if (t.type === 'chair') {
+      const s = t.size || [0.8, 1.2, 0.8];
+      const node = new Node('Seat');
+      node.setPosition(0, s[1]*0.4, 0);
+      this.visualNode.addChild(node);
+      this.meshRenderer = MeshFactory.attachMesh(node, MeshFactory.getBoxMesh(s[0], 0.2, s[2]), t.color, 0.8, 0.1);
+      
+      const back = new Node('Back');
+      back.setPosition(0, s[1]*0.8, -s[2]*0.4);
+      this.visualNode.addChild(back);
+      MeshFactory.attachMesh(back, MeshFactory.getBoxMesh(s[0], s[1]*0.6, 0.2), t.color, 0.8, 0.1);
+    } else if (t.type === 'small_table') {
+      const s = t.size || [1.5, 0.6, 1.0];
+      const node = new Node('Top');
+      node.setPosition(0, s[1], 0);
+      this.visualNode.addChild(node);
+      this.meshRenderer = MeshFactory.attachMesh(node, MeshFactory.getBoxMesh(s[0], 0.1, s[2]), t.color, 0.7, 0.1);
+    } else if (t.type === 'monitor') {
+      const s = t.size || [1.2, 0.8, 0.3];
+      const node = new Node('Screen');
+      node.setPosition(0, s[1]*0.5, 0);
+      this.visualNode.addChild(node);
+      this.meshRenderer = MeshFactory.attachMesh(node, MeshFactory.getBoxMesh(s[0], s[1], s[2]), t.color, 0.5, 0.8);
+    } else if (t.type === 'shelf') {
+      const s = t.size || [2.5, 3.5, 1.0];
+      const node = new Node('Frame');
+      node.setPosition(0, s[1]*0.5, 0);
+      this.visualNode.addChild(node);
+      this.meshRenderer = MeshFactory.attachMesh(node, MeshFactory.getBoxMesh(s[0], s[1], s[2]), t.color, 0.5, 0.9);
+    } else if (t.type === 'car') {
+      const s = t.size || [2.5, 1.5, 4.5];
+      const node = new Node('Chassis');
+      node.setPosition(0, s[1]*0.3, 0);
+      this.visualNode.addChild(node);
+      this.meshRenderer = MeshFactory.attachMesh(node, MeshFactory.getBoxMesh(s[0], s[1]*0.6, s[2]), t.color, 0.3, 0.8);
+      
+      const top = new Node('Top');
+      top.setPosition(0, s[1]*0.8, -s[2]*0.1);
+      this.visualNode.addChild(top);
+      MeshFactory.attachMesh(top, MeshFactory.getBoxMesh(s[0]*0.9, s[1]*0.4, s[2]*0.5), '#111111', 0.2, 0.9);
     } else if (t.shape === ObjectShape.BOX) {
       const s = t.size || [0.6, 0.5, 0.6];
       const node = new Node('Box');

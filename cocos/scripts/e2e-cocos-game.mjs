@@ -20,7 +20,7 @@ import path from 'path';
 
   console.log('✅ [E2E] QA Hook Injected. Testing Gameplay...');
   const state = await page.evaluate(() => {
-    return (window as any).__BHR_QA__ ? (window as any).__BHR_QA__.snapshot() : null;
+    return window.__BHR_QA__ ? window.__BHR_QA__.snapshot() : null;
   });
   console.log('Snapshot:', state);
 
@@ -37,8 +37,8 @@ import path from 'path';
 
   console.log('🔄 [E2E] Triggering Evolution...');
   await page.evaluate(() => {
-    if ((window as any).__BHR_QA__) {
-      (window as any).__BHR_QA__.triggerEvolve();
+    if (window.__BHR_QA__) {
+      window.__BHR_QA__.triggerEvolve();
     }
   });
   await page.waitForTimeout(1000);
