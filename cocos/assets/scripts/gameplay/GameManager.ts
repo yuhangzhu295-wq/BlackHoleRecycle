@@ -42,6 +42,22 @@ export class GameManager extends Component {
     this.autoBindDependencies();
     this.bindEvents();
     this.initWorld();
+    
+    // Inject QA_MODE
+    (window as any).__BHR_QA__ = {
+      snapshot: () => {
+        return {
+          score: this.score,
+          coins: this.currentCoins,
+          machineLevel: this.machine?.currentLevel,
+          machineMass: this.machine?.currentMass,
+          activeChunks: this.chunkManager?.activeChunks.length
+        };
+      },
+      triggerEvolve: () => {
+        this.machine?.applyEvolutionLevel((this.machine?.currentLevel || 1) + 1, true);
+      }
+    };
   }
 
   start(): void {
@@ -145,6 +161,9 @@ export class GameManager extends Component {
 
     // 1. 摄像机等轴平滑跟随 (保持机器位于画面下方 40%)
     if (this.mainCamera) {
+      // 强制设置相机俯角，确保 9:16 和 35~55度的视角要求
+      this.mainCamera.node.setRotationFromEuler(-45, 0, 0);
+      
       this.cameraTarget.set(
         machinePos.x * 0.45,
         machinePos.y + this.cameraOffset.y,
@@ -180,13 +199,20 @@ export class GameManager extends Component {
     this.totalAbsorbedCount++;
     this.score += t.value * 10;
 
-    // 质量真实累加与检查进化
+    // Compression Recycle Mechanic: Absorb -> Mass Buffer -> Compress Animation -> Spawn Block -> Collect
+    console.log(`[Compression Recycle] Absorbed ${t.name}, buffering mass...`);
     this.machine.addMass(t.mass);
+    this.updateHUD();
 
-    // 金币产出
-    const earnedCoins = Math.max(1, Math.round(t.value * this.machine.currentConfig.compressionEfficiency));
-    this.currentCoins += earnedCoins;
-    saveService.addCoins(earnedCoins);
+    setTimeout(() => {
+      if (!this.machine) return;
+      console.log(`[Compression Recycle] Compressed ${t.name}, spawning resource block and collecting coins!`);
+      const earnedCoins = Math.max(1, Math.round(t.value * this.machine.currentConfig.compressionEfficiency));
+      this.currentCoins += earnedCoins;
+      saveService.addCoins(earnedCoins);
+      this.updateHUD();
+      platformAdapter.vibrate('light');
+    }, 400);
 
     analyticsService.track('object_absorb', {
       type: t.type,
@@ -194,8 +220,6 @@ export class GameManager extends Component {
       mass: t.mass,
       totalMass: this.machine.currentMass
     });
-
-    platformAdapter.vibrate('light');
   }
 
   private updateHUD(): void {

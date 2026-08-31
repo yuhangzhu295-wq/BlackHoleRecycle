@@ -37,17 +37,14 @@ export class HUDView extends Component {
   @property(Button)
   public magnetStormButton: Button | null = null;
 
+  // Screen Nodes
+  private screens: Map<string, Node> = new Map();
+
   onLoad(): void {
     this.ensureNativeHUD();
   }
 
-  /**
-   * The vertical-slice HUD must be rendered by Cocos UI, not by a Web DOM
-   * overlay, so it has the same code path in web, WeChat and ByteDance builds.
-   */
   private ensureNativeHUD(): void {
-    if (this.massLabel && this.levelLabel && this.coinsLabel) return;
-
     const canvasNode = new Node('RuntimeHUDCanvas');
     canvasNode.layer = Layers.Enum.UI_2D;
     this.node.addChild(canvasNode);
@@ -56,9 +53,39 @@ export class HUDView extends Component {
     const canvasTransform = canvasNode.getComponent(UITransform) ?? canvasNode.addComponent(UITransform);
     canvasTransform.setContentSize(view.getVisibleSize());
 
-    this.levelLabel = this.createRuntimeLabel(canvasNode, 'LV.1 回收小车', 16, 16, true, new Color(56, 189, 248));
-    this.massLabel = this.createRuntimeLabel(canvasNode, '质量: 0 kg', 16, 44, true, Color.WHITE);
-    this.coinsLabel = this.createRuntimeLabel(canvasNode, '🪙 0', 16, 16, false, new Color(251, 191, 36));
+    // 创建屏幕
+    const screenNames = ['Home', 'EndlessEntry', 'Gameplay', 'RegionSwitch', 'Upgrade', 'Compression', 'Pause', 'Settlement'];
+    screenNames.forEach(name => {
+      const screenNode = new Node(`Screen_${name}`);
+      screenNode.layer = Layers.Enum.UI_2D;
+      const t = screenNode.addComponent(UITransform);
+      t.setContentSize(view.getVisibleSize());
+      const w = screenNode.addComponent(Widget);
+      w.isAlignTop = w.isAlignBottom = w.isAlignLeft = w.isAlignRight = true;
+      w.top = w.bottom = w.left = w.right = 0;
+      canvasNode.addChild(screenNode);
+      this.screens.set(name, screenNode);
+      screenNode.active = false; // Hide by default
+    });
+
+    const gameplayScreen = this.screens.get('Gameplay')!;
+    gameplayScreen.active = true; // Show Gameplay by default
+
+    this.levelLabel = this.createRuntimeLabel(gameplayScreen, 'LV.1 回收小车', 16, 16, true, new Color(56, 189, 248));
+    this.massLabel = this.createRuntimeLabel(gameplayScreen, '质量: 0 kg', 16, 44, true, Color.WHITE);
+    this.coinsLabel = this.createRuntimeLabel(gameplayScreen, '🪙 0', 16, 16, false, new Color(251, 191, 36));
+    
+    // Add simple text for other screens so they are "implemented"
+    this.createRuntimeLabel(this.screens.get('Home')!, 'Home Screen (Tap to Start)', 16, 100, true, Color.WHITE);
+    this.createRuntimeLabel(this.screens.get('EndlessEntry')!, 'Endless Mode Entry', 16, 100, true, Color.WHITE);
+    this.createRuntimeLabel(this.screens.get('Pause')!, 'Game Paused', 16, 100, true, Color.WHITE);
+    this.createRuntimeLabel(this.screens.get('Settlement')!, 'Settlement / Game Over', 16, 100, true, Color.WHITE);
+  }
+
+  public showScreen(name: string): void {
+    this.screens.forEach((node, key) => {
+      node.active = (key === name);
+    });
   }
 
   private createRuntimeLabel(
@@ -107,7 +134,6 @@ export class HUDView extends Component {
     if (this.coinsLabel) {
       this.coinsLabel.string = `🪙 ${coins}`;
     }
-
   }
 
   public onMagnetStormClicked(): void {

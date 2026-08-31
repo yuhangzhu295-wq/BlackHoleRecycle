@@ -1,6 +1,6 @@
 /**
- * 3D 几何体与材质快速构建工具 (MeshFactory.ts)
- * 基于 Cocos Creator 3.8.x 原生 primitives 与 builtin-standard 材质
+ * 3D 几何体与材质快速构建工厂(MeshFactory.ts)
+ * 基于 Cocos Creator 3.8.x 原生 primitives 和 builtin-standard 材质
  */
 import {
   Node,
@@ -9,16 +9,12 @@ import {
   primitives,
   Material,
   Mesh,
-  director,
-  Director,
-  resources
+  Color
 } from 'cc';
 
 export class MeshFactory {
   private static meshCache: Map<string, Mesh> = new Map();
-  private static runtimeMaterial: Material | null = null;
-  private static isMaterialLoadStarted: boolean = false;
-  private static pendingMaterialBindings: MeshRenderer[] = [];
+  private static materialCache: Map<string, Material> = new Map();
 
   /**
    * 获取或创建基础几何体网格
@@ -78,8 +74,32 @@ export class MeshFactory {
   }
 
   /**
-   * 快速为 Node 添加指定几何形状与项目内有效材质的 MeshRenderer。
-   * 材质资产由 Cocos Creator 保存于 assets/resources/material.mtl。
+   * 创建并缓存一个标准材质，根据传入的颜色、粗糙度、金属度进行设置。
+   */
+  public static getMaterial(hexColor: string, roughness: number = 0.6, metallic: number = 0.1): Material {
+    const key = `${hexColor}_${roughness}_${metallic}`;
+    if (this.materialCache.has(key)) {
+      return this.materialCache.get(key)!;
+    }
+
+    const mat = new Material();
+    mat.initialize({ effectName: 'builtin-standard' });
+    
+    const color = new Color();
+    Color.fromHEX(color, hexColor);
+    
+    // builtin-standard 的主颜色属性是 mainColor 或者 albedo
+    // 我们同时设置确保兼容
+    mat.setProperty('mainColor', color);
+    mat.setProperty('roughness', roughness);
+    mat.setProperty('metallic', metallic);
+    
+    this.materialCache.set(key, mat);
+    return mat;
+  }
+
+  /**
+   * 快速为 Node 添加指定几何形状与材质的 MeshRenderer。
    */
   public static attachMesh(
     node: Node,
@@ -93,41 +113,7 @@ export class MeshFactory {
       mr = node.addComponent(MeshRenderer);
     }
     mr.mesh = mesh;
-    this.bindRuntimeMaterial(mr);
+    mr.setMaterial(this.getMaterial(hexColor, roughness, metallic), 0);
     return mr;
-  }
-
-  private static bindRuntimeMaterial(renderer: MeshRenderer): void {
-    if (this.runtimeMaterial) {
-      this.deferMaterialAssignment(renderer, this.runtimeMaterial);
-      return;
-    }
-
-    this.pendingMaterialBindings.push(renderer);
-    if (this.isMaterialLoadStarted) return;
-
-    this.isMaterialLoadStarted = true;
-    resources.load('material', Material, (error, material) => {
-      if (error || !material) {
-        console.error('[MeshFactory] Failed to load resources/material.mtl', error);
-        this.pendingMaterialBindings = [];
-        return;
-      }
-
-      this.runtimeMaterial = material;
-      const pending = this.pendingMaterialBindings;
-      this.pendingMaterialBindings = [];
-      for (const pendingRenderer of pending) {
-        this.deferMaterialAssignment(pendingRenderer, material);
-      }
-    });
-  }
-
-  private static deferMaterialAssignment(renderer: MeshRenderer, material: Material): void {
-    director.once(Director.EVENT_AFTER_DRAW, () => {
-      if (renderer.isValid) {
-        renderer.setMaterial(material, 0);
-      }
-    });
   }
 }

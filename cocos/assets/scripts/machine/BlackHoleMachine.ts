@@ -94,13 +94,13 @@ export class BlackHoleMachine extends Component {
     const holeInner = new Node('HoleInner');
     holeInner.setPosition(0, 0, 0);
     this.coreNode.addChild(holeInner);
-    MeshFactory.attachMesh(holeInner, MeshFactory.getCylinderMesh(0.42, 0.42, 0.08), '#050508');
+    MeshFactory.attachMesh(holeInner, MeshFactory.getCylinderMesh(0.42, 0.42, 0.08), '#000000', 1.0, 0.0);
 
     // 发光外环
     const holeRing = new Node('HoleRing');
     holeRing.setPosition(0, 0.02, 0);
     this.coreNode.addChild(holeRing);
-    MeshFactory.attachMesh(holeRing, MeshFactory.getTorusMesh(0.48, 0.06), '#00e5ff');
+    MeshFactory.attachMesh(holeRing, MeshFactory.getTorusMesh(0.48, 0.06), '#00e5ff', 0.1, 0.5);
 
     // 4. LV2 磁力双涡轮 (TurbineNode)
     this.turbineNode = new Node('TurbineRoot');

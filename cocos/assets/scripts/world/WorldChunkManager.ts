@@ -35,34 +35,51 @@ export class WorldChunk {
     const ground = new Node('Ground');
     ground.setPosition(0, 0, this.centerZ);
     this.chunkNode.addChild(ground);
-    MeshFactory.attachMesh(ground, MeshFactory.getBoxMesh(18.0, 0.1, this.length), this.theme.groundColor, 0.8, 0.05);
+    MeshFactory.attachMesh(ground, MeshFactory.getBoxMesh(24.0, 0.1, this.length), this.theme.groundColor, 0.8, 0.05);
 
-    // 2. 两侧围墙 (Left & Right Walls)
+    // 2. 两侧无边界视觉墙 (隐形限制，或者较远的边界墙)
     const wallL = new Node('Wall_Left');
-    wallL.setPosition(-9.0, 1.2, this.centerZ);
+    wallL.setPosition(-12.0, 1.2, this.centerZ);
     this.chunkNode.addChild(wallL);
     MeshFactory.attachMesh(wallL, MeshFactory.getBoxMesh(0.4, 2.4, this.length), '#e2e8f0');
 
     const wallR = new Node('Wall_Right');
-    wallR.setPosition(9.0, 1.2, this.centerZ);
+    wallR.setPosition(12.0, 1.2, this.centerZ);
     this.chunkNode.addChild(wallR);
     MeshFactory.attachMesh(wallR, MeshFactory.getBoxMesh(0.4, 2.4, this.length), '#e2e8f0');
 
-    // 3. 卧室家具低模装饰 (Furniture: Bed, Desk, Wardrobe)
-    const bed = new Node('Bed');
-    bed.setPosition(-6.0, 0.4, this.centerZ - 10.0);
-    this.chunkNode.addChild(bed);
-    MeshFactory.attachMesh(bed, MeshFactory.getBoxMesh(3.0, 0.7, 4.5), '#64748b');
+    // 3. 根据主题生成区域装饰物 (RegionSequence)
+    if (this.theme.id === 'bedroom') {
+      const bed = new Node('Bed');
+      bed.setPosition(-8.0, 0.4, this.centerZ - 10.0);
+      this.chunkNode.addChild(bed);
+      MeshFactory.attachMesh(bed, MeshFactory.getBoxMesh(3.0, 0.7, 4.5), '#64748b');
 
-    const desk = new Node('Desk');
-    desk.setPosition(6.5, 0.5, this.centerZ + 5.0);
-    this.chunkNode.addChild(desk);
-    MeshFactory.attachMesh(desk, MeshFactory.getBoxMesh(2.2, 1.0, 4.0), '#475569');
+      const desk = new Node('Desk');
+      desk.setPosition(8.5, 0.5, this.centerZ + 5.0);
+      this.chunkNode.addChild(desk);
+      MeshFactory.attachMesh(desk, MeshFactory.getBoxMesh(2.2, 1.0, 4.0), '#475569');
+    } else if (this.theme.id === 'warehouse') {
+      const pallet = new Node('Pallet');
+      pallet.setPosition(-8.0, 0.2, this.centerZ - 10.0);
+      this.chunkNode.addChild(pallet);
+      MeshFactory.attachMesh(pallet, MeshFactory.getBoxMesh(3.0, 0.4, 3.0), '#8b5a2b');
 
-    const wardrobe = new Node('Wardrobe');
-    wardrobe.setPosition(-6.8, 1.5, this.centerZ + 12.0);
-    this.chunkNode.addChild(wardrobe);
-    MeshFactory.attachMesh(wardrobe, MeshFactory.getBoxMesh(2.2, 3.0, 3.5), '#334155');
+      const shelves = new Node('Shelves');
+      shelves.setPosition(8.5, 2.0, this.centerZ + 5.0);
+      this.chunkNode.addChild(shelves);
+      MeshFactory.attachMesh(shelves, MeshFactory.getBoxMesh(2.0, 4.0, 6.0), '#708090');
+    } else if (this.theme.id === 'supermarket') {
+      const counter = new Node('Counter');
+      counter.setPosition(0.0, 0.5, this.centerZ - 15.0);
+      this.chunkNode.addChild(counter);
+      MeshFactory.attachMesh(counter, MeshFactory.getBoxMesh(6.0, 1.0, 2.0), '#ffffff');
+
+      const shelf = new Node('Shelf');
+      shelf.setPosition(8.5, 1.5, this.centerZ + 5.0);
+      this.chunkNode.addChild(shelf);
+      MeshFactory.attachMesh(shelf, MeshFactory.getBoxMesh(2.0, 3.0, 8.0), '#f0e68c');
+    }
   }
 
   public populate(items: IChunkSpawnItem[], objectPool: ObjectPool<CompressibleObject>): void {
