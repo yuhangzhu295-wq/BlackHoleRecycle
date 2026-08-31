@@ -8,6 +8,7 @@ export interface ISaveData {
   coins: number;
   highScore: number;
   highestRegion: number;
+  machineLevel: number;
   currentSkinId: string;
   unlockedSkins: string[];
   metaUpgrades: {
@@ -57,6 +58,7 @@ export class SaveService {
       coins: 2360,
       highScore: 128580,
       highestRegion: 0,
+      machineLevel: 1,
       currentSkinId: 'skin_classic',
       unlockedSkins: ['skin_classic'],
       metaUpgrades: {
@@ -126,6 +128,13 @@ export class SaveService {
     this.data.coins += Math.round(Math.max(0, amount));
     this.save();
     return this.data.coins;
+  }
+
+  public setMachineLevel(level: number): void {
+    if (level > this.data.machineLevel) {
+      this.data.machineLevel = level;
+      this.save();
+    }
   }
 
   public spendCoins(amount: number): boolean {

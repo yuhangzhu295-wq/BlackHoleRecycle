@@ -5,6 +5,7 @@
   "main": "assets/scripts/gameplay/GameManager.ts",
   "scripts": {
     "typecheck": "tsc --noEmit",
+    "acceptance": "node scripts/run-full-acceptance.mjs",
     "test:vertical-slice": "node ../scripts/test_cocos_vertical_slice.js"
   },
   "keywords": [

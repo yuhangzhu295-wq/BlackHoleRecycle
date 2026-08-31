@@ -1,5 +1,5 @@
 /**
- * 玩家触控与鼠标拖拽控制器 (PlayerController.ts)
+ * 玩家触控与拖拽控制器 (PlayerController.ts)
  */
 import { _decorator, Component, Node, Vec3, input, Input, EventTouch, EventMouse, Camera, geometry, director } from 'cc';
 import { BlackHoleMachine } from '../machine/BlackHoleMachine';
@@ -14,7 +14,8 @@ export class PlayerController extends Component {
   @property(Camera)
   public mainCamera: Camera | null = null;
 
-  private isDragging: boolean = false;
+  public isDragging: boolean = false;
+  public isPaused: boolean = false;
   private groundPlane: geometry.Plane = new geometry.Plane(0, 1, 0, 0);
 
   onLoad(): void {
@@ -51,12 +52,13 @@ export class PlayerController extends Component {
   }
 
   private onTouchStart(event: EventTouch): void {
+    if (this.isPaused) return;
     this.isDragging = true;
     this.handleInputPosition(event.getLocation());
   }
 
   private onTouchMove(event: EventTouch): void {
-    if (!this.isDragging) return;
+    if (this.isPaused || !this.isDragging) return;
     this.handleInputPosition(event.getLocation());
   }
 
@@ -65,6 +67,7 @@ export class PlayerController extends Component {
   }
 
   private onMouseDown(event: EventMouse): void {
+    if (this.isPaused) return;
     if (event.getButton() === 0) {
       this.isDragging = true;
       this.handleInputPosition(event.getLocation());
@@ -72,7 +75,7 @@ export class PlayerController extends Component {
   }
 
   private onMouseMove(event: EventMouse): void {
-    if (!this.isDragging) return;
+    if (this.isPaused || !this.isDragging) return;
     this.handleInputPosition(event.getLocation());
   }
 
@@ -81,6 +84,7 @@ export class PlayerController extends Component {
   }
 
   private handleInputPosition(loc: { x: number; y: number }): void {
+    if (this.isPaused) return;
     if (!this.machine) return;
     if (!this.mainCamera) {
       const scene = director.getScene();

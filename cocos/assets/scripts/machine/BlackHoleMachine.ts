@@ -35,6 +35,7 @@ export class BlackHoleMachine extends Component {
   // 内部视觉节点容器
   private visualRoot: Node | null = null;
   private bodyMeshRenderer: MeshRenderer | null = null;
+  private holeRim: Node | null = null;
 
   onLoad(): void {
     this.buildVisibleGeometry();
@@ -45,9 +46,7 @@ export class BlackHoleMachine extends Component {
    * 自动构建可见的 3D 低模清洁车底盘、四轮、黑洞核心与进化部件
    */
   private buildVisibleGeometry(): void {
-    if (this.node.children.length > 0 && this.coreNode && this.turbineNode) {
-      return; // 已经由场景/预制体配置好子节点
-    }
+    if (this.visualRoot) return;
 
     this.visualRoot = new Node('VisualRoot');
     this.node.addChild(this.visualRoot);
@@ -90,60 +89,75 @@ export class BlackHoleMachine extends Component {
     this.coreNode.setPosition(0, 0.48, -0.15);
     this.visualRoot.addChild(this.coreNode);
 
-    // 黑洞中心视界深渊
+    // 黑洞中心深渊 (纯黑无反光)
     const holeInner = new Node('HoleInner');
     holeInner.setPosition(0, 0, 0);
     this.coreNode.addChild(holeInner);
     MeshFactory.attachMesh(holeInner, MeshFactory.getCylinderMesh(0.42, 0.42, 0.08), '#000000', 1.0, 0.0);
 
-    // 发光外环
-    const holeRing = new Node('HoleRing');
-    holeRing.setPosition(0, 0.02, 0);
-    this.coreNode.addChild(holeRing);
-    MeshFactory.attachMesh(holeRing, MeshFactory.getTorusMesh(0.48, 0.06), '#00e5ff', 0.1, 0.5);
+    // 发光外环 (青色 #00e5ff)
+    this.holeRim = new Node('HoleRing');
+    this.holeRim.setPosition(0, 0.02, 0);
+    this.coreNode.addChild(this.holeRim);
+    MeshFactory.attachMesh(this.holeRim, MeshFactory.getTorusMesh(0.48, 0.06), '#00e5ff', 0.1, 0.5);
 
     // 4. LV2 磁力双涡轮 (TurbineNode)
     this.turbineNode = new Node('TurbineRoot');
     this.visualRoot.addChild(this.turbineNode);
 
     const turbineL = new Node('Turbine_L');
-    turbineL.setPosition(-0.68, 0.38, 0.05);
+    turbineL.setPosition(-0.75, 0.38, 0.05);
     this.turbineNode.addChild(turbineL);
-    MeshFactory.attachMesh(turbineL, MeshFactory.getCylinderMesh(0.2, 0.2, 0.5), '#34c759');
+    MeshFactory.attachMesh(turbineL, MeshFactory.getCylinderMesh(0.25, 0.25, 0.55), '#34c759');
 
     const turbineR = new Node('Turbine_R');
-    turbineR.setPosition(0.68, 0.38, 0.05);
+    turbineR.setPosition(0.75, 0.38, 0.05);
     this.turbineNode.addChild(turbineR);
-    MeshFactory.attachMesh(turbineR, MeshFactory.getCylinderMesh(0.2, 0.2, 0.5), '#34c759');
+    MeshFactory.attachMesh(turbineR, MeshFactory.getCylinderMesh(0.25, 0.25, 0.55), '#34c759');
 
     this.turbineNode.active = false;
 
-    // 5. LV3 冲压机 (CrusherNode)
+    // 5. LV3 冲压压缩机 (CrusherNode)
     this.crusherNode = new Node('CrusherNode');
-    this.crusherNode.setPosition(0, 0.55, 0.6);
+    this.crusherNode.setPosition(0, 0.65, 0.55);
     this.visualRoot.addChild(this.crusherNode);
-    MeshFactory.attachMesh(this.crusherNode, MeshFactory.getBoxMesh(0.9, 0.5, 0.4), '#ff9500');
+    MeshFactory.attachMesh(this.crusherNode, MeshFactory.getBoxMesh(1.1, 0.6, 0.5), '#ff9500');
     this.crusherNode.active = false;
 
-    // 6. LV4 稳定翼 (GravityWingNode)
+    // 6. LV4 引力稳定翼 (GravityWingNode)
     this.gravityWingNode = new Node('GravityWingNode');
     this.visualRoot.addChild(this.gravityWingNode);
+
+    const wingL = new Node('Wing_L');
+    wingL.setPosition(-1.1, 0.45, 0.1);
+    this.gravityWingNode.addChild(wingL);
+    MeshFactory.attachMesh(wingL, MeshFactory.getBoxMesh(0.8, 0.15, 0.9), '#af52de');
+
+    const wingR = new Node('Wing_R');
+    wingR.setPosition(1.1, 0.45, 0.1);
+    this.gravityWingNode.addChild(wingR);
+    MeshFactory.attachMesh(wingR, MeshFactory.getBoxMesh(0.8, 0.15, 0.9), '#af52de');
+
     this.gravityWingNode.active = false;
 
     // 7. LV5 奇点光环 (SingularityHaloNode)
     this.singularityHaloNode = new Node('SingularityHaloNode');
-    this.singularityHaloNode.setPosition(0, 1.2, 0);
+    this.singularityHaloNode.setPosition(0, 1.35, 0);
     this.visualRoot.addChild(this.singularityHaloNode);
-    MeshFactory.attachMesh(this.singularityHaloNode, MeshFactory.getTorusMesh(0.85, 0.08), '#ffffff');
+    MeshFactory.attachMesh(this.singularityHaloNode, MeshFactory.getTorusMesh(1.1, 0.08), '#ffffff');
     this.singularityHaloNode.active = false;
   }
 
   public setTargetPosition(x: number, z: number): void {
-    this.targetPos.x = math.clamp(x, -6.5, 6.5);
+    // 开放 36m 区域：限制在 [-16.0, 16.0] 范围内畅行无阻
+    this.targetPos.x = math.clamp(x, -16.0, 16.0);
     this.targetPos.z = z;
   }
 
+  public isPaused: boolean = false;
+
   public update(dt: number): void {
+    if (this.isPaused || dt <= 0) return;
     // 1. 平滑移动
     const curPos = this.node.getPosition();
     const speed = this.currentConfig.moveSpeed;
@@ -198,11 +212,15 @@ export class BlackHoleMachine extends Component {
       this.singularityHaloNode.active = level >= 5;
     }
 
+    // 缩放吸力外环
+    if (this.holeRim) {
+      const ringScale = Math.max(1.0, this.currentConfig.suctionRadius / 2.4);
+      this.holeRim.setScale(new Vec3(ringScale, 1.0, ringScale));
+    }
+
     // 缩放整体底盘
     const s = this.currentConfig.scale;
     this.node.setScale(new Vec3(s, s, s));
-
-    console.log(`🚀 [Machine Evolution] Reached LV.${level} ${this.currentConfig.title} (Radius: ${this.currentConfig.suctionRadius}m, MaxTier: T${this.currentConfig.maxTier})`);
 
     if (triggerEvent) {
       eventBus.emit('MACHINE_EVOLVED', {
