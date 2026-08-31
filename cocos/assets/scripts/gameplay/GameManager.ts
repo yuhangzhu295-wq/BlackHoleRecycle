@@ -87,6 +87,13 @@ export class GameManager extends Component {
       const hudNode = scene.getChildByName('Canvas') || this.node.getChildByName('HUD');
       if (hudNode) {
         this.hud = hudNode.getComponent(HUDView);
+      } else {
+        // The first vertical slice must always expose its runtime status in a
+        // browser preview. HUDView creates the Web overlay where a Canvas HUD
+        // has not yet been authored in the scene.
+        const runtimeHudNode = new Node('RuntimeHUD');
+        this.node.addChild(runtimeHudNode);
+        this.hud = runtimeHudNode.addComponent(HUDView);
       }
     }
   }

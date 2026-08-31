@@ -202,11 +202,6 @@ export class BlackHoleMachine extends Component {
     const s = this.currentConfig.scale;
     this.node.setScale(new Vec3(s, s, s));
 
-    // 改变车身主色
-    if (this.bodyMeshRenderer) {
-      this.bodyMeshRenderer.material = MeshFactory.getColorMaterial(this.currentConfig.baseColor);
-    }
-
     console.log(`🚀 [Machine Evolution] Reached LV.${level} ${this.currentConfig.title} (Radius: ${this.currentConfig.suctionRadius}m, MaxTier: T${this.currentConfig.maxTier})`);
 
     if (triggerEvent) {

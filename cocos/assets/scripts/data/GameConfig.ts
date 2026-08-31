@@ -105,7 +105,7 @@ export const MACHINE_EVOLUTION_CONFIG: readonly IMachineEvolutionConfig[] = [
     level: 2,
     name: 'Magnetic Turbine (磁力涡轮)',
     title: '吸附卡车',
-    massThreshold: 3500,
+    massThreshold: 900,
     suctionRadius: 3.4,
     maxTier: ObjectTier.T2,
     moveSpeed: 8.2,

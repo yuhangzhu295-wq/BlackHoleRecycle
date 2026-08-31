@@ -1,6 +1,6 @@
 {
   "name": "black-hole-recycle-cocos",
-  "version": "1.0.0",
+  "version": "3.8.3",
   "description": "《黑洞回收站》 Cocos Creator 3.8.x TypeScript 官方小游戏工程",
   "main": "assets/scripts/gameplay/GameManager.ts",
   "scripts": {
