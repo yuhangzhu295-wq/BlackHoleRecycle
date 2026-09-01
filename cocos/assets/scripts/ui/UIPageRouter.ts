@@ -4,33 +4,11 @@
  * 这个组件只管理已经由 Cocos Creator 保存到场景/预制体中的节点；它不会在运行时
  * 新建 Node、Label、Button 或 Graphics。页面视觉和控件均应由设计师/编辑器产出。
  */
-import { _decorator, Component, Enum, Node } from 'cc';
+import { _decorator, Component, Enum } from 'cc';
+import { UIPage } from './UIPage';
+import { UIPageId } from './UIPageId';
 
 const { ccclass, property } = _decorator;
-
-export enum UIPageId {
-  Home = 0,
-  ModeSelect = 1,
-  Arena = 2,
-  Endless = 3,
-  Revive = 4,
-  Settlement = 5,
-  Pause = 6,
-  Upgrade = 7,
-}
-
-@ccclass('UIPage')
-export class UIPage extends Component {
-  @property({ type: Enum(UIPageId), tooltip: '该节点所代表的正式 UI 页面。' })
-  public pageId = UIPageId.Home;
-
-  @property({ type: Node, tooltip: '实际显示/隐藏的页面根节点；留空时使用当前节点。' })
-  public pageRoot: Node | null = null;
-
-  public setVisible(visible: boolean): void {
-    (this.pageRoot ?? this.node).active = visible;
-  }
-}
 
 @ccclass('UIPageRouter')
 export class UIPageRouter extends Component {
