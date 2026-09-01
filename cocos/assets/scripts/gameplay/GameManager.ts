@@ -1,7 +1,7 @@
 /**
  * 游戏主控制器与运行时生命周期驱动 (GameManager.ts)
  */
-import { _decorator, Component, Node, Camera, Vec3, math, director, DirectionalLight, Color } from 'cc';
+import { _decorator, Component, Node, Camera, Vec3, math, director, DirectionalLight, Color, Canvas, UITransform, view, ResolutionPolicy } from 'cc';
 import { BlackHoleMachine } from '../machine/BlackHoleMachine';
 import { WorldChunkManager } from '../world/WorldChunkManager';
 import { CompressibleObject } from './CompressibleObject';
@@ -47,6 +47,11 @@ export class GameManager extends Component {
   private cameraTarget: Vec3 = new Vec3();
 
   onLoad(): void {
+    // The product is authored for a 720 × 1280 portrait canvas.  Cocos' browser
+    // preview toolbar can temporarily select a desktop-sized design resolution;
+    // reassert the project contract at runtime so it cannot crop the saved
+    // HomePage/ModeSelectPage prefab into a landscape gameplay surface.
+    view.setDesignResolutionSize(720, 1280, ResolutionPolicy.FIXED_WIDTH);
     platformAdapter.init();
     this.currentCoins = saveService.data.coins;
     this.autoBindDependencies();
@@ -169,12 +174,19 @@ export class GameManager extends Component {
     });
 
     eventBus.on('HOME_START_REQUESTED', () => {
-      this.startEndlessGame();
+      this.openV2ModeSelect();
     });
 
     eventBus.on('HOME_MODE_REQUESTED', () => {
-      this.setV2HomeVisible(false);
-      this.hud?.showScreen('ModeSelect');
+      this.openV2ModeSelect();
+    });
+
+    eventBus.on('MODE_BACK_REQUESTED', () => {
+      this.returnToHome();
+    });
+
+    eventBus.on('MODE_ENDLESS_REQUESTED', () => {
+      this.startEndlessGame();
     });
   }
 
@@ -287,8 +299,78 @@ export class GameManager extends Component {
   }
 
   private setV2HomeVisible(visible: boolean): void {
-    const home = director.getScene()?.getChildByName('Canvas')?.getChildByName('HomePage');
+    const canvas = director.getScene()?.getChildByName('Canvas');
+    const home = canvas?.getChildByName('HomePage');
+    const mode = canvas?.getChildByName('ModeSelectPage');
     if (home) home.active = visible;
+    if (mode) mode.active = false;
+  }
+
+  /** 仅显示由 Cocos Creator 保存的 V2 模式选择页，不回退到旧运行时 HUD。 */
+  private openV2ModeSelect(): void {
+    const canvas = director.getScene()?.getChildByName('Canvas');
+    const home = canvas?.getChildByName('HomePage');
+    const mode = canvas?.getChildByName('ModeSelectPage');
+    if (!mode) {
+      console.error('[GameManager] Missing editor-saved ModeSelectPage. Legacy HUD fallback is disabled.');
+      return;
+    }
+
+    if (home) home.active = false;
+    mode.active = true;
+    this.hud?.hideAllScreens();
+    this.gameState = 'MODE_SELECT';
+  }
+
+  /**
+   * 只读布局快照：用于真机/预览运行时排查 UI 被裁切或缩放错误，
+   * 不暴露任何修改场景或游戏状态的能力。
+   */
+  private getV2HomeLayoutSnapshot(): Record<string, unknown> {
+    const canvas = director.getScene()?.getChildByName('Canvas') || null;
+    const home = canvas?.getChildByName('HomePage') || null;
+    const canvasComponent = canvas?.getComponent(Canvas) || null;
+    const uiCamera = canvas?.getChildByName('UICamera')?.getComponent(Camera) || null;
+    const describe = (node: Node | null): Record<string, unknown> | null => {
+      if (!node) return null;
+      const transform = node.getComponent(UITransform);
+      return {
+        active: node.activeInHierarchy,
+        x: node.position.x,
+        y: node.position.y,
+        width: transform?.width || 0,
+        height: transform?.height || 0,
+        scaleX: node.scale.x,
+        scaleY: node.scale.y
+      };
+    };
+
+    const design = view.getDesignResolutionSize();
+    const visible = view.getVisibleSize();
+    const frame = view.getFrameSize();
+    return {
+      design: { width: design.width, height: design.height },
+      visible: { width: visible.width, height: visible.height },
+      frame: { width: frame.width, height: frame.height },
+      canvas: {
+        ...describe(canvas),
+        alignCanvasWithScreen: canvasComponent?.alignCanvasWithScreen ?? null
+      },
+      uiCamera: uiCamera ? {
+        projection: uiCamera.projection,
+        orthoHeight: uiCamera.orthoHeight,
+        x: uiCamera.node.position.x,
+        y: uiCamera.node.position.y,
+        z: uiCamera.node.position.z
+      } : null,
+      home: describe(home),
+      logo: describe(home?.getChildByName('Logo') || null),
+      hero: describe(home?.getChildByName('HeroBlackHole') || null),
+      start: describe(home?.getChildByName('BtnStart') || null),
+      mode: describe(home?.getChildByName('BtnMode') || null),
+      skin: describe(home?.getChildByName('BtnSkin') || null),
+      machine: describe(home?.getChildByName('BtnMachine') || null)
+    };
   }
 
   private setupQABridge(): void {
@@ -314,6 +396,7 @@ export class GameManager extends Component {
           scene: director.getScene()?.name || 'Game',
           uiScreen: this.hud?.currentScreenName || 'Home',
           gameState: this.gameState,
+          ui: this.getV2HomeLayoutSnapshot(),
           player: {
             position: {
               x: mPos ? mPos.x : 0,

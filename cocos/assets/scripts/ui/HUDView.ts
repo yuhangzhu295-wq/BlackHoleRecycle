@@ -54,14 +54,6 @@ export class HUDView extends Component {
     const screenNode = this.screens.get(this.currentScreenName);
     if (!screenNode || !screenNode.active) return;
 
-    // 若在 Gameplay 界面点击右上角区域，精准触发暂停
-    if (this.currentScreenName === 'Gameplay') {
-      if (uiLoc.x > 480 && uiLoc.y > 450) {
-        eventBus.emit('UI_TRIGGER_PAUSE');
-        return;
-      }
-    }
-
     for (const child of screenNode.children) {
       if (child.name.startsWith('Btn_') && child.active) {
         const trans = child.getComponent(UITransform);
@@ -89,7 +81,15 @@ export class HUDView extends Component {
     }
 
     const canvasTransform = canvasNode.getComponent(UITransform) ?? canvasNode.addComponent(UITransform);
-    canvasTransform.setContentSize(view.getVisibleSize());
+    // HomePage is an editor-saved 720×1280 product surface.  The legacy HUD
+    // used to overwrite its parent Canvas with the desktop preview's visible
+    // size (typically 720×480), which stretched and cropped the V2 home on
+    // portrait devices.  Legacy-only projects still retain the old dynamic
+    // canvas behavior; V2 keeps its explicit editor-authored design space.
+    const hasV2HomePage = !!this.getV2HomePage();
+    if (!hasV2HomePage) {
+      canvasTransform.setContentSize(view.getVisibleSize());
+    }
 
     // --- 1. HOME SCREEN ---
     const homeScreen = this.createScreenNode('Home', canvasNode);

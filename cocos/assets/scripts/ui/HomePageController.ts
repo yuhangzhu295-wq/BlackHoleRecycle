@@ -1,10 +1,11 @@
 /**
  * Home 预制体的数据绑定与交互控制。
- * 节点、Label、Button、Graphics 均由 Cocos Creator 保存到 HomePage.prefab；
+ * 节点、Sprite、Label、Button 均由 Cocos Creator 保存到 HomePage.prefab；
  * 本组件只读取真实存档数据、绑定事件并驱动已存在的组件。
  */
 import { _decorator, Button, Component, Label, Node } from 'cc';
 import { eventBus } from '../core/EventBus';
+import { MACHINE_EVOLUTION_CONFIG } from '../data/GameConfig';
 import { saveService } from '../data/SaveService';
 
 const { ccclass } = _decorator;
@@ -15,6 +16,7 @@ export class HomePageController extends Component {
 
   onEnable(): void {
     this.refreshProfile();
+    this.setUnavailableActionsDisabled();
     this.bindButtons();
   }
 
@@ -31,23 +33,36 @@ export class HomePageController extends Component {
       coinLabel.string = this.formatNumber(saveService.data.coins);
     }
 
+    const savedLevel = Math.max(1, Math.min(MACHINE_EVOLUTION_CONFIG.length, saveService.data.machineLevel));
+    const machineConfig = MACHINE_EVOLUTION_CONFIG[savedLevel - 1];
+
     const machineLabel = this.findLabel('MachineValue');
     if (machineLabel) {
-      machineLabel.string = `LV.${saveService.data.machineLevel}`;
+      machineLabel.string = `LV.${machineConfig.level}`;
     }
 
     const machineName = this.findLabel('MachineName');
     if (machineName) {
-      machineName.string = '黑洞回收机';
+      machineName.string = machineConfig.title;
     }
   }
 
   private bindButtons(): void {
     this.bindButton('BtnStart', () => eventBus.emit('HOME_START_REQUESTED'));
     this.bindButton('BtnMode', () => eventBus.emit('HOME_MODE_REQUESTED'));
-    this.bindButton('BtnSkin', () => eventBus.emit('HOME_SKIN_REQUESTED'));
-    this.bindButton('BtnMachine', () => eventBus.emit('HOME_MACHINE_REQUESTED'));
-    this.bindButton('BtnSettings', () => eventBus.emit('HOME_SETTINGS_REQUESTED'));
+  }
+
+  /**
+   * 皮肤、机器和设置还没有对应的编辑器保存页面。保持它们可点击会形成假按钮，
+   * 因而在对应正式页面完成以前明确禁用，而不是吞掉用户输入或伪造反馈。
+   */
+  private setUnavailableActionsDisabled(): void {
+    for (const name of ['BtnSkin', 'BtnMachine', 'BtnSettings']) {
+      const node = this.node.getChildByName(name);
+      const button = node?.getComponent(Button);
+      if (button) button.interactable = false;
+
+    }
   }
 
   private bindButton(name: string, handler: () => void): void {

@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="360" viewBox="0 0 360 360">
+ <defs><radialGradient id="g"><stop stop-color="#050318" offset=".22"/><stop stop-color="#22115c" offset=".42"/><stop stop-color="#7447ee" offset=".68"/><stop stop-color="#b694ff" offset=".83"/><stop stop-color="#4c2eb3" offset="1"/></radialGradient><filter id="s" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="15" stdDeviation="10" flood-color="#201154" flood-opacity=".5"/></filter></defs>
+ <g filter="url(#s)"><ellipse cx="180" cy="214" rx="152" ry="126" fill="#3e25a7"/><ellipse cx="180" cy="205" rx="144" ry="119" fill="url(#g)"/><ellipse cx="180" cy="201" rx="120" ry="96" fill="none" stroke="#e6dcff" stroke-width="9" opacity=".8"/><ellipse cx="180" cy="205" rx="67" ry="55" fill="#02010b"/><ellipse cx="158" cy="174" rx="19" ry="13" fill="#fff" opacity=".68"/></g>
+ <path d="M119 104l24-50 36 27 36-27 24 50-22 26h-76z" fill="#f6cb44" stroke="#a96b11" stroke-width="8" stroke-linejoin="round"/><circle cx="143" cy="90" r="8" fill="#ff7e48"/><circle cx="180" cy="98" r="8" fill="#fff2a1"/><circle cx="216" cy="90" r="8" fill="#61d1ff"/>
+</svg>

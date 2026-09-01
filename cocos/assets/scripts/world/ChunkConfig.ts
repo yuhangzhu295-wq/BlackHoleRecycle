@@ -56,7 +56,8 @@ export class ChunkItemGenerator {
       items.push({
         template,
         localX,
-        localZ
+        localZ,
+        customId
       });
     }
 

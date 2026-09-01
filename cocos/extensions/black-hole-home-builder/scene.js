@@ -3,6 +3,28 @@
 const { join } = require('path');
 module.paths.push(join(Editor.App.path, 'node_modules'));
 
+const HOME_IMAGE_URLS = [
+  'db://assets/textures/home/home_city_park.png',
+  'db://assets/textures/home/home_hud_panel.png',
+  'db://assets/textures/home/home_coin.png',
+  'db://assets/textures/home/home_logo.png',
+  'db://assets/textures/home/home_blackhole_hero.png',
+  'db://assets/textures/home/home_start_button.png',
+  'db://assets/textures/home/home_action_mode.png',
+  'db://assets/textures/home/home_action_skin.png',
+  'db://assets/textures/home/home_action_machine.png',
+  'db://assets/textures/home/home_settings.png',
+];
+
+const MODE_IMAGE_URLS = [
+  'db://assets/textures/home/mode_background.png',
+  'db://assets/textures/home/mode_back.png',
+  'db://assets/textures/home/mode_header.png',
+  'db://assets/textures/home/mode_card_shelf.png',
+  'db://assets/textures/home/mode_arena_card.png',
+  'db://assets/textures/home/mode_endless_card.png',
+];
+
 function getComponentClass(name) {
   const { js } = require('cc');
   const type = js.getClassByName(name);
@@ -11,13 +33,81 @@ function getComponentClass(name) {
 }
 
 function createNode(name, parent, width, height) {
-  const { Node, UITransform, Graphics, Layers } = require('cc');
+  const { Node, UITransform, Layers } = require('cc');
   const node = new Node(name);
   node.layer = Layers.Enum.UI_2D;
   parent.addChild(node);
   const transform = node.addComponent(UITransform);
   transform.setContentSize(width, height);
-  node.addComponent(Graphics);
+  return node;
+}
+
+async function getSpriteFrameUuid(url) {
+  const info = await Editor.Message.request('asset-db', 'query-asset-info', url);
+  if (!info || !info.uuid) throw new Error(`Asset is not imported: ${url}`);
+
+  const rawMeta = await Editor.Message.request('asset-db', 'query-asset-meta', info.uuid);
+  const meta = typeof rawMeta === 'string' ? JSON.parse(rawMeta) : rawMeta;
+  const spriteFrameMeta = Object.values(meta && meta.subMetas ? meta.subMetas : {})
+    .find((subMeta) => subMeta && subMeta.importer === 'sprite-frame');
+  if (!spriteFrameMeta || !spriteFrameMeta.uuid) {
+    throw new Error(`PNG does not contain a Cocos SpriteFrame subasset: ${url}`);
+  }
+  return spriteFrameMeta.uuid;
+}
+
+async function getImportedSpriteFrame(url) {
+  const { assetManager, SpriteFrame } = require('cc');
+  const spriteFrameUuid = await getSpriteFrameUuid(url);
+  const cachedSpriteFrame = assetManager.assets.get(spriteFrameUuid);
+  if (cachedSpriteFrame instanceof SpriteFrame) return cachedSpriteFrame;
+
+  const spriteFrame = await new Promise((resolve, reject) => {
+    assetManager.loadAny(spriteFrameUuid, (error, loadedAsset) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+      resolve(loadedAsset);
+    });
+  });
+  if (!(spriteFrame instanceof SpriteFrame)) {
+    throw new Error(`SpriteFrame is not loaded by the Cocos asset database: ${url}`);
+  }
+  return spriteFrame;
+}
+
+async function prepareHomeSprites() {
+  return prepareSprites(HOME_IMAGE_URLS);
+}
+
+async function prepareModeSprites() {
+  return prepareSprites(MODE_IMAGE_URLS);
+}
+
+async function prepareSprites(assetUrls) {
+  const changed = [];
+  for (const url of assetUrls) {
+    const info = await Editor.Message.request('asset-db', 'query-asset-info', url);
+    if (!info || !info.uuid) throw new Error(`Asset is not imported: ${url}`);
+    const rawMeta = await Editor.Message.request('asset-db', 'query-asset-meta', info.uuid);
+    const meta = typeof rawMeta === 'string' ? JSON.parse(rawMeta) : rawMeta;
+    if (!meta || !meta.userData) throw new Error(`Asset meta is unavailable: ${url}`);
+    if (meta.userData.type !== 'sprite-frame') {
+      meta.userData.type = 'sprite-frame';
+      await Editor.Message.request('asset-db', 'save-asset-meta', info.uuid, JSON.stringify(meta));
+      changed.push(url);
+    }
+  }
+  return { changed, total: assetUrls.length };
+}
+
+async function createSprite(name, parent, width, height, assetUrl) {
+  const { Sprite } = require('cc');
+  const node = createNode(name, parent, width, height);
+  const sprite = node.addComponent(Sprite);
+  sprite.sizeMode = Sprite.SizeMode.CUSTOM;
+  sprite.spriteFrame = await getImportedSpriteFrame(assetUrl);
   return node;
 }
 
@@ -37,19 +127,126 @@ function createLabel(name, parent, text, fontSize, color) {
   return node;
 }
 
-function createButton(name, parent, caption, fontSize) {
+async function createButton(name, parent, caption, fontSize, assetUrl) {
   const { Button, UITransform } = require('cc');
-  const node = createNode(name, parent, 180, 120);
+  const node = await createSprite(name, parent, 180, 120, assetUrl);
   node.addComponent(Button);
   const labelNode = createLabel(`${name}Label`, node, caption, fontSize);
   labelNode.getComponent(UITransform).setContentSize(520, fontSize + 22);
+  labelNode.setPosition(0, -40, 0);
   return node;
+}
+
+async function createImageButton(name, parent, width, height, assetUrl, interactable = true) {
+  const { Button } = require('cc');
+  const node = await createSprite(name, parent, width, height, assetUrl);
+  const button = node.addComponent(Button);
+  button.interactable = interactable;
+  return node;
+}
+
+function place(node, x, y, width, height) {
+  const { UITransform } = require('cc');
+  const transform = node.getComponent(UITransform);
+  if (transform && width && height) transform.setContentSize(width, height);
+  node.setPosition(x, y, 0);
 }
 
 exports.load = function load() {};
 exports.unload = function unload() {};
 
 exports.methods = {
+  async prepareHomeSprites() {
+    return prepareHomeSprites();
+  },
+  async verifyHome() {
+    const { director, Sprite, Button } = require('cc');
+    const root = director.getScene()?.getChildByName('Canvas')?.getChildByName('HomePage');
+    if (!root) {
+      return { ok: false, error: 'Canvas/HomePage is missing from the open scene.' };
+    }
+
+    const requiredSprites = [
+      'Background', 'CoinPanel', 'MachineStatus', 'CoinIcon', 'Logo',
+      'HeroBlackHole', 'BtnStart', 'BtnMode', 'BtnSkin', 'BtnMachine', 'BtnSettings',
+    ];
+    const missingSpriteFrames = requiredSprites.filter((name) => {
+      const sprite = root.getChildByName(name)?.getComponent(Sprite);
+      return !sprite?.spriteFrame;
+    });
+    const buttonNames = ['BtnStart', 'BtnMode', 'BtnSkin', 'BtnMachine', 'BtnSettings'];
+    const missingButtons = buttonNames.filter((name) => !root.getChildByName(name)?.getComponent(Button));
+    return {
+      ok: missingSpriteFrames.length === 0 && missingButtons.length === 0,
+      rootUuid: root.uuid,
+      spriteCount: requiredSprites.length - missingSpriteFrames.length,
+      buttonCount: buttonNames.length - missingButtons.length,
+      missingSpriteFrames,
+      missingButtons,
+    };
+  },
+  async verifyModeSelect() {
+    const { director, Sprite, Button } = require('cc');
+    const root = director.getScene()?.getChildByName('Canvas')?.getChildByName('ModeSelectPage');
+    if (!root) return { ok: false, error: 'Canvas/ModeSelectPage is missing from the open scene.' };
+
+    const requiredSprites = ['Background', 'BtnBack', 'Header', 'ShelfArena', 'BtnArena', 'ShelfEndless', 'BtnEndless'];
+    const buttonNames = ['BtnBack', 'BtnArena', 'BtnEndless'];
+    const missingSpriteFrames = requiredSprites.filter((name) => !root.getChildByName(name)?.getComponent(Sprite)?.spriteFrame);
+    const missingButtons = buttonNames.filter((name) => !root.getChildByName(name)?.getComponent(Button));
+    const arena = root.getChildByName('BtnArena')?.getComponent(Button);
+    return {
+      ok: missingSpriteFrames.length === 0 && missingButtons.length === 0 && arena?.interactable === false,
+      rootUuid: root.uuid,
+      spriteCount: requiredSprites.length - missingSpriteFrames.length,
+      buttonCount: buttonNames.length - missingButtons.length,
+      arenaDisabled: arena?.interactable === false,
+      missingSpriteFrames,
+      missingButtons,
+    };
+  },
+  async buildModeSelect() {
+    const { director, UITransform, Color } = require('cc');
+    const scene = director.getScene();
+    const canvas = scene?.getChildByName('Canvas');
+    if (!canvas) throw new Error('Game.scene does not contain Canvas');
+
+    const oldMode = canvas.getChildByName('ModeSelectPage');
+    if (oldMode) oldMode.destroy();
+
+    const root = createNode('ModeSelectPage', canvas, 720, 1280);
+    const page = root.addComponent(getComponentClass('UIPage'));
+    page.pageId = 1;
+
+    await createSprite('Background', root, 720, 1280, 'db://assets/textures/home/mode_background.png');
+    const back = await createImageButton('BtnBack', root, 104, 104, 'db://assets/textures/home/mode_back.png');
+    place(back, -286, 540, 104, 104);
+    const header = await createSprite('Header', root, 500, 116, 'db://assets/textures/home/mode_header.png');
+    place(header, 0, 530, 500, 116);
+
+    const arenaShelf = await createSprite('ShelfArena', root, 600, 52, 'db://assets/textures/home/mode_card_shelf.png');
+    place(arenaShelf, 0, 78, 600, 52);
+    const arena = await createImageButton('BtnArena', root, 610, 278, 'db://assets/textures/home/mode_arena_card.png', false);
+    place(arena, 0, 185, 610, 278);
+
+    const endlessShelf = await createSprite('ShelfEndless', root, 600, 52, 'db://assets/textures/home/mode_card_shelf.png');
+    place(endlessShelf, 0, -292, 600, 52);
+    const endless = await createImageButton('BtnEndless', root, 610, 278, 'db://assets/textures/home/mode_endless_card.png');
+    place(endless, 0, -185, 610, 278);
+    const bestCaption = createLabel('EndlessBestCaption', root, '最高分', 19, new Color(255, 255, 255, 255));
+    bestCaption.getComponent(UITransform).setContentSize(100, 34);
+    place(bestCaption, -164, -247, 100, 34);
+    const bestValue = createLabel('EndlessBestValue', root, '0', 20, new Color(229, 255, 91, 255));
+    bestValue.getComponent(UITransform).setContentSize(110, 34);
+    place(bestValue, -79, -247, 110, 34);
+
+    root.addComponent(getComponentClass('ModeSelectPageController'));
+    root.active = false;
+    await Editor.Message.request('scene', 'save-scene');
+    await Editor.Message.request('scene', 'create-prefab', root.uuid, 'db://assets/prefabs/ui/ModeSelectPage.prefab');
+    await Editor.Message.request('scene', 'save-scene');
+    return { prefab: 'db://assets/prefabs/ui/ModeSelectPage.prefab', rootUuid: root.uuid };
+  },
   async buildHome() {
     const { director, UITransform, Label, Color } = require('cc');
     const scene = director.getScene();
@@ -59,31 +256,32 @@ exports.methods = {
     const oldHome = canvas.getChildByName('HomePage');
     if (oldHome) oldHome.destroy();
 
-    const root = createNode('HomePage', canvas, 960, 1280);
+    const root = createNode('HomePage', canvas, 720, 1280);
     root.addComponent(getComponentClass('UIPage'));
     root.addComponent(getComponentClass('HomePageController'));
     root.addComponent(getComponentClass('HomePageVisual'));
 
-    createNode('Background', root, 960, 1280);
-    createNode('TopBar', root, 920, 104);
-    const coinPanel = createNode('CoinPanel', root, 236, 66);
-    const machinePanel = createNode('MachineStatus', root, 236, 66);
+    await createSprite('Background', root, 720, 1280, 'db://assets/textures/home/home_city_park.png');
+    const coinPanel = await createSprite('CoinPanel', root, 236, 66, 'db://assets/textures/home/home_hud_panel.png');
+    const machinePanel = await createSprite('MachineStatus', root, 236, 66, 'db://assets/textures/home/home_hud_panel.png');
+    await createSprite('CoinIcon', root, 54, 54, 'db://assets/textures/home/home_coin.png');
     createLabel('CoinValue', root, '0', 34, new Color(255, 222, 83, 255));
     createLabel('MachineName', root, '黑洞回收机', 22, new Color(255, 255, 255, 255));
     createLabel('MachineValue', root, 'LV.1', 30, new Color(255, 222, 83, 255));
-    createLabel('Logo', root, '黑洞吞噬大战', 62, new Color(255, 255, 255, 255));
-    createNode('HeroBlackHole', root, 400, 400);
-    createButton('BtnStart', root, '开始吞噬', 46);
-    createButton('BtnMode', root, '模式选择', 25);
-    createButton('BtnSkin', root, '皮肤', 30);
-    createButton('BtnMachine', root, '机器', 30);
-    createButton('BtnSettings', root, '⚙', 38);
+    await createSprite('Logo', root, 600, 180, 'db://assets/textures/home/home_logo.png');
+    await createSprite('HeroBlackHole', root, 360, 360, 'db://assets/textures/home/home_blackhole_hero.png');
+    await createButton('BtnStart', root, '开始吞噬', 46, 'db://assets/textures/home/home_start_button.png');
+    await createButton('BtnMode', root, '模式', 25, 'db://assets/textures/home/home_action_mode.png');
+    await createButton('BtnSkin', root, '皮肤', 25, 'db://assets/textures/home/home_action_skin.png');
+    await createButton('BtnMachine', root, '机器', 25, 'db://assets/textures/home/home_action_machine.png');
+    await createButton('BtnSettings', root, '设置', 20, 'db://assets/textures/home/home_settings.png');
 
     const title = root.getChildByName('Logo');
-    title.getComponent(UITransform).setContentSize(760, 90);
+    title.getComponent(UITransform).setContentSize(600, 180);
     coinPanel.getComponent(UITransform).setContentSize(236, 66);
     machinePanel.getComponent(UITransform).setContentSize(236, 66);
 
+    await Editor.Message.request('scene', 'save-scene');
     await Editor.Message.request('scene', 'create-prefab', root.uuid, 'db://assets/prefabs/ui/HomePage.prefab');
     await Editor.Message.request('scene', 'save-scene');
     return { prefab: 'db://assets/prefabs/ui/HomePage.prefab', rootUuid: root.uuid };
