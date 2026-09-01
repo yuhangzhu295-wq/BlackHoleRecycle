@@ -16,6 +16,11 @@
       },
       {
         "path": "i18n:menu.extension",
+        "label": "创建 V2 HomePage（编辑器保存）",
+        "message": "build-home"
+      },
+      {
+        "path": "i18n:menu.extension",
         "label": "验证 V2 HomePage",
         "message": "verify-home"
       },
@@ -47,6 +52,7 @@
     ],
     "messages": {
       "prepare-home-sprites": { "methods": ["prepareHomeSprites"] },
+      "build-home": { "methods": ["buildHome"] },
       "verify-home": { "methods": ["verifyHome"] },
       "prepare-mode-sprites": { "methods": ["prepareModeSprites"] },
       "build-mode-select": { "methods": ["buildModeSelect"] },

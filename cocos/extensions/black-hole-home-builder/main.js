@@ -9,6 +9,13 @@ module.exports = {
         args: [],
       });
     },
+    async buildHome() {
+      return Editor.Message.request('scene', 'execute-scene-script', {
+        name: 'black-hole-home-builder',
+        method: 'buildHome',
+        args: [],
+      });
+    },
     async verifyHome() {
       return Editor.Message.request('scene', 'execute-scene-script', {
         name: 'black-hole-home-builder',
