@@ -37,5 +37,19 @@ module.exports = {
         args: [],
       });
     },
+    async buildRuntimePages() {
+      return Editor.Message.request('scene', 'execute-scene-script', {
+        name: 'black-hole-home-builder',
+        method: 'buildRuntimePages',
+        args: [],
+      });
+    },
+    async verifyRuntimePages() {
+      return Editor.Message.request('scene', 'execute-scene-script', {
+        name: 'black-hole-home-builder',
+        method: 'verifyRuntimePages',
+        args: [],
+      });
+    },
   },
 };
