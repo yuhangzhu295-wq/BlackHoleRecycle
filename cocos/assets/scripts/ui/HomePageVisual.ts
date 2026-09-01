@@ -29,7 +29,7 @@ export class HomePageVisual extends Component {
     this.resize('BtnMode', 168, 142, -190, -510);
     this.resize('BtnSkin', 168, 142, 0, -510);
     this.resize('BtnMachine', 168, 142, 190, -510);
-    this.resize('BtnSettings', 80, 80, 288, -578);
+    this.resize('BtnSettings', 80, 80, 288, -540);
 
     this.centerButtonLabel('BtnStart');
     this.centerButtonLabel('BtnMode');
@@ -38,7 +38,7 @@ export class HomePageVisual extends Component {
   }
 
   private resize(name: string, width: number, height: number, x: number, y: number): void {
-    const node = this.node.getChildByName(name);
+    const node = this.findNode(name);
     const transform = node?.getComponent(UITransform);
     if (!node || !transform) return;
     transform.setContentSize(width, height);
@@ -46,9 +46,13 @@ export class HomePageVisual extends Component {
   }
 
   private centerButtonLabel(buttonName: string): void {
-    const button = this.node.getChildByName(buttonName);
+    const button = this.findNode(buttonName);
     const label = button?.getChildByName(`${buttonName}Label`);
     if (label) label.setPosition(0, 0, 0);
+  }
+
+  private findNode(name: string): Node | null {
+    return this.node.getChildByName(name) ?? this.node.getChildByName('SafeAreaRoot')?.getChildByName(name) ?? null;
   }
 
 }

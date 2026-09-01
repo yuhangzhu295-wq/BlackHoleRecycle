@@ -58,7 +58,7 @@ export class HomePageController extends Component {
    */
   private setUnavailableActionsDisabled(): void {
     for (const name of ['BtnSkin', 'BtnMachine', 'BtnSettings']) {
-      const node = this.node.getChildByName(name);
+      const node = this.findNode(name);
       const button = node?.getComponent(Button);
       if (button) button.interactable = false;
 
@@ -66,7 +66,7 @@ export class HomePageController extends Component {
   }
 
   private bindButton(name: string, handler: () => void): void {
-    const node = this.node.getChildByName(name);
+    const node = this.findNode(name);
     const button = node?.getComponent(Button);
     if (!button) {
       console.error(`[HomePageController] Missing serialized Button: ${name}`);
@@ -77,7 +77,11 @@ export class HomePageController extends Component {
   }
 
   private findLabel(name: string): Label | null {
-    return this.node.getChildByName(name)?.getComponent(Label) ?? null;
+    return this.findNode(name)?.getComponent(Label) ?? null;
+  }
+
+  private findNode(name: string): Node | null {
+    return this.node.getChildByName(name) ?? this.node.getChildByName('SafeAreaRoot')?.getChildByName(name) ?? null;
   }
 
   private formatNumber(value: number): string {

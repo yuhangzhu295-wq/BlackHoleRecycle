@@ -329,6 +329,7 @@ export class GameManager extends Component {
   private getV2HomeLayoutSnapshot(): Record<string, unknown> {
     const canvas = director.getScene()?.getChildByName('Canvas') || null;
     const home = canvas?.getChildByName('HomePage') || null;
+    const homeNode = (name: string): Node | null => home?.getChildByName(name) || home?.getChildByName('SafeAreaRoot')?.getChildByName(name) || null;
     const canvasComponent = canvas?.getComponent(Canvas) || null;
     const uiCamera = canvas?.getChildByName('UICamera')?.getComponent(Camera) || null;
     const describe = (node: Node | null): Record<string, unknown> | null => {
@@ -364,12 +365,12 @@ export class GameManager extends Component {
         z: uiCamera.node.position.z
       } : null,
       home: describe(home),
-      logo: describe(home?.getChildByName('Logo') || null),
-      hero: describe(home?.getChildByName('HeroBlackHole') || null),
-      start: describe(home?.getChildByName('BtnStart') || null),
-      mode: describe(home?.getChildByName('BtnMode') || null),
-      skin: describe(home?.getChildByName('BtnSkin') || null),
-      machine: describe(home?.getChildByName('BtnMachine') || null)
+      logo: describe(homeNode('Logo')),
+      hero: describe(homeNode('HeroBlackHole')),
+      start: describe(homeNode('BtnStart')),
+      mode: describe(homeNode('BtnMode')),
+      skin: describe(homeNode('BtnSkin')),
+      machine: describe(homeNode('BtnMachine'))
     };
   }
 

@@ -152,6 +152,10 @@ function place(node, x, y, width, height) {
   node.setPosition(x, y, 0);
 }
 
+function getHomeNode(root, name) {
+  return root?.getChildByName(name) || root?.getChildByName('SafeAreaRoot')?.getChildByName(name) || null;
+}
+
 exports.load = function load() {};
 exports.unload = function unload() {};
 
@@ -171,13 +175,13 @@ exports.methods = {
       'HeroBlackHole', 'BtnStart', 'BtnMode', 'BtnSkin', 'BtnMachine', 'BtnSettings',
     ];
     const missingSpriteFrames = requiredSprites.filter((name) => {
-      const sprite = root.getChildByName(name)?.getComponent(Sprite);
+      const sprite = getHomeNode(root, name)?.getComponent(Sprite);
       return !sprite?.spriteFrame;
     });
     const buttonNames = ['BtnStart', 'BtnMode', 'BtnSkin', 'BtnMachine', 'BtnSettings'];
-    const missingButtons = buttonNames.filter((name) => !root.getChildByName(name)?.getComponent(Button));
+    const missingButtons = buttonNames.filter((name) => !getHomeNode(root, name)?.getComponent(Button));
     return {
-      ok: missingSpriteFrames.length === 0 && missingButtons.length === 0,
+      ok: !!root.getChildByName('SafeAreaRoot') && missingSpriteFrames.length === 0 && missingButtons.length === 0,
       rootUuid: root.uuid,
       spriteCount: requiredSprites.length - missingSpriteFrames.length,
       buttonCount: buttonNames.length - missingButtons.length,
@@ -248,7 +252,7 @@ exports.methods = {
     return { prefab: 'db://assets/prefabs/ui/ModeSelectPage.prefab', rootUuid: root.uuid };
   },
   async buildHome() {
-    const { director, UITransform, Label, Color } = require('cc');
+    const { director, UITransform, Widget, Color } = require('cc');
     const scene = director.getScene();
     const canvas = scene && scene.getChildByName('Canvas');
     if (!canvas) throw new Error('Game.scene does not contain Canvas');
@@ -262,21 +266,26 @@ exports.methods = {
     root.addComponent(getComponentClass('HomePageVisual'));
 
     await createSprite('Background', root, 720, 1280, 'db://assets/textures/home/home_city_park.png');
-    const coinPanel = await createSprite('CoinPanel', root, 236, 66, 'db://assets/textures/home/home_hud_panel.png');
-    const machinePanel = await createSprite('MachineStatus', root, 236, 66, 'db://assets/textures/home/home_hud_panel.png');
-    await createSprite('CoinIcon', root, 54, 54, 'db://assets/textures/home/home_coin.png');
-    createLabel('CoinValue', root, '0', 34, new Color(255, 222, 83, 255));
-    createLabel('MachineName', root, '黑洞回收机', 22, new Color(255, 255, 255, 255));
-    createLabel('MachineValue', root, 'LV.1', 30, new Color(255, 222, 83, 255));
-    await createSprite('Logo', root, 600, 180, 'db://assets/textures/home/home_logo.png');
-    await createSprite('HeroBlackHole', root, 360, 360, 'db://assets/textures/home/home_blackhole_hero.png');
-    await createButton('BtnStart', root, '开始吞噬', 46, 'db://assets/textures/home/home_start_button.png');
-    await createButton('BtnMode', root, '模式', 25, 'db://assets/textures/home/home_action_mode.png');
-    await createButton('BtnSkin', root, '皮肤', 25, 'db://assets/textures/home/home_action_skin.png');
-    await createButton('BtnMachine', root, '机器', 25, 'db://assets/textures/home/home_action_machine.png');
-    await createButton('BtnSettings', root, '设置', 20, 'db://assets/textures/home/home_settings.png');
+    const safeArea = createNode('SafeAreaRoot', root, 720, 1280);
+    const safeAreaWidget = safeArea.addComponent(Widget);
+    safeAreaWidget.isAlignTop = safeAreaWidget.isAlignBottom = true;
+    safeAreaWidget.isAlignLeft = safeAreaWidget.isAlignRight = true;
+    safeAreaWidget.top = safeAreaWidget.bottom = safeAreaWidget.left = safeAreaWidget.right = 0;
+    const coinPanel = await createSprite('CoinPanel', safeArea, 236, 66, 'db://assets/textures/home/home_hud_panel.png');
+    const machinePanel = await createSprite('MachineStatus', safeArea, 236, 66, 'db://assets/textures/home/home_hud_panel.png');
+    await createSprite('CoinIcon', safeArea, 54, 54, 'db://assets/textures/home/home_coin.png');
+    createLabel('CoinValue', safeArea, '0', 34, new Color(255, 222, 83, 255));
+    createLabel('MachineName', safeArea, '黑洞回收机', 22, new Color(255, 255, 255, 255));
+    createLabel('MachineValue', safeArea, 'LV.1', 30, new Color(255, 222, 83, 255));
+    await createSprite('Logo', safeArea, 600, 180, 'db://assets/textures/home/home_logo.png');
+    await createSprite('HeroBlackHole', safeArea, 360, 360, 'db://assets/textures/home/home_blackhole_hero.png');
+    await createButton('BtnStart', safeArea, '开始吞噬', 46, 'db://assets/textures/home/home_start_button.png');
+    await createButton('BtnMode', safeArea, '模式', 25, 'db://assets/textures/home/home_action_mode.png');
+    await createButton('BtnSkin', safeArea, '皮肤', 25, 'db://assets/textures/home/home_action_skin.png');
+    await createButton('BtnMachine', safeArea, '机器', 25, 'db://assets/textures/home/home_action_machine.png');
+    await createButton('BtnSettings', safeArea, '设置', 20, 'db://assets/textures/home/home_settings.png');
 
-    const title = root.getChildByName('Logo');
+    const title = safeArea.getChildByName('Logo');
     title.getComponent(UITransform).setContentSize(600, 180);
     coinPanel.getComponent(UITransform).setContentSize(236, 66);
     machinePanel.getComponent(UITransform).setContentSize(236, 66);
