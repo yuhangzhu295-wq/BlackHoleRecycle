@@ -25,7 +25,13 @@ export class HUDView extends Component {
 
   onLoad(): void {
     this.ensureNativeHUD();
-    this.showScreen('Home');
+    // HomePage.prefab is the V2 home surface. The legacy generated Home screen
+    // must stay hidden while it is present, otherwise both UI systems render.
+    if (this.getV2HomePage()) {
+      this.hideAllScreens();
+    } else {
+      this.showScreen('Home');
+    }
 
     input.on(Input.EventType.TOUCH_END, this.handleGlobalTouch, this);
     input.on(Input.EventType.MOUSE_UP, this.handleGlobalMouse, this);
@@ -169,6 +175,16 @@ export class HUDView extends Component {
     this.screens.forEach((node, key) => {
       node.active = (key === name);
     });
+  }
+
+  public hideAllScreens(): void {
+    this.screens.forEach((node) => {
+      node.active = false;
+    });
+  }
+
+  private getV2HomePage(): Node | null {
+    return director.getScene()?.getChildByName('Canvas')?.getChildByName('HomePage') || null;
   }
 
   private createScreenNode(name: string, parent: Node): Node {

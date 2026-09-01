@@ -167,11 +167,21 @@ export class GameManager extends Component {
     eventBus.on('UI_TRIGGER_PAUSE', () => {
       this.togglePause();
     });
+
+    eventBus.on('HOME_START_REQUESTED', () => {
+      this.startEndlessGame();
+    });
+
+    eventBus.on('HOME_MODE_REQUESTED', () => {
+      this.setV2HomeVisible(false);
+      this.hud?.showScreen('ModeSelect');
+    });
   }
 
   private sessionStartCoins: number = 0;
 
   public startEndlessGame(): void {
+    this.setV2HomeVisible(false);
     this.gameState = 'PLAYING';
     this.isPaused = false;
     if (this.playerController) this.playerController.isPaused = false;
@@ -221,7 +231,8 @@ export class GameManager extends Component {
     if (this.playerController) this.playerController.isPaused = false;
     if (this.compressionSystem) this.compressionSystem.isPaused = false;
     if (this.machine) this.machine.isPaused = false;
-    if (this.hud) this.hud.showScreen('Home');
+    this.hud?.hideAllScreens();
+    this.setV2HomeVisible(true);
   }
 
   public triggerSettlement(): void {
@@ -273,6 +284,11 @@ export class GameManager extends Component {
         regionName
       );
     }
+  }
+
+  private setV2HomeVisible(visible: boolean): void {
+    const home = director.getScene()?.getChildByName('Canvas')?.getChildByName('HomePage');
+    if (home) home.active = visible;
   }
 
   private setupQABridge(): void {

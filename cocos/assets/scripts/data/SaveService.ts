@@ -55,8 +55,8 @@ export class SaveService {
   public getDefaultData(): ISaveData {
     return {
       version: 1,
-      coins: 2360,
-      highScore: 128580,
+      coins: 0,
+      highScore: 0,
       highestRegion: 0,
       machineLevel: 1,
       currentSkinId: 'skin_classic',
@@ -68,10 +68,10 @@ export class SaveService {
         startingMass: 0
       },
       tasks: {
-        absorbedCount: 120,
-        compressTimes: 3,
-        maxSingleMass: 3200,
-        magnetUses: 1,
+        absorbedCount: 0,
+        compressTimes: 0,
+        maxSingleMass: 0,
+        magnetUses: 0,
         reachedRegionWarehouse: 0,
         claimedTasks: []
       },
