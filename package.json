@@ -13,7 +13,8 @@
     "build:all": "node scripts/build.js all",
     "preview": "vite preview",
     "typecheck:cocos": "tsc --project cocos/tsconfig.json --noEmit",
-    "test:cocos": "node scripts/test_cocos_vertical_slice.js"
+    "test:cocos": "node scripts/test_cocos_vertical_slice.js",
+    "acceptance:v2": "node scripts/test_cocos_portrait_acceptance.mjs"
   },
   "keywords": [
     "wechat-minigame",

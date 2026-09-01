@@ -24,7 +24,7 @@
     "designResolution": {
       "width": 720,
       "height": 1280,
-      "fitWidth": true,
+      "fitWidth": false,
       "fitHeight": false
     }
   },

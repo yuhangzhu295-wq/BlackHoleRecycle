@@ -42,23 +42,48 @@ export class GameManager extends Component {
   public gameState: GameSessionState = 'HOME';
   public regionsVisitedCount: number = 1;
 
-  // 9:16 竖屏等轴相机参数 (高度 16m, 偏移 11m, 俯角 -45°)
-  private cameraOffset: Vec3 = new Vec3(0, 16.0, 11.0);
+  // 9:16 竖屏等轴相机参数。目标在画面下方，为前方街区保留探索空间。
+  private cameraOffset: Vec3 = new Vec3(0, 17.5, 15.0);
   private cameraTarget: Vec3 = new Vec3();
+  private readonly portraitWidth = 720;
+  private readonly portraitHeight = 1280;
 
   onLoad(): void {
-    // The product is authored for a 720 × 1280 portrait canvas.  Cocos' browser
-    // preview toolbar can temporarily select a desktop-sized design resolution;
-    // reassert the project contract at runtime so it cannot crop the saved
-    // HomePage/ModeSelectPage prefab into a landscape gameplay surface.
-    view.setDesignResolutionSize(720, 1280, ResolutionPolicy.FIXED_WIDTH);
     platformAdapter.init();
     this.currentCoins = saveService.data.coins;
     this.autoBindDependencies();
+    this.applyPortraitRuntimeContract();
     this.initLighting();
     this.bindEvents();
     this.initWorld();
     this.setupQABridge();
+  }
+
+  onDestroy(): void {
+    view.off('canvas-resize', this.applyPortraitRuntimeContract, this);
+  }
+
+  /**
+   * Keep the WebGL camera and Canvas in the same 9:16 letterboxed game view.
+   * SHOW_ALL is deliberate: FIXED_WIDTH expands the visible 3D surface to a
+   * landscape desktop frame, which leaves a portrait UI on top of a wide world.
+   */
+  private applyPortraitRuntimeContract(): void {
+    view.setDesignResolutionSize(
+      this.portraitWidth,
+      this.portraitHeight,
+      ResolutionPolicy.SHOW_ALL
+    );
+    view.off('canvas-resize', this.applyPortraitRuntimeContract, this);
+    view.on('canvas-resize', this.applyPortraitRuntimeContract, this);
+
+    if (this.mainCamera) {
+      // CameraFOVAxis.VERTICAL is value 0 in the Cocos Creator 3.8.3 engine.
+      // The generated project declarations do not re-export that enum, while
+      // Camera.fovAxis remains the native engine property being configured.
+      this.mainCamera.fovAxis = 0;
+      this.mainCamera.fov = 48;
+    }
   }
 
   private autoBindDependencies(): void {
@@ -349,10 +374,25 @@ export class GameManager extends Component {
     const design = view.getDesignResolutionSize();
     const visible = view.getVisibleSize();
     const frame = view.getFrameSize();
+    const viewport = view.getViewportRect();
+    const targetRatio = this.portraitWidth / this.portraitHeight;
     return {
       design: { width: design.width, height: design.height },
       visible: { width: visible.width, height: visible.height },
       frame: { width: frame.width, height: frame.height },
+      portrait: {
+        targetRatio,
+        frameRatio: frame.height > 0 ? frame.width / frame.height : null,
+        viewport: { x: viewport.x, y: viewport.y, width: viewport.width, height: viewport.height },
+        designIsPortrait: design.width < design.height,
+        frameIsPortrait: frame.width < frame.height,
+        viewportIsPortrait: viewport.width < viewport.height,
+        viewportWithinFrame:
+          viewport.x >= 0 && viewport.y >= 0 &&
+          viewport.x + viewport.width <= frame.width &&
+          viewport.y + viewport.height <= frame.height,
+        viewportRatio: viewport.height > 0 ? viewport.width / viewport.height : null,
+      },
       canvas: {
         ...describe(canvas),
         alignCanvasWithScreen: canvasComponent?.alignCanvasWithScreen ?? null
@@ -398,7 +438,7 @@ export class GameManager extends Component {
           uiScreen: this.hud?.currentScreenName || 'Home',
           gameState: this.gameState,
           ui: this.getV2HomeLayoutSnapshot(),
-          player: {
+        player: {
             position: {
               x: mPos ? mPos.x : 0,
               y: mPos ? mPos.y : 0,
@@ -408,14 +448,35 @@ export class GameManager extends Component {
             y: mPos ? mPos.y : 0,
             z: mPos ? mPos.z : 0,
             isMoving: this.playerController?.isDragging || false,
-            isDragging: this.playerController?.isDragging || false
+          isDragging: this.playerController?.isDragging || false
+        },
+        camera: {
+          fov: this.mainCamera?.fov ?? null,
+          fovAxis: this.mainCamera?.fovAxis ?? null,
+          position: {
+            x: this.mainCamera?.node.position.x ?? 0,
+            y: this.mainCamera?.node.position.y ?? 0,
+            z: this.mainCamera?.node.position.z ?? 0,
           },
-          machine: {
+          forward: {
+            x: this.mainCamera?.node.forward.x ?? 0,
+            z: this.mainCamera?.node.forward.z ?? 0,
+          },
+          right: {
+            x: this.mainCamera?.node.right.x ?? 0,
+            z: this.mainCamera?.node.right.z ?? 0,
+          },
+        },
+        machine: {
             level: this.machine?.currentLevel || 1,
-            mass: this.machine?.currentMass || 0,
-            requiredMass: (MACHINE_EVOLUTION_CONFIG[Math.min(4, (this.machine?.currentLevel || 1))] || MACHINE_EVOLUTION_CONFIG[0]).massThreshold,
-            suctionRadius: this.machine?.getSuctionRadius() || 2.4,
-            maxTier: this.machine?.getMaxTier() || 1
+          mass: this.machine?.currentMass || 0,
+          requiredMass: (MACHINE_EVOLUTION_CONFIG[Math.min(4, (this.machine?.currentLevel || 1))] || MACHINE_EVOLUTION_CONFIG[0]).massThreshold,
+          suctionRadius: this.machine?.getSuctionRadius() || 2.4,
+          maxTier: this.machine?.getMaxTier() || 1,
+          target: {
+            x: this.machine?.targetPos.x ?? 0,
+            z: this.machine?.targetPos.z ?? 0,
+          },
           },
           world: {
             currentRegion: this.chunkManager?.currentTheme.id || 'bedroom',
@@ -477,7 +538,7 @@ export class GameManager extends Component {
       this.updateHUD();
     }
 
-    // 3. 相机平滑跟随 (始终保持 9:16 -45° 舒适俯角)
+    // 3. 相机平滑跟随 (垂直 FOV 锁定的 9:16 俯视视角)
     Vec3.add(this.cameraTarget, mPos, this.cameraOffset);
     const cPos = this.mainCamera.node.position;
     this.mainCamera.node.setPosition(
@@ -485,6 +546,6 @@ export class GameManager extends Component {
       math.lerp(cPos.y, this.cameraTarget.y, dt * 5.0),
       math.lerp(cPos.z, this.cameraTarget.z, dt * 5.0)
     );
-    this.mainCamera.node.setRotationFromEuler(-45, 0, 0);
+    this.mainCamera.node.setRotationFromEuler(-50, 0, 0);
   }
 }

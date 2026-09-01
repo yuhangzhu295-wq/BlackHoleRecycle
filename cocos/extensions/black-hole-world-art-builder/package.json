@@ -1,0 +1,38 @@
+{
+  "package_version": 2,
+  "name": "black-hole-world-art-builder",
+  "version": "1.0.0",
+  "description": "Build and verify the editor-saved glTF WorldArtLibrary through Cocos Creator APIs.",
+  "author": "BlackHoleRecycle",
+  "editor": ">=3.8.3",
+  "main": "./main.js",
+  "contributions": {
+    "scene": { "script": "./scene.js" },
+    "menu": [
+      {
+        "path": "i18n:menu.extension",
+        "label": "创建 V2 世界 glTF 资产库（编辑器保存）",
+        "message": "build-world-art-library"
+      },
+      {
+        "path": "i18n:menu.extension",
+        "label": "验证 V2 世界 glTF 资产库",
+        "message": "verify-world-art-library"
+      }
+    ],
+    "messages": {
+      "build-world-art-library": { "methods": ["buildWorldArtLibrary"] },
+      "verify-world-art-library": { "methods": ["verifyWorldArtLibrary"] }
+    },
+    "shortcuts": [
+      {
+        "message": "build-world-art-library",
+        "win": "Ctrl+Alt+W"
+      },
+      {
+        "message": "verify-world-art-library",
+        "win": "Ctrl+Alt+Shift+W"
+      }
+    ]
+  }
+}

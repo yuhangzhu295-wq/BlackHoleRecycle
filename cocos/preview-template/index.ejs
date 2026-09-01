@@ -17,6 +17,14 @@
         <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
 
         <link rel="stylesheet" type="text/css" href="./index.css" />
+        <style>
+            html, body { width: 100%; height: 100%; margin: 0; background: #111827; }
+            /* Keep the editor's desktop page around a real 9:16 game surface. */
+            #content.content { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+            #content .contentWrap { width: min(100vw, calc(100vh * 9 / 16)); height: min(100vh, calc(100vw * 16 / 9)); }
+            #GameDiv.wrapper, #Cocos3dGameContainer, #GameCanvas { width: 100% !important; height: 100% !important; }
+            #btn-show-fps.checked { display: none; }
+        </style>
     </head>
     <body style="overflow: hidden;">
         <div class="toolbar disabled">
@@ -33,7 +41,7 @@
                     
                         
                             <li class="selected" data-device="Default">
-                                设计分辨率 (960X640)
+                                设计分辨率 (390X844)
                             </li>
                         
                     

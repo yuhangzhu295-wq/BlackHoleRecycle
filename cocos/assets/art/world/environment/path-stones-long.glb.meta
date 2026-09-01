@@ -1,0 +1,139 @@
+{
+  "ver": "2.3.13",
+  "importer": "gltf",
+  "imported": true,
+  "uuid": "7b1c3a93-fbd6-495f-845d-5ca06b3eef79",
+  "files": [],
+  "subMetas": {
+    "89279": {
+      "importer": "gltf-mesh",
+      "uuid": "7b1c3a93-fbd6-495f-845d-5ca06b3eef79@89279",
+      "displayName": "",
+      "id": "89279",
+      "name": "path-stones-long.mesh",
+      "userData": {
+        "gltfIndex": 0,
+        "triangleCount": 48
+      },
+      "ver": "1.1.1",
+      "imported": true,
+      "files": [
+        ".bin",
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "2b33f": {
+      "importer": "gltf-embeded-image",
+      "uuid": "7b1c3a93-fbd6-495f-845d-5ca06b3eef79@2b33f",
+      "displayName": "",
+      "id": "2b33f",
+      "name": "colormap.image",
+      "userData": {
+        "gltfIndex": 0
+      },
+      "ver": "1.0.3",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "96c50": {
+      "importer": "texture",
+      "uuid": "7b1c3a93-fbd6-495f-845d-5ca06b3eef79@96c50",
+      "displayName": "",
+      "id": "96c50",
+      "name": "colormap.texture",
+      "userData": {
+        "wrapModeS": "repeat",
+        "wrapModeT": "repeat",
+        "minfilter": "nearest",
+        "magfilter": "nearest",
+        "mipfilter": "nearest",
+        "anisotropy": 0,
+        "isUuid": true,
+        "imageUuidOrDatabaseUri": "7b1c3a93-fbd6-495f-845d-5ca06b3eef79@2b33f"
+      },
+      "ver": "1.0.22",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "9991c": {
+      "importer": "gltf-material",
+      "uuid": "7b1c3a93-fbd6-495f-845d-5ca06b3eef79@9991c",
+      "displayName": "",
+      "id": "9991c",
+      "name": "colormap.material",
+      "userData": {
+        "gltfIndex": 0
+      },
+      "ver": "1.0.14",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "4a0d7": {
+      "importer": "gltf-scene",
+      "uuid": "7b1c3a93-fbd6-495f-845d-5ca06b3eef79@4a0d7",
+      "displayName": "",
+      "id": "4a0d7",
+      "name": "path-stones-long.prefab",
+      "userData": {
+        "gltfIndex": 0
+      },
+      "ver": "1.0.14",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    }
+  },
+  "userData": {
+    "imageMetas": [
+      {
+        "name": "colormap",
+        "uri": "7b1c3a93-fbd6-495f-845d-5ca06b3eef79@2b33f"
+      }
+    ],
+    "lods": {
+      "enable": false,
+      "hasBuiltinLOD": false,
+      "options": [
+        {
+          "screenRatio": 0.25,
+          "faceCount": 1
+        },
+        {
+          "screenRatio": 0.125,
+          "faceCount": 0.25
+        },
+        {
+          "screenRatio": 0.01,
+          "faceCount": 0.1
+        }
+      ]
+    },
+    "assetFinder": {
+      "meshes": [
+        "7b1c3a93-fbd6-495f-845d-5ca06b3eef79@89279"
+      ],
+      "skeletons": [],
+      "textures": [
+        "7b1c3a93-fbd6-495f-845d-5ca06b3eef79@96c50"
+      ],
+      "materials": [
+        "7b1c3a93-fbd6-495f-845d-5ca06b3eef79@9991c"
+      ],
+      "scenes": [
+        "7b1c3a93-fbd6-495f-845d-5ca06b3eef79@4a0d7"
+      ]
+    }
+  }
+}

@@ -1,180 +1,91 @@
 /**
- * 无尽分块世界流式管理器与开放区域场景构建 (WorldChunkManager.ts)
+ * 无尽分块世界流式管理器。
+ *
+ * 正式地表、道路、建筑、植被和围栏全部来自 WorldArtLibrary 中由 Cocos
+ * Creator 保存的 glTF 模板；本文件不包含任何程序化 MeshFactory 世界几何体。
  */
-import { _decorator, Component, Node, Vec3 } from 'cc';
+import { _decorator, Component, director, Node, Vec3 } from 'cc';
 import { IRegionThemeConfig, REGION_THEMES, ObjectTier } from '../data/GameConfig';
-import { ChunkItemGenerator, IChunkSpawnItem } from './ChunkConfig';
-import { CompressibleObject } from '../gameplay/CompressibleObject';
 import { ObjectPool } from '../core/ObjectPool';
-import { MeshFactory } from '../core/MeshFactory';
 import { eventBus } from '../core/EventBus';
+import { CompressibleObject } from '../gameplay/CompressibleObject';
+import { ChunkItemGenerator, IChunkSpawnItem } from './ChunkConfig';
+import { WorldArtKind, WorldArtLibrary } from './WorldArtLibrary';
 
 const { ccclass } = _decorator;
+const V3 = (x: number, y: number, z: number): Vec3 => new Vec3(x, y, z);
+const SCALE_ONE = new Vec3(1, 1, 1);
 
 export class WorldChunk {
-  public index: number = 0;
-  public theme: IRegionThemeConfig;
-  public centerZ: number = 0;
-  public length: number = 50.0;
-  public objects: CompressibleObject[] = [];
-  public chunkNode: Node;
+  public readonly objects: CompressibleObject[] = [];
 
-  constructor(chunkNode: Node, theme: IRegionThemeConfig, index: number, centerZ: number, length: number = 50.0) {
-    this.chunkNode = chunkNode;
-    this.theme = theme;
-    this.index = index;
-    this.centerZ = centerZ;
-    this.length = length;
+  constructor(
+    public readonly chunkNode: Node,
+    public readonly theme: IRegionThemeConfig,
+    public readonly index: number,
+    public readonly centerZ: number,
+    public readonly art: WorldArtLibrary,
+    public readonly length: number = 50.0
+  ) {
     this.buildVisibleEnvironment();
   }
 
-  /**
-   * 构建 36m 宽开放片区式 3D 地面、低矮边界与多区域特征大型装饰物
-   */
+  private spawn(
+    kind: WorldArtKind,
+    x: number,
+    z: number,
+    scale: Readonly<Vec3> = SCALE_ONE,
+    yawDegrees: number = 0,
+    name: string = kind
+  ): Node {
+    return this.art.spawn(kind, this.chunkNode, V3(x, 0, z), scale, yawDegrees, name);
+  }
+
+  /** 以真实的导入资产构成一段可探索街区，中心保持为垃圾可到达空间。 */
   private buildVisibleEnvironment(): void {
-    // 1. 宽阔主地面 (Ground - 36m 宽)
-    const ground = new Node('Ground');
-    ground.setPosition(0, 0, this.centerZ);
-    this.chunkNode.addChild(ground);
-    MeshFactory.attachMesh(ground, MeshFactory.getBoxMesh(36.0, 0.1, this.length), this.theme.groundColor, 0.8, 0.05);
-
-    // 2. 地形边缘低矮路沿/缓冲带 (非遮挡高墙)
-    const curbL = new Node('Boundary_Left');
-    curbL.setPosition(-18.0, 0.2, this.centerZ);
-    this.chunkNode.addChild(curbL);
-    MeshFactory.attachMesh(curbL, MeshFactory.getBoxMesh(0.6, 0.4, this.length), '#334155', 0.6, 0.2);
-
-    const curbR = new Node('Boundary_Right');
-    curbR.setPosition(18.0, 0.2, this.centerZ);
-    this.chunkNode.addChild(curbR);
-    MeshFactory.attachMesh(curbR, MeshFactory.getBoxMesh(0.6, 0.4, this.length), '#334155', 0.6, 0.2);
-
-    // 3. 根据主题生成区域大型场景装饰物 (开放摆放，留出宽裕移动通道)
-    if (this.theme.id === 'bedroom') {
-      // 卧室大型双人床 (靠左侧)
-      const bed = new Node('Decor_Bed');
-      bed.setPosition(-10.0, 0.5, this.centerZ - 8.0);
-      this.chunkNode.addChild(bed);
-      MeshFactory.attachMesh(bed, MeshFactory.getBoxMesh(4.0, 0.9, 5.0), '#475569');
-
-      // 学习书桌与书架 (靠右侧)
-      const desk = new Node('Decor_Desk');
-      desk.setPosition(10.5, 0.6, this.centerZ + 6.0);
-      this.chunkNode.addChild(desk);
-      MeshFactory.attachMesh(desk, MeshFactory.getBoxMesh(3.0, 1.2, 5.0), '#64748b');
-
-      // 地毯
-      const carpet = new Node('Decor_Carpet');
-      carpet.setPosition(0, 0.06, this.centerZ);
-      this.chunkNode.addChild(carpet);
-      MeshFactory.attachMesh(carpet, MeshFactory.getBoxMesh(10.0, 0.02, 12.0), '#94a3b8');
-
-    } else if (this.theme.id === 'warehouse') {
-      // 重型货物托盘
-      const pallet = new Node('Decor_Pallet');
-      pallet.setPosition(-10.5, 0.4, this.centerZ - 10.0);
-      this.chunkNode.addChild(pallet);
-      MeshFactory.attachMesh(pallet, MeshFactory.getBoxMesh(4.5, 0.8, 4.5), '#8b5a2b');
-
-      // 高耸仓储货架
-      const shelves = new Node('Decor_Shelves');
-      shelves.setPosition(11.0, 2.5, this.centerZ + 8.0);
-      this.chunkNode.addChild(shelves);
-      MeshFactory.attachMesh(shelves, MeshFactory.getBoxMesh(3.0, 5.0, 8.0), '#475569');
-
-      // 中间叉车通道警示条纹
-      const stripe = new Node('Decor_Stripe');
-      stripe.setPosition(0, 0.06, this.centerZ);
-      this.chunkNode.addChild(stripe);
-      MeshFactory.attachMesh(stripe, MeshFactory.getBoxMesh(6.0, 0.02, this.length), '#eab308');
-
-    } else if (this.theme.id === 'supermarket') {
-      // 收银台通道
-      const counter = new Node('Decor_Counter');
-      counter.setPosition(-9.0, 0.6, this.centerZ - 12.0);
-      this.chunkNode.addChild(counter);
-      MeshFactory.attachMesh(counter, MeshFactory.getBoxMesh(8.0, 1.2, 2.5), '#f1f5f9');
-
-      // 饮料堆头与促销展示台
-      const promo = new Node('Decor_PromoDisplay');
-      promo.setPosition(9.5, 1.0, this.centerZ + 6.0);
-      this.chunkNode.addChild(promo);
-      MeshFactory.attachMesh(promo, MeshFactory.getBoxMesh(3.5, 2.0, 7.0), '#38bdf8');
-
-    } else if (this.theme.id === 'parking') {
-      // 停车场白色分格车位线
-      const lines = new Node('Decor_ParkingLines');
-      lines.setPosition(0, 0.06, this.centerZ);
-      this.chunkNode.addChild(lines);
-      MeshFactory.attachMesh(lines, MeshFactory.getBoxMesh(16.0, 0.02, 18.0), '#f8fafc', 0.9, 0.0);
-
-      // 新能源快速充电桩 (靠左侧)
-      const charger = new Node('Decor_Charger');
-      charger.setPosition(-11.0, 1.2, this.centerZ - 8.0);
-      this.chunkNode.addChild(charger);
-      MeshFactory.attachMesh(charger, MeshFactory.getBoxMesh(1.2, 2.4, 1.0), '#10b981');
-
-      // 太阳能路灯 (靠右侧)
-      const streetLight = new Node('Decor_StreetLight');
-      streetLight.setPosition(12.0, 2.5, this.centerZ + 10.0);
-      this.chunkNode.addChild(streetLight);
-      MeshFactory.attachMesh(streetLight, MeshFactory.getBoxMesh(0.6, 5.0, 0.6), '#94a3b8');
-
-    } else if (this.theme.id === 'construction') {
-      // 重型钢筋与工业管材堆 (靠左侧)
-      const rebar = new Node('Decor_RebarStack');
-      rebar.setPosition(-10.5, 0.8, this.centerZ - 10.0);
-      this.chunkNode.addChild(rebar);
-      MeshFactory.attachMesh(rebar, MeshFactory.getBoxMesh(4.0, 1.6, 6.0), '#d97706');
-
-      // 柴油发电机组与脚手架 (靠右侧)
-      const scaffold = new Node('Decor_Scaffold');
-      scaffold.setPosition(11.0, 2.0, this.centerZ + 8.0);
-      this.chunkNode.addChild(scaffold);
-      MeshFactory.attachMesh(scaffold, MeshFactory.getBoxMesh(3.0, 4.0, 5.0), '#ef4444');
-
-      // 施工安全围挡
-      const fence = new Node('Decor_Fence');
-      fence.setPosition(0, 0.6, this.centerZ + 20.0);
-      this.chunkNode.addChild(fence);
-      MeshFactory.attachMesh(fence, MeshFactory.getBoxMesh(12.0, 1.2, 0.4), '#f59e0b');
-
-    } else if (this.theme.id === 'city') {
-      // 霓虹全息广告牌 (靠左侧)
-      const neon = new Node('Decor_NeonBillboard');
-      neon.setPosition(-11.5, 2.8, this.centerZ - 12.0);
-      this.chunkNode.addChild(neon);
-      MeshFactory.attachMesh(neon, MeshFactory.getBoxMesh(3.0, 5.5, 6.0), '#ec4899', 0.2, 0.8);
-
-      // 街头自动售货机 (靠右侧)
-      const vending = new Node('Decor_Vending');
-      vending.setPosition(10.5, 1.2, this.centerZ + 6.0);
-      this.chunkNode.addChild(vending);
-      MeshFactory.attachMesh(vending, MeshFactory.getBoxMesh(1.8, 2.4, 1.5), '#06b6d4');
-
-      // 斑马线
-      const crosswalk = new Node('Decor_Crosswalk');
-      crosswalk.setPosition(0, 0.06, this.centerZ);
-      this.chunkNode.addChild(crosswalk);
-      MeshFactory.attachMesh(crosswalk, MeshFactory.getBoxMesh(18.0, 0.02, 6.0), '#f1f5f9');
+    // 路边地形：三列真实 tile，车道和活动区保持开阔。
+    for (const localZ of [-20, 0, 20]) {
+      this.spawn('terrainTile', -12, this.centerZ + localZ, V3(6, 1, 6), 0, 'TerrainLeft');
+      this.spawn('terrainTile', 12, this.centerZ + localZ, V3(6, 1, 6), 180, 'TerrainRight');
     }
+
+    // 每三段一个十字路口，其余使用连续直路。
+    if (this.index % 3 === 2) {
+      this.spawn('roadCrossroad', 0, this.centerZ, V3(4.4, 1, 4.4), 0, 'RoadIntersection');
+    } else {
+      for (const localZ of [-16, 0, 16]) {
+        this.spawn('roadStraight', 0, this.centerZ + localZ, V3(4.4, 1, 4.4), 0, 'RoadStraight');
+      }
+    }
+
+    const buildingKind: WorldArtKind = this.index % 2 === 0 ? 'buildingB' : 'buildingC';
+    const oppositeBuilding: WorldArtKind = buildingKind === 'buildingB' ? 'buildingC' : 'buildingB';
+    this.spawn(buildingKind, -15, this.centerZ - 13, V3(1.9, 1.9, 1.9), 90, 'DistrictBuildingLeft');
+    this.spawn(oppositeBuilding, 15, this.centerZ + 12, V3(1.9, 1.9, 1.9), -90, 'DistrictBuildingRight');
+
+    // 五种现有主题以摆放方式体现，而非退回到几何体假装不同区域。
+    const themeOffset = (this.index % 4) * 2;
+    this.spawn('pathStones', -10, this.centerZ + 5 + themeOffset, V3(2.1, 1, 2.1), 90, 'ParkPath');
+    this.spawn('fence', 11.5, this.centerZ - 8 - themeOffset, V3(2.0, 1.3, 2.0), 90, 'DistrictFence');
+    this.spawn('treeLarge', -11, this.centerZ - 1, V3(2.0, 2.0, 2.0), 0, 'ParkTreeLarge');
+    this.spawn('treeSmall', 11, this.centerZ + 3, V3(2.2, 2.2, 2.2), 0, 'ParkTreeSmall');
+    this.spawn('treeSmall', -13, this.centerZ + 15, V3(1.7, 1.7, 1.7), 0, 'ParkTreeSmallRear');
   }
 
   public populate(items: IChunkSpawnItem[], objectPool: ObjectPool<CompressibleObject>): void {
     for (const item of items) {
       const obj = objectPool.get();
-      const worldZ = this.centerZ + item.localZ;
-      obj.spawn(item.template, item.localX, worldZ, 0.35, item.customId);
+      obj.spawn(item.template, item.localX, this.centerZ + item.localZ, 0.35, item.customId);
       this.objects.push(obj);
     }
   }
 
   public clear(objectPool: ObjectPool<CompressibleObject>): void {
-    for (const obj of this.objects) {
+    this.objects.forEach((obj) => {
       obj.recycle();
       objectPool.release(obj);
-    }
-    this.objects = [];
+    });
+    this.objects.length = 0;
   }
 }
 
@@ -185,21 +96,26 @@ export class WorldChunkManager extends Component {
 
   public activeChunks: WorldChunk[] = [];
   public currentTheme: IRegionThemeConfig = REGION_THEMES[0];
-  public currentRegionIndex: number = 0;
-  private nextChunkIndex: number = 0;
+  public currentRegionIndex = 0;
+
+  private nextChunkIndex = 0;
   private objectPool: ObjectPool<CompressibleObject> | null = null;
   private objectRootNode: Node | null = null;
+  private artLibrary: WorldArtLibrary | null = null;
 
   public init(objectFactory: () => CompressibleObject): void {
+    this.artLibrary = director.getScene()?.getComponentInChildren(WorldArtLibrary) || null;
+    if (!this.artLibrary) {
+      throw new Error('[WorldChunkManager] Missing editor-saved WorldArtLibrary. The production world cannot use primitive fallback geometry.');
+    }
+    this.artLibrary.validateTemplates();
+
     this.objectRootNode = new Node('TrashObjectPoolRoot');
     this.node.addChild(this.objectRootNode);
-
     this.objectPool = new ObjectPool<CompressibleObject>(
       () => {
         const obj = objectFactory();
-        if (this.objectRootNode && obj.node.parent !== this.objectRootNode) {
-          this.objectRootNode.addChild(obj.node);
-        }
+        if (this.objectRootNode && obj.node.parent !== this.objectRootNode) this.objectRootNode.addChild(obj.node);
         return obj;
       },
       (obj) => obj.recycle(),
@@ -207,54 +123,25 @@ export class WorldChunkManager extends Component {
       350
     );
 
-    // 初始生成前 3 个分块
-    for (let i = 0; i < 3; i++) {
-      this.spawnNextChunk();
-    }
+    for (let i = 0; i < 3; i++) this.spawnNextChunk();
     this.currentTheme = REGION_THEMES[0];
     this.currentRegionIndex = 0;
   }
 
   public spawnNextChunk(): WorldChunk {
-    // 区域序列：Chunk 0-1 (Bedroom), Chunk 2-3 (Warehouse), Chunk 4-5 (Supermarket), Chunk 6-7 (Parking), Chunk 8-9 (Construction), Chunk 10+ (City)
-    let chunkThemeIndex = 0;
-    if (this.nextChunkIndex >= 10) {
-      chunkThemeIndex = 5; // City
-    } else if (this.nextChunkIndex >= 8) {
-      chunkThemeIndex = 4; // Construction
-    } else if (this.nextChunkIndex >= 6) {
-      chunkThemeIndex = 3; // Parking
-    } else if (this.nextChunkIndex >= 4) {
-      chunkThemeIndex = 2; // Supermarket
-    } else if (this.nextChunkIndex >= 2) {
-      chunkThemeIndex = 1; // Warehouse
-    } else {
-      chunkThemeIndex = 0; // Bedroom
-    }
-
+    const chunkThemeIndex = this.nextChunkIndex >= 10 ? 5
+      : this.nextChunkIndex >= 8 ? 4
+      : this.nextChunkIndex >= 6 ? 3
+      : this.nextChunkIndex >= 4 ? 2
+      : this.nextChunkIndex >= 2 ? 1 : 0;
     const chunkTheme = REGION_THEMES[chunkThemeIndex] || REGION_THEMES[0];
-
     const centerZ = -this.nextChunkIndex * WorldChunkManager.CHUNK_LENGTH;
     const chunkNode = new Node(`Chunk_${this.nextChunkIndex}`);
     this.node.addChild(chunkNode);
 
-    const chunk = new WorldChunk(
-      chunkNode,
-      chunkTheme,
-      this.nextChunkIndex,
-      centerZ,
-      WorldChunkManager.CHUNK_LENGTH
-    );
-
-    const items = ChunkItemGenerator.generateChunkItems(
-      chunkTheme,
-      this.nextChunkIndex,
-      WorldChunkManager.CHUNK_LENGTH
-    );
-
-    if (this.objectPool) {
-      chunk.populate(items, this.objectPool);
-    }
+    if (!this.artLibrary) throw new Error('[WorldChunkManager] World art library was released before chunk spawn.');
+    const chunk = new WorldChunk(chunkNode, chunkTheme, this.nextChunkIndex, centerZ, this.artLibrary, WorldChunkManager.CHUNK_LENGTH);
+    if (this.objectPool) chunk.populate(ChunkItemGenerator.generateChunkItems(chunkTheme, this.nextChunkIndex, WorldChunkManager.CHUNK_LENGTH), this.objectPool);
 
     this.activeChunks.push(chunk);
     this.nextChunkIndex++;
@@ -263,30 +150,22 @@ export class WorldChunkManager extends Component {
 
   public updateChunks(playerZ: number): void {
     if (this.activeChunks.length === 0) return;
-
-    // 前向检测：当玩家前进到最后一个分块中心前 25m 时，生成新分块
     const forwardMostChunk = this.activeChunks[this.activeChunks.length - 1];
-    if (playerZ < forwardMostChunk.centerZ + WorldChunkManager.CHUNK_LENGTH * 0.5) {
-      this.spawnNextChunk();
-    }
+    if (playerZ < forwardMostChunk.centerZ + WorldChunkManager.CHUNK_LENGTH * 0.5) this.spawnNextChunk();
 
-    // 后向回收：当玩家远离最早分块超过 1.5 个分块长度时回收
     if (this.activeChunks.length > WorldChunkManager.ACTIVE_CHUNK_COUNT) {
       const oldestChunk = this.activeChunks[0];
       if (playerZ < oldestChunk.centerZ - WorldChunkManager.CHUNK_LENGTH * 1.5) {
-        if (this.objectPool) {
-          oldestChunk.clear(this.objectPool);
-        }
+        if (this.objectPool) oldestChunk.clear(this.objectPool);
         oldestChunk.chunkNode.destroy();
         this.activeChunks.shift();
       }
     }
 
-    // 更新当前玩家所在的 Region 主题
-    const currentChunk = this.activeChunks.find(c => Math.abs(playerZ - c.centerZ) <= WorldChunkManager.CHUNK_LENGTH * 0.5);
+    const currentChunk = this.activeChunks.find((chunk) => Math.abs(playerZ - chunk.centerZ) <= WorldChunkManager.CHUNK_LENGTH * 0.5);
     if (currentChunk && this.currentTheme.id !== currentChunk.theme.id) {
       this.currentTheme = currentChunk.theme;
-      this.currentRegionIndex = REGION_THEMES.findIndex(t => t.id === currentChunk.theme.id);
+      this.currentRegionIndex = REGION_THEMES.findIndex((theme) => theme.id === currentChunk.theme.id);
       eventBus.emit('UI_REGION_CHANGED', { region: this.currentTheme.name, regionId: this.currentTheme.id });
     }
   }
@@ -299,48 +178,23 @@ export class WorldChunkManager extends Component {
     isMagnetStorm: boolean,
     onAbsorbCallback: (obj: CompressibleObject) => void
   ): void {
-    for (const chunk of this.activeChunks) {
-      for (const obj of chunk.objects) {
-        const state = obj.getState();
-        if (state === 'ABSORBED' || state === 'RECYCLED') continue;
-        
-        const absorbed = obj.updateMotion(
-          dt,
-          machinePos,
-          suctionRadius,
-          machineMaxTier,
-          isMagnetStorm
-        );
-        if (absorbed) {
-          onAbsorbCallback(obj);
-        }
+    this.activeChunks.forEach((chunk) => chunk.objects.forEach((obj) => {
+      const state = obj.getState();
+      if (state !== 'ABSORBED' && state !== 'RECYCLED' && obj.updateMotion(dt, machinePos, suctionRadius, machineMaxTier, isMagnetStorm)) {
+        onAbsorbCallback(obj);
       }
-    }
+    }));
   }
 
   public getAllObjects(): CompressibleObject[] {
-    const list: CompressibleObject[] = [];
-    for (const chunk of this.activeChunks) {
-      for (const obj of chunk.objects) {
-        if (obj && obj.node && obj.node.isValid) {
-          list.push(obj);
-        }
-      }
-    }
-    return list;
+    return this.activeChunks.flatMap((chunk) => chunk.objects.filter((obj) => obj.node?.isValid));
   }
 
   public getVisibleObjectCount(): number {
-    let count = 0;
-    for (const chunk of this.activeChunks) {
-      for (const obj of chunk.objects) {
-        const s = obj.getState();
-        if (s !== 'ABSORBED' && s !== 'RECYCLED') {
-          count++;
-        }
-      }
-    }
-    return count;
+    return this.activeChunks.reduce((count, chunk) => count + chunk.objects.filter((obj) => {
+      const state = obj.getState();
+      return state !== 'ABSORBED' && state !== 'RECYCLED';
+    }).length, 0);
   }
 
   public getRegionIndex(): number {

@@ -1,0 +1,115 @@
+{
+  "schemaVersion": 1,
+  "project": "BlackHoleRecycle V2",
+  "policy": "Only assets listed here may be imported from external sources. Original author and license remain attached to every local copy.",
+  "assets": [
+    {
+      "id": "kenney-road-straight",
+      "source": "https://github.com/bevyengine/bevy_asset_files/raw/main/kenney/city-kit-roads/road-straight.glb",
+      "origin": "https://kenney.nl/assets/city-kit-roads",
+      "license": "CC0 1.0 Universal",
+      "author": "Kenney",
+      "usage": "Reusable straight road segment for the streaming city world.",
+      "modified": false,
+      "commercialAllowed": true,
+      "localPath": "assets/art/world/roads/road-straight.glb",
+      "sha256": "c3d524d39ff60ae4ca418aa99e83af25ee87ddbdc3c1a021774f30314bf73ca4"
+    },
+    {
+      "id": "kenney-road-crossroad-path",
+      "source": "https://github.com/bevyengine/bevy_asset_files/raw/main/kenney/city-kit-roads/road-crossroad-path.glb",
+      "origin": "https://kenney.nl/assets/city-kit-roads",
+      "license": "CC0 1.0 Universal",
+      "author": "Kenney",
+      "usage": "Reusable road intersection for the streaming city world.",
+      "modified": false,
+      "commercialAllowed": true,
+      "localPath": "assets/art/world/roads/road-crossroad-path.glb",
+      "sha256": "126f6ff1c80c593b09fe94d2e09486f7aba5b22de832a3e54769465efff72126"
+    },
+    {
+      "id": "kenney-tile-low",
+      "source": "https://github.com/bevyengine/bevy_asset_files/raw/main/kenney/city-kit-roads/tile-low.glb",
+      "origin": "https://kenney.nl/assets/city-kit-roads",
+      "license": "CC0 1.0 Universal",
+      "author": "Kenney",
+      "usage": "Low ground tile below road and park composition.",
+      "modified": false,
+      "commercialAllowed": true,
+      "localPath": "assets/art/world/environment/tile-low.glb",
+      "sha256": "7021b52104c8d421a9cfcadd9577a6a8d9824e69a46f633d1ddc531ca456ef78"
+    },
+    {
+      "id": "kenney-suburban-building-b",
+      "source": "https://github.com/bevyengine/bevy_asset_files/raw/main/kenney/city-kit-suburban/building-type-b.glb",
+      "origin": "https://kenney.nl/assets/city-kit-suburban",
+      "license": "CC0 1.0 Universal",
+      "author": "Kenney",
+      "usage": "Residential building variation in city chunks.",
+      "modified": false,
+      "commercialAllowed": true,
+      "localPath": "assets/art/world/residential/building-type-b.glb",
+      "sha256": "a964a10c51bb334be677657fd8fa483531974dd15b4243575990192818e2300e"
+    },
+    {
+      "id": "kenney-suburban-building-c",
+      "source": "https://github.com/bevyengine/bevy_asset_files/raw/main/kenney/city-kit-suburban/building-type-c.glb",
+      "origin": "https://kenney.nl/assets/city-kit-suburban",
+      "license": "CC0 1.0 Universal",
+      "author": "Kenney",
+      "usage": "Residential building variation in city chunks.",
+      "modified": false,
+      "commercialAllowed": true,
+      "localPath": "assets/art/world/residential/building-type-c.glb",
+      "sha256": "86a69f30f1a09461283e158514945ae5cc9d56357b0ddc83a9a3f0eecd113591"
+    },
+    {
+      "id": "kenney-suburban-tree-small",
+      "source": "https://github.com/bevyengine/bevy_asset_files/raw/main/kenney/city-kit-suburban/tree-small.glb",
+      "origin": "https://kenney.nl/assets/city-kit-suburban",
+      "license": "CC0 1.0 Universal",
+      "author": "Kenney",
+      "usage": "Small tree variation for park and roadside groups.",
+      "modified": false,
+      "commercialAllowed": true,
+      "localPath": "assets/art/world/environment/tree-small.glb",
+      "sha256": "5f63359e5f392609d7617cc98070855ca1ffd4f4b4bc3978a5ff56ece88a58d6"
+    },
+    {
+      "id": "kenney-suburban-tree-large",
+      "source": "https://github.com/bevyengine/bevy_asset_files/raw/main/kenney/city-kit-suburban/tree-large.glb",
+      "origin": "https://kenney.nl/assets/city-kit-suburban",
+      "license": "CC0 1.0 Universal",
+      "author": "Kenney",
+      "usage": "Large tree variation for park and roadside groups.",
+      "modified": false,
+      "commercialAllowed": true,
+      "localPath": "assets/art/world/environment/tree-large.glb",
+      "sha256": "16d1f95c149bc727a953a473cf20bf21de9bf1a88747c4f9d2eeb4ac7d43e291"
+    },
+    {
+      "id": "kenney-suburban-path-stones-long",
+      "source": "https://github.com/bevyengine/bevy_asset_files/raw/main/kenney/city-kit-suburban/path-stones-long.glb",
+      "origin": "https://kenney.nl/assets/city-kit-suburban",
+      "license": "CC0 1.0 Universal",
+      "author": "Kenney",
+      "usage": "Park walkway and small public-space detail.",
+      "modified": false,
+      "commercialAllowed": true,
+      "localPath": "assets/art/world/environment/path-stones-long.glb",
+      "sha256": "cbd73ca5746f2290f44a2e1fc6f0759076c2c5fcdb3cb3f1e3acd74d5751d114"
+    },
+    {
+      "id": "kenney-suburban-fence",
+      "source": "https://github.com/bevyengine/bevy_asset_files/raw/main/kenney/city-kit-suburban/fence.glb",
+      "origin": "https://kenney.nl/assets/city-kit-suburban",
+      "license": "CC0 1.0 Universal",
+      "author": "Kenney",
+      "usage": "Residential and construction-area perimeter detail.",
+      "modified": false,
+      "commercialAllowed": true,
+      "localPath": "assets/art/world/environment/fence.glb",
+      "sha256": "073bd2000ac51879516d49f835d5156dac4d5038085380b1232858fc3f562d02"
+    }
+  ]
+}
