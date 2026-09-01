@@ -5,6 +5,7 @@ image into the runtime.  All output is deterministic PNG and is imported by Coco
 Sprite/ImageAsset files.
 """
 from pathlib import Path
+import math
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -73,14 +74,13 @@ def city_park():
     asset = image(720, 1280)
     draw = ImageDraw.Draw(asset)
     for y in range(1280):
-        if y < 470:
-            t = y / 470
-            c = tuple(int(a + (b - a) * t) for a, b in zip((126, 224, 250), (215, 247, 255)))
-        else:
-            t = (y - 470) / 810
-            c = tuple(int(a + (b - a) * t) for a, b in zip((142, 215, 83), (76, 165, 55)))
+        # Home takes place in a city park, not under a large flat blue sky.
+        # A grassy full-bleed field keeps the portrait composition close to
+        # the gameplay reference and leaves the upper street as its own layer.
+        t = y / 1280
+        c = tuple(int(a + (b - a) * t) for a, b in zip((165, 222, 88), (90, 181, 64)))
         draw.line((0, y * SCALE, 720 * SCALE, y * SCALE), fill=c, width=SCALE)
-    polygon(draw, [(0, 380), (190, 316), (373, 371), (548, 330), (720, 278), (720, 880), (0, 860)], "#77c948")
+    polygon(draw, [(0, 380), (190, 316), (373, 371), (548, 330), (720, 278), (720, 880), (0, 860)], "#86ce4b")
     polygon(draw, [(-70, 807), (143, 680), (315, 718), (482, 842), (720, 854), (720, 1100), (528, 1060), (354, 926), (177, 835), (-70, 960)], "#dbc69d", "#b69f76")
     line(draw, [(-10, 852), (145, 770), (303, 802), (470, 911), (720, 937)], "#fff7dc", 12)
     for x, y in [(75, 285), (193, 259), (612, 293), (650, 428), (75, 1044), (633, 1041), (314, 305), (493, 328)]:
@@ -102,7 +102,7 @@ def city_park():
         ellipse(draw, (x - 25, y + 17, x - 1, y + 41), "#384652")
         ellipse(draw, (x + 14, y + 17, x + 38, y + 41), "#384652")
     for x, y, r in [(123, 1120, 9), (574, 250, 8), (319, 333, 6), (409, 1060, 7)]:
-        ellipse(draw, (x-r, y-r, x+r, y+r), "#f2ffd9")
+        ellipse(draw, (x-r, y-r, x+r, y+r), "#f6f2c0")
 
     # Street, sidewalks and small park props add the depth cues of the V2
     # isometric city-park reference while keeping this an original, text-free
@@ -150,29 +150,92 @@ def city_park():
         box(draw, (x - 16, y - 9, x + 16, y + 9), 4, color, "#6f5040", 2)
         ellipse(draw, (x - 12, y + 5, x - 2, y + 15), "#3d4854")
         ellipse(draw, (x + 3, y + 5, x + 13, y + 15), "#3d4854")
+
+    # Fine lawn, flowers, benches and scattered paving accents create the
+    # visual density of a live city park without placing UI text in the world.
+    for index in range(45):
+        x = 18 + (index * 97) % 690
+        y = 265 + (index * 137) % 925
+        if 288 < x < 436 and 420 < y < 850:
+            continue
+        leaf = "#4fa74a" if index % 2 else "#68bd50"
+        ellipse(draw, (x - 7, y - 4, x + 7, y + 4), leaf)
+        line(draw, [(x, y + 4), (x, y + 13)], "#4b8944", 2)
+        if index % 5 == 0:
+            ellipse(draw, (x - 3, y - 7, x + 3, y - 1), "#fff1a9")
+            ellipse(draw, (x - 8, y - 3, x - 2, y + 3), "#ffd1df")
+            ellipse(draw, (x + 2, y - 3, x + 8, y + 3), "#ffd1df")
+    for x, y in [(250, 342), (455, 354), (156, 870), (554, 850)]:
+        line(draw, [(x - 28, y), (x + 28, y)], "#9c5d33", 7)
+        line(draw, [(x - 23, y + 5), (x + 23, y + 5)], "#e6a958", 5)
+        line(draw, [(x - 19, y + 5), (x - 19, y + 19)], "#6a563e", 4)
+        line(draw, [(x + 19, y + 5), (x + 19, y + 19)], "#6a563e", 4)
     save("home_city_park.png", asset)
 
 
 def blackhole():
     asset = image(360, 360)
+    # A soft bloom and several asymmetric spiral arms make this read as an
+    # actual suction vortex, rather than the old stack of concentric circles.
+    glow = image(360, 360)
+    glow_draw = ImageDraw.Draw(glow)
+    ellipse(glow_draw, (34, 91, 326, 333), None, "#bca9ff", 15)
+    ellipse(glow_draw, (58, 110, 302, 313), None, "#7655ff", 18)
+    asset.alpha_composite(glow.filter(ImageFilter.GaussianBlur(13 * SCALE)))
+
     draw = ImageDraw.Draw(asset)
-    for rect, c in [((18, 81, 342, 337), "#4426a4"), ((28, 90, 332, 326), "#7c4ced"), ((49, 108, 311, 309), "#301a8f"), ((91, 139, 269, 280), "#170a46"), ((128, 168, 232, 254), "#02010b")]:
-        ellipse(draw, rect, c)
-    ellipse(draw, (41, 102, 319, 319), None, "#eee5ff", 8)
-    ellipse(draw, (133, 176, 170, 202), "#ffffff")
-    polygon(draw, [(117, 105), (142, 54), (180, 83), (218, 54), (243, 105), (220, 132), (140, 132)], "#f8cf48", "#ad7213")
+    ellipse(draw, (28, 87, 332, 339), "#281568", "#e7dcff", 4)
+    ellipse(draw, (43, 101, 317, 326), "#4a2bb1", "#a78bfa", 5)
+    ellipse(draw, (65, 119, 295, 310), "#20105e", "#6544dc", 4)
+
+    center_x, center_y = 180, 218
+    arm_specs = [
+        (0.4, "#b4a1ff", 11),
+        (2.48, "#6b4cf0", 14),
+        (4.56, "#8368ff", 9),
+    ]
+    for start, color, width in arm_specs:
+        points = []
+        for i in range(58):
+            radius = 134 - i * 1.75
+            theta = start + i * 0.128
+            points.append((center_x + math.cos(theta) * radius, center_y + math.sin(theta) * radius * .73))
+        line(draw, points, color, width)
+        line(draw, points[13:], "#f3efff", max(2, width // 4))
+
+    # Inner counter-spiral preserves a deep, readable core at thumbnail size.
+    for start, color in [(1.0, "#4426ad"), (3.1, "#7755ee")]:
+        points = []
+        for i in range(38):
+            radius = 73 - i * 1.45
+            theta = start + i * 0.19
+            points.append((center_x + math.cos(theta) * radius, center_y + math.sin(theta) * radius * .74))
+        line(draw, points, color, 7)
+    ellipse(draw, (119, 168, 241, 267), "#0b0626", "#39207e", 5)
+    ellipse(draw, (143, 187, 217, 247), "#010107")
+    ellipse(draw, (146, 176, 169, 194), "#ffffff")
+    ellipse(draw, (174, 169, 185, 179), "#cbd7ff")
+
+    polygon(draw, [(117, 105), (142, 54), (180, 83), (218, 54), (243, 105), (220, 132), (140, 132)], "#f8cf48", "#633c0c")
+    line(draw, [(137, 105), (180, 88), (223, 105)], "#fff4ab", 4)
     for x, y, c in [(143, 91, "#ff7e48"), (180, 98, "#fff3a0"), (216, 91, "#65d6ff")]:
-        ellipse(draw, (x-8, y-8, x+8, y+8), c)
+        ellipse(draw, (x-8, y-8, x+8, y+8), c, "#6b451b", 2)
+    for x, y, r in [(53, 166, 5), (311, 247, 4), (86, 292, 4), (294, 131, 5)]:
+        ellipse(draw, (x-r, y-r, x+r, y+r), "#ffffff")
     save("home_blackhole_hero.png", asset)
 
 
 def logo():
     asset = image(600, 180)
     draw = ImageDraw.Draw(asset)
-    text_center(draw, 6, "黑洞", font(72), "#ffd448", 6, "#ffffff")
-    text_center(draw, 82, "大作战", font(66), "#7442d7", 6, "#ffffff")
-    ellipse(draw, (465, 38, 500, 73), "#5d35ba")
-    ellipse(draw, (475, 48, 490, 63), "#05020c")
+    # Use two outline passes for a chunky cartoon wordmark that remains clear
+    # above the detailed world background on small portrait screens.
+    text_center(draw, 8, "黑洞", font(68), "#edf1ff", 8, "#172033")
+    text_center(draw, 82, "回收站", font(64), "#ffcb35", 12, "#2b1a08")
+    text_center(draw, 82, "回收站", font(64), "#ffcb35", 5, "#fff4aa")
+    ellipse(draw, (477, 30, 532, 84), "#5d35ba", "#eef0ff", 3)
+    ellipse(draw, (489, 41, 520, 72), "#111029")
+    ellipse(draw, (500, 47, 509, 56), "#b8abff")
     save("home_logo.png", asset)
 
 
