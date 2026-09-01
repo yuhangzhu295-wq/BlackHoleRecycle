@@ -1,5 +1,9 @@
 # Design Reference Index
 
+## V2 current source of truth
+
+The five `v2-*.png` pages and [design-reference-manifest.json](design-reference/design-reference-manifest.json) supersede prior UI pages for Home, Mode Select, Arena HUD, Revive, and Settlement. Their design contracts live in `docs/design-contracts/`. The legacy references below remain gameplay-history context only.
+
 | 编号 | 文件名 | 对应页面/玩法 | 必须还原的结构 | 允许程序化替代的部分 | 禁止偏离的部分 |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | REF-01 | `ChatGPT Image ... 23_03_53.png` | 核心 Gameplay | 9:16 竖屏俯视，机器在下方 35%~42%，大型低模垃圾 | 具体的复杂纹理可用纯色代替 | 相机角度、机器位置、极简HUD |
