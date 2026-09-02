@@ -115,6 +115,90 @@ async function releaseTouchJoystick(cdp) {
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
 }
 
+async function verifySecondaryTouchDoesNotHijack(cdp, page, canvasRect, joystick) {
+  const primary = {
+    id: 1,
+    startX: joystick.x,
+    startY: joystick.y,
+    endX: joystick.x + joystick.offsetX * 0.72,
+    endY: joystick.y - joystick.offsetY * 0.72,
+  };
+  const secondary = {
+    id: 2,
+    startX: canvasRect.left + canvasRect.width * 0.60,
+    startY: joystick.y + joystick.offsetY * 0.24,
+    endX: canvasRect.left + canvasRect.width * 0.58,
+    endY: joystick.y + joystick.offsetY * 0.76,
+  };
+
+  await cdp.send('Input.dispatchTouchEvent', {
+    type: 'touchStart',
+    touchPoints: [{ x: primary.startX, y: primary.startY, id: primary.id }],
+  });
+  await cdp.send('Input.dispatchTouchEvent', {
+    type: 'touchMove',
+    touchPoints: [{ x: primary.endX, y: primary.endY, id: primary.id }],
+  });
+  await page.waitForTimeout(120);
+  const beforeSecondary = await readRuntimeSnapshot(page);
+  const primaryInput = beforeSecondary.machine.movementInput;
+  assert(Math.hypot(primaryInput.x, primaryInput.y) > 0.1,
+    `FAIL_PRIMARY_TOUCH_INPUT: ${JSON.stringify(primaryInput)}`);
+  assert(beforeSecondary.machine.activeTouchId !== null, 'FAIL_PRIMARY_TOUCH_OWNER: joystick did not retain a touch owner');
+
+  await cdp.send('Input.dispatchTouchEvent', {
+    type: 'touchStart',
+    touchPoints: [
+      { x: primary.endX, y: primary.endY, id: primary.id },
+      { x: secondary.startX, y: secondary.startY, id: secondary.id },
+    ],
+  });
+  await cdp.send('Input.dispatchTouchEvent', {
+    type: 'touchMove',
+    touchPoints: [
+      { x: primary.endX, y: primary.endY, id: primary.id },
+      { x: secondary.endX, y: secondary.endY, id: secondary.id },
+    ],
+  });
+  await page.waitForTimeout(120);
+  const whileSecondaryMoves = await readRuntimeSnapshot(page);
+  const secondaryInput = whileSecondaryMoves.machine.movementInput;
+  const inputDrift = Math.hypot(secondaryInput.x - primaryInput.x, secondaryInput.y - primaryInput.y);
+  assert(inputDrift < 0.08,
+    `FAIL_SECONDARY_TOUCH_HIJACK: primary=${JSON.stringify(primaryInput)} secondary=${JSON.stringify(secondaryInput)}`);
+
+  // CDP requires touchEnd/touchCancel to have no points. Removing the second
+  // point from the active touchMove sequence emits its real per-point end while
+  // keeping the primary finger held.
+  await cdp.send('Input.dispatchTouchEvent', {
+    type: 'touchMove',
+    touchPoints: [{ x: primary.endX, y: primary.endY, id: primary.id }],
+  });
+  await page.waitForTimeout(80);
+  const afterSecondaryRelease = await readRuntimeSnapshot(page);
+  const afterSecondaryInput = afterSecondaryRelease.machine.movementInput;
+  const releaseDrift = Math.hypot(afterSecondaryInput.x - primaryInput.x, afterSecondaryInput.y - primaryInput.y);
+  assert(releaseDrift < 0.08,
+    `FAIL_SECONDARY_RELEASE_HIJACK: primary=${JSON.stringify(primaryInput)} after=${JSON.stringify(afterSecondaryInput)}`);
+
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  await page.waitForTimeout(300);
+  const afterPrimaryRelease = await readRuntimeSnapshot(page);
+  const releasedSpeed = Math.hypot(afterPrimaryRelease.machine.velocity.x, afterPrimaryRelease.machine.velocity.z);
+  assert(releasedSpeed < 0.06, `FAIL_PRIMARY_TOUCH_RELEASE: velocity ${releasedSpeed}`);
+  assert(afterPrimaryRelease.machine.activeTouchId === null,
+    `FAIL_PRIMARY_TOUCH_OWNER_RELEASE: ${afterPrimaryRelease.machine.activeTouchId}`);
+  return {
+    primaryInput,
+    secondaryInput,
+    activeOwnerBefore: beforeSecondary.machine.activeTouchId,
+    activeOwnerAfterSecondaryRelease: afterSecondaryRelease.machine.activeTouchId,
+    inputDrift,
+    releaseDrift,
+    releasedSpeed,
+  };
+}
+
 async function readRuntimeSnapshot(page) {
   return page.evaluate(() => window.__BHR_QA__.snapshot());
 }
@@ -169,11 +253,17 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
       const endlessY = canvasRect.top + canvasRect.height * 0.645;
       await dispatchTouchTap(cdp, x, endlessY);
       await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'PLAYING', undefined, { timeout: 5000 });
+      const gameplaySnapshot = await readRuntimeSnapshot(page);
+      assert(gameplaySnapshot.ui.runtimeHUD?.joystick?.active,
+        `FAIL_VISIBLE_JOYSTICK: ${JSON.stringify(gameplaySnapshot.ui.runtimeHUD)}`);
 
-      const joystickStartX = canvasRect.left + canvasRect.width * 0.76;
-      const joystickStartY = canvasRect.top + canvasRect.height * 0.79;
-      const joystickOffsetX = canvasRect.width * 0.18;
-      const joystickOffsetY = canvasRect.height * 0.10;
+      // Must touch the centre of the editor-saved lower-right joystick, rather
+      // than an arbitrary lower-right input region.
+      const joystickStartX = canvasRect.left + canvasRect.width * 0.822;
+      const joystickStartY = canvasRect.top + canvasRect.height * 0.867;
+      const joystickOffsetX = canvasRect.width * 0.11;
+      const joystickOffsetY = canvasRect.height * 0.05;
+      const joystick = { x: joystickStartX, y: joystickStartY, offsetX: joystickOffsetX, offsetY: joystickOffsetY };
       const joystickDirections = [
         { name: 'up', x: 0, y: -1 },
         { name: 'down', x: 0, y: 1 },
@@ -224,6 +314,7 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
         assert(releasedSpeed < 0.06,
           `FAIL_TOUCH_RELEASE_${direction.name.toUpperCase()}: velocity ${releasedSpeed}`);
       }
+      report.multiTouch = await verifySecondaryTouchDoesNotHijack(cdp, page, canvasRect, joystick);
       assert(runtimeErrors.length === 0, `Runtime console errors after touch: ${runtimeErrors.join(' | ')}`);
       await page.screenshot({ path: path.join(evidenceDirectory, 'portrait-390x844-gameplay.png') });
     }
@@ -238,6 +329,7 @@ const report = {
   build: null,
   viewports: [],
   touch: [],
+  multiTouch: null,
   camera: null,
   failures: [],
 };

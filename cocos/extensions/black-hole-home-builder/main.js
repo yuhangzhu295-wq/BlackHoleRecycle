@@ -2,6 +2,13 @@
 
 module.exports = {
   methods: {
+    async addJoystickOverlay() {
+      return Editor.Message.request('scene', 'execute-scene-script', {
+        name: 'black-hole-home-builder',
+        method: 'addJoystickOverlay',
+        args: [],
+      });
+    },
     async prepareHomeSprites() {
       return Editor.Message.request('scene', 'execute-scene-script', {
         name: 'black-hole-home-builder',

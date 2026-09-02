@@ -75,7 +75,16 @@ export class PlayerController extends Component {
   }
 
   private onTouchEnd(event: EventTouch): void {
-    this.touchInput.endTouch(event.getID());
+    // Cocos reports the changed point in EventTouch, but in a multi-touch end
+    // sequence its identifier is not the reliable source of truth for whether
+    // the joystick owner remains down. Input.getAllTouches() is the engine's
+    // current touch manager after the end/cancel has been applied.
+    const activeTouchId = this.touchInput.activeTouchId;
+    const activeTouchStillDown = activeTouchId !== null && input.getAllTouches()
+      .some((touch) => touch.getID() === activeTouchId);
+    if (!activeTouchStillDown && activeTouchId !== null) {
+      this.touchInput.endTouch(activeTouchId);
+    }
     this.refreshActiveState();
   }
 

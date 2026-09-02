@@ -355,6 +355,8 @@ export class GameManager extends Component {
   private getV2HomeLayoutSnapshot(): Record<string, unknown> {
     const canvas = director.getScene()?.getChildByName('Canvas') || null;
     const home = canvas?.getChildByName('HomePage') || null;
+    const endlessHud = canvas?.getChildByName('EndlessHUD') || null;
+    const joystick = endlessHud?.getChildByName('Joystick') || null;
     const homeNode = (name: string): Node | null => home?.getChildByName(name) || home?.getChildByName('SafeAreaRoot')?.getChildByName(name) || null;
     const canvasComponent = canvas?.getComponent(Canvas) || null;
     const uiCamera = canvas?.getChildByName('UICamera')?.getComponent(Camera) || null;
@@ -406,6 +408,12 @@ export class GameManager extends Component {
         z: uiCamera.node.position.z
       } : null,
       home: describe(home),
+      runtimeHUD: {
+        endless: describe(endlessHud),
+        joystick: describe(joystick),
+        joystickBase: describe(joystick?.getChildByName('JoystickBase') || null),
+        joystickKnob: describe(joystick?.getChildByName('JoystickKnob') || null),
+      },
       logo: describe(homeNode('Logo')),
       hero: describe(homeNode('HeroBlackHole')),
       start: describe(homeNode('BtnStart')),
@@ -498,6 +506,7 @@ export class GameManager extends Component {
             x: this.playerController?.moveInput.x ?? 0,
             y: this.playerController?.moveInput.y ?? 0,
           },
+          activeTouchId: this.playerController?.touchInput.activeTouchId ?? null,
           velocity: {
             x: this.machine?.velocity.x ?? 0,
             z: this.machine?.velocity.z ?? 0,

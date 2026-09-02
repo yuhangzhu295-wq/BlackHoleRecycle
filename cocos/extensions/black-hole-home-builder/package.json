@@ -11,6 +11,11 @@
     "menu": [
       {
         "path": "i18n:menu.extension",
+        "label": "添加 V2 可见摇杆（编辑器保存）",
+        "message": "add-joystick-overlay"
+      },
+      {
+        "path": "i18n:menu.extension",
         "label": "导入 V2 Home Sprite 资源",
         "message": "prepare-home-sprites"
       },
@@ -51,6 +56,7 @@
       }
     ],
     "messages": {
+      "add-joystick-overlay": { "methods": ["addJoystickOverlay"] },
       "prepare-home-sprites": { "methods": ["prepareHomeSprites"] },
       "build-home": { "methods": ["buildHome"] },
       "verify-home": { "methods": ["verifyHome"] },

@@ -152,6 +152,29 @@ function place(node, x, y, width, height) {
   node.setPosition(x, y, 0);
 }
 
+/**
+ * Adds the fixed portrait joystick as ordinary scene nodes.  The visible art is
+ * editor-saved; JoystickVisual only renders the current genuine input vector.
+ * This deliberately refuses to replace an existing overlay so the small
+ * migration command is non-destructive.
+ */
+function addJoystickOverlay(endless) {
+  const { Graphics } = require('cc');
+  if (endless.getChildByName('Joystick')) {
+    throw new Error('Canvas/EndlessHUD/Joystick already exists; refusing to replace editor-saved UI.');
+  }
+  const joystick = createNode('Joystick', endless, 196, 196);
+  place(joystick, 232, -470, 196, 196);
+  const joystickBase = createNode('JoystickBase', joystick, 196, 196);
+  joystickBase.addComponent(Graphics);
+  const joystickKnob = createNode('JoystickKnob', joystick, 76, 76);
+  joystickKnob.addComponent(Graphics);
+  const joystickVisual = joystick.addComponent(getComponentClass('JoystickVisual'));
+  joystickVisual.base = joystickBase;
+  joystickVisual.knob = joystickKnob;
+  return joystick;
+}
+
 function getHomeNode(root, name) {
   return root?.getChildByName(name) || root?.getChildByName('SafeAreaRoot')?.getChildByName(name) || null;
 }
@@ -160,6 +183,14 @@ exports.load = function load() {};
 exports.unload = function unload() {};
 
 exports.methods = {
+  async addJoystickOverlay() {
+    const { director } = require('cc');
+    const endless = director.getScene()?.getChildByName('Canvas')?.getChildByName('EndlessHUD');
+    if (!endless) throw new Error('Game.scene does not contain Canvas/EndlessHUD');
+    const joystick = addJoystickOverlay(endless);
+    await Editor.Message.request('scene', 'save-scene');
+    return { saved: true, path: 'Canvas/EndlessHUD/Joystick', uuid: joystick.uuid };
+  },
   async prepareHomeSprites() {
     return prepareHomeSprites();
   },
@@ -296,7 +327,7 @@ exports.methods = {
     return { prefab: 'db://assets/prefabs/ui/HomePage.prefab', rootUuid: root.uuid };
   },
   async buildRuntimePages() {
-    const { director, Color, UITransform, Sprite } = require('cc');
+    const { director, Color, Graphics, UITransform, Sprite } = require('cc');
     const scene = director.getScene();
     const canvas = scene?.getChildByName('Canvas');
     if (!canvas) throw new Error('Game.scene does not contain Canvas');
@@ -337,6 +368,7 @@ exports.methods = {
     caption(endless, 'MassValue', '质量 0 kg', 18, 106, 542, 238, 30, new Color(219, 242, 255, 255));
     caption(endless, 'RegionValue', '卧室杂物区', 18, 0, 490, 240, 32, new Color(232, 245, 255, 255));
     await imageButton('BtnPause', endless, '暂停', 292, 562, 82, 82, 'db://assets/textures/home/home_settings.png', 19);
+    addJoystickOverlay(endless);
     endless.addComponent(getComponentClass('EndlessHUDController'));
     endless.active = false;
 
@@ -403,20 +435,22 @@ exports.methods = {
     const { director, Button } = require('cc');
     const canvas = director.getScene()?.getChildByName('Canvas');
     const requirements = [
-      { name: 'EndlessHUD', component: 'EndlessHUDController', buttons: ['BtnPause'] },
+      { name: 'EndlessHUD', component: 'EndlessHUDController', buttons: ['BtnPause'], nodes: ['Joystick', 'JoystickBase', 'JoystickKnob'] },
       { name: 'PausePage', component: 'PausePageController', buttons: ['BtnResume', 'BtnSettle', 'BtnHome'] },
       { name: 'SettlementPage', component: 'SettlementPageController', buttons: ['BtnRestart', 'BtnHome'] },
     ];
     const report = requirements.map((requirement) => {
       const root = canvas?.getChildByName(requirement.name);
       const missingButtons = requirement.buttons.filter((buttonName) => !root?.getChildByName(buttonName)?.getComponent(Button));
+      const missingNodes = (requirement.nodes || []).filter((nodeName) => !root?.getChildByName(nodeName));
       return {
         name: requirement.name,
         exists: !!root,
         controller: !!root?.getComponent(getComponentClass(requirement.component)),
         missingButtons,
+        missingNodes,
       };
     });
-    return { ok: report.every((entry) => entry.exists && entry.controller && entry.missingButtons.length === 0), report };
+    return { ok: report.every((entry) => entry.exists && entry.controller && entry.missingButtons.length === 0 && entry.missingNodes.length === 0), report };
   },
 };
