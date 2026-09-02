@@ -1,8 +1,9 @@
 /**
  * 玩家触控与拖拽控制器 (PlayerController.ts)
  */
-import { _decorator, Component, Node, Vec3, input, Input, EventTouch, EventMouse, Camera, geometry, director, view } from 'cc';
+import { _decorator, Component, input, Input, EventTouch, EventMouse, Camera, Vec2, Vec3, director, view } from 'cc';
 import { BlackHoleMachine } from '../machine/BlackHoleMachine';
+import { IMovementInput, MouseJoystickInput, TouchJoystickInput } from './MovementInput';
 
 const { ccclass, property } = _decorator;
 
@@ -14,12 +15,16 @@ export class PlayerController extends Component {
   @property(Camera)
   public mainCamera: Camera | null = null;
 
+  /** The normalized device-independent movement vector, always inside [-1, 1]. */
+  public readonly moveInput: Vec2 = new Vec2();
   public isDragging: boolean = false;
   public isPaused: boolean = false;
-  private groundPlane: geometry.Plane = new geometry.Plane(0, 1, 0, 0);
-  private dragStartLocation: { x: number; y: number } | null = null;
-  private dragAnchorPosition: Vec3 = new Vec3();
-  private readonly portraitDragDistance = 22.0;
+  public readonly touchInput: TouchJoystickInput = new TouchJoystickInput(92, 0.1);
+  public readonly mouseInput: MouseJoystickInput = new MouseJoystickInput(92, 0.1);
+
+  private readonly cameraForwardXZ: Vec3 = new Vec3();
+  private readonly cameraRightXZ: Vec3 = new Vec3();
+  private readonly movementDirection: Vec3 = new Vec3();
 
   onLoad(): void {
     if (!this.machine) {
@@ -56,96 +61,92 @@ export class PlayerController extends Component {
 
   private onTouchStart(event: EventTouch): void {
     if (this.isPaused) return;
-    this.isDragging = this.beginDrag(event.getLocation());
+    const location = event.getLocation();
+    if (!this.isInJoystickArea(location.x, location.y)) return;
+    this.touchInput.tryBegin(event.getID(), location.x, location.y);
+    this.refreshActiveState();
   }
 
   private onTouchMove(event: EventTouch): void {
-    if (this.isPaused || !this.isDragging) return;
-    this.updateDrag(event.getLocation());
+    if (this.isPaused) return;
+    const location = event.getLocation();
+    this.touchInput.updateTouch(event.getID(), location.x, location.y);
+    this.refreshActiveState();
   }
 
-  private onTouchEnd(): void {
-    this.isDragging = false;
-    this.dragStartLocation = null;
+  private onTouchEnd(event: EventTouch): void {
+    this.touchInput.endTouch(event.getID());
+    this.refreshActiveState();
   }
 
   private onMouseDown(event: EventMouse): void {
     if (this.isPaused) return;
     if (event.getButton() === 0) {
-      this.isDragging = this.beginDrag(event.getLocation());
+      const location = event.getLocation();
+      this.mouseInput.beginMouse(location.x, location.y);
+      this.refreshActiveState();
     }
   }
 
   private onMouseMove(event: EventMouse): void {
-    if (this.isPaused || !this.isDragging) return;
-    this.updateDrag(event.getLocation());
+    if (this.isPaused || !this.mouseInput.isActive || this.touchInput.isActive) return;
+    const location = event.getLocation();
+    this.mouseInput.updateMouse(location.x, location.y);
+    this.refreshActiveState();
   }
 
   private onMouseUp(): void {
-    this.isDragging = false;
-    this.dragStartLocation = null;
+    this.mouseInput.endMouse();
+    this.refreshActiveState();
   }
 
-  private beginDrag(loc: { x: number; y: number }): boolean {
-    if (this.isPaused) return false;
-    if (!this.machine) return false;
-
-    // SHOW_ALL creates left/right letterbox bars when a desktop frame is wider
-    // than 9:16. Inputs originating in those bars must not steer the machine.
+  private isInJoystickArea(x: number, y: number): boolean {
     const viewport = view.getViewportRect();
-    const isInsideGameViewport =
-      loc.x >= viewport.x && loc.x <= viewport.x + viewport.width &&
-      loc.y >= viewport.y && loc.y <= viewport.y + viewport.height;
-    if (!isInsideGameViewport) return false;
+    return x >= viewport.x + viewport.width * 0.45 &&
+      x <= viewport.x + viewport.width &&
+      y >= viewport.y &&
+      y <= viewport.y + viewport.height * 0.52;
+  }
+
+  private getActiveInput(): IMovementInput {
+    return this.touchInput.isActive ? this.touchInput : this.mouseInput;
+  }
+
+  private refreshActiveState(): void {
+    this.isDragging = this.touchInput.isActive || this.mouseInput.isActive;
+  }
+
+  update(): void {
+    if (!this.machine || this.isPaused) {
+      this.moveInput.set(0, 0);
+      this.machine?.stopMovement();
+      return;
+    }
 
     if (!this.mainCamera) {
       const scene = director.getScene();
-      const camNode = scene?.getChildByName('Main Camera');
-      if (camNode) {
-        this.mainCamera = camNode.getComponent(Camera);
-      }
+      this.mainCamera = scene?.getChildByName('Main Camera')?.getComponent(Camera) || null;
+    }
+    if (!this.mainCamera) return;
+
+    const source = this.getActiveInput();
+    this.moveInput.set(source.moveInput.x, source.moveInput.y);
+    const magnitude = this.moveInput.length();
+    if (magnitude <= 0.0001) {
+      this.machine.stopMovement();
+      return;
     }
 
-    if (!this.mainCamera) return false;
-
-    // Keep a real camera-to-ground ray check so black bars, a rotated frame or
-    // an invalid camera cannot produce a movement command.
-    const ray = new geometry.Ray();
-    this.mainCamera.screenPointToRay(loc.x, loc.y, ray);
-    if (geometry.intersect.rayPlane(ray, this.groundPlane) <= 0) return false;
-
-    this.dragStartLocation = { x: loc.x, y: loc.y };
-    const machinePosition = this.machine.node.position;
-    this.dragAnchorPosition.set(machinePosition.x, 0, machinePosition.z);
-    return true;
-  }
-
-  /**
-   * Portrait controls are delta-driven rather than absolute-ground driven.
-   * This keeps a drag toward the bottom of a tall phone moving backwards from
-   * the player, even while the follow camera has advanced since touch start.
-   */
-  private updateDrag(loc: { x: number; y: number }): void {
-    if (!this.machine || !this.mainCamera || !this.dragStartLocation) return;
-
-    const viewport = view.getViewportRect();
-    const isInsideGameViewport =
-      loc.x >= viewport.x && loc.x <= viewport.x + viewport.width &&
-      loc.y >= viewport.y && loc.y <= viewport.y + viewport.height;
-    if (!isInsideGameViewport) return;
-
-    const ray = new geometry.Ray();
-    this.mainCamera.screenPointToRay(loc.x, loc.y, ray);
-    if (geometry.intersect.rayPlane(ray, this.groundPlane) <= 0) return;
-
-    const dragX = (loc.x - this.dragStartLocation.x) / Math.max(1, viewport.width);
-    const dragY = (loc.y - this.dragStartLocation.y) / Math.max(1, viewport.height);
-    const cameraRight = this.mainCamera.node.right;
     const cameraForward = this.mainCamera.node.forward;
-
-    this.machine.setTargetPosition(
-      this.dragAnchorPosition.x + (cameraRight.x * dragX - cameraForward.x * dragY) * this.portraitDragDistance,
-      this.dragAnchorPosition.z + (cameraRight.z * dragX - cameraForward.z * dragY) * this.portraitDragDistance
+    const cameraRight = this.mainCamera.node.right;
+    this.cameraForwardXZ.set(cameraForward.x, 0, cameraForward.z).normalize();
+    this.cameraRightXZ.set(cameraRight.x, 0, cameraRight.z).normalize();
+    this.movementDirection.set(
+      this.cameraRightXZ.x * this.moveInput.x + this.cameraForwardXZ.x * this.moveInput.y,
+      0,
+      this.cameraRightXZ.z * this.moveInput.x + this.cameraForwardXZ.z * this.moveInput.y,
     );
+    if (this.movementDirection.lengthSqr() > 0.0001) this.movementDirection.normalize();
+    this.machine.setMovementDirection(this.movementDirection, Math.min(1, magnitude));
   }
 }

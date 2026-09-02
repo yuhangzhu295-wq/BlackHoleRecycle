@@ -29,7 +29,7 @@ export class BlackHoleMachine extends Component {
   public currentLevel: number = 1;
   public currentConfig: IMachineEvolutionConfig = MACHINE_EVOLUTION_CONFIG[0];
   public currentMass: number = 0;
-  public targetPos: Vec3 = new Vec3(0, 0, 0);
+  public readonly velocity: Vec3 = new Vec3();
   public isMagnetStormActive: boolean = false;
   private magnetStormTimer: number = 0;
 
@@ -39,6 +39,8 @@ export class BlackHoleMachine extends Component {
   private innerSwirl: Node | null = null;
   private outerSwirl: Node | null = null;
   private visualElapsed: number = 0;
+  private readonly movementDirection: Vec3 = new Vec3();
+  private movementMagnitude: number = 0;
 
   onLoad(): void {
     this.buildVisibleGeometry();
@@ -67,25 +69,25 @@ export class BlackHoleMachine extends Component {
     const holeInner = new Node('HoleInner');
     holeInner.setPosition(0, 0, 0);
     this.coreNode.addChild(holeInner);
-    MeshFactory.attachMesh(holeInner, MeshFactory.getCylinderMesh(1.28, 1.28, 0.10), '#05040e', 1.0, 0.0);
+    MeshFactory.attachMesh(holeInner, MeshFactory.getCylinderMesh(0.96, 0.96, 0.10), '#05040e', 1.0, 0.0);
 
     // 三层紫色涡流环：它们是黑洞特效的实体表现，随时间反向转动以传达吞噬感。
     this.innerSwirl = new Node('InnerSwirl');
     this.innerSwirl.setPosition(0, 0.065, 0);
     this.coreNode.addChild(this.innerSwirl);
-    MeshFactory.attachMesh(this.innerSwirl, MeshFactory.getTorusMesh(0.56, 0.045), '#b89cff', 0.1, 0.5);
+    MeshFactory.attachMesh(this.innerSwirl, MeshFactory.getTorusMesh(0.40, 0.04), '#b89cff', 0.1, 0.5);
 
     this.outerSwirl = new Node('OuterSwirl');
     this.outerSwirl.setPosition(0, 0.075, 0);
     this.outerSwirl.setRotationFromEuler(0, 0, 16);
     this.coreNode.addChild(this.outerSwirl);
-    MeshFactory.attachMesh(this.outerSwirl, MeshFactory.getTorusMesh(0.94, 0.055), '#7654e8', 0.1, 0.5);
+    MeshFactory.attachMesh(this.outerSwirl, MeshFactory.getTorusMesh(0.70, 0.05), '#7654e8', 0.1, 0.5);
 
     // 发光外环：等级增长时以真实吸附半径同步扩大。
     this.holeRim = new Node('HoleRing');
     this.holeRim.setPosition(0, 0.09, 0);
     this.coreNode.addChild(this.holeRim);
-    MeshFactory.attachMesh(this.holeRim, MeshFactory.getTorusMesh(1.34, 0.075), '#d0c2ff', 0.1, 0.5);
+    MeshFactory.attachMesh(this.holeRim, MeshFactory.getTorusMesh(1.0, 0.06), '#d0c2ff', 0.1, 0.5);
 
     // 2. LV2 磁力双涡轮 (TurbineNode)
     this.turbineNode = new Node('TurbineRoot');
@@ -125,10 +127,21 @@ export class BlackHoleMachine extends Component {
     return library;
   }
 
-  public setTargetPosition(x: number, z: number): void {
-    // 开放 36m 区域：限制在 [-16.0, 16.0] 范围内畅行无阻
-    this.targetPos.x = math.clamp(x, -16.0, 16.0);
-    this.targetPos.z = z;
+  /** Receives camera-relative, normalized intent. It contains no arena/world boundary logic. */
+  public setMovementDirection(direction: Readonly<Vec3>, magnitude: number): void {
+    this.movementDirection.set(direction.x, 0, direction.z);
+    if (this.movementDirection.lengthSqr() > 0.0001) this.movementDirection.normalize();
+    this.movementMagnitude = math.clamp01(magnitude);
+  }
+
+  public stopMovement(): void {
+    this.movementMagnitude = 0;
+    this.movementDirection.set(0, 0, 0);
+  }
+
+  public resetMovement(): void {
+    this.stopMovement();
+    this.velocity.set(0, 0, 0);
   }
 
   public isPaused: boolean = false;
@@ -139,11 +152,20 @@ export class BlackHoleMachine extends Component {
     if (this.innerSwirl) this.innerSwirl.setRotationFromEuler(0, this.visualElapsed * 90, 10);
     if (this.outerSwirl) this.outerSwirl.setRotationFromEuler(0, -this.visualElapsed * 55, 16);
     if (this.holeRim) this.holeRim.setRotationFromEuler(0, this.visualElapsed * 18, 0);
-    // 1. 平滑移动
+    // 1. Continuous velocity integration. Boundaries belong to arena/world systems,
+    // never to this reusable machine component.
     const curPos = this.node.getPosition();
-    const speed = this.currentConfig.moveSpeed;
-    curPos.x = math.lerp(curPos.x, this.targetPos.x, Math.min(1.0, dt * speed * 1.5));
-    curPos.z = math.lerp(curPos.z, this.targetPos.z, Math.min(1.0, dt * speed * 1.5));
+    const speed = this.currentConfig.moveSpeed * this.movementMagnitude;
+    const targetVelocityX = this.movementDirection.x * speed;
+    const targetVelocityZ = this.movementDirection.z * speed;
+    const response = Math.min(1.0, dt * (this.movementMagnitude > 0 ? 18 : 32));
+    this.velocity.x = math.lerp(this.velocity.x, targetVelocityX, response);
+    this.velocity.z = math.lerp(this.velocity.z, targetVelocityZ, response);
+    if (this.movementMagnitude === 0 && Math.abs(this.velocity.x) + Math.abs(this.velocity.z) < 0.01) {
+      this.velocity.set(0, 0, 0);
+    }
+    curPos.x += this.velocity.x * dt;
+    curPos.z += this.velocity.z * dt;
     this.node.setPosition(curPos);
 
     // 2. 磁暴倒计时

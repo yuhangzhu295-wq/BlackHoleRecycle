@@ -42,8 +42,9 @@ export class GameManager extends Component {
   public gameState: GameSessionState = 'HOME';
   public regionsVisitedCount: number = 1;
 
-  // 9:16 竖屏等轴相机参数。目标在画面下方，为前方街区保留探索空间。
-  private cameraOffset: Vec3 = new Vec3(0, 17.5, 15.0);
+  // Portrait isometric framing: the centre ray deliberately lands ahead of the
+  // machine so the player remains in the lower interaction band.
+  private cameraOffset: Vec3 = new Vec3(0, 17.0, 15.0);
   private cameraTarget: Vec3 = new Vec3();
   private readonly portraitWidth = 720;
   private readonly portraitHeight = 1280;
@@ -82,7 +83,7 @@ export class GameManager extends Component {
       // The generated project declarations do not re-export that enum, while
       // Camera.fovAxis remains the native engine property being configured.
       this.mainCamera.fovAxis = 0;
-      this.mainCamera.fov = 48;
+      this.mainCamera.fov = 47;
     }
   }
 
@@ -233,7 +234,7 @@ export class GameManager extends Component {
     // 将机器归位
     if (this.machine) {
       this.machine.node.setPosition(0, 0, 0);
-      this.machine.setTargetPosition(0, 0);
+      this.machine.resetMovement();
     }
 
     analyticsService.track('endless_start', {
@@ -419,6 +420,24 @@ export class GameManager extends Component {
     (window as any).__BHR_QA__ = {
       snapshot: () => {
         const mPos = this.machine?.node.position;
+        const viewport = view.getViewportRect();
+        const playerVisualCenter = mPos ? new Vec3(mPos.x, mPos.y + 0.16, mPos.z) : null;
+        const playerScreen = playerVisualCenter && this.mainCamera
+          ? this.mainCamera.worldToScreen(playerVisualCenter, new Vec3())
+          : null;
+        const playerScreenLeft = playerVisualCenter && this.mainCamera
+          ? this.mainCamera.worldToScreen(new Vec3(playerVisualCenter.x - 1.0 * (this.machine?.node.scale.x || 1), playerVisualCenter.y, playerVisualCenter.z), new Vec3())
+          : null;
+        const playerScreenRight = playerVisualCenter && this.mainCamera
+          ? this.mainCamera.worldToScreen(new Vec3(playerVisualCenter.x + 1.0 * (this.machine?.node.scale.x || 1), playerVisualCenter.y, playerVisualCenter.z), new Vec3())
+          : null;
+        const playerViewport = playerScreen && viewport.width > 0 && viewport.height > 0 ? {
+          x: (playerScreen.x - viewport.x) / viewport.width,
+          y: 1 - (playerScreen.y - viewport.y) / viewport.height,
+          width: playerScreenLeft && playerScreenRight
+            ? Math.abs(playerScreenRight.x - playerScreenLeft.x) / viewport.width
+            : 0,
+        } : null;
         const allObjs = this.chunkManager?.getAllObjects() || [];
         const sampledObjs = allObjs.map(o => {
           const p = o.getPosition();
@@ -453,6 +472,8 @@ export class GameManager extends Component {
         camera: {
           fov: this.mainCamera?.fov ?? null,
           fovAxis: this.mainCamera?.fovAxis ?? null,
+          offset: { x: this.cameraOffset.x, y: this.cameraOffset.y, z: this.cameraOffset.z },
+          playerViewport,
           position: {
             x: this.mainCamera?.node.position.x ?? 0,
             y: this.mainCamera?.node.position.y ?? 0,
@@ -473,9 +494,13 @@ export class GameManager extends Component {
           requiredMass: (MACHINE_EVOLUTION_CONFIG[Math.min(4, (this.machine?.currentLevel || 1))] || MACHINE_EVOLUTION_CONFIG[0]).massThreshold,
           suctionRadius: this.machine?.getSuctionRadius() || 2.4,
           maxTier: this.machine?.getMaxTier() || 1,
-          target: {
-            x: this.machine?.targetPos.x ?? 0,
-            z: this.machine?.targetPos.z ?? 0,
+          movementInput: {
+            x: this.playerController?.moveInput.x ?? 0,
+            y: this.playerController?.moveInput.y ?? 0,
+          },
+          velocity: {
+            x: this.machine?.velocity.x ?? 0,
+            z: this.machine?.velocity.z ?? 0,
           },
           },
           world: {
@@ -546,6 +571,6 @@ export class GameManager extends Component {
       math.lerp(cPos.y, this.cameraTarget.y, dt * 5.0),
       math.lerp(cPos.z, this.cameraTarget.z, dt * 5.0)
     );
-    this.mainCamera.node.setRotationFromEuler(-50, 0, 0);
+    this.mainCamera.node.setRotationFromEuler(-42, 0, 0);
   }
 }

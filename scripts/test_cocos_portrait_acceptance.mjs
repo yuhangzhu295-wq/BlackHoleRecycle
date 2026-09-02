@@ -97,18 +97,21 @@ async function dispatchTouchTap(cdp, x, y) {
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
 }
 
-async function dispatchTouchDrag(cdp, startX, startY, endX, endY) {
+async function beginTouchJoystick(cdp, startX, startY, endX, endY) {
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: startX, y: startY }] });
-  for (let step = 1; step <= 12; step += 1) {
+  for (let step = 1; step <= 8; step += 1) {
     await cdp.send('Input.dispatchTouchEvent', {
       type: 'touchMove',
       touchPoints: [{
-        x: Math.round(startX + (endX - startX) * step / 12),
-        y: Math.round(startY + (endY - startY) * step / 12),
+        x: Math.round(startX + (endX - startX) * step / 8),
+        y: Math.round(startY + (endY - startY) * step / 8),
       }],
     });
     await new Promise((resolve) => setTimeout(resolve, 24));
   }
+}
+
+async function releaseTouchJoystick(cdp) {
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
 }
 
@@ -156,6 +159,7 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
 
     if (viewport.id === '390x844') {
       const cdp = await context.newCDPSession(page);
+      report.camera = snapshot.camera;
       const x = canvasRect.left + canvasRect.width * 0.5;
       const homeStartY = canvasRect.top + canvasRect.height * 0.773;
       await dispatchTouchTap(cdp, x, homeStartY);
@@ -166,35 +170,59 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
       await dispatchTouchTap(cdp, x, endlessY);
       await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'PLAYING', undefined, { timeout: 5000 });
 
-      const dragStartX = canvasRect.left + canvasRect.width * 0.5;
-      const dragStartY = canvasRect.top + canvasRect.height * 0.62;
-      const drags = [
-        { name: 'left', endX: canvasRect.left + canvasRect.width * 0.28, endY: dragStartY, cameraAxis: 'right', sign: -1 },
-        { name: 'right', endX: canvasRect.left + canvasRect.width * 0.72, endY: dragStartY, cameraAxis: 'right', sign: 1 },
-        // Cocos Node.forward is local +Z; a perspective camera renders along
-        // its inverse, so screen-up follows -forward and screen-down +forward.
-        { name: 'up', endX: dragStartX, endY: canvasRect.top + canvasRect.height * 0.36, cameraAxis: 'forward', sign: -1 },
-        { name: 'down', endX: dragStartX, endY: canvasRect.top + canvasRect.height * 0.84, cameraAxis: 'forward', sign: 1 },
+      const joystickStartX = canvasRect.left + canvasRect.width * 0.76;
+      const joystickStartY = canvasRect.top + canvasRect.height * 0.79;
+      const joystickOffsetX = canvasRect.width * 0.18;
+      const joystickOffsetY = canvasRect.height * 0.10;
+      const joystickDirections = [
+        { name: 'up', x: 0, y: -1 },
+        { name: 'down', x: 0, y: 1 },
+        { name: 'left', x: -1, y: 0 },
+        { name: 'right', x: 1, y: 0 },
+        { name: 'up-left', x: -0.707, y: -0.707 },
+        { name: 'up-right', x: 0.707, y: -0.707 },
+        { name: 'down-left', x: -0.707, y: 0.707 },
+        { name: 'down-right', x: 0.707, y: 0.707 },
       ];
 
       report.touch = [];
-      for (const drag of drags) {
+      for (const direction of joystickDirections) {
         const before = await readRuntimeSnapshot(page);
-        await dispatchTouchDrag(cdp, dragStartX, dragStartY, drag.endX, drag.endY);
-        const inputTarget = (await readRuntimeSnapshot(page)).machine.target;
-        await page.waitForTimeout(650);
+        await beginTouchJoystick(
+          cdp,
+          joystickStartX,
+          joystickStartY,
+          joystickStartX + joystickOffsetX * direction.x,
+          joystickStartY + joystickOffsetY * direction.y,
+        );
+        const engaged = await readRuntimeSnapshot(page);
+        const input = engaged.machine.movementInput;
+        assert(Math.hypot(input.x, input.y) > 0.1,
+          `FAIL_TOUCH_INPUT_${direction.name.toUpperCase()}: joystick input ${JSON.stringify(input)}`);
+        await page.waitForTimeout(1000);
         const after = await readRuntimeSnapshot(page);
         const delta = {
           x: after.player.x - before.player.x,
           z: after.player.z - before.player.z,
         };
-        const cameraDirection = before.camera[drag.cameraAxis];
-        const projectedDistance = drag.sign * (
-          delta.x * cameraDirection.x + delta.z * cameraDirection.z
-        );
-        report.touch.push({ direction: drag.name, cameraAxis: drag.cameraAxis, projectedDistance, delta, inputTarget });
+        const cameraRight = before.camera.right;
+        const cameraForward = before.camera.forward;
+        const intended = {
+          x: cameraRight.x * input.x + cameraForward.x * input.y,
+          z: cameraRight.z * input.x + cameraForward.z * input.y,
+        };
+        const intendedLength = Math.hypot(intended.x, intended.z);
+        assert(intendedLength > 0.01, `FAIL_CAMERA_RELATIVE_${direction.name.toUpperCase()}: ${JSON.stringify(intended)}`);
+        const projectedDistance = (delta.x * intended.x + delta.z * intended.z) / intendedLength;
+        await releaseTouchJoystick(cdp);
+        await page.waitForTimeout(450);
+        const released = await readRuntimeSnapshot(page);
+        const releasedSpeed = Math.hypot(released.machine.velocity.x, released.machine.velocity.z);
+        report.touch.push({ direction: direction.name, input, projectedDistance, delta, releasedSpeed });
         assert(projectedDistance > 0.08,
-          `FAIL_TOUCH_PORTRAIT_${drag.name.toUpperCase()}: projected distance ${projectedDistance}`);
+          `FAIL_TOUCH_PORTRAIT_${direction.name.toUpperCase()}: projected distance ${projectedDistance}`);
+        assert(releasedSpeed < 0.06,
+          `FAIL_TOUCH_RELEASE_${direction.name.toUpperCase()}: velocity ${releasedSpeed}`);
       }
       assert(runtimeErrors.length === 0, `Runtime console errors after touch: ${runtimeErrors.join(' | ')}`);
       await page.screenshot({ path: path.join(evidenceDirectory, 'portrait-390x844-gameplay.png') });
@@ -210,6 +238,7 @@ const report = {
   build: null,
   viewports: [],
   touch: [],
+  camera: null,
   failures: [],
 };
 
