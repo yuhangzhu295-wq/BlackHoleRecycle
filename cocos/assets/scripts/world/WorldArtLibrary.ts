@@ -321,7 +321,6 @@ export class WorldArtLibrary extends Component {
     switch (kind) {
       case 'roadStraight':
       case 'roadCrossroad':
-      case 'terrainTile':
       case 'streetLight':
       case 'constructionCone':
         return this.roadColorTexture;

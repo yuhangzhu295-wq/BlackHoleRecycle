@@ -79,8 +79,16 @@ class InfiniteWorldCell {
     this.node.destroy();
   }
 
-  private spawn(kind: WorldArtKind, x: number, z: number, scale: Readonly<Vec3> = ONE, yaw: number = 0, name: string = kind): void {
-    this.art.spawn(kind, this.node, V3(x, 0, z), scale, yaw, name);
+  private spawn(
+    kind: WorldArtKind,
+    x: number,
+    z: number,
+    scale: Readonly<Vec3> = ONE,
+    yaw: number = 0,
+    name: string = kind,
+    height: number = 0,
+  ): void {
+    this.art.spawn(kind, this.node, V3(x, height, z), scale, yaw, name);
   }
 
   /**
@@ -92,38 +100,43 @@ class InfiniteWorldCell {
     const half = this.cellSize * 0.5;
     const variant = positiveMod(this.coord.x * 31 + this.coord.z * 17, 6);
 
-    // Four ground quadrants keep the cell visually continuous during streaming.
+    // Four grass quadrants keep the cell visually continuous during streaming.
+    // They sit fractionally below the imported asphalt to avoid mobile depth
+    // fighting at road edges.
     for (const x of [-half * 0.5, half * 0.5]) {
       for (const z of [-half * 0.5, half * 0.5]) {
-        this.spawn('terrainTile', x, z, V3(16, 1, 16), 0, 'DistrictGround');
+        this.spawn('terrainTile', x, z, V3(16, 1, 16), 0, 'DistrictGround', -0.04);
       }
     }
 
     if (variant === 0 || variant === 3) {
-      this.spawn('roadCrossroad', 0, 0, V3(9, 1, 9), 0, 'FourWayRoad');
+      this.spawn('roadCrossroad', 0, 0, V3(12, 1, 12), 0, 'FourWayRoad', 0.02);
     } else {
-      this.spawn('roadStraight', 0, 0, V3(9, 1, 16), variant % 2 === 0 ? 0 : 90, 'DistrictRoad');
+      this.spawn('roadStraight', 0, 0, V3(12, 1, 22), variant % 2 === 0 ? 0 : 90, 'DistrictRoad', 0.02);
     }
 
+    // Keep the street's landmark silhouette within the narrow 9:16 camera,
+    // rather than only in the distant corners of the 64 m streaming cell.
+    // The central roadway remains unobstructed for the black-hole machine.
     const buildingA: WorldArtKind = variant % 2 === 0 ? 'buildingB' : 'buildingC';
     const buildingB: WorldArtKind = buildingA === 'buildingB' ? 'buildingC' : 'buildingB';
-    this.spawn(buildingA, -22, -22, V3(2.35, 2.35, 2.35), 90, 'DistrictResidenceNW');
-    this.spawn(buildingB, 22, 22, V3(2.35, 2.35, 2.35), -90, 'DistrictResidenceSE');
-    this.spawn('commercialBuildingA', -22, 22, V3(2.4, 2.4, 2.4), 90, 'DistrictShopSW');
-    this.spawn('commercialBuildingD', 22, -22, V3(2.4, 2.4, 2.4), -90, 'DistrictShopNE');
+    this.spawn(buildingA, -8.7, -8.8, V3(2.35, 2.35, 2.35), 90, 'DistrictResidenceNW');
+    this.spawn(buildingB, 8.7, -11.2, V3(2.35, 2.35, 2.35), -90, 'DistrictResidenceSE');
+    this.spawn('commercialBuildingA', -9.1, -17.4, V3(2.4, 2.4, 2.4), 90, 'DistrictShopSW');
+    this.spawn('commercialBuildingD', 9.1, -18.2, V3(2.4, 2.4, 2.4), -90, 'DistrictShopNE');
 
-    for (const [x, z] of [[-16, -7], [16, 7], [-7, 16], [7, -16]]) {
+    for (const [x, z] of [[-5.3, -5.5], [5.3, -7.5], [-5.3, -15.5], [5.3, -17.5]]) {
       this.spawn('streetLight', x, z, V3(3.8, 3.8, 3.8), 0, 'DistrictStreetLight');
     }
-    this.spawn('treeLarge', -20, 4, V3(3.5, 3.5, 3.5), 0, 'DistrictTreeLarge');
-    this.spawn('treeSmall', 20, -4, V3(3.7, 3.7, 3.7), 0, 'DistrictTreeSmall');
-    this.spawn('pathStones', -16, 15, V3(3.2, 1, 3.2), 90, 'DistrictPath');
-    this.spawn('fence', 16, -15, V3(3.2, 1.5, 3.2), 90, 'DistrictFence');
+    this.spawn('treeLarge', -7.2, -3.3, V3(3.5, 3.5, 3.5), 0, 'DistrictTreeLarge');
+    this.spawn('treeSmall', 7.5, -5.0, V3(3.7, 3.7, 3.7), 0, 'DistrictTreeSmall');
+    this.spawn('pathStones', -7.3, -14.5, V3(3.2, 1, 4.6), 90, 'DistrictPath');
+    this.spawn('fence', 7.3, -15.5, V3(3.2, 1.5, 3.8), 90, 'DistrictFence');
 
-    if (variant === 1) this.spawn('deliveryVan', -8, 6, V3(1.1, 1.1, 1.1), 90, 'DistrictDeliveryVan');
-    if (variant === 2) this.spawn('sedan', 8, -6, V3(1.2, 1.2, 1.2), -90, 'DistrictParkedSedan');
-    if (variant === 4) this.spawn('garbageTruck', 9, 5, V3(1.15, 1.15, 1.15), 90, 'DistrictGarbageTruck');
-    if (variant === 5) this.spawn('constructionCone', -10, -6, V3(5.5, 5.5, 5.5), 0, 'DistrictRoadCone');
+    if (variant === 1) this.spawn('deliveryVan', -3.1, -9.0, V3(1.1, 1.1, 1.1), 90, 'DistrictDeliveryVan');
+    if (variant === 2) this.spawn('sedan', 3.1, -10.0, V3(1.2, 1.2, 1.2), -90, 'DistrictParkedSedan');
+    if (variant === 4) this.spawn('garbageTruck', 3.3, -6.5, V3(1.15, 1.15, 1.15), 90, 'DistrictGarbageTruck');
+    if (variant === 5) this.spawn('constructionCone', -3.3, -6.0, V3(5.5, 5.5, 5.5), 0, 'DistrictRoadCone');
   }
 }
 
