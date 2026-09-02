@@ -2,6 +2,20 @@
 
 module.exports = {
   methods: {
+    async installMachineChassisTemplate() {
+      return Editor.Message.request('scene', 'execute-scene-script', {
+        name: 'black-hole-home-builder',
+        method: 'installMachineChassisTemplate',
+        args: [],
+      });
+    },
+    async verifyMachineChassisTemplate() {
+      return Editor.Message.request('scene', 'execute-scene-script', {
+        name: 'black-hole-home-builder',
+        method: 'verifyMachineChassisTemplate',
+        args: [],
+      });
+    },
     async installObjectArtRegistry() {
       return Editor.Message.request('scene', 'execute-scene-script', {
         name: 'black-hole-home-builder',

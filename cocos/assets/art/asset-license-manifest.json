@@ -530,6 +530,18 @@
       "commercialAllowed": true,
       "localPath": "assets/art/recyclables/props/trash-bag.glb",
       "sha256": "f75937b8d8b438dfae718ceff6acc269319be0d37684bad3f8ffc24e043c1bfe"
+    },
+    {
+      "id": "poly-google-bulldozer",
+      "source": "https://static.poly.pizza/4e401f2d-1000-472e-8167-0e3279b2d86d.glb",
+      "origin": "https://poly.pizza/m/eY1N7Rz9Drr",
+      "license": "CC-BY 3.0",
+      "author": "Poly by Google",
+      "usage": "Tracked player recycling-machine chassis; attribution required in shipped project documentation.",
+      "modified": false,
+      "commercialAllowed": true,
+      "localPath": "assets/art/machines/poly-google-bulldozer.glb",
+      "sha256": "55fba683c1bbcec561076367604526d1a1e79f2bb7ed3497bb4965fe1cfbde84"
     }
   ]
 }

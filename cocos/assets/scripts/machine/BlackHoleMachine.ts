@@ -35,6 +35,7 @@ export class BlackHoleMachine extends Component {
 
   // 内部视觉节点容器
   private visualRoot: Node | null = null;
+  private chassisNode: Node | null = null;
   private holeRim: Node | null = null;
   private innerSwirl: Node | null = null;
   private outerSwirl: Node | null = null;
@@ -60,7 +61,24 @@ export class BlackHoleMachine extends Component {
 
     const art = this.getArtLibrary();
 
-    // 1. 黑洞核心：低矮、宽阔的深渊圆盘，在竖屏俯视镜头下保持为清楚的圆形。
+    // 1. LV1 回收机底盘。它来自 Creator 已导入保存的审计过的履带推土机
+    // 网格，不是由 Box/Cylinder 临时拼出的伪车辆。黑洞安装在车体上方，
+    // 因此玩家首先仍读作“移动黑洞”，但从轮廓能看出其回收机械身份。
+    this.chassisNode = new Node('RecyclingCrawlerChassis');
+    this.visualRoot.addChild(this.chassisNode);
+    art.spawn(
+      'bulldozer',
+      this.chassisNode,
+      // Keep the carrier behind the suction mouth rather than hidden under it.
+      // In the top-down portrait camera this exposes the cab and track outline
+      // while leaving the black hole as the leading, readable gameplay core.
+      new Vec3(0, 0.02, 0.78),
+      new Vec3(1, 1, 1),
+      180,
+      'AuditedBulldozerChassis'
+    );
+
+    // 2. 黑洞核心：低矮、宽阔的深渊圆盘，在竖屏俯视镜头下保持为清楚的圆形。
     this.coreNode = new Node('CoreNode');
     this.coreNode.setPosition(0, 0.16, 0);
     this.visualRoot.addChild(this.coreNode);
@@ -89,7 +107,7 @@ export class BlackHoleMachine extends Component {
     this.coreNode.addChild(this.holeRim);
     MeshFactory.attachMesh(this.holeRim, MeshFactory.getTorusMesh(1.0, 0.06), '#d0c2ff', 0.1, 0.5);
 
-    // 2. LV2 磁力双涡轮 (TurbineNode)
+    // 3. LV2 磁力双涡轮 (TurbineNode)
     this.turbineNode = new Node('TurbineRoot');
     this.visualRoot.addChild(this.turbineNode);
 
@@ -98,13 +116,13 @@ export class BlackHoleMachine extends Component {
 
     this.turbineNode.active = false;
 
-    // 5. LV3 冲压压缩机 (CrusherNode)
+    // 4. LV3 冲压压缩机 (CrusherNode)
     this.crusherNode = new Node('CrusherNode');
     this.visualRoot.addChild(this.crusherNode);
     art.spawn('recyclingBox', this.crusherNode, new Vec3(0, 0.48, 0.58), new Vec3(1.45, 0.85, 1.1), 0, 'CompressionModule');
     this.crusherNode.active = false;
 
-    // 6. LV4 引力稳定翼 (GravityWingNode)
+    // 5. LV4 引力稳定翼 (GravityWingNode)
     this.gravityWingNode = new Node('GravityWingNode');
     this.visualRoot.addChild(this.gravityWingNode);
 
@@ -113,7 +131,7 @@ export class BlackHoleMachine extends Component {
 
     this.gravityWingNode.active = false;
 
-    // 7. LV5 奇点光环 (SingularityHaloNode)
+    // 6. LV5 奇点光环 (SingularityHaloNode)
     this.singularityHaloNode = new Node('SingularityHaloNode');
     this.singularityHaloNode.setPosition(0, 1.35, 0);
     this.visualRoot.addChild(this.singularityHaloNode);

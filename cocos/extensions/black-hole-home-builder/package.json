@@ -11,6 +11,16 @@
     "menu": [
       {
         "path": "i18n:menu.extension",
+        "label": "安装 V2 履带回收机底盘（编辑器保存）",
+        "message": "install-machine-chassis-template"
+      },
+      {
+        "path": "i18n:menu.extension",
+        "label": "验证 V2 履带回收机底盘",
+        "message": "verify-machine-chassis-template"
+      },
+      {
+        "path": "i18n:menu.extension",
         "label": "安装 V2 回收物语义模型（编辑器保存）",
         "message": "install-object-art-registry"
       },
@@ -76,6 +86,8 @@
       }
     ],
     "messages": {
+      "install-machine-chassis-template": { "methods": ["installMachineChassisTemplate"] },
+      "verify-machine-chassis-template": { "methods": ["verifyMachineChassisTemplate"] },
       "install-object-art-registry": { "methods": ["installObjectArtRegistry"] },
       "verify-object-art-registry": { "methods": ["verifyObjectArtRegistry"] },
       "install-infinite-world": { "methods": ["installInfiniteWorld"] },

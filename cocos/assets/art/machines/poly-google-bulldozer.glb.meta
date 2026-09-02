@@ -1,0 +1,143 @@
+{
+  "ver": "2.3.13",
+  "importer": "gltf",
+  "imported": true,
+  "uuid": "9b34ec81-60b6-4407-8b7a-b6b2c821d44a",
+  "files": [],
+  "subMetas": {
+    "67067": {
+      "importer": "gltf-material",
+      "uuid": "9b34ec81-60b6-4407-8b7a-b6b2c821d44a@67067",
+      "displayName": "",
+      "id": "67067",
+      "name": "blinn1SG.material",
+      "userData": {
+        "gltfIndex": 0
+      },
+      "ver": "1.0.14",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "17fd0": {
+      "importer": "gltf-mesh",
+      "uuid": "9b34ec81-60b6-4407-8b7a-b6b2c821d44a@17fd0",
+      "displayName": "",
+      "id": "17fd0",
+      "name": "Bulldozer_mesh_1.mesh",
+      "userData": {
+        "gltfIndex": 0,
+        "triangleCount": 2518
+      },
+      "ver": "1.1.1",
+      "imported": true,
+      "files": [
+        ".bin",
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "77daa": {
+      "importer": "gltf-embeded-image",
+      "uuid": "9b34ec81-60b6-4407-8b7a-b6b2c821d44a@77daa",
+      "displayName": "",
+      "id": "77daa",
+      "name": "Bulldozer_BaseColor.image",
+      "userData": {
+        "gltfIndex": 0,
+        "fixAlphaTransparencyArtifacts": true,
+        "hasAlpha": true,
+        "type": "texture"
+      },
+      "ver": "1.0.3",
+      "imported": true,
+      "files": [
+        ".json",
+        ".png"
+      ],
+      "subMetas": {}
+    },
+    "7731a": {
+      "importer": "texture",
+      "uuid": "9b34ec81-60b6-4407-8b7a-b6b2c821d44a@7731a",
+      "displayName": "",
+      "id": "7731a",
+      "name": "Bulldozer_BaseColor.texture",
+      "userData": {
+        "wrapModeS": "repeat",
+        "wrapModeT": "repeat",
+        "minfilter": "nearest",
+        "magfilter": "linear",
+        "mipfilter": "linear",
+        "anisotropy": 0,
+        "isUuid": true,
+        "imageUuidOrDatabaseUri": "9b34ec81-60b6-4407-8b7a-b6b2c821d44a@77daa"
+      },
+      "ver": "1.0.22",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "fb0f8": {
+      "importer": "gltf-scene",
+      "uuid": "9b34ec81-60b6-4407-8b7a-b6b2c821d44a@fb0f8",
+      "displayName": "",
+      "id": "fb0f8",
+      "name": "poly-google-bulldozer.prefab",
+      "userData": {
+        "gltfIndex": 0
+      },
+      "ver": "1.0.14",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    }
+  },
+  "userData": {
+    "imageMetas": [
+      {
+        "name": "Bulldozer_BaseColor",
+        "uri": "9b34ec81-60b6-4407-8b7a-b6b2c821d44a@77daa"
+      }
+    ],
+    "lods": {
+      "enable": false,
+      "hasBuiltinLOD": false,
+      "options": [
+        {
+          "screenRatio": 0.25,
+          "faceCount": 1
+        },
+        {
+          "screenRatio": 0.125,
+          "faceCount": 0.25
+        },
+        {
+          "screenRatio": 0.01,
+          "faceCount": 0.1
+        }
+      ]
+    },
+    "assetFinder": {
+      "meshes": [
+        "9b34ec81-60b6-4407-8b7a-b6b2c821d44a@17fd0"
+      ],
+      "skeletons": [],
+      "textures": [
+        "9b34ec81-60b6-4407-8b7a-b6b2c821d44a@7731a"
+      ],
+      "materials": [
+        "9b34ec81-60b6-4407-8b7a-b6b2c821d44a@67067"
+      ],
+      "scenes": [
+        "9b34ec81-60b6-4407-8b7a-b6b2c821d44a@fb0f8"
+      ]
+    }
+  }
+}

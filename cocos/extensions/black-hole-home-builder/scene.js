@@ -48,6 +48,18 @@ const OBJECT_ART_TEMPLATE_SPECS = [
   { property: 'shippingContainerTemplate', name: 'ShippingContainerTemplate', url: 'db://assets/art/recyclables/industrial/shipping-container.glb', scale: [8.6, 9.2, 8.5] },
 ];
 
+// This is the player machine's actual tracked chassis, not a generic truck
+// substituted for a bulldozer. Its CC-BY 3.0 attribution is kept alongside
+// the binary audit record and shipped project documentation.
+const MACHINE_CHASSIS_TEMPLATE_SPEC = {
+  property: 'bulldozerTemplate',
+  name: 'BulldozerTemplate',
+  url: 'db://assets/art/machines/poly-google-bulldozer.glb',
+  // Normalize the imported source once in the Creator-saved template so
+  // gameplay instances remain unit-scaled.
+  scale: [0.09, 0.09, 0.09],
+};
+
 function getComponentClass(name) {
   const { js } = require('cc');
   const type = js.getClassByName(name);
@@ -128,6 +140,34 @@ async function getImportedGltfPrefab(url) {
   return prefab;
 }
 
+async function getImportedGltfTexture(url) {
+  const { assetManager, Texture2D } = require('cc');
+  const info = await Editor.Message.request('asset-db', 'query-asset-info', url);
+  if (!info || !info.uuid) throw new Error(`Asset is not imported: ${url}`);
+  const rawMeta = await Editor.Message.request('asset-db', 'query-asset-meta', info.uuid);
+  const meta = typeof rawMeta === 'string' ? JSON.parse(rawMeta) : rawMeta;
+  const textureMeta = Object.values(meta && meta.subMetas ? meta.subMetas : {})
+    .find((subMeta) => subMeta && subMeta.importer === 'texture');
+  if (!textureMeta || !textureMeta.uuid) {
+    throw new Error(`GLB does not contain a Cocos texture subasset: ${url}`);
+  }
+  const cachedTexture = assetManager.assets.get(textureMeta.uuid);
+  if (cachedTexture instanceof Texture2D) return cachedTexture;
+  const texture = await new Promise((resolve, reject) => {
+    assetManager.loadAny(textureMeta.uuid, (error, loadedAsset) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+      resolve(loadedAsset);
+    });
+  });
+  if (!(texture instanceof Texture2D)) {
+    throw new Error(`Cocos did not load a Texture2D for glTF asset: ${url}`);
+  }
+  return texture;
+}
+
 function addObjectArtTemplate(library, spec, prefab) {
   const { Node, Vec3, instantiate } = require('cc');
   let wrapper = library.node.getChildByName(spec.name);
@@ -136,6 +176,7 @@ function addObjectArtTemplate(library, spec, prefab) {
       throw new Error(`${spec.name} exists without an imported glTF child; refusing to replace it.`);
     }
     detachNestedImportedPrefabs(wrapper);
+    normalizeExistingTemplate(wrapper, spec.property, spec.scale);
     library[spec.property] = wrapper;
     return { wrapper, created: false };
   }
@@ -152,10 +193,10 @@ function addObjectArtTemplate(library, spec, prefab) {
 
 /**
  * Copy actual imported glTF geometry to normal scene nodes. This removes the
- * nested Prefab dependency that otherwise reloads a GLB embedded-image
- * subasset when Game.scene is opened. The retained Mesh is still the audited
- * imported glTF mesh; runtime material assignment remains WorldArtLibrary's
- * responsibility.
+ * nested Prefab dependency when Game.scene is opened. The retained Mesh is
+ * still the audited imported glTF mesh; WorldArtLibrary assigns its approved
+ * runtime material. A source colour map may be saved explicitly as a
+ * Texture2D property on WorldArtLibrary when that model needs authored detail.
  */
 function copyImportedGeometry(source, parent) {
   const { MeshRenderer, Node } = require('cc');
@@ -301,6 +342,41 @@ exports.load = function load() {};
 exports.unload = function unload() {};
 
 exports.methods = {
+  async installMachineChassisTemplate() {
+    const { director } = require('cc');
+    const gameRoot = director.getScene()?.getChildByName('GameRoot') || null;
+    const library = gameRoot?.getChildByName('WorldArtLibrary')?.getComponent(getComponentClass('WorldArtLibrary')) || null;
+    if (!library) throw new Error('GameRoot/WorldArtLibrary with the WorldArtLibrary component is required.');
+
+    const prefab = await getImportedGltfPrefab(MACHINE_CHASSIS_TEMPLATE_SPEC.url);
+    const colorTexture = await getImportedGltfTexture(MACHINE_CHASSIS_TEMPLATE_SPEC.url);
+    const result = addObjectArtTemplate(library, MACHINE_CHASSIS_TEMPLATE_SPEC, prefab);
+    library.bulldozerColorTexture = colorTexture;
+    await Editor.Message.request('scene', 'save-scene');
+    return {
+      saved: true,
+      created: result.created,
+      template: MACHINE_CHASSIS_TEMPLATE_SPEC.name,
+      // Prefab creation is intentionally not performed from a scene script:
+      // Creator shows a native overwrite dialog for an existing asset and
+      // suspends the script until it times out. The runtime consumes the
+      // Creator-saved WorldArtLibrary template directly.
+      prefab: null,
+      prefabCreation: 'not-run-from-scene-script',
+    };
+  },
+  async verifyMachineChassisTemplate() {
+    const { director } = require('cc');
+    const library = director.getScene()?.getChildByName('GameRoot')?.getChildByName('WorldArtLibrary')
+      ?.getComponent(getComponentClass('WorldArtLibrary')) || null;
+    const template = library?.bulldozerTemplate || null;
+    return {
+      ok: !!template && template.children.length > 0 && !template.active,
+      template: template?.name || null,
+      childCount: template?.children.length || 0,
+      active: template?.active ?? null,
+    };
+  },
   async installObjectArtRegistry() {
     const { director } = require('cc');
     const scene = director.getScene();

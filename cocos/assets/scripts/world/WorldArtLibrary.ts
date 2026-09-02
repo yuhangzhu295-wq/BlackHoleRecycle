@@ -22,6 +22,7 @@ export type WorldArtKind =
   | 'commercialBuildingD'
   | 'streetLight'
   | 'constructionCone'
+  | 'bulldozer'
   | 'garbageTruck'
   | 'sedan'
   | 'deliveryVan'
@@ -61,7 +62,10 @@ const WORLD_ART_COLORS: Record<WorldArtKind, string> = {
   commercialBuildingD: '#ff8f70',
   streetLight: '#fef3c7',
   constructionCone: '#ff7a00',
-  garbageTruck: '#2b7fff',
+  bulldozer: '#35a85e',
+  // The player carrier follows the green/yellow recycling-machine family in
+  // the approved V2 reference. Its geometry remains the audited truck mesh.
+  garbageTruck: '#35a85e',
   sedan: '#ef476f',
   deliveryVan: '#ffd166',
   recyclingBox: '#c68b59',
@@ -129,6 +133,10 @@ export class WorldArtLibrary extends Component {
   @property(Node)
   public constructionConeTemplate: Node | null = null;
 
+  /** CC-BY source with attribution recorded in docs/third-party-attributions.md. */
+  @property(Node)
+  public bulldozerTemplate: Node | null = null;
+
   @property(Node)
   public garbageTruckTemplate: Node | null = null;
 
@@ -187,6 +195,10 @@ export class WorldArtLibrary extends Component {
   @property(Texture2D)
   public vehicleColorTexture: Texture2D | null = null;
 
+  /** Authored colour map from the audited tracked player chassis. */
+  @property(Texture2D)
+  public bulldozerColorTexture: Texture2D | null = null;
+
   public getTemplate(kind: WorldArtKind): Node {
     const template = this.getTemplateOrNull(kind);
     if (!template || !template.isValid) {
@@ -210,6 +222,7 @@ export class WorldArtLibrary extends Component {
       case 'commercialBuildingD': return this.commercialBuildingDTemplate;
       case 'streetLight': return this.streetLightTemplate;
       case 'constructionCone': return this.constructionConeTemplate;
+      case 'bulldozer': return this.bulldozerTemplate;
       case 'garbageTruck': return this.garbageTruckTemplate;
       case 'sedan': return this.sedanTemplate;
       case 'deliveryVan': return this.deliveryVanTemplate;
@@ -312,6 +325,8 @@ export class WorldArtLibrary extends Component {
       case 'streetLight':
       case 'constructionCone':
         return this.roadColorTexture;
+      case 'bulldozer':
+        return this.bulldozerColorTexture;
       case 'buildingB':
       case 'buildingC':
       case 'treeSmall':
@@ -341,7 +356,7 @@ export class WorldArtLibrary extends Component {
     const required: WorldArtKind[] = [
       'roadStraight', 'roadCrossroad', 'terrainTile', 'buildingB', 'buildingC',
       'treeSmall', 'treeLarge', 'pathStones', 'fence', 'commercialBuildingA',
-      'commercialBuildingD', 'streetLight', 'constructionCone', 'garbageTruck',
+      'commercialBuildingD', 'streetLight', 'constructionCone', 'bulldozer', 'garbageTruck',
       'sedan', 'deliveryVan', 'recyclingBox', 'tire', 'recyclingBolt', 'turbineWheel',
       'sodaCan', 'waterBottle', 'battery', 'toyDuck', 'apple', 'paperScrap',
       'bookStack', 'cardboardBox', 'trashBag', 'paintBucket', 'chair', 'coffeeTable',
