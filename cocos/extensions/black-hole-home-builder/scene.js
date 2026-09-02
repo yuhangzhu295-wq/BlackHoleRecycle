@@ -183,6 +183,38 @@ exports.load = function load() {};
 exports.unload = function unload() {};
 
 exports.methods = {
+  async installInfiniteWorld() {
+    const { director, Node } = require('cc');
+    const scene = director.getScene();
+    const gameRoot = scene?.getChildByName('GameRoot');
+    if (!gameRoot) throw new Error('Game.scene does not contain GameRoot');
+    const gameManager = gameRoot.getComponent(getComponentClass('GameManager'));
+    if (!gameManager) throw new Error('GameRoot is missing GameManager');
+
+    let worldRoot = gameRoot.getChildByName('InfiniteWorldRoot');
+    if (!worldRoot) {
+      worldRoot = new Node('InfiniteWorldRoot');
+      gameRoot.addChild(worldRoot);
+    }
+    let manager = worldRoot.getComponent(getComponentClass('InfiniteWorldManager'));
+    if (!manager) manager = worldRoot.addComponent(getComponentClass('InfiniteWorldManager'));
+    gameManager.infiniteWorldManager = manager;
+    await Editor.Message.request('scene', 'save-scene');
+    return { saved: true, path: 'GameRoot/InfiniteWorldRoot', rootUuid: worldRoot.uuid, component: 'InfiniteWorldManager' };
+  },
+  async verifyInfiniteWorld() {
+    const { director } = require('cc');
+    const gameRoot = director.getScene()?.getChildByName('GameRoot');
+    const worldRoot = gameRoot?.getChildByName('InfiniteWorldRoot') || null;
+    const manager = worldRoot?.getComponent(getComponentClass('InfiniteWorldManager')) || null;
+    const gameManager = gameRoot?.getComponent(getComponentClass('GameManager')) || null;
+    return {
+      ok: !!worldRoot && !!manager && gameManager?.infiniteWorldManager === manager,
+      rootExists: !!worldRoot,
+      componentExists: !!manager,
+      gameManagerBound: gameManager?.infiniteWorldManager === manager,
+    };
+  },
   async addJoystickOverlay() {
     const { director } = require('cc');
     const endless = director.getScene()?.getChildByName('Canvas')?.getChildByName('EndlessHUD');

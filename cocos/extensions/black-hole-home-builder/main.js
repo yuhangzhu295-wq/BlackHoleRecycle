@@ -2,6 +2,20 @@
 
 module.exports = {
   methods: {
+    async installInfiniteWorld() {
+      return Editor.Message.request('scene', 'execute-scene-script', {
+        name: 'black-hole-home-builder',
+        method: 'installInfiniteWorld',
+        args: [],
+      });
+    },
+    async verifyInfiniteWorld() {
+      return Editor.Message.request('scene', 'execute-scene-script', {
+        name: 'black-hole-home-builder',
+        method: 'verifyInfiniteWorld',
+        args: [],
+      });
+    },
     async addJoystickOverlay() {
       return Editor.Message.request('scene', 'execute-scene-script', {
         name: 'black-hole-home-builder',

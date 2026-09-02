@@ -64,3 +64,57 @@ export class ChunkItemGenerator {
     return items;
   }
 }
+
+/** Deterministic two-dimensional resource clusters for InfiniteWorldManager. */
+export class CellItemGenerator {
+  public static generateCellItems(
+    theme: IRegionThemeConfig,
+    cellX: number,
+    cellZ: number,
+    seed: number,
+    cellSize: number,
+  ): IChunkSpawnItem[] {
+    const available = OBJECT_TEMPLATES.filter((template) => theme.availableTiers.includes(template.tier));
+    const t1 = available.filter((template) => template.tier === ObjectTier.T1);
+    const items: IChunkSpawnItem[] = [];
+    let state = (seed >>> 0) || 1;
+    const random = (): number => {
+      state = (state * 1664525 + 1013904223) >>> 0;
+      return state / 0x100000000;
+    };
+    const clusterCenters: ReadonlyArray<readonly [number, number]> = [
+      [-17, -14], [16, -12], [-13, 15], [15, 15], [0, -4],
+    ];
+    const count = 20 + positive(seed, 5);
+    const half = cellSize * 0.5 - 5;
+    for (let index = 0; index < count; index++) {
+      const center = clusterCenters[index % clusterCenters.length];
+      const highTier = index % 5 === 0 && available.some((template) => template.tier >= ObjectTier.T2);
+      const candidates = highTier
+        ? available.filter((template) => template.tier >= ObjectTier.T2)
+        : (t1.length > 0 ? t1 : available);
+      const template = candidates[index % candidates.length] || available[0];
+      const localX = Math.max(-half, Math.min(half, center[0] + (random() - 0.5) * 8));
+      const localZ = Math.max(-half, Math.min(half, center[1] + (random() - 0.5) * 8));
+      items.push({
+        template,
+        localX,
+        localZ,
+        customId: `cell_${cellX}_${cellZ}_${index}`,
+      });
+    }
+
+    // The initial cell retains a deterministic nearby T2 target for the
+    // existing LV1 lock -> LV2 unlock vertical slice.
+    if (cellX === 0 && cellZ === 0) {
+      const target = available.find((template) => template.tier === ObjectTier.T2);
+      if (target) items.unshift({ template: target, localX: 0, localZ: -8, customId: 't2_target_bed_box' });
+    }
+    return items;
+  }
+}
+
+function positive(value: number, divisor: number): number {
+  const result = value % divisor;
+  return result < 0 ? result + divisor : result;
+}

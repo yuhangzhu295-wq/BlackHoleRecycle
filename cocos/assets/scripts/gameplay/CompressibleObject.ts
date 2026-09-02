@@ -36,6 +36,12 @@ export class CompressibleObject extends Component {
     return this.currentPos;
   }
 
+  /** Keep render-space pooled objects aligned when the infinite world rebases. */
+  public applyWorldRebase(shift: Readonly<Vec3>): void {
+    this.currentPos.subtract(shift);
+    this.node.setPosition(this.currentPos);
+  }
+
   onLoad(): void {
     this.buildVisibleNode();
     this.initFSM();

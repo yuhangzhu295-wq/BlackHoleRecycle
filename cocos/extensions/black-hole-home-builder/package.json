@@ -11,6 +11,16 @@
     "menu": [
       {
         "path": "i18n:menu.extension",
+        "label": "安装 V2 二维无限世界（编辑器保存）",
+        "message": "install-infinite-world"
+      },
+      {
+        "path": "i18n:menu.extension",
+        "label": "验证 V2 二维无限世界",
+        "message": "verify-infinite-world"
+      },
+      {
+        "path": "i18n:menu.extension",
         "label": "添加 V2 可见摇杆（编辑器保存）",
         "message": "add-joystick-overlay"
       },
@@ -56,6 +66,8 @@
       }
     ],
     "messages": {
+      "install-infinite-world": { "methods": ["installInfiniteWorld"] },
+      "verify-infinite-world": { "methods": ["verifyInfiniteWorld"] },
       "add-joystick-overlay": { "methods": ["addJoystickOverlay"] },
       "prepare-home-sprites": { "methods": ["prepareHomeSprites"] },
       "build-home": { "methods": ["buildHome"] },

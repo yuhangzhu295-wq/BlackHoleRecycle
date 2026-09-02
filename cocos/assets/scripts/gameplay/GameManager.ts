@@ -3,7 +3,7 @@
  */
 import { _decorator, Component, Node, Camera, Vec3, math, director, DirectionalLight, Color, Canvas, UITransform, view, ResolutionPolicy } from 'cc';
 import { BlackHoleMachine } from '../machine/BlackHoleMachine';
-import { WorldChunkManager } from '../world/WorldChunkManager';
+import { InfiniteWorldManager } from '../world/InfiniteWorldManager';
 import { CompressibleObject } from './CompressibleObject';
 import { HUDView } from '../ui/HUDView';
 import { CompressionSystem } from './CompressionSystem';
@@ -23,8 +23,9 @@ export class GameManager extends Component {
   @property(BlackHoleMachine)
   public machine: BlackHoleMachine | null = null;
 
-  @property(WorldChunkManager)
-  public chunkManager: WorldChunkManager | null = null;
+  /** The editor-saved production 2D grid. Legacy WorldChunkManager is not used here. */
+  @property(InfiniteWorldManager)
+  public infiniteWorldManager: InfiniteWorldManager | null = null;
 
   @property(Camera)
   public mainCamera: Camera | null = null;
@@ -123,13 +124,13 @@ export class GameManager extends Component {
       }
     }
 
-    // 5. 自动挂载或查找 WorldChunkManager
-    if (!this.chunkManager) {
-      this.chunkManager = scene?.getComponentInChildren(WorldChunkManager) || null;
-      if (!this.chunkManager) {
-        const chunkManagerNode = new Node('WorldChunkManager');
-        this.node.addChild(chunkManagerNode);
-        this.chunkManager = chunkManagerNode.addComponent(WorldChunkManager);
+    // 5. Production streaming is an editor-saved 2D InfiniteWorldManager.
+    // Do not create an unsaved fallback here: that would silently return to a
+    // z-only runtime hierarchy and violate the scene-asset contract.
+    if (!this.infiniteWorldManager) {
+      this.infiniteWorldManager = scene?.getComponentInChildren(InfiniteWorldManager) || null;
+      if (!this.infiniteWorldManager) {
+        throw new Error('[GameManager] Missing editor-saved InfiniteWorldManager. Run the Cocos world installer before previewing.');
       }
     }
 
@@ -145,8 +146,8 @@ export class GameManager extends Component {
   }
 
   private initWorld(): void {
-    if (this.chunkManager) {
-      this.chunkManager.init(() => {
+    if (this.infiniteWorldManager) {
+      this.infiniteWorldManager.init(() => {
         const objNode = new Node('CompressibleObject');
         const comp = objNode.addComponent(CompressibleObject);
         return comp;
@@ -313,7 +314,7 @@ export class GameManager extends Component {
 
   private updateHUD(): void {
     if (this.hud && this.machine) {
-      const regionName = this.chunkManager?.currentTheme.name || '卧室杂物区';
+      const regionName = this.infiniteWorldManager?.currentTheme.name || '卧室杂物区';
       this.hud.updateStats(
         this.machine.currentMass,
         this.machine.currentLevel,
@@ -446,7 +447,7 @@ export class GameManager extends Component {
             ? Math.abs(playerScreenRight.x - playerScreenLeft.x) / viewport.width
             : 0,
         } : null;
-        const allObjs = this.chunkManager?.getAllObjects() || [];
+        const allObjs = this.infiniteWorldManager?.getAllObjects() || [];
         const sampledObjs = allObjs.map(o => {
           const p = o.getPosition();
           return {
@@ -513,11 +514,11 @@ export class GameManager extends Component {
           },
           },
           world: {
-            currentRegion: this.chunkManager?.currentTheme.id || 'bedroom',
-            regionIndex: this.chunkManager?.getRegionIndex() || 0,
-            activeChunkCount: this.chunkManager?.activeChunks.length || 0,
-            activeAreaCount: this.chunkManager?.activeChunks.length || 0,
-            visibleObjectCount: this.chunkManager?.getVisibleObjectCount() || 0
+            currentRegion: this.infiniteWorldManager?.currentTheme.id || 'bedroom',
+            regionIndex: this.infiniteWorldManager?.getRegionIndex() || 0,
+            activeCellCount: this.infiniteWorldManager?.activeCells.size || 0,
+            visibleObjectCount: this.infiniteWorldManager?.getVisibleObjectCount() || 0,
+            streaming: this.infiniteWorldManager?.getSnapshot() || null,
           },
           objects: sampledObjs,
           compression: {
@@ -549,17 +550,26 @@ export class GameManager extends Component {
     if (this.isPaused) return;
     if (!this.machine || !this.mainCamera) return;
 
-    const mPos = this.machine.node.position;
+    let mPos = this.machine.node.position.clone();
 
     // 2. 驱动场景物理与物体状态机
     if (this.gameState === 'PLAYING') {
-      if (this.chunkManager) {
-        // 更新分块流式生成与回收
-        this.chunkManager.updateChunks(mPos.z);
-        this.regionsVisitedCount = Math.max(this.regionsVisitedCount, this.chunkManager.getRegionIndex() + 1);
+      if (this.infiniteWorldManager) {
+        // Production 2D grid streaming and origin rebasing. The machine remains
+        // in compact render coordinates while the manager retains logical X/Z.
+        const rebase = this.infiniteWorldManager.updateCells(mPos);
+        if (rebase) {
+          this.machine.node.setPosition(
+            mPos.x - rebase.shift.x,
+            mPos.y,
+            mPos.z - rebase.shift.z,
+          );
+          mPos = this.machine.node.position.clone();
+        }
+        this.regionsVisitedCount = Math.max(this.regionsVisitedCount, this.infiniteWorldManager.getRegionIndex() + 1);
 
         // 驱动可压缩物体的引力、运动、碰撞与吞噬判定
-        this.chunkManager.updateObjects(
+        this.infiniteWorldManager.updateObjects(
           dt,
           mPos,
           this.machine.getSuctionRadius(),

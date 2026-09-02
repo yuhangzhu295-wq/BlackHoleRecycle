@@ -217,6 +217,103 @@ function validatePortraitSnapshot(viewport, canvasRect, runtimeSnapshot) {
     `FAIL_PORTRAIT_OVERLAY_ONLY: 3D viewport ratio ${portrait.viewportRatio}`);
 }
 
+function getLogicalPlayerPosition(runtimeSnapshot) {
+  const streaming = runtimeSnapshot.world?.streaming;
+  assert(streaming?.mode === '2D_GRID', `FAIL_WORLD_MODE: ${JSON.stringify(streaming)}`);
+  assert(Number.isFinite(runtimeSnapshot.player?.x) && Number.isFinite(runtimeSnapshot.player?.z),
+    `FAIL_WORLD_PLAYER_POSITION: ${JSON.stringify(runtimeSnapshot.player)}`);
+  assert(Number.isFinite(streaming.logicalOrigin?.x) && Number.isFinite(streaming.logicalOrigin?.z),
+    `FAIL_WORLD_LOGICAL_ORIGIN: ${JSON.stringify(streaming.logicalOrigin)}`);
+  return {
+    x: runtimeSnapshot.player.x + streaming.logicalOrigin.x,
+    z: runtimeSnapshot.player.z + streaming.logicalOrigin.z,
+  };
+}
+
+/**
+ * Checks the live scene's stream state only. It has no setters and never moves
+ * the player: traversal below is performed exclusively by real CDP touches.
+ */
+function validateInfiniteWorldSnapshot(runtimeSnapshot) {
+  const world = runtimeSnapshot.world;
+  const streaming = world?.streaming;
+  assert(streaming?.mode === '2D_GRID', `FAIL_WORLD_MODE: ${JSON.stringify(streaming)}`);
+  assert(streaming.cellSize === 64, `FAIL_WORLD_CELL_SIZE: ${streaming.cellSize}`);
+  assert(world.activeCellCount === 9 && streaming.activeCellCount === 9,
+    `FAIL_WORLD_ACTIVE_COUNT: ${JSON.stringify({ world: world.activeCellCount, stream: streaming.activeCellCount })}`);
+  assert(streaming.expectedActiveCellCount === 9,
+    `FAIL_WORLD_EXPECTED_COUNT: ${streaming.expectedActiveCellCount}`);
+  assert(world.visibleObjectCount > 0, `FAIL_WORLD_EMPTY: ${world.visibleObjectCount}`);
+  assert(Array.isArray(streaming.activeCells) && streaming.activeCells.length === 9,
+    `FAIL_WORLD_CELL_SNAPSHOT: ${JSON.stringify(streaming.activeCells)}`);
+
+  const expected = new Set();
+  for (let x = streaming.currentCell.x - 1; x <= streaming.currentCell.x + 1; x += 1) {
+    for (let z = streaming.currentCell.z - 1; z <= streaming.currentCell.z + 1; z += 1) {
+      expected.add(`${x}:${z}`);
+    }
+  }
+  const actual = new Set(streaming.activeCells.map((cell) => `${cell.x}:${cell.z}`));
+  assert(actual.size === 9 && [...expected].every((cell) => actual.has(cell)),
+    `FAIL_WORLD_NOT_3X3: expected=${JSON.stringify([...expected])} actual=${JSON.stringify([...actual])}`);
+  return streaming;
+}
+
+async function verifyCardinalLongTravel(cdp, page, joystick, direction) {
+  const before = await readRuntimeSnapshot(page);
+  const beforeStream = validateInfiniteWorldSnapshot(before);
+  const beforeLogical = getLogicalPlayerPosition(before);
+  const endpoint = {
+    x: joystick.x + joystick.maxOffsetX * direction.touchX,
+    y: joystick.y + joystick.maxOffsetY * direction.touchY,
+  };
+
+  await beginTouchJoystick(cdp, joystick.x, joystick.y, endpoint.x, endpoint.y);
+  const engaged = await readRuntimeSnapshot(page);
+  const input = engaged.machine.movementInput;
+  assert(Math.hypot(input.x, input.y) > 0.5,
+    `FAIL_LONG_TOUCH_INPUT_${direction.name}: ${JSON.stringify(input)}`);
+
+  const requiredDistance = 500;
+  const deadline = Date.now() + 130000;
+  let after = engaged;
+  let logical = getLogicalPlayerPosition(after);
+  let signedDistance = 0;
+  let observedRebase = false;
+  while (signedDistance < requiredDistance && Date.now() < deadline) {
+    await page.waitForTimeout(1000);
+    after = await readRuntimeSnapshot(page);
+    const stream = validateInfiniteWorldSnapshot(after);
+    logical = getLogicalPlayerPosition(after);
+    signedDistance = direction.axis === 'x'
+      ? (logical.x - beforeLogical.x) * direction.sign
+      : (logical.z - beforeLogical.z) * direction.sign;
+    observedRebase ||= stream.rebaseCount > beforeStream.rebaseCount;
+  }
+
+  await releaseTouchJoystick(cdp);
+  await page.waitForTimeout(500);
+  const released = await readRuntimeSnapshot(page);
+  const releasedSpeed = Math.hypot(released.machine.velocity.x, released.machine.velocity.z);
+  assert(signedDistance >= requiredDistance,
+    `FAIL_WORLD_500M_${direction.name}: travelled ${signedDistance.toFixed(2)}m before timeout`);
+  assert(observedRebase,
+    `FAIL_WORLD_REBASE_${direction.name}: no origin rebase observed while travelling ${signedDistance.toFixed(2)}m`);
+  assert(releasedSpeed < 0.06,
+    `FAIL_WORLD_LONG_RELEASE_${direction.name}: velocity ${releasedSpeed}`);
+  validateInfiniteWorldSnapshot(released);
+  return {
+    direction: direction.name,
+    input,
+    travelled: signedDistance,
+    logicalStart: beforeLogical,
+    logicalEnd: logical,
+    rebaseCountBefore: beforeStream.rebaseCount,
+    rebaseCountAfter: released.world.streaming.rebaseCount,
+    releasedSpeed,
+  };
+}
+
 async function runPortraitCase(browser, baseUrl, viewport, report) {
   const context = await browser.newContext({ viewport: { width: viewport.width, height: viewport.height }, hasTouch: true, isMobile: true });
   const page = await context.newPage();
@@ -256,6 +353,7 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
       const gameplaySnapshot = await readRuntimeSnapshot(page);
       assert(gameplaySnapshot.ui.runtimeHUD?.joystick?.active,
         `FAIL_VISIBLE_JOYSTICK: ${JSON.stringify(gameplaySnapshot.ui.runtimeHUD)}`);
+      report.infiniteWorld.initial = validateInfiniteWorldSnapshot(gameplaySnapshot);
 
       // Must touch the centre of the editor-saved lower-right joystick, rather
       // than an arbitrary lower-right input region.
@@ -263,7 +361,16 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
       const joystickStartY = canvasRect.top + canvasRect.height * 0.867;
       const joystickOffsetX = canvasRect.width * 0.11;
       const joystickOffsetY = canvasRect.height * 0.05;
-      const joystick = { x: joystickStartX, y: joystickStartY, offsetX: joystickOffsetX, offsetY: joystickOffsetY };
+      const joystick = {
+        x: joystickStartX,
+        y: joystickStartY,
+        offsetX: joystickOffsetX,
+        offsetY: joystickOffsetY,
+        // Long-travel touches begin at the visible joystick centre, then use
+        // all available in-canvas distance to request a full, real input.
+        maxOffsetX: Math.min(120, canvasRect.width - (joystickStartX - canvasRect.left) - 3),
+        maxOffsetY: Math.min(120, canvasRect.top + canvasRect.height - joystickStartY - 3),
+      };
       const joystickDirections = [
         { name: 'up', x: 0, y: -1 },
         { name: 'down', x: 0, y: 1 },
@@ -315,6 +422,18 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
           `FAIL_TOUCH_RELEASE_${direction.name.toUpperCase()}: velocity ${releasedSpeed}`);
       }
       report.multiTouch = await verifySecondaryTouchDoesNotHijack(cdp, page, canvasRect, joystick);
+      report.infiniteWorld.cardinal500m = [];
+      const cardinalDirections = [
+        { name: 'north', axis: 'z', sign: -1, touchX: 0, touchY: -1 },
+        { name: 'south', axis: 'z', sign: 1, touchX: 0, touchY: 1 },
+        { name: 'west', axis: 'x', sign: -1, touchX: -1, touchY: 0 },
+        { name: 'east', axis: 'x', sign: 1, touchX: 1, touchY: 0 },
+      ];
+      for (const direction of cardinalDirections) {
+        report.infiniteWorld.cardinal500m.push(
+          await verifyCardinalLongTravel(cdp, page, joystick, direction),
+        );
+      }
       assert(runtimeErrors.length === 0, `Runtime console errors after touch: ${runtimeErrors.join(' | ')}`);
       await page.screenshot({ path: path.join(evidenceDirectory, 'portrait-390x844-gameplay.png') });
     }
@@ -331,6 +450,7 @@ const report = {
   touch: [],
   multiTouch: null,
   camera: null,
+  infiniteWorld: { initial: null, cardinal500m: [] },
   failures: [],
 };
 
