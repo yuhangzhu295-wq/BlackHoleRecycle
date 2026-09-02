@@ -12,8 +12,16 @@
 | City Kit: Suburban | Kenney | CC0 1.0 Universal | https://kenney.nl/assets/city-kit-suburban | 建筑、树木、围栏、步道 | 已批准并导入 |
 | City Kit: Commercial | Kenney | CC0 1.0 Universal | https://kenney.nl/assets/city-kit-commercial | 小型商店与城市地标 | 已批准并导入 |
 | Car Kit | Kenney | CC0 1.0 Universal | https://kenney.nl/assets/car-kit | 回收车底盘、静态车辆、轮胎、回收碎片和资源块 | 已批准并导入 |
+| Food Kit | Kenney | CC0 1.0 Universal | https://kenney.nl/assets/food-kit | 苹果、易拉罐与瓶装回收物 | 已由 Creator 导入并接入语义模板 |
+| Furniture Kit | Kenney | CC0 1.0 Universal | https://kenney.nl/assets/furniture-kit | 书本、纸箱、椅子、桌子、显示器、货架与沙发 | 已由 Creator 导入并接入语义模板 |
+| Factory Kit | Kenney | CC0 1.0 Universal | https://kenney.nl/assets/factory-kit | 工业木箱 | 已由 Creator 导入并接入语义模板 |
+| City Kit: Industrial | Kenney | CC0 1.0 Universal | https://kenney.nl/assets/city-kit-industrial | 集装箱 | 已由 Creator 导入并接入语义模板 |
+| Poly Pizza 单模型（Battery、Bucket、Paper、Trash Bag） | Quaternius | CC0 1.0 Universal | https://poly.pizza | 电池、油漆桶、纸屑、垃圾袋 | 已由 Creator 导入并接入语义模板 |
+| Poly Pizza 单模型（Rubber Duck） | CreativeTrio | CC0 1.0 Universal | https://poly.pizza | 玩具鸭 | 已由 Creator 导入并接入语义模板 |
 
 下载传输使用 Bevy 维护的 Kenney 资产镜像；每一个实际导入文件的镜像 URL、原始 Kenney 资源包、许可证和本地路径都记录在 `assets/art/asset-license-manifest.json`。镜像仅作传输地址，不改变作者和许可归属。
+
+本次新增回收物使用 Kenney 官方资源包下载页与 Poly Pizza 的单模型原始 GLB。清单分别记录资源包或原始 GLB 的 SHA-256；`modified: false` 表示二进制模型未被改写，Cocos 场景中的尺度与绑定属于工程装配，不会覆盖原始文件。
 
 ## 导入和使用约束
 

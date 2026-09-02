@@ -1,0 +1,143 @@
+{
+  "ver": "2.3.13",
+  "importer": "gltf",
+  "imported": true,
+  "uuid": "06c81dc8-5cb1-4b39-a30a-22077d5dcfa6",
+  "files": [],
+  "subMetas": {
+    "4e913": {
+      "importer": "gltf-mesh",
+      "uuid": "06c81dc8-5cb1-4b39-a30a-22077d5dcfa6@4e913",
+      "displayName": "",
+      "id": "4e913",
+      "name": "Prop_Bucket.mesh",
+      "userData": {
+        "gltfIndex": 0,
+        "triangleCount": 532
+      },
+      "ver": "1.1.1",
+      "imported": true,
+      "files": [
+        ".bin",
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "d8151": {
+      "importer": "gltf-embeded-image",
+      "uuid": "06c81dc8-5cb1-4b39-a30a-22077d5dcfa6@d8151",
+      "displayName": "",
+      "id": "d8151",
+      "name": "Atlas_Pirate.png.image",
+      "userData": {
+        "gltfIndex": 0,
+        "fixAlphaTransparencyArtifacts": true,
+        "hasAlpha": false,
+        "type": "texture"
+      },
+      "ver": "1.0.3",
+      "imported": true,
+      "files": [
+        ".json",
+        ".png"
+      ],
+      "subMetas": {}
+    },
+    "7d6ab": {
+      "importer": "texture",
+      "uuid": "06c81dc8-5cb1-4b39-a30a-22077d5dcfa6@7d6ab",
+      "displayName": "",
+      "id": "7d6ab",
+      "name": "base_color_texture.texture",
+      "userData": {
+        "wrapModeS": "repeat",
+        "wrapModeT": "repeat",
+        "minfilter": "linear",
+        "magfilter": "linear",
+        "mipfilter": "none",
+        "anisotropy": 0,
+        "isUuid": true,
+        "imageUuidOrDatabaseUri": "06c81dc8-5cb1-4b39-a30a-22077d5dcfa6@d8151"
+      },
+      "ver": "1.0.22",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "89a26": {
+      "importer": "gltf-material",
+      "uuid": "06c81dc8-5cb1-4b39-a30a-22077d5dcfa6@89a26",
+      "displayName": "",
+      "id": "89a26",
+      "name": "Atlas.material",
+      "userData": {
+        "gltfIndex": 0
+      },
+      "ver": "1.0.14",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "ab884": {
+      "importer": "gltf-scene",
+      "uuid": "06c81dc8-5cb1-4b39-a30a-22077d5dcfa6@ab884",
+      "displayName": "",
+      "id": "ab884",
+      "name": "paint-bucket.prefab",
+      "userData": {
+        "gltfIndex": 0
+      },
+      "ver": "1.0.14",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    }
+  },
+  "userData": {
+    "imageMetas": [
+      {
+        "name": "Atlas_Pirate.png",
+        "uri": "06c81dc8-5cb1-4b39-a30a-22077d5dcfa6@d8151"
+      }
+    ],
+    "lods": {
+      "enable": false,
+      "hasBuiltinLOD": false,
+      "options": [
+        {
+          "screenRatio": 0.25,
+          "faceCount": 1
+        },
+        {
+          "screenRatio": 0.125,
+          "faceCount": 0.25
+        },
+        {
+          "screenRatio": 0.01,
+          "faceCount": 0.1
+        }
+      ]
+    },
+    "assetFinder": {
+      "meshes": [
+        "06c81dc8-5cb1-4b39-a30a-22077d5dcfa6@4e913"
+      ],
+      "skeletons": [],
+      "textures": [
+        "06c81dc8-5cb1-4b39-a30a-22077d5dcfa6@7d6ab"
+      ],
+      "materials": [
+        "06c81dc8-5cb1-4b39-a30a-22077d5dcfa6@89a26"
+      ],
+      "scenes": [
+        "06c81dc8-5cb1-4b39-a30a-22077d5dcfa6@ab884"
+      ]
+    }
+  }
+}

@@ -1,0 +1,93 @@
+{
+  "ver": "2.3.13",
+  "importer": "gltf",
+  "imported": true,
+  "uuid": "af97e150-bcd2-4d69-8699-3e3459bc6961",
+  "files": [],
+  "subMetas": {
+    "6536e": {
+      "importer": "gltf-mesh",
+      "uuid": "af97e150-bcd2-4d69-8699-3e3459bc6961@6536e",
+      "displayName": "",
+      "id": "6536e",
+      "name": "Mesh chair.mesh",
+      "userData": {
+        "gltfIndex": 0,
+        "triangleCount": 170
+      },
+      "ver": "1.1.1",
+      "imported": true,
+      "files": [
+        ".bin",
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "e4014": {
+      "importer": "gltf-material",
+      "uuid": "af97e150-bcd2-4d69-8699-3e3459bc6961@e4014",
+      "displayName": "",
+      "id": "e4014",
+      "name": "wood.material",
+      "userData": {
+        "gltfIndex": 0
+      },
+      "ver": "1.0.14",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "4e90e": {
+      "importer": "gltf-scene",
+      "uuid": "af97e150-bcd2-4d69-8699-3e3459bc6961@4e90e",
+      "displayName": "",
+      "id": "4e90e",
+      "name": "chair.prefab",
+      "userData": {
+        "gltfIndex": 0
+      },
+      "ver": "1.0.14",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    }
+  },
+  "userData": {
+    "imageMetas": [],
+    "lods": {
+      "enable": false,
+      "hasBuiltinLOD": false,
+      "options": [
+        {
+          "screenRatio": 0.25,
+          "faceCount": 1
+        },
+        {
+          "screenRatio": 0.125,
+          "faceCount": 0.25
+        },
+        {
+          "screenRatio": 0.01,
+          "faceCount": 0.1
+        }
+      ]
+    },
+    "assetFinder": {
+      "meshes": [
+        "af97e150-bcd2-4d69-8699-3e3459bc6961@6536e"
+      ],
+      "skeletons": [],
+      "textures": [],
+      "materials": [
+        "af97e150-bcd2-4d69-8699-3e3459bc6961@e4014"
+      ],
+      "scenes": [
+        "af97e150-bcd2-4d69-8699-3e3459bc6961@4e90e"
+      ]
+    }
+  }
+}

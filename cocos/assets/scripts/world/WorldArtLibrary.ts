@@ -28,7 +28,24 @@ export type WorldArtKind =
   | 'recyclingBox'
   | 'tire'
   | 'recyclingBolt'
-  | 'turbineWheel';
+  | 'turbineWheel'
+  | 'sodaCan'
+  | 'waterBottle'
+  | 'battery'
+  | 'toyDuck'
+  | 'apple'
+  | 'paperScrap'
+  | 'bookStack'
+  | 'cardboardBox'
+  | 'trashBag'
+  | 'paintBucket'
+  | 'chair'
+  | 'coffeeTable'
+  | 'monitor'
+  | 'shelf'
+  | 'crate'
+  | 'sofa'
+  | 'shippingContainer';
 
 const WORLD_ART_COLORS: Record<WorldArtKind, string> = {
   roadStraight: '#9ca8bc',
@@ -50,7 +67,24 @@ const WORLD_ART_COLORS: Record<WorldArtKind, string> = {
   recyclingBox: '#c68b59',
   tire: '#1f2937',
   recyclingBolt: '#7dd3fc',
-  turbineWheel: '#38bdf8'
+  turbineWheel: '#38bdf8',
+  sodaCan: '#e53935',
+  waterBottle: '#29b6f6',
+  battery: '#fbc02d',
+  toyDuck: '#ffd54f',
+  apple: '#e53935',
+  paperScrap: '#f5f5f4',
+  bookStack: '#3b82f6',
+  cardboardBox: '#b7794d',
+  trashBag: '#374151',
+  paintBucket: '#00acc1',
+  chair: '#455a64',
+  coffeeTable: '#795548',
+  monitor: '#111827',
+  shelf: '#90a4ae',
+  crate: '#388e3c',
+  sofa: '#8d6e63',
+  shippingContainer: '#0288d1',
 };
 
 @ccclass('WorldArtLibrary')
@@ -116,6 +150,26 @@ export class WorldArtLibrary extends Component {
   @property(Node)
   public turbineWheelTemplate: Node | null = null;
 
+  /** Normalized, editor-saved object templates. They are real audited meshes,
+   * not generated primitives or semantic stand-ins. */
+  @property(Node) public sodaCanTemplate: Node | null = null;
+  @property(Node) public waterBottleTemplate: Node | null = null;
+  @property(Node) public batteryTemplate: Node | null = null;
+  @property(Node) public toyDuckTemplate: Node | null = null;
+  @property(Node) public appleTemplate: Node | null = null;
+  @property(Node) public paperScrapTemplate: Node | null = null;
+  @property(Node) public bookStackTemplate: Node | null = null;
+  @property(Node) public cardboardBoxTemplate: Node | null = null;
+  @property(Node) public trashBagTemplate: Node | null = null;
+  @property(Node) public paintBucketTemplate: Node | null = null;
+  @property(Node) public chairTemplate: Node | null = null;
+  @property(Node) public coffeeTableTemplate: Node | null = null;
+  @property(Node) public monitorTemplate: Node | null = null;
+  @property(Node) public shelfTemplate: Node | null = null;
+  @property(Node) public crateTemplate: Node | null = null;
+  @property(Node) public sofaTemplate: Node | null = null;
+  @property(Node) public shippingContainerTemplate: Node | null = null;
+
   /**
    * Creator-imported external color maps. These are intentionally ordinary PNG
    * assets instead of the glTF embedded-image subassets: the latter cannot be
@@ -163,6 +217,23 @@ export class WorldArtLibrary extends Component {
       case 'tire': return this.tireTemplate;
       case 'recyclingBolt': return this.recyclingBoltTemplate;
       case 'turbineWheel': return this.turbineWheelTemplate;
+      case 'sodaCan': return this.sodaCanTemplate;
+      case 'waterBottle': return this.waterBottleTemplate;
+      case 'battery': return this.batteryTemplate;
+      case 'toyDuck': return this.toyDuckTemplate;
+      case 'apple': return this.appleTemplate;
+      case 'paperScrap': return this.paperScrapTemplate;
+      case 'bookStack': return this.bookStackTemplate;
+      case 'cardboardBox': return this.cardboardBoxTemplate;
+      case 'trashBag': return this.trashBagTemplate;
+      case 'paintBucket': return this.paintBucketTemplate;
+      case 'chair': return this.chairTemplate;
+      case 'coffeeTable': return this.coffeeTableTemplate;
+      case 'monitor': return this.monitorTemplate;
+      case 'shelf': return this.shelfTemplate;
+      case 'crate': return this.crateTemplate;
+      case 'sofa': return this.sofaTemplate;
+      case 'shippingContainer': return this.shippingContainerTemplate;
     }
   }
 
@@ -259,6 +330,10 @@ export class WorldArtLibrary extends Component {
       case 'recyclingBolt':
       case 'turbineWheel':
         return this.vehicleColorTexture;
+      default:
+        // New audited prop models retain a consistent readable tint without
+        // sampling an unrelated city/vehicle atlas.
+        return null;
     }
   }
 
@@ -267,7 +342,10 @@ export class WorldArtLibrary extends Component {
       'roadStraight', 'roadCrossroad', 'terrainTile', 'buildingB', 'buildingC',
       'treeSmall', 'treeLarge', 'pathStones', 'fence', 'commercialBuildingA',
       'commercialBuildingD', 'streetLight', 'constructionCone', 'garbageTruck',
-      'sedan', 'deliveryVan', 'recyclingBox', 'tire', 'recyclingBolt', 'turbineWheel'
+      'sedan', 'deliveryVan', 'recyclingBox', 'tire', 'recyclingBolt', 'turbineWheel',
+      'sodaCan', 'waterBottle', 'battery', 'toyDuck', 'apple', 'paperScrap',
+      'bookStack', 'cardboardBox', 'trashBag', 'paintBucket', 'chair', 'coffeeTable',
+      'monitor', 'shelf', 'crate', 'sofa', 'shippingContainer',
     ];
     required.forEach((kind) => this.getTemplate(kind));
     if (!this.roadColorTexture || !this.suburbanColorTexture || !this.commercialColorTexture || !this.vehicleColorTexture) {

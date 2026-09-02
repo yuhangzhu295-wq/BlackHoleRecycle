@@ -2,6 +2,20 @@
 
 module.exports = {
   methods: {
+    async installObjectArtRegistry() {
+      return Editor.Message.request('scene', 'execute-scene-script', {
+        name: 'black-hole-home-builder',
+        method: 'installObjectArtRegistry',
+        args: [],
+      });
+    },
+    async verifyObjectArtRegistry() {
+      return Editor.Message.request('scene', 'execute-scene-script', {
+        name: 'black-hole-home-builder',
+        method: 'verifyObjectArtRegistry',
+        args: [],
+      });
+    },
     async installInfiniteWorld() {
       return Editor.Message.request('scene', 'execute-scene-script', {
         name: 'black-hole-home-builder',

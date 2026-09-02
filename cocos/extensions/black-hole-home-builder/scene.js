@@ -25,6 +25,29 @@ const MODE_IMAGE_URLS = [
   'db://assets/textures/home/mode_endless_card.png',
 ];
 
+// Each wrapper is a regular scene Node saved by Cocos Creator. The glTF
+// prefab stays as its child and receives the normalization scale here, rather
+// than accepting arbitrary runtime scale values per object type.
+const OBJECT_ART_TEMPLATE_SPECS = [
+  { property: 'sodaCanTemplate', name: 'SodaCanTemplate', url: 'db://assets/art/recyclables/food/soda-can.glb', scale: [1, 1, 1] },
+  { property: 'waterBottleTemplate', name: 'WaterBottleTemplate', url: 'db://assets/art/recyclables/food/soda-bottle.glb', scale: [1, 1, 1] },
+  { property: 'batteryTemplate', name: 'BatteryTemplate', url: 'db://assets/art/recyclables/props/battery.glb', scale: [1, 1, 1] },
+  { property: 'toyDuckTemplate', name: 'ToyDuckTemplate', url: 'db://assets/art/recyclables/props/toy-duck.glb', scale: [6.5, 6.5, 6.5] },
+  { property: 'appleTemplate', name: 'AppleTemplate', url: 'db://assets/art/recyclables/food/apple.glb', scale: [1.45, 1.45, 1.45] },
+  { property: 'paperScrapTemplate', name: 'PaperScrapTemplate', url: 'db://assets/art/recyclables/props/paper-scrap.glb', scale: [1, 1, 1] },
+  { property: 'bookStackTemplate', name: 'BookStackTemplate', url: 'db://assets/art/recyclables/furniture/book-stack.glb', scale: [3.4, 3.0, 4.0] },
+  { property: 'cardboardBoxTemplate', name: 'CardboardBoxTemplate', url: 'db://assets/art/recyclables/furniture/cardboard-box.glb', scale: [2.8, 2.2, 2.8] },
+  { property: 'trashBagTemplate', name: 'TrashBagTemplate', url: 'db://assets/art/recyclables/props/trash-bag.glb', scale: [1, 1, 1] },
+  { property: 'paintBucketTemplate', name: 'PaintBucketTemplate', url: 'db://assets/art/recyclables/props/paint-bucket.glb', scale: [1, 1, 1] },
+  { property: 'chairTemplate', name: 'ChairTemplate', url: 'db://assets/art/recyclables/furniture/chair.glb', scale: [4.0, 2.5, 4.0] },
+  { property: 'coffeeTableTemplate', name: 'CoffeeTableTemplate', url: 'db://assets/art/recyclables/furniture/coffee-table.glb', scale: [2.3, 3.1, 2.5] },
+  { property: 'monitorTemplate', name: 'MonitorTemplate', url: 'db://assets/art/recyclables/furniture/monitor.glb', scale: [3.0, 2.7, 2.8] },
+  { property: 'shelfTemplate', name: 'ShelfTemplate', url: 'db://assets/art/recyclables/furniture/shelf.glb', scale: [6.25, 4.0, 4.0] },
+  { property: 'crateTemplate', name: 'CrateTemplate', url: 'db://assets/art/recyclables/industrial/crate.glb', scale: [2.7, 4.5, 3.0] },
+  { property: 'sofaTemplate', name: 'SofaTemplate', url: 'db://assets/art/recyclables/furniture/sofa.glb', scale: [2.85, 2.6, 3.4] },
+  { property: 'shippingContainerTemplate', name: 'ShippingContainerTemplate', url: 'db://assets/art/recyclables/industrial/shipping-container.glb', scale: [8.6, 9.2, 8.5] },
+];
+
 function getComponentClass(name) {
   const { js } = require('cc');
   const type = js.getClassByName(name);
@@ -75,6 +98,101 @@ async function getImportedSpriteFrame(url) {
     throw new Error(`SpriteFrame is not loaded by the Cocos asset database: ${url}`);
   }
   return spriteFrame;
+}
+
+async function getImportedGltfPrefab(url) {
+  const { assetManager, Prefab } = require('cc');
+  const info = await Editor.Message.request('asset-db', 'query-asset-info', url);
+  if (!info || !info.uuid) throw new Error(`Asset is not imported: ${url}`);
+  const rawMeta = await Editor.Message.request('asset-db', 'query-asset-meta', info.uuid);
+  const meta = typeof rawMeta === 'string' ? JSON.parse(rawMeta) : rawMeta;
+  const prefabMeta = Object.values(meta && meta.subMetas ? meta.subMetas : {})
+    .find((subMeta) => subMeta && subMeta.importer === 'gltf-scene');
+  if (!prefabMeta || !prefabMeta.uuid) {
+    throw new Error(`GLB does not contain a Cocos gltf-scene prefab: ${url}`);
+  }
+  const cachedPrefab = assetManager.assets.get(prefabMeta.uuid);
+  if (cachedPrefab instanceof Prefab) return cachedPrefab;
+  const prefab = await new Promise((resolve, reject) => {
+    assetManager.loadAny(prefabMeta.uuid, (error, loadedAsset) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+      resolve(loadedAsset);
+    });
+  });
+  if (!(prefab instanceof Prefab)) {
+    throw new Error(`Cocos did not load a Prefab for glTF scene asset: ${url}`);
+  }
+  return prefab;
+}
+
+function addObjectArtTemplate(library, spec, prefab) {
+  const { Node, Vec3, instantiate } = require('cc');
+  let wrapper = library.node.getChildByName(spec.name);
+  if (wrapper) {
+    if (wrapper.children.length === 0) {
+      throw new Error(`${spec.name} exists without an imported glTF child; refusing to replace it.`);
+    }
+    detachNestedImportedPrefabs(wrapper);
+    library[spec.property] = wrapper;
+    return { wrapper, created: false };
+  }
+  wrapper = new Node(spec.name);
+  library.node.addChild(wrapper);
+  const importedRoot = instantiate(prefab);
+  const visual = copyImportedGeometry(importedRoot, wrapper);
+  importedRoot.destroy();
+  visual.setScale(new Vec3(spec.scale[0], spec.scale[1], spec.scale[2]));
+  wrapper.active = false;
+  library[spec.property] = wrapper;
+  return { wrapper, created: true };
+}
+
+/**
+ * Copy actual imported glTF geometry to normal scene nodes. This removes the
+ * nested Prefab dependency that otherwise reloads a GLB embedded-image
+ * subasset when Game.scene is opened. The retained Mesh is still the audited
+ * imported glTF mesh; runtime material assignment remains WorldArtLibrary's
+ * responsibility.
+ */
+function copyImportedGeometry(source, parent) {
+  const { MeshRenderer, Node } = require('cc');
+  const copy = new Node(source.name || 'MeshPart');
+  copy.setPosition(source.position);
+  copy.setRotation(source.rotation);
+  copy.setScale(source.scale);
+  parent.addChild(copy);
+
+  const sourceRenderer = source.getComponent(MeshRenderer);
+  if (sourceRenderer?.mesh) {
+    const renderer = copy.addComponent(MeshRenderer);
+    renderer.mesh = sourceRenderer.mesh;
+  }
+  source.children.forEach((child) => copyImportedGeometry(child, copy));
+  return copy;
+}
+
+function detachNestedImportedPrefabs(wrapper) {
+  for (const child of [...wrapper.children]) {
+    if (!child._prefab?.asset) continue;
+    const standalone = copyImportedGeometry(child, wrapper);
+    standalone.name = child.name || 'MeshPart';
+    // `destroy()` is deferred until the next engine tick. Unparent first so
+    // the immediate save below cannot serialize the obsolete glTF PrefabInfo.
+    child.removeFromParent();
+    child.destroy();
+  }
+}
+
+function normalizeExistingTemplate(template, name, scale) {
+  const { Vec3 } = require('cc');
+  if (!template || template.children.length === 0) {
+    throw new Error(`WorldArtLibrary.${name} is not a saved template with an imported glTF child.`);
+  }
+  template.children[0].setScale(new Vec3(scale[0], scale[1], scale[2]));
+  template.active = false;
 }
 
 async function prepareHomeSprites() {
@@ -183,6 +301,45 @@ exports.load = function load() {};
 exports.unload = function unload() {};
 
 exports.methods = {
+  async installObjectArtRegistry() {
+    const { director } = require('cc');
+    const scene = director.getScene();
+    const gameRoot = scene?.getChildByName('GameRoot');
+    const library = gameRoot?.getChildByName('WorldArtLibrary')?.getComponent(getComponentClass('WorldArtLibrary')) || null;
+    if (!library) throw new Error('GameRoot/WorldArtLibrary with the WorldArtLibrary component is required.');
+
+    const created = [];
+    const reused = [];
+    for (const spec of OBJECT_ART_TEMPLATE_SPECS) {
+      const prefab = await getImportedGltfPrefab(spec.url);
+      const result = addObjectArtTemplate(library, spec, prefab);
+      (result.created ? created : reused).push(spec.name);
+    }
+
+    // The registry deliberately uses unit spawn scale. Existing audited art
+    // keeps its established in-editor size through the same template rule.
+    normalizeExistingTemplate(library.constructionConeTemplate, 'constructionConeTemplate', [7, 7, 7]);
+    normalizeExistingTemplate(library.tireTemplate, 'tireTemplate', [2.5, 2.5, 2.5]);
+    normalizeExistingTemplate(library.sedanTemplate, 'sedanTemplate', [1.35, 1.35, 1.35]);
+
+    await Editor.Message.request('scene', 'save-scene');
+    return { saved: true, created, reused, total: OBJECT_ART_TEMPLATE_SPECS.length };
+  },
+  async verifyObjectArtRegistry() {
+    const { director } = require('cc');
+    const gameRoot = director.getScene()?.getChildByName('GameRoot');
+    const library = gameRoot?.getChildByName('WorldArtLibrary')?.getComponent(getComponentClass('WorldArtLibrary')) || null;
+    if (!library) return { ok: false, error: 'GameRoot/WorldArtLibrary is missing.' };
+    const missing = OBJECT_ART_TEMPLATE_SPECS
+      .filter((spec) => !library[spec.property] || library[spec.property].children.length === 0)
+      .map((spec) => spec.property);
+    return {
+      ok: missing.length === 0,
+      total: OBJECT_ART_TEMPLATE_SPECS.length,
+      bound: OBJECT_ART_TEMPLATE_SPECS.length - missing.length,
+      missing,
+    };
+  },
   async installInfiniteWorld() {
     const { director, Node } = require('cc');
     const scene = director.getScene();

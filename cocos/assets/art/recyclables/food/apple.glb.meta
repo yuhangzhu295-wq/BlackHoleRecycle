@@ -1,0 +1,139 @@
+{
+  "ver": "2.3.13",
+  "importer": "gltf",
+  "imported": true,
+  "uuid": "06d81d3e-c8c9-4ddf-9315-be287f76c263",
+  "files": [],
+  "subMetas": {
+    "21616": {
+      "importer": "gltf-mesh",
+      "uuid": "06d81d3e-c8c9-4ddf-9315-be287f76c263@21616",
+      "displayName": "",
+      "id": "21616",
+      "name": "apple.mesh",
+      "userData": {
+        "gltfIndex": 0,
+        "triangleCount": 136
+      },
+      "ver": "1.1.1",
+      "imported": true,
+      "files": [
+        ".bin",
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "2b33f": {
+      "importer": "gltf-embeded-image",
+      "uuid": "06d81d3e-c8c9-4ddf-9315-be287f76c263@2b33f",
+      "displayName": "",
+      "id": "2b33f",
+      "name": "colormap.image",
+      "userData": {
+        "gltfIndex": 0
+      },
+      "ver": "1.0.3",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "96c50": {
+      "importer": "texture",
+      "uuid": "06d81d3e-c8c9-4ddf-9315-be287f76c263@96c50",
+      "displayName": "",
+      "id": "96c50",
+      "name": "colormap.texture",
+      "userData": {
+        "wrapModeS": "repeat",
+        "wrapModeT": "repeat",
+        "minfilter": "nearest",
+        "magfilter": "nearest",
+        "mipfilter": "nearest",
+        "anisotropy": 0,
+        "isUuid": true,
+        "imageUuidOrDatabaseUri": "06d81d3e-c8c9-4ddf-9315-be287f76c263@2b33f"
+      },
+      "ver": "1.0.22",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "9991c": {
+      "importer": "gltf-material",
+      "uuid": "06d81d3e-c8c9-4ddf-9315-be287f76c263@9991c",
+      "displayName": "",
+      "id": "9991c",
+      "name": "colormap.material",
+      "userData": {
+        "gltfIndex": 0
+      },
+      "ver": "1.0.14",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "28cd4": {
+      "importer": "gltf-scene",
+      "uuid": "06d81d3e-c8c9-4ddf-9315-be287f76c263@28cd4",
+      "displayName": "",
+      "id": "28cd4",
+      "name": "apple.prefab",
+      "userData": {
+        "gltfIndex": 0
+      },
+      "ver": "1.0.14",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    }
+  },
+  "userData": {
+    "imageMetas": [
+      {
+        "name": "colormap",
+        "uri": "06d81d3e-c8c9-4ddf-9315-be287f76c263@2b33f"
+      }
+    ],
+    "lods": {
+      "enable": false,
+      "hasBuiltinLOD": false,
+      "options": [
+        {
+          "screenRatio": 0.25,
+          "faceCount": 1
+        },
+        {
+          "screenRatio": 0.125,
+          "faceCount": 0.25
+        },
+        {
+          "screenRatio": 0.01,
+          "faceCount": 0.1
+        }
+      ]
+    },
+    "assetFinder": {
+      "meshes": [
+        "06d81d3e-c8c9-4ddf-9315-be287f76c263@21616"
+      ],
+      "skeletons": [],
+      "textures": [
+        "06d81d3e-c8c9-4ddf-9315-be287f76c263@96c50"
+      ],
+      "materials": [
+        "06d81d3e-c8c9-4ddf-9315-be287f76c263@9991c"
+      ],
+      "scenes": [
+        "06d81d3e-c8c9-4ddf-9315-be287f76c263@28cd4"
+      ]
+    }
+  }
+}

@@ -6,18 +6,12 @@ import { _decorator, Component, director, Node, Vec3 } from 'cc';
 import { IObjectTemplate, ObjectTier, OBJECT_TEMPLATES } from '../data/GameConfig';
 import { SuctionMotionCalculator } from './SuctionMotion';
 import { FSM } from '../core/FSM';
-import { WorldArtKind, WorldArtLibrary } from '../world/WorldArtLibrary';
+import { getObjectArtBinding } from '../world/ObjectArtRegistry';
+import { WorldArtLibrary } from '../world/WorldArtLibrary';
 
 const { ccclass } = _decorator;
 
 export type ObjectMotionState = 'IDLE' | 'ATTRACTED' | 'SUCKING' | 'ABSORBED' | 'RECYCLED';
-
-interface IObjectVisualDefinition {
-  readonly kind: WorldArtKind;
-  readonly scale: Vec3;
-  readonly yOffset: number;
-  readonly yaw: number;
-}
 
 @ccclass('CompressibleObject')
 export class CompressibleObject extends Component {
@@ -121,7 +115,7 @@ export class CompressibleObject extends Component {
   private applyTemplateArt(): void {
     if (!this.visualNode) return;
     this.visualNode.removeAllChildren();
-    const definition = this.getVisualDefinition(this.template.type);
+    const definition = getObjectArtBinding(this.template.type);
     this.getArtLibrary().spawn(
       definition.kind,
       this.visualNode,
@@ -130,33 +124,6 @@ export class CompressibleObject extends Component {
       definition.yaw,
       `Art_${this.template.type}`
     );
-  }
-
-  /** 每种可吞噬实体有明确的、已审计的真实模型绑定。 */
-  private getVisualDefinition(type: string): IObjectVisualDefinition {
-    switch (type) {
-      case 'soda_can': return { kind: 'recyclingBolt', scale: new Vec3(1.1, 1.1, 1.1), yOffset: 0, yaw: 0 };
-      case 'water_bottle': return { kind: 'recyclingBolt', scale: new Vec3(1.25, 1.25, 1.25), yOffset: 0, yaw: 90 };
-      case 'battery': return { kind: 'recyclingBolt', scale: new Vec3(1.4, 1.4, 1.4), yOffset: 0, yaw: 45 };
-      case 'toy': return { kind: 'recyclingBox', scale: new Vec3(0.55, 0.55, 0.55), yOffset: 0, yaw: 20 };
-      case 'apple': return { kind: 'recyclingBolt', scale: new Vec3(0.9, 0.9, 0.9), yOffset: 0, yaw: 135 };
-      case 'paper_ball': return { kind: 'recyclingBolt', scale: new Vec3(0.8, 0.8, 0.8), yOffset: 0, yaw: 180 };
-      case 'book_stack': return { kind: 'recyclingBox', scale: new Vec3(0.8, 0.45, 0.8), yOffset: 0, yaw: 45 };
-      case 'cardboard_box': return { kind: 'recyclingBox', scale: new Vec3(0.95, 0.8, 0.95), yOffset: 0, yaw: 0 };
-      case 'cone': return { kind: 'constructionCone', scale: new Vec3(7, 7, 7), yOffset: 0, yaw: 0 };
-      case 'trash_bag': return { kind: 'tire', scale: new Vec3(1.6, 1.6, 1.6), yOffset: 0.25, yaw: 0 };
-      case 'paint_bucket': return { kind: 'recyclingBox', scale: new Vec3(0.65, 0.65, 0.65), yOffset: 0, yaw: 30 };
-      case 'chair': return { kind: 'tire', scale: new Vec3(2.2, 2.2, 2.2), yOffset: 0.5, yaw: 90 };
-      case 'small_table': return { kind: 'recyclingBox', scale: new Vec3(1.8, 1.1, 1.4), yOffset: 0, yaw: 20 };
-      case 'monitor': return { kind: 'recyclingBox', scale: new Vec3(1.5, 1.15, 0.6), yOffset: 0, yaw: 0 };
-      case 'tire': return { kind: 'tire', scale: new Vec3(2.5, 2.5, 2.5), yOffset: 0.7, yaw: 0 };
-      case 'shelf': return { kind: 'recyclingBox', scale: new Vec3(3.5, 4.5, 1.7), yOffset: 0, yaw: 0 };
-      case 'crate': return { kind: 'recyclingBox', scale: new Vec3(4.2, 4.2, 4.2), yOffset: 0, yaw: 30 };
-      case 'sofa': return { kind: 'deliveryVan', scale: new Vec3(1.25, 1.25, 0.65), yOffset: 0.4, yaw: 90 };
-      case 'car': return { kind: 'sedan', scale: new Vec3(1.35, 1.35, 1.35), yOffset: 0.4, yaw: 0 };
-      case 'container': return { kind: 'deliveryVan', scale: new Vec3(2.5, 2.5, 2.5), yOffset: 0.75, yaw: 0 };
-      default: throw new Error(`[CompressibleObject] No audited art binding for ${type}.`);
-    }
   }
 
   private getArtLibrary(): WorldArtLibrary {

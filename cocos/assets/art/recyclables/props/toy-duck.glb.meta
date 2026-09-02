@@ -1,0 +1,143 @@
+{
+  "ver": "2.3.13",
+  "importer": "gltf",
+  "imported": true,
+  "uuid": "8431c71e-95cc-41a8-9513-20dcbabd1b48",
+  "files": [],
+  "subMetas": {
+    "1ff32": {
+      "importer": "gltf-mesh",
+      "uuid": "8431c71e-95cc-41a8-9513-20dcbabd1b48@1ff32",
+      "displayName": "",
+      "id": "1ff32",
+      "name": "Rubber_duck.mesh",
+      "userData": {
+        "gltfIndex": 0,
+        "triangleCount": 710
+      },
+      "ver": "1.1.1",
+      "imported": true,
+      "files": [
+        ".bin",
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "97b41": {
+      "importer": "gltf-embeded-image",
+      "uuid": "8431c71e-95cc-41a8-9513-20dcbabd1b48@97b41",
+      "displayName": "",
+      "id": "97b41",
+      "name": "House_Props_Diffuse.png.image",
+      "userData": {
+        "gltfIndex": 0,
+        "fixAlphaTransparencyArtifacts": true,
+        "hasAlpha": false,
+        "type": "texture"
+      },
+      "ver": "1.0.3",
+      "imported": true,
+      "files": [
+        ".json",
+        ".png"
+      ],
+      "subMetas": {}
+    },
+    "7d6ab": {
+      "importer": "texture",
+      "uuid": "8431c71e-95cc-41a8-9513-20dcbabd1b48@7d6ab",
+      "displayName": "",
+      "id": "7d6ab",
+      "name": "base_color_texture.texture",
+      "userData": {
+        "wrapModeS": "repeat",
+        "wrapModeT": "repeat",
+        "minfilter": "linear",
+        "magfilter": "linear",
+        "mipfilter": "none",
+        "anisotropy": 0,
+        "isUuid": true,
+        "imageUuidOrDatabaseUri": "8431c71e-95cc-41a8-9513-20dcbabd1b48@97b41"
+      },
+      "ver": "1.0.22",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "b4e6b": {
+      "importer": "gltf-material",
+      "uuid": "8431c71e-95cc-41a8-9513-20dcbabd1b48@b4e6b",
+      "displayName": "",
+      "id": "b4e6b",
+      "name": "Material.material",
+      "userData": {
+        "gltfIndex": 0
+      },
+      "ver": "1.0.14",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "9c0ef": {
+      "importer": "gltf-scene",
+      "uuid": "8431c71e-95cc-41a8-9513-20dcbabd1b48@9c0ef",
+      "displayName": "",
+      "id": "9c0ef",
+      "name": "toy-duck.prefab",
+      "userData": {
+        "gltfIndex": 0
+      },
+      "ver": "1.0.14",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    }
+  },
+  "userData": {
+    "imageMetas": [
+      {
+        "name": "House_Props_Diffuse.png",
+        "uri": "8431c71e-95cc-41a8-9513-20dcbabd1b48@97b41"
+      }
+    ],
+    "lods": {
+      "enable": false,
+      "hasBuiltinLOD": false,
+      "options": [
+        {
+          "screenRatio": 0.25,
+          "faceCount": 1
+        },
+        {
+          "screenRatio": 0.125,
+          "faceCount": 0.25
+        },
+        {
+          "screenRatio": 0.01,
+          "faceCount": 0.1
+        }
+      ]
+    },
+    "assetFinder": {
+      "meshes": [
+        "8431c71e-95cc-41a8-9513-20dcbabd1b48@1ff32"
+      ],
+      "skeletons": [],
+      "textures": [
+        "8431c71e-95cc-41a8-9513-20dcbabd1b48@7d6ab"
+      ],
+      "materials": [
+        "8431c71e-95cc-41a8-9513-20dcbabd1b48@b4e6b"
+      ],
+      "scenes": [
+        "8431c71e-95cc-41a8-9513-20dcbabd1b48@9c0ef"
+      ]
+    }
+  }
+}
