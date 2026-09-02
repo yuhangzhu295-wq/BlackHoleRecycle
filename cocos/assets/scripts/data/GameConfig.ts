@@ -90,7 +90,7 @@ export const MACHINE_EVOLUTION_CONFIG: readonly IMachineEvolutionConfig[] = [
   {
     level: 1,
     name: 'Small Core (初级核心)',
-    title: '回收小车',
+    title: '初级黑洞',
     massThreshold: 0,
     suctionRadius: 2.4,
     maxTier: ObjectTier.T1,
@@ -99,12 +99,12 @@ export const MACHINE_EVOLUTION_CONFIG: readonly IMachineEvolutionConfig[] = [
     baseColor: '#2b7fff',
     rimColor: '#00e5ff',
     scale: 1.0,
-    description: '基础轻巧型吸附车，可吸附瓶子、易拉罐、小碎纸'
+    description: '基础黑洞核心，可吸附瓶子、易拉罐、小碎纸'
   },
   {
     level: 2,
     name: 'Magnetic Turbine (磁力涡轮)',
-    title: '吸附卡车',
+    title: '磁力黑洞',
     massThreshold: 900,
     suctionRadius: 3.4,
     maxTier: ObjectTier.T2,
@@ -118,7 +118,7 @@ export const MACHINE_EVOLUTION_CONFIG: readonly IMachineEvolutionConfig[] = [
   {
     level: 3,
     name: 'Compression Engine (压缩引擎)',
-    title: '回收压路车',
+    title: '压缩黑洞',
     massThreshold: 15000,
     suctionRadius: 4.6,
     maxTier: ObjectTier.T3,
@@ -127,12 +127,12 @@ export const MACHINE_EVOLUTION_CONFIG: readonly IMachineEvolutionConfig[] = [
     baseColor: '#ff9500',
     rimColor: '#ffd600',
     scale: 1.55,
-    description: '重型回收底盘，可吸附大型纸箱、电风扇、小型桌椅'
+    description: '搭载压缩模块的黑洞核心，可吸附大型纸箱、电风扇、小型桌椅'
   },
   {
     level: 4,
     name: 'Gravity Harvester (重力收割者)',
-    title: '巨型回收机',
+    title: '引力黑洞',
     massThreshold: 55000,
     suctionRadius: 6.0,
     maxTier: ObjectTier.T4,
@@ -146,7 +146,7 @@ export const MACHINE_EVOLUTION_CONFIG: readonly IMachineEvolutionConfig[] = [
   {
     level: 5,
     name: 'Singularity Core (奇点终极核心)',
-    title: '歼星奇点车',
+    title: '奇点黑洞',
     massThreshold: 180000,
     suctionRadius: 8.0,
     maxTier: ObjectTier.T5,

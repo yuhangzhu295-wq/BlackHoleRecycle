@@ -1,0 +1,139 @@
+{
+  "ver": "2.3.13",
+  "importer": "gltf",
+  "imported": true,
+  "uuid": "08641c06-adde-4f49-85f4-58e528ac4986",
+  "files": [],
+  "subMetas": {
+    "6109a": {
+      "importer": "gltf-mesh",
+      "uuid": "08641c06-adde-4f49-85f4-58e528ac4986@6109a",
+      "displayName": "",
+      "id": "6109a",
+      "name": "light-square.mesh",
+      "userData": {
+        "gltfIndex": 0,
+        "triangleCount": 60
+      },
+      "ver": "1.1.1",
+      "imported": true,
+      "files": [
+        ".bin",
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "2b33f": {
+      "importer": "gltf-embeded-image",
+      "uuid": "08641c06-adde-4f49-85f4-58e528ac4986@2b33f",
+      "displayName": "",
+      "id": "2b33f",
+      "name": "colormap.image",
+      "userData": {
+        "gltfIndex": 0
+      },
+      "ver": "1.0.3",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "96c50": {
+      "importer": "texture",
+      "uuid": "08641c06-adde-4f49-85f4-58e528ac4986@96c50",
+      "displayName": "",
+      "id": "96c50",
+      "name": "colormap.texture",
+      "userData": {
+        "wrapModeS": "repeat",
+        "wrapModeT": "repeat",
+        "minfilter": "nearest",
+        "magfilter": "nearest",
+        "mipfilter": "nearest",
+        "anisotropy": 0,
+        "isUuid": true,
+        "imageUuidOrDatabaseUri": "08641c06-adde-4f49-85f4-58e528ac4986@2b33f"
+      },
+      "ver": "1.0.22",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "9991c": {
+      "importer": "gltf-material",
+      "uuid": "08641c06-adde-4f49-85f4-58e528ac4986@9991c",
+      "displayName": "",
+      "id": "9991c",
+      "name": "colormap.material",
+      "userData": {
+        "gltfIndex": 0
+      },
+      "ver": "1.0.14",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "91fa8": {
+      "importer": "gltf-scene",
+      "uuid": "08641c06-adde-4f49-85f4-58e528ac4986@91fa8",
+      "displayName": "",
+      "id": "91fa8",
+      "name": "street-light.prefab",
+      "userData": {
+        "gltfIndex": 0
+      },
+      "ver": "1.0.14",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    }
+  },
+  "userData": {
+    "imageMetas": [
+      {
+        "name": "colormap",
+        "uri": "08641c06-adde-4f49-85f4-58e528ac4986@2b33f"
+      }
+    ],
+    "lods": {
+      "enable": false,
+      "hasBuiltinLOD": false,
+      "options": [
+        {
+          "screenRatio": 0.25,
+          "faceCount": 1
+        },
+        {
+          "screenRatio": 0.125,
+          "faceCount": 0.25
+        },
+        {
+          "screenRatio": 0.01,
+          "faceCount": 0.1
+        }
+      ]
+    },
+    "assetFinder": {
+      "meshes": [
+        "08641c06-adde-4f49-85f4-58e528ac4986@6109a"
+      ],
+      "skeletons": [],
+      "textures": [
+        "08641c06-adde-4f49-85f4-58e528ac4986@96c50"
+      ],
+      "materials": [
+        "08641c06-adde-4f49-85f4-58e528ac4986@9991c"
+      ],
+      "scenes": [
+        "08641c06-adde-4f49-85f4-58e528ac4986@91fa8"
+      ]
+    }
+  }
+}

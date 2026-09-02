@@ -1,10 +1,11 @@
 /**
  * 黑洞吸尘机 3D 核心组件与 5 级结构进化系统 (BlackHoleMachine.ts)
  */
-import { _decorator, Component, Node, Vec3, math, MeshRenderer, Color } from 'cc';
+import { _decorator, Component, director, Node, Vec3, math } from 'cc';
 import { IMachineEvolutionConfig, MACHINE_EVOLUTION_CONFIG, ObjectTier } from '../data/GameConfig';
 import { eventBus } from '../core/EventBus';
 import { MeshFactory } from '../core/MeshFactory';
+import { WorldArtLibrary } from '../world/WorldArtLibrary';
 
 const { ccclass, property } = _decorator;
 
@@ -34,8 +35,10 @@ export class BlackHoleMachine extends Component {
 
   // 内部视觉节点容器
   private visualRoot: Node | null = null;
-  private bodyMeshRenderer: MeshRenderer | null = null;
   private holeRim: Node | null = null;
+  private innerSwirl: Node | null = null;
+  private outerSwirl: Node | null = null;
+  private visualElapsed: number = 0;
 
   onLoad(): void {
     this.buildVisibleGeometry();
@@ -43,7 +46,9 @@ export class BlackHoleMachine extends Component {
   }
 
   /**
-   * 自动构建可见的 3D 低模清洁车底盘、四轮、黑洞核心与进化部件
+   * 玩家本体必须首先读作“黑洞”，而不是一辆贴了黑洞图标的汽车。
+   * 黑洞圆盘和涡流是特效本体，故使用原生网格；等级外挂（涡轮、压缩模块）
+   * 始终使用由 Creator 导入、保存的真实低模资产。
    */
   private buildVisibleGeometry(): void {
     if (this.visualRoot) return;
@@ -51,92 +56,58 @@ export class BlackHoleMachine extends Component {
     this.visualRoot = new Node('VisualRoot');
     this.node.addChild(this.visualRoot);
 
-    // 1. 主车身 (Body)
-    const bodyNode = new Node('MainBody');
-    bodyNode.setPosition(0, 0.28, 0);
-    this.visualRoot.addChild(bodyNode);
-    this.bodyMeshRenderer = MeshFactory.attachMesh(
-      bodyNode,
-      MeshFactory.getBoxMesh(1.0, 0.35, 1.4),
-      '#2b7fff',
-      0.4,
-      0.2
-    );
+    const art = this.getArtLibrary();
 
-    // 前保险杠
-    const bumperNode = new Node('FrontBumper');
-    bumperNode.setPosition(0, 0.18, -0.75);
-    this.visualRoot.addChild(bumperNode);
-    MeshFactory.attachMesh(bumperNode, MeshFactory.getBoxMesh(1.1, 0.2, 0.2), '#1e293b');
-
-    // 2. 四只车轮 (Wheels)
-    const wheelPositions = [
-      [-0.55, 0.18, -0.45], // FL
-      [0.55, 0.18, -0.45],  // FR
-      [-0.55, 0.18, 0.45],  // RL
-      [0.55, 0.18, 0.45]    // RR
-    ];
-    for (let i = 0; i < wheelPositions.length; i++) {
-      const [wx, wy, wz] = wheelPositions[i];
-      const wheel = new Node(`Wheel_${i}`);
-      wheel.setPosition(wx, wy, wz);
-      this.visualRoot.addChild(wheel);
-      MeshFactory.attachMesh(wheel, MeshFactory.getCylinderMesh(0.18, 0.18, 0.14), '#0f172a');
-    }
-
-    // 3. 黑洞核心 (Core)
+    // 1. 黑洞核心：低矮、宽阔的深渊圆盘，在竖屏俯视镜头下保持为清楚的圆形。
     this.coreNode = new Node('CoreNode');
-    this.coreNode.setPosition(0, 0.48, -0.15);
+    this.coreNode.setPosition(0, 0.16, 0);
     this.visualRoot.addChild(this.coreNode);
 
     // 黑洞中心深渊 (纯黑无反光)
     const holeInner = new Node('HoleInner');
     holeInner.setPosition(0, 0, 0);
     this.coreNode.addChild(holeInner);
-    MeshFactory.attachMesh(holeInner, MeshFactory.getCylinderMesh(0.42, 0.42, 0.08), '#000000', 1.0, 0.0);
+    MeshFactory.attachMesh(holeInner, MeshFactory.getCylinderMesh(1.28, 1.28, 0.10), '#05040e', 1.0, 0.0);
 
-    // 发光外环 (青色 #00e5ff)
+    // 三层紫色涡流环：它们是黑洞特效的实体表现，随时间反向转动以传达吞噬感。
+    this.innerSwirl = new Node('InnerSwirl');
+    this.innerSwirl.setPosition(0, 0.065, 0);
+    this.coreNode.addChild(this.innerSwirl);
+    MeshFactory.attachMesh(this.innerSwirl, MeshFactory.getTorusMesh(0.56, 0.045), '#b89cff', 0.1, 0.5);
+
+    this.outerSwirl = new Node('OuterSwirl');
+    this.outerSwirl.setPosition(0, 0.075, 0);
+    this.outerSwirl.setRotationFromEuler(0, 0, 16);
+    this.coreNode.addChild(this.outerSwirl);
+    MeshFactory.attachMesh(this.outerSwirl, MeshFactory.getTorusMesh(0.94, 0.055), '#7654e8', 0.1, 0.5);
+
+    // 发光外环：等级增长时以真实吸附半径同步扩大。
     this.holeRim = new Node('HoleRing');
-    this.holeRim.setPosition(0, 0.02, 0);
+    this.holeRim.setPosition(0, 0.09, 0);
     this.coreNode.addChild(this.holeRim);
-    MeshFactory.attachMesh(this.holeRim, MeshFactory.getTorusMesh(0.48, 0.06), '#00e5ff', 0.1, 0.5);
+    MeshFactory.attachMesh(this.holeRim, MeshFactory.getTorusMesh(1.34, 0.075), '#d0c2ff', 0.1, 0.5);
 
-    // 4. LV2 磁力双涡轮 (TurbineNode)
+    // 2. LV2 磁力双涡轮 (TurbineNode)
     this.turbineNode = new Node('TurbineRoot');
     this.visualRoot.addChild(this.turbineNode);
 
-    const turbineL = new Node('Turbine_L');
-    turbineL.setPosition(-0.75, 0.38, 0.05);
-    this.turbineNode.addChild(turbineL);
-    MeshFactory.attachMesh(turbineL, MeshFactory.getCylinderMesh(0.25, 0.25, 0.55), '#34c759');
-
-    const turbineR = new Node('Turbine_R');
-    turbineR.setPosition(0.75, 0.38, 0.05);
-    this.turbineNode.addChild(turbineR);
-    MeshFactory.attachMesh(turbineR, MeshFactory.getCylinderMesh(0.25, 0.25, 0.55), '#34c759');
+    art.spawn('turbineWheel', this.turbineNode, new Vec3(-1.48, 0.34, 0.05), new Vec3(0.72, 0.72, 0.72), 0, 'MagneticTurbineLeft');
+    art.spawn('turbineWheel', this.turbineNode, new Vec3(1.48, 0.34, 0.05), new Vec3(0.72, 0.72, 0.72), 0, 'MagneticTurbineRight');
 
     this.turbineNode.active = false;
 
     // 5. LV3 冲压压缩机 (CrusherNode)
     this.crusherNode = new Node('CrusherNode');
-    this.crusherNode.setPosition(0, 0.65, 0.55);
     this.visualRoot.addChild(this.crusherNode);
-    MeshFactory.attachMesh(this.crusherNode, MeshFactory.getBoxMesh(1.1, 0.6, 0.5), '#ff9500');
+    art.spawn('recyclingBox', this.crusherNode, new Vec3(0, 0.48, 0.58), new Vec3(1.45, 0.85, 1.1), 0, 'CompressionModule');
     this.crusherNode.active = false;
 
     // 6. LV4 引力稳定翼 (GravityWingNode)
     this.gravityWingNode = new Node('GravityWingNode');
     this.visualRoot.addChild(this.gravityWingNode);
 
-    const wingL = new Node('Wing_L');
-    wingL.setPosition(-1.1, 0.45, 0.1);
-    this.gravityWingNode.addChild(wingL);
-    MeshFactory.attachMesh(wingL, MeshFactory.getBoxMesh(0.8, 0.15, 0.9), '#af52de');
-
-    const wingR = new Node('Wing_R');
-    wingR.setPosition(1.1, 0.45, 0.1);
-    this.gravityWingNode.addChild(wingR);
-    MeshFactory.attachMesh(wingR, MeshFactory.getBoxMesh(0.8, 0.15, 0.9), '#af52de');
+    art.spawn('turbineWheel', this.gravityWingNode, new Vec3(-1.8, 0.38, 0.05), new Vec3(1.15, 0.5, 1.15), 0, 'GravityWingLeft');
+    art.spawn('turbineWheel', this.gravityWingNode, new Vec3(1.8, 0.38, 0.05), new Vec3(1.15, 0.5, 1.15), 0, 'GravityWingRight');
 
     this.gravityWingNode.active = false;
 
@@ -146,6 +117,12 @@ export class BlackHoleMachine extends Component {
     this.visualRoot.addChild(this.singularityHaloNode);
     MeshFactory.attachMesh(this.singularityHaloNode, MeshFactory.getTorusMesh(1.1, 0.08), '#ffffff');
     this.singularityHaloNode.active = false;
+  }
+
+  private getArtLibrary(): WorldArtLibrary {
+    const library = director.getScene()?.getComponentInChildren(WorldArtLibrary) || null;
+    if (!library) throw new Error('[BlackHoleMachine] Missing editor-saved WorldArtLibrary; production chassis fallback is prohibited.');
+    return library;
   }
 
   public setTargetPosition(x: number, z: number): void {
@@ -158,6 +135,10 @@ export class BlackHoleMachine extends Component {
 
   public update(dt: number): void {
     if (this.isPaused || dt <= 0) return;
+    this.visualElapsed += dt;
+    if (this.innerSwirl) this.innerSwirl.setRotationFromEuler(0, this.visualElapsed * 90, 10);
+    if (this.outerSwirl) this.outerSwirl.setRotationFromEuler(0, -this.visualElapsed * 55, 16);
+    if (this.holeRim) this.holeRim.setRotationFromEuler(0, this.visualElapsed * 18, 0);
     // 1. 平滑移动
     const curPos = this.node.getPosition();
     const speed = this.currentConfig.moveSpeed;

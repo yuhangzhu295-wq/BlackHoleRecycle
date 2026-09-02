@@ -1,0 +1,139 @@
+{
+  "ver": "2.3.13",
+  "importer": "gltf",
+  "imported": true,
+  "uuid": "b2dcdcb9-5d74-4dad-89ac-c4090bd13dcc",
+  "files": [],
+  "subMetas": {
+    "85832": {
+      "importer": "gltf-mesh",
+      "uuid": "b2dcdcb9-5d74-4dad-89ac-c4090bd13dcc@85832",
+      "displayName": "",
+      "id": "85832",
+      "name": "construction-cone.mesh",
+      "userData": {
+        "gltfIndex": 0,
+        "triangleCount": 66
+      },
+      "ver": "1.1.1",
+      "imported": true,
+      "files": [
+        ".bin",
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "2b33f": {
+      "importer": "gltf-embeded-image",
+      "uuid": "b2dcdcb9-5d74-4dad-89ac-c4090bd13dcc@2b33f",
+      "displayName": "",
+      "id": "2b33f",
+      "name": "colormap.image",
+      "userData": {
+        "gltfIndex": 0
+      },
+      "ver": "1.0.3",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "96c50": {
+      "importer": "texture",
+      "uuid": "b2dcdcb9-5d74-4dad-89ac-c4090bd13dcc@96c50",
+      "displayName": "",
+      "id": "96c50",
+      "name": "colormap.texture",
+      "userData": {
+        "wrapModeS": "repeat",
+        "wrapModeT": "repeat",
+        "minfilter": "nearest",
+        "magfilter": "nearest",
+        "mipfilter": "nearest",
+        "anisotropy": 0,
+        "isUuid": true,
+        "imageUuidOrDatabaseUri": "b2dcdcb9-5d74-4dad-89ac-c4090bd13dcc@2b33f"
+      },
+      "ver": "1.0.22",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "9991c": {
+      "importer": "gltf-material",
+      "uuid": "b2dcdcb9-5d74-4dad-89ac-c4090bd13dcc@9991c",
+      "displayName": "",
+      "id": "9991c",
+      "name": "colormap.material",
+      "userData": {
+        "gltfIndex": 0
+      },
+      "ver": "1.0.14",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "fcc9c": {
+      "importer": "gltf-scene",
+      "uuid": "b2dcdcb9-5d74-4dad-89ac-c4090bd13dcc@fcc9c",
+      "displayName": "",
+      "id": "fcc9c",
+      "name": "construction-cone.prefab",
+      "userData": {
+        "gltfIndex": 0
+      },
+      "ver": "1.0.14",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    }
+  },
+  "userData": {
+    "imageMetas": [
+      {
+        "name": "colormap",
+        "uri": "b2dcdcb9-5d74-4dad-89ac-c4090bd13dcc@2b33f"
+      }
+    ],
+    "lods": {
+      "enable": false,
+      "hasBuiltinLOD": false,
+      "options": [
+        {
+          "screenRatio": 0.25,
+          "faceCount": 1
+        },
+        {
+          "screenRatio": 0.125,
+          "faceCount": 0.25
+        },
+        {
+          "screenRatio": 0.01,
+          "faceCount": 0.1
+        }
+      ]
+    },
+    "assetFinder": {
+      "meshes": [
+        "b2dcdcb9-5d74-4dad-89ac-c4090bd13dcc@85832"
+      ],
+      "skeletons": [],
+      "textures": [
+        "b2dcdcb9-5d74-4dad-89ac-c4090bd13dcc@96c50"
+      ],
+      "materials": [
+        "b2dcdcb9-5d74-4dad-89ac-c4090bd13dcc@9991c"
+      ],
+      "scenes": [
+        "b2dcdcb9-5d74-4dad-89ac-c4090bd13dcc@fcc9c"
+      ]
+    }
+  }
+}

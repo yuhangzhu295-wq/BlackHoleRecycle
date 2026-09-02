@@ -1,0 +1,139 @@
+{
+  "ver": "2.3.13",
+  "importer": "gltf",
+  "imported": true,
+  "uuid": "4d0b5a25-f16d-42e8-8a30-9e7c5e50e033",
+  "files": [],
+  "subMetas": {
+    "e3fe6": {
+      "importer": "gltf-mesh",
+      "uuid": "4d0b5a25-f16d-42e8-8a30-9e7c5e50e033@e3fe6",
+      "displayName": "",
+      "id": "e3fe6",
+      "name": "debris-bolt.mesh",
+      "userData": {
+        "gltfIndex": 0,
+        "triangleCount": 36
+      },
+      "ver": "1.1.1",
+      "imported": true,
+      "files": [
+        ".bin",
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "2b33f": {
+      "importer": "gltf-embeded-image",
+      "uuid": "4d0b5a25-f16d-42e8-8a30-9e7c5e50e033@2b33f",
+      "displayName": "",
+      "id": "2b33f",
+      "name": "colormap.image",
+      "userData": {
+        "gltfIndex": 0
+      },
+      "ver": "1.0.3",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "96c50": {
+      "importer": "texture",
+      "uuid": "4d0b5a25-f16d-42e8-8a30-9e7c5e50e033@96c50",
+      "displayName": "",
+      "id": "96c50",
+      "name": "colormap.texture",
+      "userData": {
+        "wrapModeS": "repeat",
+        "wrapModeT": "repeat",
+        "minfilter": "linear",
+        "magfilter": "linear",
+        "mipfilter": "linear",
+        "anisotropy": 0,
+        "isUuid": true,
+        "imageUuidOrDatabaseUri": "4d0b5a25-f16d-42e8-8a30-9e7c5e50e033@2b33f"
+      },
+      "ver": "1.0.22",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "9991c": {
+      "importer": "gltf-material",
+      "uuid": "4d0b5a25-f16d-42e8-8a30-9e7c5e50e033@9991c",
+      "displayName": "",
+      "id": "9991c",
+      "name": "colormap.material",
+      "userData": {
+        "gltfIndex": 0
+      },
+      "ver": "1.0.14",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "f1eeb": {
+      "importer": "gltf-scene",
+      "uuid": "4d0b5a25-f16d-42e8-8a30-9e7c5e50e033@f1eeb",
+      "displayName": "",
+      "id": "f1eeb",
+      "name": "recycling-bolt.prefab",
+      "userData": {
+        "gltfIndex": 0
+      },
+      "ver": "1.0.14",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    }
+  },
+  "userData": {
+    "imageMetas": [
+      {
+        "name": "colormap",
+        "uri": "4d0b5a25-f16d-42e8-8a30-9e7c5e50e033@2b33f"
+      }
+    ],
+    "lods": {
+      "enable": false,
+      "hasBuiltinLOD": false,
+      "options": [
+        {
+          "screenRatio": 0.25,
+          "faceCount": 1
+        },
+        {
+          "screenRatio": 0.125,
+          "faceCount": 0.25
+        },
+        {
+          "screenRatio": 0.01,
+          "faceCount": 0.1
+        }
+      ]
+    },
+    "assetFinder": {
+      "meshes": [
+        "4d0b5a25-f16d-42e8-8a30-9e7c5e50e033@e3fe6"
+      ],
+      "skeletons": [],
+      "textures": [
+        "4d0b5a25-f16d-42e8-8a30-9e7c5e50e033@96c50"
+      ],
+      "materials": [
+        "4d0b5a25-f16d-42e8-8a30-9e7c5e50e033@9991c"
+      ],
+      "scenes": [
+        "4d0b5a25-f16d-42e8-8a30-9e7c5e50e033@f1eeb"
+      ]
+    }
+  }
+}

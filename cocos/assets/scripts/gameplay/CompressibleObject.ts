@@ -1,16 +1,23 @@
 /**
- * 可吸附压缩物体组件 (CompressibleObject.ts)
- * 具备真实可见 3D 网格渲染、等级锁标指示与 IDLE -> ATTRACTED -> SUCKING -> ABSORBED -> RECYCLED 完整状态机
+ * 可吸附回收实体：维护 IDLE -> ATTRACTED -> SUCKING -> ABSORBED -> RECYCLED
+ * 状态机。正式可见物仅实例化 Cocos Creator 导入并保存的 glTF 美术模板。
  */
-import { _decorator, Component, Node, Vec3, MeshRenderer } from 'cc';
-import { IObjectTemplate, ObjectTier, OBJECT_TEMPLATES, ObjectShape } from '../data/GameConfig';
+import { _decorator, Component, director, Node, Vec3 } from 'cc';
+import { IObjectTemplate, ObjectTier, OBJECT_TEMPLATES } from '../data/GameConfig';
 import { SuctionMotionCalculator } from './SuctionMotion';
 import { FSM } from '../core/FSM';
-import { MeshFactory } from '../core/MeshFactory';
+import { WorldArtKind, WorldArtLibrary } from '../world/WorldArtLibrary';
 
 const { ccclass } = _decorator;
 
 export type ObjectMotionState = 'IDLE' | 'ATTRACTED' | 'SUCKING' | 'ABSORBED' | 'RECYCLED';
+
+interface IObjectVisualDefinition {
+  readonly kind: WorldArtKind;
+  readonly scale: Vec3;
+  readonly yOffset: number;
+  readonly yaw: number;
+}
 
 @ccclass('CompressibleObject')
 export class CompressibleObject extends Component {
@@ -22,10 +29,8 @@ export class CompressibleObject extends Component {
   private suckTimer: number = 0;
   private isLockAlertActive: boolean = false;
   private lockTimer: number = 0;
-
   private visualNode: Node | null = null;
   private lockIndicatorNode: Node | null = null;
-  private meshRenderer: MeshRenderer | null = null;
 
   public getPosition(): Vec3 {
     return this.currentPos;
@@ -42,17 +47,17 @@ export class CompressibleObject extends Component {
     this.visualNode = new Node('Visual');
     this.node.addChild(this.visualNode);
 
-    this.lockIndicatorNode = new Node('LockIndicator');
+    // 锁定反馈复用审计的锥桶模型，而不是红色 Box 占位符。
+    this.lockIndicatorNode = new Node('TierLockWarning');
     this.lockIndicatorNode.setPosition(0, 0.8, 0);
     this.node.addChild(this.lockIndicatorNode);
-
-    // 锁标：小型红色高亮标记
-    MeshFactory.attachMesh(
+    this.getArtLibrary().spawn(
+      'constructionCone',
       this.lockIndicatorNode,
-      MeshFactory.getBoxMesh(0.3, 0.3, 0.1),
-      '#e11d48',
-      0.3,
-      0.5
+      Vec3.ZERO,
+      new Vec3(3.5, 3.5, 3.5),
+      0,
+      'TierLockedWarning'
     );
     this.lockIndicatorNode.active = false;
   }
@@ -103,98 +108,55 @@ export class CompressibleObject extends Component {
     this.lockTimer = 0;
 
     this.buildVisibleNode();
-    this.applyTemplateMesh();
+    this.applyTemplateArt();
     this.fsm.setState('IDLE');
   }
 
-  private applyTemplateMesh(): void {
+  private applyTemplateArt(): void {
     if (!this.visualNode) return;
     this.visualNode.removeAllChildren();
+    const definition = this.getVisualDefinition(this.template.type);
+    this.getArtLibrary().spawn(
+      definition.kind,
+      this.visualNode,
+      new Vec3(0, definition.yOffset, 0),
+      definition.scale,
+      definition.yaw,
+      `Art_${this.template.type}`
+    );
+  }
 
-    const t = this.template;
-
-    if (t.type === 'soda_can' || t.type === 'water_bottle' || t.type === 'battery') {
-      const node = new Node('Body');
-      this.visualNode.addChild(node);
-      const h = t.height || 0.5;
-      const mesh = MeshFactory.getCylinderMesh(t.radius, t.radius, h);
-      this.meshRenderer = MeshFactory.attachMesh(node, mesh, t.color, 0.5, 0.3);
-
-      if (t.type === 'soda_can') {
-        const top = new Node('Top');
-        top.setPosition(0, h / 2 + 0.05, 0);
-        this.visualNode.addChild(top);
-        MeshFactory.attachMesh(top, MeshFactory.getCylinderMesh(t.radius * 0.8, t.radius * 0.8, 0.1), '#d1d5db', 0.8, 0.8);
-      }
-    } else if (t.type === 'book_stack') {
-      const s = t.size || [0.5, 0.3, 0.5];
-      const node = new Node('Book1');
-      this.visualNode.addChild(node);
-      this.meshRenderer = MeshFactory.attachMesh(node, MeshFactory.getBoxMesh(s[0], s[1]*0.6, s[2]), t.color, 0.8, 0.1);
-      
-      const node2 = new Node('Book2');
-      node2.setPosition(0, s[1]*0.6, 0);
-      this.visualNode.addChild(node2);
-      MeshFactory.attachMesh(node2, MeshFactory.getBoxMesh(s[0]*0.9, s[1]*0.4, s[2]*0.9), '#ffffff', 0.8, 0.1);
-    } else if (t.type === 'chair') {
-      const s = t.size || [0.8, 1.2, 0.8];
-      const node = new Node('Seat');
-      node.setPosition(0, s[1]*0.4, 0);
-      this.visualNode.addChild(node);
-      this.meshRenderer = MeshFactory.attachMesh(node, MeshFactory.getBoxMesh(s[0], 0.2, s[2]), t.color, 0.8, 0.1);
-      
-      const back = new Node('Back');
-      back.setPosition(0, s[1]*0.8, -s[2]*0.4);
-      this.visualNode.addChild(back);
-      MeshFactory.attachMesh(back, MeshFactory.getBoxMesh(s[0], s[1]*0.6, 0.2), t.color, 0.8, 0.1);
-    } else if (t.type === 'small_table') {
-      const s = t.size || [1.5, 0.6, 1.0];
-      const node = new Node('Top');
-      node.setPosition(0, s[1], 0);
-      this.visualNode.addChild(node);
-      this.meshRenderer = MeshFactory.attachMesh(node, MeshFactory.getBoxMesh(s[0], 0.1, s[2]), t.color, 0.7, 0.1);
-    } else if (t.type === 'monitor') {
-      const s = t.size || [1.2, 0.8, 0.3];
-      const node = new Node('Screen');
-      node.setPosition(0, s[1]*0.5, 0);
-      this.visualNode.addChild(node);
-      this.meshRenderer = MeshFactory.attachMesh(node, MeshFactory.getBoxMesh(s[0], s[1], s[2]), t.color, 0.5, 0.8);
-    } else if (t.type === 'shelf') {
-      const s = t.size || [2.5, 3.5, 1.0];
-      const node = new Node('Frame');
-      node.setPosition(0, s[1]*0.5, 0);
-      this.visualNode.addChild(node);
-      this.meshRenderer = MeshFactory.attachMesh(node, MeshFactory.getBoxMesh(s[0], s[1], s[2]), t.color, 0.5, 0.9);
-    } else if (t.type === 'car') {
-      const s = t.size || [2.5, 1.5, 4.5];
-      const node = new Node('Chassis');
-      node.setPosition(0, s[1]*0.3, 0);
-      this.visualNode.addChild(node);
-      this.meshRenderer = MeshFactory.attachMesh(node, MeshFactory.getBoxMesh(s[0], s[1]*0.6, s[2]), t.color, 0.3, 0.8);
-      
-      const top = new Node('Top');
-      top.setPosition(0, s[1]*0.8, -s[2]*0.1);
-      this.visualNode.addChild(top);
-      MeshFactory.attachMesh(top, MeshFactory.getBoxMesh(s[0]*0.9, s[1]*0.4, s[2]*0.5), '#111111', 0.2, 0.9);
-    } else if (t.shape === ObjectShape.BOX) {
-      const s = t.size || [0.6, 0.5, 0.6];
-      const node = new Node('Box');
-      this.visualNode.addChild(node);
-      this.meshRenderer = MeshFactory.attachMesh(node, MeshFactory.getBoxMesh(s[0], s[1], s[2]), t.color, 0.9, 0.0);
-    } else if (t.shape === ObjectShape.CONE) {
-      const node = new Node('Cone');
-      this.visualNode.addChild(node);
-      this.meshRenderer = MeshFactory.attachMesh(node, MeshFactory.getConeMesh(t.radius, t.height || 0.7), t.color, 0.6, 0.1);
-      
-      const base = new Node('Base');
-      base.setPosition(0, - (t.height || 0.7) / 2, 0);
-      this.visualNode.addChild(base);
-      MeshFactory.attachMesh(base, MeshFactory.getBoxMesh(t.radius*2.2, 0.1, t.radius*2.2), '#ffffff', 0.6, 0.1);
-    } else {
-      const node = new Node('Default');
-      this.visualNode.addChild(node);
-      this.meshRenderer = MeshFactory.attachMesh(node, MeshFactory.getSphereMesh(t.radius), t.color, 0.5, 0.1);
+  /** 每种可吞噬实体有明确的、已审计的真实模型绑定。 */
+  private getVisualDefinition(type: string): IObjectVisualDefinition {
+    switch (type) {
+      case 'soda_can': return { kind: 'recyclingBolt', scale: new Vec3(1.1, 1.1, 1.1), yOffset: 0, yaw: 0 };
+      case 'water_bottle': return { kind: 'recyclingBolt', scale: new Vec3(1.25, 1.25, 1.25), yOffset: 0, yaw: 90 };
+      case 'battery': return { kind: 'recyclingBolt', scale: new Vec3(1.4, 1.4, 1.4), yOffset: 0, yaw: 45 };
+      case 'toy': return { kind: 'recyclingBox', scale: new Vec3(0.55, 0.55, 0.55), yOffset: 0, yaw: 20 };
+      case 'apple': return { kind: 'recyclingBolt', scale: new Vec3(0.9, 0.9, 0.9), yOffset: 0, yaw: 135 };
+      case 'paper_ball': return { kind: 'recyclingBolt', scale: new Vec3(0.8, 0.8, 0.8), yOffset: 0, yaw: 180 };
+      case 'book_stack': return { kind: 'recyclingBox', scale: new Vec3(0.8, 0.45, 0.8), yOffset: 0, yaw: 45 };
+      case 'cardboard_box': return { kind: 'recyclingBox', scale: new Vec3(0.95, 0.8, 0.95), yOffset: 0, yaw: 0 };
+      case 'cone': return { kind: 'constructionCone', scale: new Vec3(7, 7, 7), yOffset: 0, yaw: 0 };
+      case 'trash_bag': return { kind: 'tire', scale: new Vec3(1.6, 1.6, 1.6), yOffset: 0.25, yaw: 0 };
+      case 'paint_bucket': return { kind: 'recyclingBox', scale: new Vec3(0.65, 0.65, 0.65), yOffset: 0, yaw: 30 };
+      case 'chair': return { kind: 'tire', scale: new Vec3(2.2, 2.2, 2.2), yOffset: 0.5, yaw: 90 };
+      case 'small_table': return { kind: 'recyclingBox', scale: new Vec3(1.8, 1.1, 1.4), yOffset: 0, yaw: 20 };
+      case 'monitor': return { kind: 'recyclingBox', scale: new Vec3(1.5, 1.15, 0.6), yOffset: 0, yaw: 0 };
+      case 'tire': return { kind: 'tire', scale: new Vec3(2.5, 2.5, 2.5), yOffset: 0.7, yaw: 0 };
+      case 'shelf': return { kind: 'recyclingBox', scale: new Vec3(3.5, 4.5, 1.7), yOffset: 0, yaw: 0 };
+      case 'crate': return { kind: 'recyclingBox', scale: new Vec3(4.2, 4.2, 4.2), yOffset: 0, yaw: 30 };
+      case 'sofa': return { kind: 'deliveryVan', scale: new Vec3(1.25, 1.25, 0.65), yOffset: 0.4, yaw: 90 };
+      case 'car': return { kind: 'sedan', scale: new Vec3(1.35, 1.35, 1.35), yOffset: 0.4, yaw: 0 };
+      case 'container': return { kind: 'deliveryVan', scale: new Vec3(2.5, 2.5, 2.5), yOffset: 0.75, yaw: 0 };
+      default: throw new Error(`[CompressibleObject] No audited art binding for ${type}.`);
     }
+  }
+
+  private getArtLibrary(): WorldArtLibrary {
+    const library = director.getScene()?.getComponentInChildren(WorldArtLibrary) || null;
+    if (!library) throw new Error('[CompressibleObject] Missing editor-saved WorldArtLibrary; primitive fallback is prohibited.');
+    return library;
   }
 
   public getState(): ObjectMotionState {
@@ -205,9 +167,7 @@ export class CompressibleObject extends Component {
     if (this.lockTimer > 0) return;
     this.isLockAlertActive = true;
     this.lockTimer = 1.0;
-    if (this.lockIndicatorNode) {
-      this.lockIndicatorNode.active = true;
-    }
+    if (this.lockIndicatorNode) this.lockIndicatorNode.active = true;
   }
 
   public isShowingLockAlert(): boolean {
@@ -224,7 +184,6 @@ export class CompressibleObject extends Component {
     const state = this.fsm.getState();
     if (state === 'ABSORBED' || state === 'RECYCLED') return false;
 
-    // 更新等级锁标计时
     if (this.lockTimer > 0) {
       this.lockTimer -= dt;
       if (this.lockTimer <= 0) {
@@ -236,47 +195,29 @@ export class CompressibleObject extends Component {
     const dx = machinePos.x - this.currentPos.x;
     const dz = machinePos.z - this.currentPos.z;
     const distSq = dx * dx + dz * dz;
-
-    // 1. IDLE 状态下距离与 Tier 判定
     if (state === 'IDLE') {
       if (distSq < suctionRadius * suctionRadius) {
-        if (this.template.tier > machineMaxTier && !isMagnetStorm) {
-          this.showLockAlert();
-        } else {
-          this.fsm.setState('ATTRACTED');
-        }
+        if (this.template.tier > machineMaxTier && !isMagnetStorm) this.showLockAlert();
+        else this.fsm.setState('ATTRACTED');
       }
       return false;
     }
 
-    // 2. 引力吸附与下潜动力学
     if (state === 'ATTRACTED' || state === 'SUCKING') {
-      if (state === 'SUCKING') {
-        this.suckTimer += dt;
-      } else if (Math.sqrt(distSq) < 0.6) {
-        this.fsm.setState('SUCKING');
-      }
+      if (state === 'SUCKING') this.suckTimer += dt;
+      else if (Math.sqrt(distSq) < 0.6) this.fsm.setState('SUCKING');
 
-      const res = SuctionMotionCalculator.computeMotion(
-        this.currentPos,
-        machinePos,
-        suctionRadius,
-        dt,
-        this.suckTimer,
-        0.4,
-        isMagnetStorm
+      const result = SuctionMotionCalculator.computeMotion(
+        this.currentPos, machinePos, suctionRadius, dt, this.suckTimer, 0.4, isMagnetStorm
       );
-
-      this.currentPos.set(res.newPosition);
+      this.currentPos.set(result.newPosition);
       this.node.setPosition(this.currentPos);
-      this.node.setScale(res.newScale);
-
-      if (res.isAbsorbed) {
+      this.node.setScale(result.newScale);
+      if (result.isAbsorbed) {
         this.fsm.setState('ABSORBED');
-        return true; // 返回 true 表示本帧成功吞噬
+        return true;
       }
     }
-
     return false;
   }
 

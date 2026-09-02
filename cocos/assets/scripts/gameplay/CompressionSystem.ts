@@ -5,7 +5,7 @@
  */
 import { _decorator, Component, Node, Vec3, math, director } from 'cc';
 import { CompressibleObject } from './CompressibleObject';
-import { MeshFactory } from '../core/MeshFactory';
+import { WorldArtLibrary } from '../world/WorldArtLibrary';
 import { saveService } from '../data/SaveService';
 import { platformAdapter } from '../platform/EditorPlatformAdapter';
 import { BlackHoleMachine } from '../machine/BlackHoleMachine';
@@ -140,7 +140,8 @@ export class CompressionSystem extends Component {
     this.currentBlock.setScale(new Vec3(0.1, 0.1, 0.1));
     this.ejectNode?.addChild(this.currentBlock);
     
-    // 金黄色发光资源方块
-    MeshFactory.attachMesh(this.currentBlock, MeshFactory.getBoxMesh(0.45, 0.45, 0.45), '#f59e0b', 0.2, 0.6);
+    const art = director.getScene()?.getComponentInChildren(WorldArtLibrary) || null;
+    if (!art) throw new Error('[CompressionSystem] Missing editor-saved WorldArtLibrary; resource block fallback is prohibited.');
+    art.spawn('recyclingBox', this.currentBlock, Vec3.ZERO, new Vec3(0.65, 0.65, 0.65), 20, 'CompressedResourceBlock');
   }
 }
