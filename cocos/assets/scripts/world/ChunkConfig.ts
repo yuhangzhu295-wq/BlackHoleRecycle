@@ -2,6 +2,7 @@
  * 地图分块生成配置 (ChunkConfig.ts)
  */
 import { IRegionThemeConfig, OBJECT_TEMPLATES, IObjectTemplate, ObjectTier } from '../data/GameConfig';
+import { getDistrictTemplateForCell } from './DistrictTemplates';
 
 export interface IChunkSpawnItem {
   readonly template: IObjectTemplate;
@@ -77,30 +78,31 @@ export class CellItemGenerator {
     const available = OBJECT_TEMPLATES.filter((template) => theme.availableTiers.includes(template.tier));
     const t1 = available.filter((template) => template.tier === ObjectTier.T1);
     const items: IChunkSpawnItem[] = [];
+    const district = getDistrictTemplateForCell(cellX, cellZ);
     let state = (seed >>> 0) || 1;
     const random = (): number => {
       state = (state * 1664525 + 1013904223) >>> 0;
       return state / 0x100000000;
     };
-    const clusterCenters: ReadonlyArray<readonly [number, number]> = [
-      [-17, -14], [16, -12], [-13, 15], [15, 15], [0, -4],
-    ];
     const count = 20 + positive(seed, 5);
     const half = cellSize * 0.5 - 5;
     for (let index = 0; index < count; index++) {
-      const center = clusterCenters[index % clusterCenters.length];
-      const highTier = index % 5 === 0 && available.some((template) => template.tier >= ObjectTier.T2);
-      const candidates = highTier
-        ? available.filter((template) => template.tier >= ObjectTier.T2)
-        : (t1.length > 0 ? t1 : available);
+      const cluster = district.resourceClusters[index % district.resourceClusters.length];
+      const center = cluster.center;
+      const semanticCandidates = cluster.preferredTypes
+        .map((type) => available.find((template) => template.type === type))
+        .filter((template): template is IObjectTemplate => Boolean(template));
+      const candidates = semanticCandidates.length > 0 ? semanticCandidates : (t1.length > 0 ? t1 : available);
       const template = candidates[index % candidates.length] || available[0];
-      const localX = Math.max(-half, Math.min(half, center[0] + (random() - 0.5) * 8));
-      const localZ = Math.max(-half, Math.min(half, center[1] + (random() - 0.5) * 8));
+      // A 2.8m radius makes each authored cluster visibly cohesive rather
+      // than uniformly scattering unrelated objects across a 64m cell.
+      const localX = Math.max(-half, Math.min(half, center[0] + (random() - 0.5) * 5.6));
+      const localZ = Math.max(-half, Math.min(half, center[1] + (random() - 0.5) * 5.6));
       items.push({
         template,
         localX,
         localZ,
-        customId: `cell_${cellX}_${cellZ}_${index}`,
+        customId: `cluster_${district.kind}_${cluster.id}_${cellX}_${cellZ}_${index}`,
       });
     }
 

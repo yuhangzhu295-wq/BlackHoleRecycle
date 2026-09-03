@@ -9,6 +9,7 @@ import { ObjectPool } from '../core/ObjectPool';
 import { eventBus } from '../core/EventBus';
 import { CompressibleObject } from '../gameplay/CompressibleObject';
 import { CellItemGenerator, IChunkSpawnItem } from './ChunkConfig';
+import { DistrictKind, DistrictTemplate, getDistrictTemplateForCell } from './DistrictTemplates';
 import { WorldArtKind, WorldArtLibrary } from './WorldArtLibrary';
 
 const { ccclass } = _decorator;
@@ -39,6 +40,7 @@ function positiveMod(value: number, divisor: number): number {
 /** One generated cell with its own Creator-imported environment and pooled loot. */
 class InfiniteWorldCell {
   public readonly objects: CompressibleObject[] = [];
+  public readonly district: DistrictTemplate;
 
   public constructor(
     public readonly coord: WorldCellCoord,
@@ -47,6 +49,7 @@ class InfiniteWorldCell {
     private readonly art: WorldArtLibrary,
     private readonly cellSize: number,
   ) {
+    this.district = getDistrictTemplateForCell(coord.x, coord.z);
     this.buildEnvironment();
   }
 
@@ -98,7 +101,6 @@ class InfiniteWorldCell {
    */
   private buildEnvironment(): void {
     const half = this.cellSize * 0.5;
-    const variant = positiveMod(this.coord.x * 31 + this.coord.z * 17, 6);
 
     // Four grass quadrants keep the cell visually continuous during streaming.
     // They sit fractionally below the imported asphalt to avoid mobile depth
@@ -109,34 +111,88 @@ class InfiniteWorldCell {
       }
     }
 
-    if (variant === 0 || variant === 3) {
+    if (this.district.kind === 'RESIDENTIAL' || this.district.kind === 'PARK' || this.district.kind === 'DOWNTOWN') {
       this.spawn('roadCrossroad', 0, 0, V3(12, 1, 12), 0, 'FourWayRoad', 0.02);
     } else {
-      this.spawn('roadStraight', 0, 0, V3(12, 1, 22), variant % 2 === 0 ? 0 : 90, 'DistrictRoad', 0.02);
+      this.spawn('roadStraight', 0, 0, V3(12, 1, 22), this.district.kind === 'PARKING' ? 90 : 0, 'DistrictRoad', 0.02);
     }
 
-    // Keep the street's landmark silhouette within the narrow 9:16 camera,
-    // rather than only in the distant corners of the 64 m streaming cell.
-    // The central roadway remains unobstructed for the black-hole machine.
-    const buildingA: WorldArtKind = variant % 2 === 0 ? 'buildingB' : 'buildingC';
-    const buildingB: WorldArtKind = buildingA === 'buildingB' ? 'buildingC' : 'buildingB';
-    this.spawn(buildingA, -8.7, -8.8, V3(2.35, 2.35, 2.35), 90, 'DistrictResidenceNW');
-    this.spawn(buildingB, 8.7, -11.2, V3(2.35, 2.35, 2.35), -90, 'DistrictResidenceSE');
-    this.spawn('commercialBuildingA', -9.1, -17.4, V3(2.4, 2.4, 2.4), 90, 'DistrictShopSW');
-    this.spawn('commercialBuildingD', 9.1, -18.2, V3(2.4, 2.4, 2.4), -90, 'DistrictShopNE');
+    this.buildDistrictLandmarks(this.district.kind);
+  }
 
-    for (const [x, z] of [[-5.3, -5.5], [5.3, -7.5], [-5.3, -15.5], [5.3, -17.5]]) {
-      this.spawn('streetLight', x, z, V3(3.8, 3.8, 3.8), 0, 'DistrictStreetLight');
+  /** Each branch uses only audited semantic glTF templates, never primitives. */
+  private buildDistrictLandmarks(kind: DistrictKind): void {
+    const lights = (): void => {
+      for (const [x, z] of [[-5.3, -5.5], [5.3, -7.5], [-5.3, -15.5], [5.3, -17.5]]) {
+        this.spawn('streetLight', x, z, V3(3.8, 3.8, 3.8), 0, 'DistrictStreetLight');
+      }
+    };
+    const homes = (): void => {
+      this.spawn('buildingB', -8.7, -8.8, V3(2.35, 2.35, 2.35), 90, 'ResidentialHouseWest');
+      this.spawn('buildingC', 8.7, -11.2, V3(2.35, 2.35, 2.35), -90, 'ResidentialHouseEast');
+    };
+    const trees = (): void => {
+      this.spawn('treeLarge', -7.2, -3.3, V3(3.5, 3.5, 3.5), 0, 'DistrictTreeLarge');
+      this.spawn('treeSmall', 7.5, -5.0, V3(3.7, 3.7, 3.7), 0, 'DistrictTreeSmall');
+    };
+    switch (kind) {
+      case 'RESIDENTIAL':
+        homes(); trees(); lights();
+        this.spawn('pathStones', -7.3, -14.5, V3(3.2, 1, 4.6), 90, 'ResidentialWalkway');
+        this.spawn('fence', 7.3, -15.5, V3(3.2, 1.5, 3.8), 90, 'ResidentialFence');
+        this.spawn('sedan', 3.1, -8.5, V3(1.2, 1.2, 1.2), -90, 'ResidentialParkedSedan');
+        break;
+      case 'PARK':
+        lights();
+        for (const [x, z] of [[-8, -8], [8, -8], [-8, 8], [8, 8]]) this.spawn('treeLarge', x, z, V3(3.5, 3.5, 3.5), 0, 'ParkTree');
+        this.spawn('treeSmall', 0, -13, V3(3.8, 3.8, 3.8), 0, 'ParkTreeCenter');
+        this.spawn('pathStones', -8, 0, V3(3.5, 1, 7.5), 90, 'ParkWalkwayWest');
+        this.spawn('pathStones', 8, 0, V3(3.5, 1, 7.5), 90, 'ParkWalkwayEast');
+        this.spawn('fence', 0, 15, V3(4.5, 1.5, 4.5), 0, 'ParkFence');
+        break;
+      case 'SUPERMARKET':
+        lights();
+        this.spawn('commercialBuildingA', -8.8, -12, V3(2.5, 2.5, 2.5), 90, 'SupermarketBuilding');
+        this.spawn('commercialBuildingD', 8.8, -12, V3(2.5, 2.5, 2.5), -90, 'SupermarketAnnex');
+        this.spawn('deliveryVan', -3.2, -7.6, V3(1.15, 1.15, 1.15), 90, 'SupermarketDeliveryVan');
+        this.spawn('sedan', 3.2, -7.6, V3(1.2, 1.2, 1.2), -90, 'SupermarketCustomerSedan');
+        this.spawn('recyclingBox', -8, 8, V3(1.1, 1.1, 1.1), 0, 'SupermarketBoxStack');
+        break;
+      case 'WAREHOUSE':
+        this.spawn('shippingContainer', -9, -10, V3(1.3, 1.3, 1.3), 90, 'WarehouseContainerWest');
+        this.spawn('shippingContainer', 9, -10, V3(1.3, 1.3, 1.3), -90, 'WarehouseContainerEast');
+        this.spawn('shelf', -8, 8, V3(1.15, 1.15, 1.15), 0, 'WarehouseShelf');
+        this.spawn('crate', 8, 8, V3(1.15, 1.15, 1.15), 0, 'WarehouseCrateStack');
+        this.spawn('deliveryVan', -3.3, -4.5, V3(1.15, 1.15, 1.15), 90, 'WarehouseDeliveryVan');
+        this.spawn('garbageTruck', 3.3, -4.5, V3(1.15, 1.15, 1.15), -90, 'WarehouseGarbageTruck');
+        this.spawn('fence', 0, 15, V3(4.5, 1.5, 4.5), 0, 'WarehouseFence');
+        break;
+      case 'PARKING':
+        lights();
+        this.spawn('sedan', -8, -9, V3(1.2, 1.2, 1.2), 90, 'ParkingSedanWest');
+        this.spawn('sedan', 8, -9, V3(1.2, 1.2, 1.2), -90, 'ParkingSedanEast');
+        this.spawn('deliveryVan', -8, 8, V3(1.15, 1.15, 1.15), 90, 'ParkingDeliveryVan');
+        this.spawn('garbageTruck', 8, 8, V3(1.15, 1.15, 1.15), -90, 'ParkingGarbageTruck');
+        this.spawn('commercialBuildingD', 0, -17, V3(2.2, 2.2, 2.2), 0, 'ParkingServiceBuilding');
+        break;
+      case 'CONSTRUCTION':
+        this.spawn('bulldozer', -7, -8, V3(1.2, 1.2, 1.2), 90, 'ConstructionBulldozer');
+        this.spawn('shippingContainer', 8, -10, V3(1.3, 1.3, 1.3), -90, 'ConstructionContainer');
+        this.spawn('crate', -8, 8, V3(1.2, 1.2, 1.2), 0, 'ConstructionCrateStack');
+        this.spawn('garbageTruck', 7, 8, V3(1.15, 1.15, 1.15), -90, 'ConstructionHauler');
+        this.spawn('fence', -3, 13, V3(3.8, 1.5, 3.8), 90, 'ConstructionFence');
+        for (const [x, z] of [[3, 12], [6, 12], [3, -4], [6, -4]]) this.spawn('constructionCone', x, z, V3(4.5, 4.5, 4.5), 0, 'ConstructionCone');
+        break;
+      case 'DOWNTOWN':
+        lights();
+        this.spawn('commercialBuildingA', -9, -12, V3(2.65, 2.65, 2.65), 90, 'DowntownShopWest');
+        this.spawn('commercialBuildingD', 9, -12, V3(2.65, 2.65, 2.65), -90, 'DowntownShopEast');
+        this.spawn('commercialBuildingD', -9, 10, V3(2.45, 2.45, 2.45), 90, 'DowntownTowerWest');
+        this.spawn('commercialBuildingA', 9, 10, V3(2.45, 2.45, 2.45), -90, 'DowntownTowerEast');
+        this.spawn('sedan', -3.5, -5, V3(1.2, 1.2, 1.2), 90, 'DowntownSedan');
+        this.spawn('deliveryVan', 3.5, -5, V3(1.15, 1.15, 1.15), -90, 'DowntownDeliveryVan');
+        break;
     }
-    this.spawn('treeLarge', -7.2, -3.3, V3(3.5, 3.5, 3.5), 0, 'DistrictTreeLarge');
-    this.spawn('treeSmall', 7.5, -5.0, V3(3.7, 3.7, 3.7), 0, 'DistrictTreeSmall');
-    this.spawn('pathStones', -7.3, -14.5, V3(3.2, 1, 4.6), 90, 'DistrictPath');
-    this.spawn('fence', 7.3, -15.5, V3(3.2, 1.5, 3.8), 90, 'DistrictFence');
-
-    if (variant === 1) this.spawn('deliveryVan', -3.1, -9.0, V3(1.1, 1.1, 1.1), 90, 'DistrictDeliveryVan');
-    if (variant === 2) this.spawn('sedan', 3.1, -10.0, V3(1.2, 1.2, 1.2), -90, 'DistrictParkedSedan');
-    if (variant === 4) this.spawn('garbageTruck', 3.3, -6.5, V3(1.15, 1.15, 1.15), 90, 'DistrictGarbageTruck');
-    if (variant === 5) this.spawn('constructionCone', -3.3, -6.0, V3(5.5, 5.5, 5.5), 0, 'DistrictRoadCone');
   }
 }
 
@@ -262,7 +318,11 @@ export class InfiniteWorldManager extends Component {
       // Do not spread Map.values(): Cocos' ES5 build transform emits a single
       // iterator element for that form. Array.from preserves all real cells in
       // the Web Mobile runtime and keeps QA strictly read-only.
-      activeCells: Array.from(this.activeCells.values(), (cell) => ({ x: cell.coord.x, z: cell.coord.z })),
+      activeCells: Array.from(this.activeCells.values(), (cell) => ({
+        x: cell.coord.x,
+        z: cell.coord.z,
+        district: cell.district.kind,
+      })),
     };
   }
 
