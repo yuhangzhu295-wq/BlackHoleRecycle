@@ -87,7 +87,7 @@ export class GameManager extends Component {
       // The generated project declarations do not re-export that enum, while
       // Camera.fovAxis remains the native engine property being configured.
       this.mainCamera.fovAxis = 0;
-      this.mainCamera.fov = 47;
+      this.mainCamera.fov = 42;
     }
 
   }
