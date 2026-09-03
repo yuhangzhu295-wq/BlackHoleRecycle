@@ -19,6 +19,7 @@ const creatorExe = process.env.COCOS_CREATOR_EXE || 'C:\\ProgramData\\cocos\\edi
 const buildDirectory = path.join(cocosProject, 'build', 'web-mobile');
 const evidenceDirectory = path.join(cocosProject, 'docs', 'evidence', 'v2', 'portrait');
 const reportPath = path.join(evidenceDirectory, 'acceptance-report.json');
+const acceptanceScope = process.env.BHR_ACCEPTANCE_SCOPE || 'full';
 const requiredPortraitViewports = [
   { id: '375x667', width: 375, height: 667 },
   { id: '390x844', width: 390, height: 844 },
@@ -203,6 +204,94 @@ async function readRuntimeSnapshot(page) {
   return page.evaluate(() => window.__BHR_QA__.snapshot());
 }
 
+/**
+ * Verify the editor-saved formal runtime pages through real touch events.
+ * The bridge remains read-only: all state transitions originate from the
+ * same visible Buttons a player taps on a phone.
+ */
+async function verifyRuntimePages(cdp, page, canvasRect) {
+  const before = await readRuntimeSnapshot(page);
+  const design = before.ui?.design;
+  const pointFor = (node, name) => {
+    assert(node?.active, `FAIL_RUNTIME_PAGE_NODE_INACTIVE_${name}: ${JSON.stringify(node)}`);
+    assert(design?.width > 0 && design?.height > 0,
+      `FAIL_RUNTIME_PAGE_DESIGN: ${JSON.stringify(design)}`);
+    // Page nodes are editor-saved in portrait design coordinates.  Their
+    // camera screen projection is intentionally not used here: SHOW_ALL can
+    // report that projection in the full WebGL frame instead of the visible
+    // browser viewport. This remains a raw CDP touch on the displayed button.
+    return {
+      x: canvasRect.left + canvasRect.width * ((node.x + design.width * 0.5) / design.width),
+      y: canvasRect.top + canvasRect.height * ((design.height * 0.5 - node.y) / design.height),
+    };
+  };
+  const pause = pointFor(before.ui?.runtimeHUD?.pauseButton, 'PAUSE');
+
+  await dispatchTouchTap(cdp, pause.x, pause.y);
+  try {
+    await page.waitForFunction(() => {
+      const snapshot = window.__BHR_QA__.snapshot();
+      return snapshot.gameState === 'PAUSED' && snapshot.uiScreen === 'Pause';
+    }, undefined, { timeout: 5000 });
+  } catch (error) {
+    const actual = await readRuntimeSnapshot(page);
+    throw new Error(`FAIL_RUNTIME_PAUSE_TOUCH: ${JSON.stringify({
+      pause,
+      state: actual.gameState,
+      uiScreen: actual.uiScreen,
+      router: actual.ui?.runtimePageInput,
+      pauseButton: actual.ui?.runtimeHUD?.pauseButton,
+      error: error instanceof Error ? error.message : String(error),
+    })}`);
+  }
+  await page.screenshot({ path: path.join(evidenceDirectory, 'portrait-390x844-pause.png') });
+
+  const paused = await readRuntimeSnapshot(page);
+  const resume = pointFor(paused.ui?.formalPages?.pauseResume, 'RESUME');
+  await dispatchTouchTap(cdp, resume.x, resume.y);
+  try {
+    await page.waitForFunction(() => {
+      const snapshot = window.__BHR_QA__.snapshot();
+      return snapshot.gameState === 'PLAYING' && snapshot.uiScreen === 'Gameplay';
+    }, undefined, { timeout: 5000 });
+  } catch (error) {
+    const actual = await readRuntimeSnapshot(page);
+    throw new Error(`FAIL_RUNTIME_RESUME_TOUCH: ${JSON.stringify({
+      resume,
+      state: actual.gameState,
+      uiScreen: actual.uiScreen,
+      router: actual.ui?.runtimePageInput,
+      resumeButton: actual.ui?.formalPages?.pauseResume,
+      error: error instanceof Error ? error.message : String(error),
+    })}`);
+  }
+
+  await dispatchTouchTap(cdp, pause.x, pause.y);
+  await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'PAUSED', undefined, { timeout: 5000 });
+  const pausedForSettlement = await readRuntimeSnapshot(page);
+  const settle = pointFor(pausedForSettlement.ui?.formalPages?.pauseSettle, 'SETTLE');
+  await dispatchTouchTap(cdp, settle.x, settle.y);
+  try {
+    await page.waitForFunction(() => {
+      const snapshot = window.__BHR_QA__.snapshot();
+      return snapshot.gameState === 'SETTLEMENT' && snapshot.uiScreen === 'Settlement';
+    }, undefined, { timeout: 5000 });
+  } catch (error) {
+    const actual = await readRuntimeSnapshot(page);
+    throw new Error(`FAIL_RUNTIME_SETTLEMENT_TOUCH: ${JSON.stringify({
+      settle,
+      state: actual.gameState,
+      uiScreen: actual.uiScreen,
+      router: actual.ui?.runtimePageInput,
+      settleButton: actual.ui?.formalPages?.pauseSettle,
+      error: error instanceof Error ? error.message : String(error),
+    })}`);
+  }
+  await page.screenshot({ path: path.join(evidenceDirectory, 'portrait-390x844-settlement.png') });
+
+  return { pause, resume, settle, finalScreen: 'Settlement' };
+}
+
 function validatePortraitSnapshot(viewport, canvasRect, runtimeSnapshot) {
   const portrait = runtimeSnapshot.ui?.portrait;
   assert(viewport.width < viewport.height, `FAIL_NOT_PORTRAIT: browser viewport ${viewport.width}x${viewport.height}`);
@@ -355,6 +444,12 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
         `FAIL_VISIBLE_JOYSTICK: ${JSON.stringify(gameplaySnapshot.ui.runtimeHUD)}`);
       report.infiniteWorld.initial = validateInfiniteWorldSnapshot(gameplaySnapshot);
 
+      if (acceptanceScope === 'pages') {
+        report.runtimePages = await verifyRuntimePages(cdp, page, canvasRect);
+        assert(runtimeErrors.length === 0, `Runtime console errors after page navigation: ${runtimeErrors.join(' | ')}`);
+        return;
+      }
+
       // Must touch the centre of the editor-saved lower-right joystick, rather
       // than an arbitrary lower-right input region.
       const joystickStartX = canvasRect.left + canvasRect.width * 0.822;
@@ -395,7 +490,14 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
         const engaged = await readRuntimeSnapshot(page);
         const input = engaged.machine.movementInput;
         assert(Math.hypot(input.x, input.y) > 0.1,
-          `FAIL_TOUCH_INPUT_${direction.name.toUpperCase()}: joystick input ${JSON.stringify(input)}`);
+          `FAIL_TOUCH_INPUT_${direction.name.toUpperCase()}: ${JSON.stringify({
+            input,
+            activeTouchId: engaged.machine.activeTouchId,
+            touchDiagnostic: engaged.machine.touchDiagnostic,
+            controller: engaged.machine.controller,
+            gameState: engaged.gameState,
+            viewport: engaged.ui?.portrait?.viewport,
+          })}`);
         await page.waitForTimeout(1000);
         const after = await readRuntimeSnapshot(page);
         const delta = {
@@ -436,6 +538,8 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
       }
       assert(runtimeErrors.length === 0, `Runtime console errors after touch: ${runtimeErrors.join(' | ')}`);
       await page.screenshot({ path: path.join(evidenceDirectory, 'portrait-390x844-gameplay.png') });
+      report.runtimePages = await verifyRuntimePages(cdp, page, canvasRect);
+      assert(runtimeErrors.length === 0, `Runtime console errors after page navigation: ${runtimeErrors.join(' | ')}`);
     }
   } finally {
     await context.close();
@@ -451,6 +555,7 @@ const report = {
   multiTouch: null,
   camera: null,
   infiniteWorld: { initial: null, cardinal500m: [] },
+  runtimePages: null,
   failures: [],
 };
 
@@ -466,7 +571,10 @@ try {
   const baseUrl = `http://127.0.0.1:${address.port}/`;
   browser = await chromium.launch({ headless: true, args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-webgl'] });
 
-  for (const viewport of requiredPortraitViewports) {
+  const targetViewports = acceptanceScope === 'pages'
+    ? requiredPortraitViewports.filter((viewport) => viewport.id === '390x844')
+    : requiredPortraitViewports;
+  for (const viewport of targetViewports) {
     console.log(`[acceptance:v2] Verifying ${viewport.id}...`);
     await runPortraitCase(browser, baseUrl, viewport, report);
   }

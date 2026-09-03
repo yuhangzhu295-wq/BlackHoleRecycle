@@ -6,6 +6,7 @@ import { BlackHoleMachine } from '../machine/BlackHoleMachine';
 import { InfiniteWorldManager } from '../world/InfiniteWorldManager';
 import { CompressibleObject } from './CompressibleObject';
 import { HUDView } from '../ui/HUDView';
+import { RuntimePageInputRouter } from '../ui/RuntimePageInputRouter';
 import { CompressionSystem } from './CompressionSystem';
 import { PlayerController } from './PlayerController';
 import { eventBus } from '../core/EventBus';
@@ -86,6 +87,7 @@ export class GameManager extends Component {
       this.mainCamera.fovAxis = 0;
       this.mainCamera.fov = 47;
     }
+
   }
 
   private autoBindDependencies(): void {
@@ -357,13 +359,19 @@ export class GameManager extends Component {
     const canvas = director.getScene()?.getChildByName('Canvas') || null;
     const home = canvas?.getChildByName('HomePage') || null;
     const endlessHud = canvas?.getChildByName('EndlessHUD') || null;
+    const pausePage = canvas?.getChildByName('PausePage') || null;
+    const settlementPage = canvas?.getChildByName('SettlementPage') || null;
     const joystick = endlessHud?.getChildByName('Joystick') || null;
     const homeNode = (name: string): Node | null => home?.getChildByName(name) || home?.getChildByName('SafeAreaRoot')?.getChildByName(name) || null;
     const canvasComponent = canvas?.getComponent(Canvas) || null;
+    const runtimePageInput = canvas?.getComponent(RuntimePageInputRouter) || null;
     const uiCamera = canvas?.getChildByName('UICamera')?.getComponent(Camera) || null;
+    const viewport = view.getViewportRect();
     const describe = (node: Node | null): Record<string, unknown> | null => {
       if (!node) return null;
       const transform = node.getComponent(UITransform);
+      const worldPoint = transform?.convertToWorldSpaceAR(Vec3.ZERO, new Vec3()) || null;
+      const screenPoint = worldPoint && uiCamera ? uiCamera.worldToScreen(worldPoint, new Vec3()) : null;
       return {
         active: node.activeInHierarchy,
         x: node.position.x,
@@ -371,14 +379,20 @@ export class GameManager extends Component {
         width: transform?.width || 0,
         height: transform?.height || 0,
         scaleX: node.scale.x,
-        scaleY: node.scale.y
+        scaleY: node.scale.y,
+        // Normalized visual centre after Canvas/viewport letterboxing. The
+        // acceptance runner uses this read-only point to tap the actual
+        // editor-saved button rather than assuming a design-resolution map.
+        screen: screenPoint && viewport.width > 0 && viewport.height > 0 ? {
+          x: (screenPoint.x - viewport.x) / viewport.width,
+          y: 1 - (screenPoint.y - viewport.y) / viewport.height,
+        } : null,
       };
     };
 
     const design = view.getDesignResolutionSize();
     const visible = view.getVisibleSize();
     const frame = view.getFrameSize();
-    const viewport = view.getViewportRect();
     const targetRatio = this.portraitWidth / this.portraitHeight;
     return {
       design: { width: design.width, height: design.height },
@@ -411,10 +425,18 @@ export class GameManager extends Component {
       home: describe(home),
       runtimeHUD: {
         endless: describe(endlessHud),
+        pauseButton: describe(endlessHud?.getChildByName('BtnPause') || null),
         joystick: describe(joystick),
         joystickBase: describe(joystick?.getChildByName('JoystickBase') || null),
         joystickKnob: describe(joystick?.getChildByName('JoystickKnob') || null),
       },
+      formalPages: {
+        pause: describe(pausePage),
+        pauseResume: describe(pausePage?.getChildByName('BtnResume') || null),
+        pauseSettle: describe(pausePage?.getChildByName('BtnSettle') || null),
+        settlement: describe(settlementPage),
+      },
+      runtimePageInput: runtimePageInput?.lastInputDiagnostic || null,
       logo: describe(homeNode('Logo')),
       hero: describe(homeNode('HeroBlackHole')),
       start: describe(homeNode('BtnStart')),
@@ -508,6 +530,12 @@ export class GameManager extends Component {
             y: this.playerController?.moveInput.y ?? 0,
           },
           activeTouchId: this.playerController?.touchInput.activeTouchId ?? null,
+          touchDiagnostic: this.playerController?.lastTouchDiagnostic ?? null,
+          controller: this.playerController ? {
+            enabled: this.playerController.enabled,
+            activeInHierarchy: this.playerController.node.activeInHierarchy,
+            nodeName: this.playerController.node.name,
+          } : null,
           velocity: {
             x: this.machine?.velocity.x ?? 0,
             z: this.machine?.velocity.z ?? 0,

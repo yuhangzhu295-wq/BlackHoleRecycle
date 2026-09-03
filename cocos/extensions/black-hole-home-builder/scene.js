@@ -596,6 +596,8 @@ exports.methods = {
     const scene = director.getScene();
     const canvas = scene?.getChildByName('Canvas');
     if (!canvas) throw new Error('Game.scene does not contain Canvas');
+    const RuntimePageInputRouter = getComponentClass('RuntimePageInputRouter');
+    if (!canvas.getComponent(RuntimePageInputRouter)) canvas.addComponent(RuntimePageInputRouter);
 
     for (const name of ['EndlessHUD', 'PausePage', 'SettlementPage']) {
       const oldPage = canvas.getChildByName(name);
@@ -609,6 +611,7 @@ exports.methods = {
     };
     const imageButton = async (name, parent, text, x, y, width, height, assetUrl, fontSize = 30) => {
       const button = await createImageButton(name, parent, width, height, assetUrl);
+      place(button, x, y, width, height);
       caption(button, `${name}Label`, text, fontSize, 0, 0, width, height);
       return button;
     };
@@ -619,20 +622,23 @@ exports.methods = {
     endlessPage.pageId = 3;
     const topShade = await createSprite('TopShade', endless, 720, 156, 'db://assets/textures/home/home_hud_panel.png');
     topShade.getComponent(Sprite).color = new Color(12, 27, 44, 228);
-    place(topShade, 0, 558, 720, 156);
+    // Canvas uses a letterboxed portrait viewport. These top controls are
+    // calibrated against the actual UI camera (rather than raw 1280 px
+    // coordinates) so they remain inside the phone safe area.
+    place(topShade, 0, 483, 720, 156);
     const coinPanel = await createSprite('CoinPanel', endless, 218, 64, 'db://assets/textures/home/home_hud_panel.png');
-    place(coinPanel, -210, 563, 218, 64);
+    place(coinPanel, -210, 430, 218, 64);
     const levelPanel = await createSprite('LevelPanel', endless, 250, 64, 'db://assets/textures/home/home_hud_panel.png');
-    place(levelPanel, 106, 563, 250, 64);
+    place(levelPanel, 106, 430, 250, 64);
     const regionPanel = await createSprite('RegionPanel', endless, 258, 54, 'db://assets/textures/home/home_hud_panel.png');
-    place(regionPanel, 0, 490, 258, 54);
+    place(regionPanel, 0, 346, 258, 54);
     await createSprite('CoinIcon', endless, 46, 46, 'db://assets/textures/home/home_coin.png');
-    place(endless.getChildByName('CoinIcon'), -294, 563, 46, 46);
-    caption(endless, 'CoinValue', '0', 28, -188, 563, 132, 48, new Color(255, 222, 83, 255));
-    caption(endless, 'LevelValue', 'LV.1 回收小车', 20, 106, 576, 238, 34);
-    caption(endless, 'MassValue', '质量 0 kg', 18, 106, 542, 238, 30, new Color(219, 242, 255, 255));
-    caption(endless, 'RegionValue', '卧室杂物区', 18, 0, 490, 240, 32, new Color(232, 245, 255, 255));
-    await imageButton('BtnPause', endless, '暂停', 292, 562, 82, 82, 'db://assets/textures/home/home_settings.png', 19);
+    place(endless.getChildByName('CoinIcon'), -294, 430, 46, 46);
+    caption(endless, 'CoinValue', '0', 28, -188, 430, 132, 48, new Color(255, 222, 83, 255));
+    caption(endless, 'LevelValue', 'LV.1 回收小车', 20, 106, 443, 238, 34);
+    caption(endless, 'MassValue', '质量 0 kg', 18, 106, 409, 238, 30, new Color(219, 242, 255, 255));
+    caption(endless, 'RegionValue', '卧室杂物区', 18, 0, 346, 240, 32, new Color(232, 245, 255, 255));
+    await imageButton('BtnPause', endless, '暂停', 240, 461, 82, 82, 'db://assets/textures/home/home_settings.png', 19);
     addJoystickOverlay(endless);
     endless.addComponent(getComponentClass('EndlessHUDController'));
     endless.active = false;
@@ -684,16 +690,9 @@ exports.methods = {
     settlement.active = false;
 
     await Editor.Message.request('scene', 'save-scene');
-    await Editor.Message.request('scene', 'create-prefab', endless.uuid, 'db://assets/prefabs/ui/EndlessHUD.prefab');
-    await Editor.Message.request('scene', 'create-prefab', pause.uuid, 'db://assets/prefabs/ui/PausePage.prefab');
-    await Editor.Message.request('scene', 'create-prefab', settlement.uuid, 'db://assets/prefabs/ui/SettlementPage.prefab');
-    await Editor.Message.request('scene', 'save-scene');
     return {
-      prefabs: [
-        'db://assets/prefabs/ui/EndlessHUD.prefab',
-        'db://assets/prefabs/ui/PausePage.prefab',
-        'db://assets/prefabs/ui/SettlementPage.prefab',
-      ],
+      savedPages: ['EndlessHUD', 'PausePage', 'SettlementPage'],
+      prefabCreation: 'not-run-from-scene-script',
     };
   },
   async verifyRuntimePages() {

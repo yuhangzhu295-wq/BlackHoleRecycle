@@ -1,11 +1,21 @@
 /**
  * 玩家触控与拖拽控制器 (PlayerController.ts)
  */
-import { _decorator, Component, input, Input, EventTouch, EventMouse, Camera, Vec2, Vec3, director, view } from 'cc';
+import { _decorator, Component, input, Input, EventTouch, EventMouse, Camera, Node, Vec2, Vec3, director, view } from 'cc';
 import { BlackHoleMachine } from '../machine/BlackHoleMachine';
 import { IMovementInput, MouseJoystickInput, TouchJoystickInput } from './MovementInput';
 
 const { ccclass, property } = _decorator;
+
+interface TouchInputDiagnostic {
+  phase: 'NONE' | 'START' | 'MOVE' | 'END';
+  id: number | null;
+  x: number;
+  y: number;
+  accepted: boolean;
+  joystickArea: boolean;
+  paused: boolean;
+}
 
 @ccclass('PlayerController')
 export class PlayerController extends Component {
@@ -21,10 +31,16 @@ export class PlayerController extends Component {
   public isPaused: boolean = false;
   public readonly touchInput: TouchJoystickInput = new TouchJoystickInput(92, 0.1);
   public readonly mouseInput: MouseJoystickInput = new MouseJoystickInput(92, 0.1);
+  /** Read-only runtime diagnostic exposed through the QA bridge. */
+  public lastTouchDiagnostic: TouchInputDiagnostic = {
+    phase: 'NONE', id: null, x: 0, y: 0, accepted: false, joystickArea: false, paused: false,
+  };
 
   private readonly cameraForwardXZ: Vec3 = new Vec3();
   private readonly cameraRightXZ: Vec3 = new Vec3();
   private readonly movementDirection: Vec3 = new Vec3();
+  private inputEventsBound = false;
+  private touchEventNode: Node | null = null;
 
   onLoad(): void {
     if (!this.machine) {
@@ -38,21 +54,64 @@ export class PlayerController extends Component {
       }
     }
 
-    input.on(Input.EventType.TOUCH_START, this.onTouchStart, this);
-    input.on(Input.EventType.TOUCH_MOVE, this.onTouchMove, this);
-    input.on(Input.EventType.TOUCH_END, this.onTouchEnd, this);
-    input.on(Input.EventType.TOUCH_CANCEL, this.onTouchEnd, this);
+  }
 
+  onEnable(): void {
+    this.bindInputEvents();
+  }
+
+  onDisable(): void {
+    this.unbindInputEvents();
+    this.touchInput.reset();
+    this.mouseInput.endMouse();
+    this.refreshActiveState();
+  }
+
+  onDestroy(): void {
+    this.unbindInputEvents();
+  }
+
+  private bindInputEvents(): void {
+    if (this.inputEventsBound) return;
+    this.inputEventsBound = true;
+
+    // In the letterboxed Web Mobile canvas, touch events are reliably
+    // dispatched through Canvas' UI event pipeline.  Binding there also keeps
+    // the joystick in the same coordinate system as its visible UI overlay.
+    // Do not bind both Canvas and the global input bus: a platform that emits
+    // both would otherwise update the same pointer twice.
+    this.touchEventNode = director.getScene()?.getChildByName('Canvas') || null;
+    if (this.touchEventNode) {
+      this.touchEventNode.on(Node.EventType.TOUCH_START, this.onTouchStart, this);
+      this.touchEventNode.on(Node.EventType.TOUCH_MOVE, this.onTouchMove, this);
+      this.touchEventNode.on(Node.EventType.TOUCH_END, this.onTouchEnd, this);
+      this.touchEventNode.on(Node.EventType.TOUCH_CANCEL, this.onTouchEnd, this);
+    } else {
+      input.on(Input.EventType.TOUCH_START, this.onTouchStart, this);
+      input.on(Input.EventType.TOUCH_MOVE, this.onTouchMove, this);
+      input.on(Input.EventType.TOUCH_END, this.onTouchEnd, this);
+      input.on(Input.EventType.TOUCH_CANCEL, this.onTouchEnd, this);
+    }
     input.on(Input.EventType.MOUSE_DOWN, this.onMouseDown, this);
     input.on(Input.EventType.MOUSE_MOVE, this.onMouseMove, this);
     input.on(Input.EventType.MOUSE_UP, this.onMouseUp, this);
   }
 
-  onDestroy(): void {
-    input.off(Input.EventType.TOUCH_START, this.onTouchStart, this);
-    input.off(Input.EventType.TOUCH_MOVE, this.onTouchMove, this);
-    input.off(Input.EventType.TOUCH_END, this.onTouchEnd, this);
-    input.off(Input.EventType.TOUCH_CANCEL, this.onTouchEnd, this);
+  private unbindInputEvents(): void {
+    if (!this.inputEventsBound) return;
+    this.inputEventsBound = false;
+    if (this.touchEventNode) {
+      this.touchEventNode.off(Node.EventType.TOUCH_START, this.onTouchStart, this);
+      this.touchEventNode.off(Node.EventType.TOUCH_MOVE, this.onTouchMove, this);
+      this.touchEventNode.off(Node.EventType.TOUCH_END, this.onTouchEnd, this);
+      this.touchEventNode.off(Node.EventType.TOUCH_CANCEL, this.onTouchEnd, this);
+      this.touchEventNode = null;
+    } else {
+      input.off(Input.EventType.TOUCH_START, this.onTouchStart, this);
+      input.off(Input.EventType.TOUCH_MOVE, this.onTouchMove, this);
+      input.off(Input.EventType.TOUCH_END, this.onTouchEnd, this);
+      input.off(Input.EventType.TOUCH_CANCEL, this.onTouchEnd, this);
+    }
 
     input.off(Input.EventType.MOUSE_DOWN, this.onMouseDown, this);
     input.off(Input.EventType.MOUSE_MOVE, this.onMouseMove, this);
@@ -60,16 +119,24 @@ export class PlayerController extends Component {
   }
 
   private onTouchStart(event: EventTouch): void {
-    if (this.isPaused) return;
     const location = event.getLocation();
-    if (!this.isInJoystickArea(location.x, location.y)) return;
-    this.touchInput.tryBegin(event.getID(), location.x, location.y);
+    const joystickArea = this.isInJoystickArea(location.x, location.y);
+    const accepted = !this.isPaused && joystickArea && this.touchInput.tryBegin(event.getID(), location.x, location.y);
+    this.lastTouchDiagnostic = {
+      phase: 'START', id: event.getID(), x: location.x, y: location.y, accepted, joystickArea, paused: this.isPaused,
+    };
+    if (!accepted) return;
     this.refreshActiveState();
   }
 
   private onTouchMove(event: EventTouch): void {
-    if (this.isPaused) return;
     const location = event.getLocation();
+    const accepted = !this.isPaused && event.getID() === this.touchInput.activeTouchId;
+    this.lastTouchDiagnostic = {
+      phase: 'MOVE', id: event.getID(), x: location.x, y: location.y, accepted,
+      joystickArea: this.isInJoystickArea(location.x, location.y), paused: this.isPaused,
+    };
+    if (this.isPaused) return;
     this.touchInput.updateTouch(event.getID(), location.x, location.y);
     this.refreshActiveState();
   }
@@ -85,6 +152,11 @@ export class PlayerController extends Component {
     if (!activeTouchStillDown && activeTouchId !== null) {
       this.touchInput.endTouch(activeTouchId);
     }
+    const location = event.getLocation();
+    this.lastTouchDiagnostic = {
+      phase: 'END', id: event.getID(), x: location.x, y: location.y, accepted: activeTouchStillDown,
+      joystickArea: this.isInJoystickArea(location.x, location.y), paused: this.isPaused,
+    };
     this.refreshActiveState();
   }
 
