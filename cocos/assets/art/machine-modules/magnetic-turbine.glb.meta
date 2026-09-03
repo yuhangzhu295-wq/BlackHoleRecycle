@@ -1,0 +1,123 @@
+{
+  "ver": "2.3.13",
+  "importer": "gltf",
+  "imported": true,
+  "uuid": "33d92eb5-3f4b-435a-8185-5e648a0427e6",
+  "files": [],
+  "subMetas": {
+    "127d5": {
+      "importer": "gltf-mesh",
+      "uuid": "33d92eb5-3f4b-435a-8185-5e648a0427e6@127d5",
+      "displayName": "",
+      "id": "127d5",
+      "name": "cog-e.mesh",
+      "userData": {
+        "gltfIndex": 0,
+        "triangleCount": 224
+      },
+      "ver": "1.1.1",
+      "imported": true,
+      "files": [
+        ".bin",
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "96c50": {
+      "importer": "texture",
+      "uuid": "33d92eb5-3f4b-435a-8185-5e648a0427e6@96c50",
+      "displayName": "",
+      "id": "96c50",
+      "name": "colormap.texture",
+      "userData": {
+        "wrapModeS": "repeat",
+        "wrapModeT": "repeat",
+        "minfilter": "linear",
+        "magfilter": "linear",
+        "mipfilter": "linear",
+        "anisotropy": 0,
+        "isUuid": false,
+        "imageUuidOrDatabaseUri": "db://assets/art/machine-modules/Textures/colormap.png"
+      },
+      "ver": "1.0.22",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "9991c": {
+      "importer": "gltf-material",
+      "uuid": "33d92eb5-3f4b-435a-8185-5e648a0427e6@9991c",
+      "displayName": "",
+      "id": "9991c",
+      "name": "colormap.material",
+      "userData": {
+        "gltfIndex": 0
+      },
+      "ver": "1.0.14",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "bace4": {
+      "importer": "gltf-scene",
+      "uuid": "33d92eb5-3f4b-435a-8185-5e648a0427e6@bace4",
+      "displayName": "",
+      "id": "bace4",
+      "name": "magnetic-turbine.prefab",
+      "userData": {
+        "gltfIndex": 0
+      },
+      "ver": "1.0.14",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    }
+  },
+  "userData": {
+    "imageMetas": [
+      {
+        "name": "colormap",
+        "uri": "db://assets/art/machine-modules/Textures/colormap.png"
+      }
+    ],
+    "lods": {
+      "enable": false,
+      "hasBuiltinLOD": false,
+      "options": [
+        {
+          "screenRatio": 0.25,
+          "faceCount": 1
+        },
+        {
+          "screenRatio": 0.125,
+          "faceCount": 0.25
+        },
+        {
+          "screenRatio": 0.01,
+          "faceCount": 0.1
+        }
+      ]
+    },
+    "assetFinder": {
+      "meshes": [
+        "33d92eb5-3f4b-435a-8185-5e648a0427e6@127d5"
+      ],
+      "skeletons": [],
+      "textures": [
+        "33d92eb5-3f4b-435a-8185-5e648a0427e6@96c50"
+      ],
+      "materials": [
+        "33d92eb5-3f4b-435a-8185-5e648a0427e6@9991c"
+      ],
+      "scenes": [
+        "33d92eb5-3f4b-435a-8185-5e648a0427e6@bace4"
+      ]
+    }
+  }
+}

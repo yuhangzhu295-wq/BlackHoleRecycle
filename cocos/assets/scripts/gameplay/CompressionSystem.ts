@@ -29,6 +29,14 @@ export class CompressionSystem extends Component {
   private massThreshold: number = 180;
   private countThreshold: number = 3;
   private timer: number = 0;
+  /**
+   * Items can finish their physical suction while the previous resource block
+   * is animating. They must remain payable; dropping them here made absorbed
+   * objects disappear without ever contributing mass or coins.
+   */
+  private pendingMass: number = 0;
+  private pendingValue: number = 0;
+  private pendingCount: number = 0;
   
   public machine: BlackHoleMachine | null = null;
   public isPaused: boolean = false;
@@ -53,19 +61,22 @@ export class CompressionSystem extends Component {
   }
 
   public absorbObject(obj: CompressibleObject, machine: BlackHoleMachine): void {
-    if (this.state === 'IDLE' || this.state === 'BUFFERING' || this.state === 'READY') {
-      this.bufferMass += obj.template.mass;
-      this.bufferValue += obj.template.value;
-      this.bufferCount += 1;
-      this.machine = machine;
-      
-      if (this.state === 'IDLE') {
-        this.setState('BUFFERING');
-      }
-      
-      if (this.bufferMass >= this.massThreshold || this.bufferCount >= this.countThreshold) {
-        this.setState('READY');
-      }
+    this.machine = machine;
+    if (this.state === 'COMPRESSING' || this.state === 'EJECTING' || this.state === 'COLLECTING') {
+      this.pendingMass += obj.template.mass;
+      this.pendingValue += obj.template.value;
+      this.pendingCount += 1;
+      return;
+    }
+
+    this.bufferMass += obj.template.mass;
+    this.bufferValue += obj.template.value;
+    this.bufferCount += 1;
+    if (this.state === 'IDLE') {
+      this.setState('BUFFERING');
+    }
+    if (this.bufferMass >= this.massThreshold || this.bufferCount >= this.countThreshold) {
+      this.setState('READY');
     }
   }
 
@@ -130,7 +141,21 @@ export class CompressionSystem extends Component {
       this.bufferMass = 0;
       this.bufferValue = 0;
       this.bufferCount = 0;
-      this.setState('IDLE');
+      if (this.pendingCount > 0) {
+        this.bufferMass = this.pendingMass;
+        this.bufferValue = this.pendingValue;
+        this.bufferCount = this.pendingCount;
+        this.pendingMass = 0;
+        this.pendingValue = 0;
+        this.pendingCount = 0;
+        if (this.bufferMass >= this.massThreshold || this.bufferCount >= this.countThreshold) {
+          this.setState('READY');
+        } else {
+          this.setState('BUFFERING');
+        }
+      } else {
+        this.setState('IDLE');
+      }
     }
   }
   

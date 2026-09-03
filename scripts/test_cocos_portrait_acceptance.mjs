@@ -403,6 +403,51 @@ async function verifyCardinalLongTravel(cdp, page, joystick, direction) {
   };
 }
 
+/**
+ * Navigate to an authored world-space point exclusively through the visible
+ * joystick. The QA bridge is read-only: it supplies the live camera basis and
+ * position so CDP can issue the same camera-relative touch a player would.
+ */
+async function driveJoystickToLogicalPoint(cdp, page, joystick, target, label, arrivalRadius = 1.6) {
+  const deadline = Date.now() + 30000;
+  let bestDistance = Number.POSITIVE_INFINITY;
+  let finalSnapshot = await readRuntimeSnapshot(page);
+  while (Date.now() < deadline) {
+    const current = getLogicalPlayerPosition(finalSnapshot);
+    const delta = { x: target.x - current.x, z: target.z - current.z };
+    const distance = Math.hypot(delta.x, delta.z);
+    bestDistance = Math.min(bestDistance, distance);
+    if (distance <= arrivalRadius) return finalSnapshot;
+
+    const cameraRight = finalSnapshot.camera.right;
+    const cameraForward = finalSnapshot.camera.forward;
+    const inputX = (delta.x * cameraRight.x + delta.z * cameraRight.z) / distance;
+    const inputY = (delta.x * cameraForward.x + delta.z * cameraForward.z) / distance;
+    const endX = joystick.x + Math.max(-1, Math.min(1, inputX)) * joystick.maxOffsetX * 0.9;
+    // Browser Y grows downward while Cocos joystick EventTouch coordinates
+    // grow upward, hence the sign inversion for the forward component.
+    const endY = joystick.y - Math.max(-1, Math.min(1, inputY)) * joystick.maxOffsetY * 0.9;
+    await beginTouchJoystick(cdp, joystick.x, joystick.y, endX, endY);
+    // Use the actual visible-stick distance to choose a short final press.
+    // A fixed 850ms press is natural for long travel but necessarily overshoots
+    // a tight resource cluster on the final approach.
+    const stickDistance = Math.min(92, Math.hypot(endX - joystick.x, endY - joystick.y));
+    const stickMagnitude = Math.max(0, (stickDistance / 92 - 0.1) / 0.9);
+    const estimatedSpeed = Math.max(0.5, 7.5 * stickMagnitude);
+    const holdMs = Math.max(120, Math.min(850,
+      Math.round(Math.max(0, distance - arrivalRadius * 0.45) / estimatedSpeed * 1000)));
+    await page.waitForTimeout(holdMs);
+    const engaged = await readRuntimeSnapshot(page);
+    assert(Math.hypot(engaged.machine.movementInput.x, engaged.machine.movementInput.y) > 0.1,
+      `FAIL_VERTICAL_SLICE_GUIDED_TOUCH_${label}: ${JSON.stringify(engaged.machine.movementInput)}`);
+    await releaseTouchJoystick(cdp);
+    await page.waitForTimeout(220);
+    finalSnapshot = await readRuntimeSnapshot(page);
+  }
+  const finalPosition = getLogicalPlayerPosition(finalSnapshot);
+  throw new Error(`FAIL_VERTICAL_SLICE_ROUTE_${label}: target=${JSON.stringify(target)} final=${JSON.stringify(finalPosition)} bestDistance=${bestDistance}`);
+}
+
 async function runPortraitCase(browser, baseUrl, viewport, report) {
   const context = await browser.newContext({ viewport: { width: viewport.width, height: viewport.height }, hasTouch: true, isMobile: true });
   const page = await context.newPage();
@@ -443,6 +488,20 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
       assert(gameplaySnapshot.ui.runtimeHUD?.joystick?.active,
         `FAIL_VISIBLE_JOYSTICK: ${JSON.stringify(gameplaySnapshot.ui.runtimeHUD)}`);
       report.infiniteWorld.initial = validateInfiniteWorldSnapshot(gameplaySnapshot);
+      assert(gameplaySnapshot.machine.level === 1 && gameplaySnapshot.machine.maxTier === 1,
+        `FAIL_VERTICAL_SLICE_INITIAL_LV1: ${JSON.stringify(gameplaySnapshot.machine)}`);
+      assert(Math.abs(gameplaySnapshot.machine.suctionRadius - 2.4) < 0.01,
+        `FAIL_VERTICAL_SLICE_INITIAL_RADIUS: ${JSON.stringify(gameplaySnapshot.machine)}`);
+      report.verticalSlice = {
+        initial: {
+          level: gameplaySnapshot.machine.level,
+          mass: gameplaySnapshot.machine.mass,
+          suctionRadius: gameplaySnapshot.machine.suctionRadius,
+          maxTier: gameplaySnapshot.machine.maxTier,
+          absorbedTiers: gameplaySnapshot.session.absorbedTiers,
+        },
+        evolved: null,
+      };
 
       if (acceptanceScope === 'pages') {
         report.runtimePages = await verifyRuntimePages(cdp, page, canvasRect);
@@ -524,6 +583,44 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
           `FAIL_TOUCH_RELEASE_${direction.name.toUpperCase()}: velocity ${releasedSpeed}`);
       }
       report.multiTouch = await verifySecondaryTouchDoesNotHijack(cdp, page, canvasRect, joystick);
+
+      // The first-cell route proves the actual player-facing tier flow before
+      // the subsequent 500m world traversal moves away from its tutorial
+      // district. Every movement below is a raw CDP touch; it never calls a
+      // gameplay setter, teleport, or mass grant.
+      // 2.3m is deliberately inside the real LV1 2.4m lock radius, while
+      // remaining outside the item's centre. It avoids asking a 0.85s held
+      // human joystick sample to stop at an artificial point precision.
+      await driveJoystickToLogicalPoint(cdp, page, joystick, { x: 0, z: -8 }, 'T2_LOCK', 2.3);
+      await page.waitForTimeout(700);
+      const lockedT2Snapshot = await readRuntimeSnapshot(page);
+      const lockedT2 = lockedT2Snapshot.objects.find((object) => object.tier === 2 && object.lockVisible);
+      assert(lockedT2,
+        `FAIL_VERTICAL_SLICE_T2_LOCK: ${JSON.stringify(lockedT2Snapshot.objects.filter((object) => object.tier === 2))}`);
+
+      await driveJoystickToLogicalPoint(cdp, page, joystick, { x: 0, z: 5.2 }, 'T1_CLUSTER', 0.9);
+      await page.waitForTimeout(3200);
+      const upgradedSnapshot = await readRuntimeSnapshot(page);
+      assert(upgradedSnapshot.machine.level >= 2 && upgradedSnapshot.machine.maxTier >= 2,
+        `FAIL_VERTICAL_SLICE_NO_LV2_AFTER_T1: ${JSON.stringify({
+          machine: upgradedSnapshot.machine,
+          player: upgradedSnapshot.player,
+          starterObjects: upgradedSnapshot.objects.filter((object) => object.tier === 1
+            && Math.abs(object.x) < 2 && object.z > 3 && object.z < 7),
+        })}`);
+      assert((upgradedSnapshot.session.absorbedTiers?.[1] || 0) > 0,
+        `FAIL_VERTICAL_SLICE_NO_T1_CLUSTER_ABSORPTION: ${JSON.stringify(upgradedSnapshot.session?.absorbedTiers)}`);
+
+      await driveJoystickToLogicalPoint(cdp, page, joystick, { x: 0, z: -8 }, 'T2_UNLOCK', 2.3);
+      await page.waitForTimeout(1200);
+      const unlockedT2Snapshot = await readRuntimeSnapshot(page);
+      assert((unlockedT2Snapshot.session.absorbedTiers?.[2] || 0) > 0,
+        `FAIL_VERTICAL_SLICE_T2_NOT_ABSORBED_AFTER_LV2: ${JSON.stringify({
+          machine: unlockedT2Snapshot.machine,
+          absorbedTiers: unlockedT2Snapshot.session?.absorbedTiers,
+          t2: unlockedT2Snapshot.objects.filter((object) => object.tier === 2),
+        })}`);
+
       report.infiniteWorld.cardinal500m = [];
       const cardinalDirections = [
         { name: 'north', axis: 'z', sign: -1, touchX: 0, touchY: -1 },
@@ -537,11 +634,34 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
         );
       }
       assert(runtimeErrors.length === 0, `Runtime console errors after touch: ${runtimeErrors.join(' | ')}`);
+      const evolvedSnapshot = await readRuntimeSnapshot(page);
+      const absorbedTiers = evolvedSnapshot.session?.absorbedTiers || {};
+      assert(evolvedSnapshot.machine.level >= 2 && evolvedSnapshot.machine.maxTier >= 2,
+        `FAIL_VERTICAL_SLICE_NO_LV2: ${JSON.stringify({ machine: evolvedSnapshot.machine, absorbedTiers })}`);
+      assert(evolvedSnapshot.machine.suctionRadius >= 3.4,
+        `FAIL_VERTICAL_SLICE_RADIUS_NOT_EXPANDED: ${JSON.stringify(evolvedSnapshot.machine)}`);
+      assert((absorbedTiers[1] || 0) > 0,
+        `FAIL_VERTICAL_SLICE_NO_T1_ABSORPTION: ${JSON.stringify(absorbedTiers)}`);
+      assert((absorbedTiers[2] || 0) > 0,
+        `FAIL_VERTICAL_SLICE_NO_T2_ABSORPTION: ${JSON.stringify({ machine: evolvedSnapshot.machine, absorbedTiers })}`);
+      report.verticalSlice.evolved = {
+        level: evolvedSnapshot.machine.level,
+        mass: evolvedSnapshot.machine.mass,
+        suctionRadius: evolvedSnapshot.machine.suctionRadius,
+        maxTier: evolvedSnapshot.machine.maxTier,
+        absorbed: evolvedSnapshot.session.absorbed,
+        absorbedTiers,
+      };
       await page.screenshot({ path: path.join(evidenceDirectory, 'portrait-390x844-gameplay.png') });
       report.runtimePages = await verifyRuntimePages(cdp, page, canvasRect);
       assert(runtimeErrors.length === 0, `Runtime console errors after page navigation: ${runtimeErrors.join(' | ')}`);
     }
   } finally {
+    // Preserve browser-side diagnostics even if startup fails before the QA
+    // bridge becomes available. This report is evidence, never a pass proxy.
+    if (runtimeErrors.length > 0) {
+      report.consoleErrors = [...new Set([...(report.consoleErrors || []), ...runtimeErrors])];
+    }
     await context.close();
   }
 }
@@ -555,7 +675,9 @@ const report = {
   multiTouch: null,
   camera: null,
   infiniteWorld: { initial: null, cardinal500m: [] },
+  verticalSlice: null,
   runtimePages: null,
+  consoleErrors: [],
   failures: [],
 };
 

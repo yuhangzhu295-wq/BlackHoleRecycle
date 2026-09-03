@@ -7,8 +7,19 @@
   "editor": ">=3.8.3",
   "main": "./main.js",
   "contributions": {
+    "builder": "./builder.js",
     "scene": { "script": "./scene.js" },
     "menu": [
+      {
+        "path": "i18n:menu.extension",
+        "label": "创建 V2 五级回收机视觉（编辑器保存）",
+        "message": "build-machine-visuals"
+      },
+      {
+        "path": "i18n:menu.extension",
+        "label": "验证 V2 五级回收机视觉",
+        "message": "verify-machine-visuals"
+      },
       {
         "path": "i18n:menu.extension",
         "label": "安装 V2 履带回收机底盘（编辑器保存）",
@@ -86,6 +97,8 @@
       }
     ],
     "messages": {
+      "build-machine-visuals": { "methods": ["buildMachineVisuals"] },
+      "verify-machine-visuals": { "methods": ["verifyMachineVisuals"] },
       "install-machine-chassis-template": { "methods": ["installMachineChassisTemplate"] },
       "verify-machine-chassis-template": { "methods": ["verifyMachineChassisTemplate"] },
       "install-object-art-registry": { "methods": ["installObjectArtRegistry"] },

@@ -2,6 +2,20 @@
 
 module.exports = {
   methods: {
+    async buildMachineVisuals() {
+      return Editor.Message.request('scene', 'execute-scene-script', {
+        name: 'black-hole-home-builder',
+        method: 'buildMachineVisuals',
+        args: [],
+      });
+    },
+    async verifyMachineVisuals() {
+      return Editor.Message.request('scene', 'execute-scene-script', {
+        name: 'black-hole-home-builder',
+        method: 'verifyMachineVisuals',
+        args: [],
+      });
+    },
     async installMachineChassisTemplate() {
       return Editor.Message.request('scene', 'execute-scene-script', {
         name: 'black-hole-home-builder',

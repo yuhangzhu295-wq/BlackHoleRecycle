@@ -39,6 +39,8 @@ export class GameManager extends Component {
 
   public score: number = 0;
   public totalAbsorbedCount: number = 0;
+  /** Real per-tier intake ledger; read-only QA exposes what gameplay actually absorbed. */
+  private absorbedTierCounts: Record<number, number> = {};
   public currentCoins: number = 0;
   public isPaused: boolean = false;
   public gameState: GameSessionState = 'HOME';
@@ -230,6 +232,7 @@ export class GameManager extends Component {
     if (this.machine) this.machine.isPaused = false;
     
     this.totalAbsorbedCount = 0;
+    this.absorbedTierCounts = {};
     this.score = 0;
     this.regionsVisitedCount = 1;
     this.sessionStartCoins = this.currentCoins;
@@ -299,6 +302,7 @@ export class GameManager extends Component {
     if (!this.machine) return;
     const t = obj.template;
     this.totalAbsorbedCount++;
+    this.absorbedTierCounts[t.tier] = (this.absorbedTierCounts[t.tier] || 0) + 1;
     this.score += t.value * 10;
 
     // 严谨进入实体压缩缓冲系统 (不立即加金币与质量)
@@ -559,6 +563,7 @@ export class GameManager extends Component {
           },
           session: {
             absorbed: this.totalAbsorbedCount,
+            absorbedTiers: { ...this.absorbedTierCounts },
             coinsEarned: this.currentCoins - this.sessionStartCoins,
             score: this.score,
             regionsVisited: this.regionsVisitedCount

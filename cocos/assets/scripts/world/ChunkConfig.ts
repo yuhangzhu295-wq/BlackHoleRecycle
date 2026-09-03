@@ -104,9 +104,31 @@ export class CellItemGenerator {
       });
     }
 
-    // The initial cell retains a deterministic nearby T2 target for the
-    // existing LV1 lock -> LV2 unlock vertical slice.
+    // The opening district deliberately has a compact, semantic recycling
+    // cluster: a player can discover a run of light recyclables, grow to LV2,
+    // then return to the nearby medium cardboard target. This is gameplay
+    // content, not an automation-only spawn: it also makes the first mobile
+    // session teach the tier-lock -> upgrade -> unlock progression reliably.
     if (cellX === 0 && cellZ === 0) {
+      const starterPositions: ReadonlyArray<readonly [number, number]> = [
+        [-0.72, 4.65], [-0.36, 4.55], [0.00, 4.60], [0.36, 4.55], [0.72, 4.65],
+        [-0.78, 5.20], [-0.38, 5.12], [0.00, 5.18], [0.38, 5.12], [0.78, 5.20],
+        [-0.72, 5.76], [-0.36, 5.86], [0.00, 5.80], [0.36, 5.86], [0.72, 5.76],
+      ];
+      starterPositions.forEach(([localX, localZ], index) => {
+        const template = t1[index % t1.length];
+        if (!template) return;
+        items.push({
+          template,
+          localX,
+          localZ,
+          customId: `starter_recycling_cluster_${index}`,
+        });
+      });
+
+      // This remains outside the LV1 suction radius. Visiting it first shows
+      // a genuine tier lock; returning after consuming the cluster lets the
+      // ordinary CompressibleObject suction path absorb it at LV2.
       const target = available.find((template) => template.tier === ObjectTier.T2);
       if (target) items.unshift({ template: target, localX: 0, localZ: -8, customId: 't2_target_bed_box' });
     }

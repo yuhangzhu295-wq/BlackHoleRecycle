@@ -60,6 +60,90 @@ const MACHINE_CHASSIS_TEMPLATE_SPEC = {
   scale: [0.09, 0.09, 0.09],
 };
 
+// Every source below is an audited, Creator-imported glTF. Level assemblies
+// duplicate lower-level structural parts so every saved prefab owns a complete
+// silhouette, rather than treating LV1 as a runtime host for primitive add-ons.
+const MACHINE_UPGRADE_ASSET_URLS = {
+  chassis: 'db://assets/art/machines/poly-google-bulldozer.glb',
+  turbine: 'db://assets/art/machine-modules/magnetic-turbine.glb',
+  pipe: 'db://assets/art/machine-modules/magnetic-pipe.glb',
+  chamber: 'db://assets/art/machine-modules/compression-engine.glb',
+  frame: 'db://assets/art/machine-modules/compression-chassis.glb',
+  wing: 'db://assets/art/machine-modules/gravity-wing-frame.glb',
+  hopper: 'db://assets/art/machine-modules/singularity-hopper.glb',
+};
+
+const MACHINE_VISUAL_SPECS = [
+  {
+    level: 1,
+    prefabUrl: 'db://assets/prefabs/machine/MachineVisual_LV1.prefab',
+    parts: [
+      { name: 'CrawlerChassis', source: 'chassis', position: [0, 0.02, 0.78], scale: [0.09, 0.09, 0.09], yaw: 180 },
+    ],
+  },
+  {
+    level: 2,
+    prefabUrl: 'db://assets/prefabs/machine/MachineVisual_LV2.prefab',
+    parts: [
+      { name: 'CrawlerChassis', source: 'chassis', position: [0, 0.02, 0.78], scale: [0.09, 0.09, 0.09], yaw: 180 },
+      { name: 'MagneticTurbineLeft', source: 'turbine', position: [-1.22, 0.35, 0.05], scale: [0.46, 0.46, 0.46], yaw: 90 },
+      { name: 'MagneticTurbineRight', source: 'turbine', position: [1.22, 0.35, 0.05], scale: [0.46, 0.46, 0.46], yaw: -90 },
+      { name: 'MagneticPipeLeft', source: 'pipe', position: [-0.88, 0.38, 0.30], scale: [0.34, 0.34, 0.34], yaw: 90 },
+      { name: 'MagneticPipeRight', source: 'pipe', position: [0.88, 0.38, 0.30], scale: [0.34, 0.34, 0.34], yaw: -90 },
+    ],
+  },
+  {
+    level: 3,
+    prefabUrl: 'db://assets/prefabs/machine/MachineVisual_LV3.prefab',
+    parts: [
+      { name: 'CrawlerChassis', source: 'chassis', position: [0, 0.02, 0.78], scale: [0.09, 0.09, 0.09], yaw: 180 },
+      { name: 'MagneticTurbineLeft', source: 'turbine', position: [-1.22, 0.35, 0.05], scale: [0.46, 0.46, 0.46], yaw: 90 },
+      { name: 'MagneticTurbineRight', source: 'turbine', position: [1.22, 0.35, 0.05], scale: [0.46, 0.46, 0.46], yaw: -90 },
+      { name: 'MagneticPipeLeft', source: 'pipe', position: [-0.88, 0.38, 0.30], scale: [0.34, 0.34, 0.34], yaw: 90 },
+      { name: 'MagneticPipeRight', source: 'pipe', position: [0.88, 0.38, 0.30], scale: [0.34, 0.34, 0.34], yaw: -90 },
+      { name: 'CompressionChamber', source: 'chamber', position: [0, 0.46, 1.02], scale: [0.72, 0.72, 0.72], yaw: 180 },
+      { name: 'CompressionHopper', source: 'hopper', position: [0, 1.08, 0.88], scale: [0.58, 0.58, 0.58], yaw: 180 },
+    ],
+  },
+  {
+    level: 4,
+    prefabUrl: 'db://assets/prefabs/machine/MachineVisual_LV4.prefab',
+    parts: [
+      { name: 'CrawlerChassis', source: 'chassis', position: [0, 0.02, 0.78], scale: [0.09, 0.09, 0.09], yaw: 180 },
+      { name: 'MagneticTurbineLeft', source: 'turbine', position: [-1.22, 0.35, 0.05], scale: [0.46, 0.46, 0.46], yaw: 90 },
+      { name: 'MagneticTurbineRight', source: 'turbine', position: [1.22, 0.35, 0.05], scale: [0.46, 0.46, 0.46], yaw: -90 },
+      { name: 'MagneticPipeLeft', source: 'pipe', position: [-0.88, 0.38, 0.30], scale: [0.34, 0.34, 0.34], yaw: 90 },
+      { name: 'MagneticPipeRight', source: 'pipe', position: [0.88, 0.38, 0.30], scale: [0.34, 0.34, 0.34], yaw: -90 },
+      { name: 'CompressionChamber', source: 'chamber', position: [0, 0.46, 1.02], scale: [0.72, 0.72, 0.72], yaw: 180 },
+      { name: 'CompressionHopper', source: 'hopper', position: [0, 1.08, 0.88], scale: [0.58, 0.58, 0.58], yaw: 180 },
+      { name: 'GravityWingLeft', source: 'wing', position: [-1.92, 0.50, 0.42], scale: [0.62, 0.62, 0.62], yaw: 90 },
+      { name: 'GravityWingRight', source: 'wing', position: [1.92, 0.50, 0.42], scale: [0.62, 0.62, 0.62], yaw: -90 },
+      { name: 'GravityPipeLeft', source: 'pipe', position: [-1.46, 0.70, 0.25], scale: [0.42, 0.42, 0.42], yaw: 90 },
+      { name: 'GravityPipeRight', source: 'pipe', position: [1.46, 0.70, 0.25], scale: [0.42, 0.42, 0.42], yaw: -90 },
+    ],
+  },
+  {
+    level: 5,
+    prefabUrl: 'db://assets/prefabs/machine/MachineVisual_LV5.prefab',
+    parts: [
+      { name: 'CrawlerChassis', source: 'chassis', position: [0, 0.02, 0.78], scale: [0.09, 0.09, 0.09], yaw: 180 },
+      { name: 'MagneticTurbineLeft', source: 'turbine', position: [-1.38, 0.35, 0.05], scale: [0.56, 0.56, 0.56], yaw: 90 },
+      { name: 'MagneticTurbineRight', source: 'turbine', position: [1.38, 0.35, 0.05], scale: [0.56, 0.56, 0.56], yaw: -90 },
+      { name: 'MagneticPipeLeft', source: 'pipe', position: [-1.00, 0.42, 0.30], scale: [0.40, 0.40, 0.40], yaw: 90 },
+      { name: 'MagneticPipeRight', source: 'pipe', position: [1.00, 0.42, 0.30], scale: [0.40, 0.40, 0.40], yaw: -90 },
+      { name: 'CompressionChamber', source: 'chamber', position: [0, 0.52, 1.10], scale: [0.88, 0.88, 0.88], yaw: 180 },
+      { name: 'CompressionHopper', source: 'hopper', position: [0, 1.20, 0.92], scale: [0.74, 0.74, 0.74], yaw: 180 },
+      { name: 'GravityWingLeft', source: 'wing', position: [-2.22, 0.58, 0.42], scale: [0.82, 0.82, 0.82], yaw: 90 },
+      { name: 'GravityWingRight', source: 'wing', position: [2.22, 0.58, 0.42], scale: [0.82, 0.82, 0.82], yaw: -90 },
+      { name: 'GravityPipeLeft', source: 'pipe', position: [-1.66, 0.82, 0.25], scale: [0.52, 0.52, 0.52], yaw: 90 },
+      { name: 'GravityPipeRight', source: 'pipe', position: [1.66, 0.82, 0.25], scale: [0.52, 0.52, 0.52], yaw: -90 },
+      { name: 'SingularityFrame', source: 'frame', position: [0, 0.60, 0.94], scale: [1.18, 1.18, 1.18], yaw: 180 },
+      { name: 'SingularityHopperLeft', source: 'hopper', position: [-0.70, 1.14, 0.60], scale: [0.58, 0.58, 0.58], yaw: 150 },
+      { name: 'SingularityHopperRight', source: 'hopper', position: [0.70, 1.14, 0.60], scale: [0.58, 0.58, 0.58], yaw: -150 },
+    ],
+  },
+];
+
 function getComponentClass(name) {
   const { js } = require('cc');
   const type = js.getClassByName(name);
@@ -138,6 +222,44 @@ async function getImportedGltfPrefab(url) {
     throw new Error(`Cocos did not load a Prefab for glTF scene asset: ${url}`);
   }
   return prefab;
+}
+
+async function getPrefabAsset(url) {
+  const { assetManager, Prefab } = require('cc');
+  const info = await Editor.Message.request('asset-db', 'query-asset-info', url);
+  if (!info || !info.uuid) throw new Error(`Prefab asset is not imported: ${url}`);
+  const cached = assetManager.assets.get(info.uuid);
+  if (cached instanceof Prefab) return cached;
+  const prefab = await new Promise((resolve, reject) => {
+    assetManager.loadAny(info.uuid, (error, loadedAsset) => {
+      if (error) reject(error);
+      else resolve(loadedAsset);
+    });
+  });
+  if (!(prefab instanceof Prefab)) throw new Error(`Cocos did not load a Prefab for ${url}`);
+  return prefab;
+}
+
+async function buildMachineVisualPrefab(gameRoot, spec, importedSources) {
+  const { Node, Vec3, instantiate } = require('cc');
+  const assembly = new Node(`MachineVisual_LV${spec.level}`);
+  gameRoot.addChild(assembly);
+  for (const part of spec.parts) {
+    const importedPrefab = importedSources[part.source];
+    if (!importedPrefab) throw new Error(`Missing imported source '${part.source}' for LV${spec.level}/${part.name}`);
+    const partRoot = new Node(part.name);
+    assembly.addChild(partRoot);
+    partRoot.setPosition(new Vec3(part.position[0], part.position[1], part.position[2]));
+    partRoot.setScale(new Vec3(part.scale[0], part.scale[1], part.scale[2]));
+    partRoot.setRotationFromEuler(0, part.yaw, 0);
+    const importedRoot = instantiate(importedPrefab);
+    copyImportedGeometry(importedRoot, partRoot);
+    importedRoot.destroy();
+  }
+  await Editor.Message.request('scene', 'save-scene');
+  await Editor.Message.request('scene', 'create-prefab', assembly.uuid, spec.prefabUrl);
+  assembly.destroy();
+  await Editor.Message.request('scene', 'save-scene');
 }
 
 async function getImportedGltfTexture(url) {
@@ -342,6 +464,50 @@ exports.load = function load() {};
 exports.unload = function unload() {};
 
 exports.methods = {
+  async buildMachineVisuals() {
+    const { director, Node } = require('cc');
+    const gameRoot = director.getScene()?.getChildByName('GameRoot');
+    if (!gameRoot) throw new Error('Game.scene does not contain GameRoot');
+    const importedSources = {};
+    for (const [key, url] of Object.entries(MACHINE_UPGRADE_ASSET_URLS)) {
+      importedSources[key] = await getImportedGltfPrefab(url);
+    }
+    for (const spec of MACHINE_VISUAL_SPECS) await buildMachineVisualPrefab(gameRoot, spec, importedSources);
+
+    const oldLibrary = gameRoot.getChildByName('MachineVisualLibrary');
+    if (oldLibrary) oldLibrary.destroy();
+    const libraryNode = new Node('MachineVisualLibrary');
+    gameRoot.addChild(libraryNode);
+    const library = libraryNode.addComponent(getComponentClass('MachineVisualLibrary'));
+    const prefabs = await Promise.all(MACHINE_VISUAL_SPECS.map((spec) => getPrefabAsset(spec.prefabUrl)));
+    [library.level1Prefab, library.level2Prefab, library.level3Prefab, library.level4Prefab, library.level5Prefab] = prefabs;
+    library.bulldozerColorTexture = await getImportedGltfTexture(MACHINE_UPGRADE_ASSET_URLS.chassis);
+    library.factoryColorTexture = await getImportedGltfTexture('db://assets/art/machine-modules/Textures/colormap.png');
+    await Editor.Message.request('scene', 'save-scene');
+    return {
+      status: 'PASS',
+      libraryPath: 'GameRoot/MachineVisualLibrary',
+      prefabUrls: MACHINE_VISUAL_SPECS.map((spec) => spec.prefabUrl),
+      levels: MACHINE_VISUAL_SPECS.map((spec) => ({ level: spec.level, partNames: spec.parts.map((part) => part.name) })),
+    };
+  },
+  async verifyMachineVisuals() {
+    const { director } = require('cc');
+    const library = director.getScene()?.getChildByName('GameRoot')?.getChildByName('MachineVisualLibrary')
+      ?.getComponent(getComponentClass('MachineVisualLibrary')) || null;
+    if (!library) return { ok: false, error: 'GameRoot/MachineVisualLibrary is missing.' };
+    try {
+      library.validate();
+    } catch (error) {
+      return { ok: false, error: error.message };
+    }
+    return {
+      ok: true,
+      levels: MACHINE_VISUAL_SPECS.map((spec) => ({ level: spec.level, parts: spec.parts.map((part) => part.name) })),
+      chassisTexture: library.bulldozerColorTexture?.name || null,
+      factoryTexture: library.factoryColorTexture?.name || null,
+    };
+  },
   async installMachineChassisTemplate() {
     const { director } = require('cc');
     const gameRoot = director.getScene()?.getChildByName('GameRoot') || null;
