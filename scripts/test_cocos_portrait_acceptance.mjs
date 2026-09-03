@@ -488,6 +488,24 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
       assert(gameplaySnapshot.ui.runtimeHUD?.joystick?.active,
         `FAIL_VISIBLE_JOYSTICK: ${JSON.stringify(gameplaySnapshot.ui.runtimeHUD)}`);
       report.infiniteWorld.initial = validateInfiniteWorldSnapshot(gameplaySnapshot);
+      const dynamicBefore = gameplaySnapshot.world?.streaming?.dynamicVehicles || [];
+      assert(dynamicBefore.length > 0,
+        `FAIL_DYNAMIC_VEHICLE_MISSING: ${JSON.stringify(gameplaySnapshot.world?.streaming)}`);
+      await page.waitForTimeout(1000);
+      const dynamicAfterSnapshot = await readRuntimeSnapshot(page);
+      const dynamicAfter = dynamicAfterSnapshot.world?.streaming?.dynamicVehicles || [];
+      const movingVehicle = dynamicBefore.map((beforeVehicle) => {
+        const afterVehicle = dynamicAfter.find((candidate) => candidate.id === beforeVehicle.id);
+        return afterVehicle ? {
+          id: beforeVehicle.id,
+          kind: beforeVehicle.kind,
+          state: afterVehicle.state,
+          distance: Math.hypot(afterVehicle.x - beforeVehicle.x, afterVehicle.z - beforeVehicle.z),
+        } : null;
+      }).find((vehicle) => vehicle && vehicle.distance > 0.2);
+      assert(movingVehicle,
+        `FAIL_DYNAMIC_VEHICLE_NOT_MOVING: before=${JSON.stringify(dynamicBefore)} after=${JSON.stringify(dynamicAfter)}`);
+      report.dynamicVehicles = { before: dynamicBefore, after: dynamicAfter, movingVehicle };
       assert(gameplaySnapshot.machine.level === 1 && gameplaySnapshot.machine.maxTier === 1,
         `FAIL_VERTICAL_SLICE_INITIAL_LV1: ${JSON.stringify(gameplaySnapshot.machine)}`);
       assert(Math.abs(gameplaySnapshot.machine.suctionRadius - 2.4) < 0.01,
@@ -675,6 +693,7 @@ const report = {
   multiTouch: null,
   camera: null,
   infiniteWorld: { initial: null, cardinal500m: [] },
+  dynamicVehicles: null,
   verticalSlice: null,
   runtimePages: null,
   consoleErrors: [],

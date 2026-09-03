@@ -41,6 +41,8 @@ const OBJECT_ART_BINDINGS: Readonly<Record<string, ObjectArtBinding>> = {
   sofa: { kind: 'sofa', scale: unitScale(), yOffset: 0, yaw: 0 },
 
   car: { kind: 'sedan', scale: unitScale(), yOffset: 0, yaw: 0 },
+  delivery_van: { kind: 'deliveryVan', scale: unitScale(), yOffset: 0, yaw: 0 },
+  garbage_truck: { kind: 'garbageTruck', scale: unitScale(), yOffset: 0, yaw: 0 },
   container: { kind: 'shippingContainer', scale: unitScale(), yOffset: 0, yaw: 0 },
 };
 

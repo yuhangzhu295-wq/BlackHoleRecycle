@@ -115,4 +115,3 @@ export function getDistrictTemplateForCell(cellX: number, cellZ: number): Distri
   const index = positiveMod(cellX * 31 + cellZ * 17, DISTRICT_ORDER.length);
   return DISTRICTS[DISTRICT_ORDER[index]];
 }
-

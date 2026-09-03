@@ -4,12 +4,13 @@
  * player and keeps logical world coordinates separate from rendered ones.
  */
 import { _decorator, Component, director, Node, Vec3 } from 'cc';
-import { IRegionThemeConfig, ObjectTier, REGION_THEMES } from '../data/GameConfig';
+import { IObjectTemplate, IRegionThemeConfig, OBJECT_TEMPLATES, ObjectTier, REGION_THEMES } from '../data/GameConfig';
 import { ObjectPool } from '../core/ObjectPool';
 import { eventBus } from '../core/EventBus';
 import { CompressibleObject } from '../gameplay/CompressibleObject';
 import { CellItemGenerator, IChunkSpawnItem } from './ChunkConfig';
 import { DistrictKind, DistrictTemplate, getDistrictTemplateForCell } from './DistrictTemplates';
+import { DynamicVehicle } from './DynamicVehicle';
 import { WorldArtKind, WorldArtLibrary } from './WorldArtLibrary';
 
 const { ccclass } = _decorator;
@@ -40,6 +41,7 @@ function positiveMod(value: number, divisor: number): number {
 /** One generated cell with its own Creator-imported environment and pooled loot. */
 class InfiniteWorldCell {
   public readonly objects: CompressibleObject[] = [];
+  public readonly dynamicVehicles: DynamicVehicle[] = [];
   public readonly district: DistrictTemplate;
 
   public constructor(
@@ -71,6 +73,7 @@ class InfiniteWorldCell {
       );
       this.objects.push(object);
     }
+    this.populateDynamicTraffic(objectPool, logicalOrigin);
   }
 
   public recycle(objectPool: ObjectPool<CompressibleObject>): void {
@@ -79,7 +82,17 @@ class InfiniteWorldCell {
       objectPool.release(object);
     });
     this.objects.length = 0;
+    this.dynamicVehicles.length = 0;
     this.node.destroy();
+  }
+
+  public updateDynamicTraffic(dt: number): void {
+    this.dynamicVehicles.forEach((vehicle) => vehicle.update(dt));
+  }
+
+  public applyWorldRebase(shift: Readonly<Vec3>): void {
+    this.objects.forEach((object) => object.applyWorldRebase(shift));
+    this.dynamicVehicles.forEach((vehicle) => vehicle.applyWorldRebase(shift.x));
   }
 
   private spawn(
@@ -92,6 +105,40 @@ class InfiniteWorldCell {
     height: number = 0,
   ): void {
     this.art.spawn(kind, this.node, V3(x, height, z), scale, yaw, name);
+  }
+
+  private populateDynamicTraffic(objectPool: ObjectPool<CompressibleObject>, logicalOrigin: Readonly<Vec3>): void {
+    const dynamicType: 'car' | 'delivery_van' | 'garbage_truck' | null = (() => {
+      switch (this.district.kind) {
+        case 'SUPERMARKET': return 'delivery_van';
+        case 'WAREHOUSE': return 'garbage_truck';
+        case 'PARKING': return 'car';
+        case 'CONSTRUCTION': return 'garbage_truck';
+        case 'DOWNTOWN': return 'car';
+        default: return null;
+      }
+    })();
+    if (!dynamicType) return;
+    const template = OBJECT_TEMPLATES.find((candidate) => candidate.type === dynamicType);
+    if (!template) throw new Error(`[InfiniteWorldCell] Missing dynamic vehicle template: ${dynamicType}`);
+    const visualKind = dynamicType === 'car' ? 'sedan' : dynamicType;
+
+    const centerX = this.coord.x * this.cellSize - logicalOrigin.x;
+    const centerZ = this.coord.z * this.cellSize - logicalOrigin.z;
+    const startX = centerX - 12;
+    const routeZ = centerZ + (this.district.kind === 'CONSTRUCTION' ? 10 : -4);
+    const object = objectPool.get();
+    object.spawn(template as IObjectTemplate, startX, routeZ, 0.35, `traffic_${this.coord.x}_${this.coord.z}_${visualKind}`);
+    object.setRoutePosition(startX, routeZ, 90);
+    this.objects.push(object);
+    this.dynamicVehicles.push(new DynamicVehicle(
+      `traffic_${this.coord.x}_${this.coord.z}_${visualKind}`,
+      visualKind,
+      object,
+      centerX - 12,
+      centerX + 12,
+      visualKind === 'sedan' ? 4.0 : visualKind === 'delivery_van' ? 3.2 : 2.6,
+    ));
   }
 
   /**
@@ -277,6 +324,7 @@ export class InfiniteWorldManager extends Component {
     onAbsorb: (object: CompressibleObject) => void,
   ): void {
     for (const cell of this.activeCells.values()) {
+      cell.updateDynamicTraffic(dt);
       for (const object of cell.objects) {
         const state = object.getState();
         if (state !== 'ABSORBED' && state !== 'RECYCLED'
@@ -323,6 +371,7 @@ export class InfiniteWorldManager extends Component {
         z: cell.coord.z,
         district: cell.district.kind,
       })),
+      dynamicVehicles: Array.from(this.activeCells.values(), (cell) => cell.dynamicVehicles.map((vehicle) => vehicle.getSnapshot())).flat(),
     };
   }
 
@@ -373,7 +422,7 @@ export class InfiniteWorldManager extends Component {
         0,
         cell.coord.z * InfiniteWorldManager.CELL_SIZE - this.logicalOrigin.z,
       );
-      for (const object of cell.objects) object.applyWorldRebase(shift);
+      cell.applyWorldRebase(shift);
     }
     return { shift, logicalOrigin: this.logicalOrigin.clone() };
   }

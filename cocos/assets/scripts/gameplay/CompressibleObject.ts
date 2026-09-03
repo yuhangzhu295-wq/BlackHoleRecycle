@@ -30,6 +30,18 @@ export class CompressibleObject extends Component {
     return this.currentPos;
   }
 
+  /**
+   * Used solely by real route-driven dynamic entities while they remain IDLE.
+   * Once a vehicle enters the existing attraction FSM, the suction system owns
+   * its position and this method intentionally becomes a no-op.
+   */
+  public setRoutePosition(x: number, z: number, yawDegrees: number): void {
+    if (this.fsm.getState() !== 'IDLE') return;
+    this.currentPos.set(x, this.currentPos.y, z);
+    this.node.setPosition(this.currentPos);
+    this.visualNode?.setRotationFromEuler(0, yawDegrees, 0);
+  }
+
   /** Keep render-space pooled objects aligned when the infinite world rebases. */
   public applyWorldRebase(shift: Readonly<Vec3>): void {
     this.currentPos.subtract(shift);

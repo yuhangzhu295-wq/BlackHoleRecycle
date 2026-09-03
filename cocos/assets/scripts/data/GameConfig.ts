@@ -251,6 +251,8 @@ export const OBJECT_TEMPLATES: readonly IObjectTemplate[] = [
 
   // T5 (终极载具与集装箱)
   { type: "car", name: "Car", tier: ObjectTier.T5, mass: 25000, value: 3000, radius: 3.5, color: "#d32f2f", shape: ObjectShape.BOX, size: [2.5, 1.5, 4.5] },
+  { type: "delivery_van", name: "Delivery Van", tier: ObjectTier.T5, mass: 28000, value: 3400, radius: 3.8, color: "#fbbf24", shape: ObjectShape.BOX, size: [2.6, 2.4, 5.4] },
+  { type: "garbage_truck", name: "Garbage Truck", tier: ObjectTier.T5, mass: 36000, value: 4300, radius: 4.2, color: "#22c55e", shape: ObjectShape.BOX, size: [2.8, 3.2, 7.4] },
   { type: "container", name: "Container", tier: ObjectTier.T5, mass: 45000, value: 5500, radius: 4.5, color: "#0288d1", shape: ObjectShape.BOX, size: [3.2, 3.2, 7.0] }
 ];
 
