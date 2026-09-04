@@ -4,7 +4,7 @@
  * 视觉节点、Button、Label 均由 Cocos Creator 保存的 Prefab 提供。本组件绝不
  * 在运行时创建 Node、Graphics、Label 或 Button，也不会退回到旧 HUD 作为替代品。
  */
-import { _decorator, Component, director, Node } from 'cc';
+import { _decorator, Component, director, Node, Vec3 } from 'cc';
 import { EndlessHUDController } from './EndlessHUDController';
 import { SettlementPageController } from './SettlementPageController';
 import { ArenaHUDController } from './ArenaHUDController';
@@ -64,6 +64,21 @@ export class HUDView extends Component {
   public updateArena(snapshot: ArenaMatchSnapshot): void {
     const controller = this.findPage('ArenaHUD')?.getComponent(ArenaHUDController);
     controller?.updateMatch(snapshot);
+  }
+
+  /** Visual-only acknowledgement of a real absorbed object and its real score. */
+  public showAbsorbFeedback(position: Readonly<Vec3>, score: number, tier: number): void {
+    if (this.currentScreenName === 'Gameplay') {
+      this.findPage('EndlessHUD')?.getComponent(EndlessHUDController)?.showAbsorbFeedback(position, score, tier);
+    } else if (this.currentScreenName === 'Arena') {
+      this.findPage('ArenaHUD')?.getComponent(ArenaHUDController)?.showAbsorbFeedback(position, score, tier);
+    }
+  }
+
+  public getPickupFeedbackDiagnostics(): Record<string, unknown> | null {
+    const endless = this.findPage('EndlessHUD')?.getComponent(EndlessHUDController)?.getPickupFeedbackDiagnostics() || null;
+    const arena = this.findPage('ArenaHUD')?.getComponent(ArenaHUDController)?.getPickupFeedbackDiagnostics() || null;
+    return { endless, arena };
   }
 
   public updateRevive(snapshot: ArenaMatchSnapshot): void {

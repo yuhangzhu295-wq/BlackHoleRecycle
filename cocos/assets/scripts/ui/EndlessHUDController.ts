@@ -2,14 +2,16 @@
  * 编辑器保存的无尽模式 HUD 数据绑定器。
  * 正式节点由 Cocos Prefab 提供；本组件不在运行时创建 UI。
  */
-import { _decorator, Button, Component, Label } from 'cc';
+import { _decorator, Button, Color, Component, Label, Vec3 } from 'cc';
 import { eventBus } from '../core/EventBus';
+import { PickupFeedbackDiagnostics, PickupFeedbackPresenter } from './PickupFeedbackPresenter';
 
 const { ccclass } = _decorator;
 
 @ccclass('EndlessHUDController')
 export class EndlessHUDController extends Component {
   private bindings: Array<[Button, () => void]> = [];
+  private pickupFeedback: PickupFeedbackPresenter | null = null;
 
   onEnable(): void {
     // Individual live stat pills already provide all required information.
@@ -17,6 +19,7 @@ export class EndlessHUDController extends Component {
     // width shade; the gameplay reference keeps this space visible.
     const topShade = this.node.getChildByName('TopShade');
     if (topShade) topShade.active = false;
+    this.pickupFeedback ||= new PickupFeedbackPresenter(this.node, 'CoinValue');
     this.bindPause();
   }
 
@@ -25,6 +28,7 @@ export class EndlessHUDController extends Component {
       button.node.off(Button.EventType.CLICK, handler, this);
     }
     this.bindings.length = 0;
+    this.pickupFeedback?.clear();
   }
 
   public updateStats(mass: number, level: number, levelTitle: string, coins: number, regionName: string): void {
@@ -32,6 +36,21 @@ export class EndlessHUDController extends Component {
     this.setLabel('MassValue', `质量 ${Math.round(mass)} kg`);
     this.setLabel('CoinValue', Math.max(0, Math.floor(coins)).toLocaleString('en-US'));
     this.setLabel('RegionValue', regionName);
+  }
+
+  public showAbsorbFeedback(position: Readonly<Vec3>, score: number, tier: number): void {
+    const color = tier >= 3 ? new Color(255, 190, 65, 255)
+      : tier === 2 ? new Color(255, 225, 95, 255)
+        : new Color(255, 255, 255, 255);
+    this.pickupFeedback?.emit(position, score, color);
+  }
+
+  public getPickupFeedbackDiagnostics(): PickupFeedbackDiagnostics | null {
+    return this.pickupFeedback?.getDiagnostics() || null;
+  }
+
+  update(dt: number): void {
+    this.pickupFeedback?.update(dt);
   }
 
   private bindPause(): void {

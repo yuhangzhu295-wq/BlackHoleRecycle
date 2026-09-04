@@ -2,6 +2,7 @@
 import { _decorator, Button, Camera, Color, Component, director, instantiate, Label, LabelOutline, Node, UITransform, Vec3, view } from 'cc';
 import { eventBus } from '../core/EventBus';
 import { ArenaMatchSnapshot } from '../gameplay/ArenaMatchManager';
+import { PickupFeedbackDiagnostics, PickupFeedbackPresenter } from './PickupFeedbackPresenter';
 
 const { ccclass } = _decorator;
 
@@ -20,8 +21,10 @@ export class ArenaHUDController extends Component {
    * portrait arena remains legible without static or invented opponent data.
    */
   private readonly competitorNameplates = new Map<string, Node>();
+  private pickupFeedback: PickupFeedbackPresenter | null = null;
 
   onEnable(): void {
+    this.pickupFeedback ||= new PickupFeedbackPresenter(this.node, 'Top1');
     this.bind('BtnPause', () => eventBus.emit('UI_TRIGGER_PAUSE'));
   }
 
@@ -30,6 +33,7 @@ export class ArenaHUDController extends Component {
     this.bindings.length = 0;
     for (const nameplate of this.competitorNameplates.values()) nameplate.destroy();
     this.competitorNameplates.clear();
+    this.pickupFeedback?.clear();
   }
 
   public updateMatch(snapshot: ArenaMatchSnapshot): void {
@@ -144,6 +148,21 @@ export class ArenaHUDController extends Component {
       x: node.position.x,
       y: node.position.y,
     }));
+  }
+
+  public showAbsorbFeedback(position: Readonly<Vec3>, score: number, tier: number): void {
+    const color = tier >= 3 ? new Color(255, 190, 65, 255)
+      : tier === 2 ? new Color(255, 225, 95, 255)
+        : new Color(255, 255, 255, 255);
+    this.pickupFeedback?.emit(position, score, color);
+  }
+
+  public getPickupFeedbackDiagnostics(): PickupFeedbackDiagnostics | null {
+    return this.pickupFeedback?.getDiagnostics() || null;
+  }
+
+  update(dt: number): void {
+    this.pickupFeedback?.update(dt);
   }
 
   /**

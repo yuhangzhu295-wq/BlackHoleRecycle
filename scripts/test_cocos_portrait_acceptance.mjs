@@ -1125,7 +1125,20 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
       assert(lockedT2,
         `FAIL_VERTICAL_SLICE_T2_LOCK: ${JSON.stringify(lockedT2Snapshot.objects.filter((object) => object.tier === 2))}`);
 
-      await driveJoystickToLogicalPoint(cdp, page, joystick, { x: 0, z: 5.2 }, 'T1_CLUSTER', 0.9);
+      // One metre is still well inside LV1's real 2.4m suction radius while
+      // leaving room for a physical drag's sampled coasting distance. The
+      // following assertions require actual T1 absorption and LV2 evolution.
+      await driveJoystickToLogicalPoint(cdp, page, joystick, { x: 0, z: 5.2 }, 'T1_CLUSTER', 1.0);
+      // The cluster can complete its real attraction animation while the
+      // physical drag is still held. Capture immediately after release; a
+      // later 1.6s wait is deliberately long enough for short feedback to
+      // have expired and would not be an honest visibility check.
+      const feedbackSnapshot = await readRuntimeSnapshot(page);
+      const visibleEndlessFeedback = feedbackSnapshot.ui?.pickupFeedback?.endless || null;
+      assert((visibleEndlessFeedback?.activeCount || 0) > 0,
+        `FAIL_ABSORB_FEEDBACK_NOT_VISIBLE: ${JSON.stringify(feedbackSnapshot.ui?.pickupFeedback)}`);
+      report.verticalSlice.pickupFeedback = feedbackSnapshot.ui?.pickupFeedback || null;
+      await page.screenshot({ path: path.join(evidenceDirectory, 'portrait-390x844-absorb-feedback.png') });
       await page.waitForTimeout(3200);
       const upgradedSnapshot = await readRuntimeSnapshot(page);
       assert(upgradedSnapshot.machine.level >= 2 && upgradedSnapshot.machine.maxTier >= 2,
@@ -1146,6 +1159,9 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
         `FAIL_HYBRID_CHASSIS_OBSCURES_BLACK_HOLE: ${JSON.stringify(activeHybridChassis)}`);
       assert((upgradedSnapshot.session.absorbedTiers?.[1] || 0) > 0,
         `FAIL_VERTICAL_SLICE_NO_T1_CLUSTER_ABSORPTION: ${JSON.stringify(upgradedSnapshot.session?.absorbedTiers)}`);
+      const endlessFeedback = upgradedSnapshot.ui?.pickupFeedback?.endless || null;
+      assert((endlessFeedback?.emittedCount || 0) > 0 && /^\+\d+$/.test(endlessFeedback?.lastText || ''),
+        `FAIL_ABSORB_FEEDBACK_NOT_EMITTED: ${JSON.stringify(upgradedSnapshot.ui?.pickupFeedback)}`);
 
       await driveJoystickToLogicalPoint(cdp, page, joystick, { x: 0, z: -8 }, 'T2_UNLOCK', 2.3);
       await page.waitForTimeout(1200);

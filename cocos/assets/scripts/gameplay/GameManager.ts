@@ -502,6 +502,7 @@ export class GameManager extends Component {
     this.totalAbsorbedCount++;
     this.absorbedTierCounts[t.tier] = (this.absorbedTierCounts[t.tier] || 0) + 1;
     this.score += t.value * 10;
+    this.hud?.showAbsorbFeedback(obj.getPosition(), t.value * 10, t.tier);
 
     // 严谨进入实体压缩缓冲系统 (不立即加金币与质量)
     if (this.compressionSystem) {
@@ -691,6 +692,7 @@ export class GameManager extends Component {
         joystickBase: describe(joystick?.getChildByName('JoystickBase') || null),
         joystickKnob: describe(joystick?.getChildByName('JoystickKnob') || null),
       },
+      pickupFeedback: this.hud?.getPickupFeedbackDiagnostics() || null,
       arenaHUD: {
         root: describe(arenaHud),
         pauseButton: describe(arenaHud?.getChildByName('BtnPause') || null),
