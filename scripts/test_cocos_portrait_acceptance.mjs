@@ -22,8 +22,11 @@ const reportPath = path.join(evidenceDirectory, 'acceptance-report.json');
 // `npm run acceptance:v2 -- --scope=pages` is the ergonomic local visual-QA
 // command. Keep the environment variable for CI, but do not silently ignore
 // the documented CLI form and accidentally start the long 500m traversal.
-const acceptanceScope = process.argv.includes('--scope=pages') || process.env.BHR_ACCEPTANCE_SCOPE === 'pages'
-  ? 'pages'
+const requestedAcceptanceScope = process.argv.find((argument) => argument.startsWith('--scope='))?.slice('--scope='.length)
+  || process.env.BHR_ACCEPTANCE_SCOPE
+  || 'full';
+const acceptanceScope = ['full', 'pages', 'arena-timer'].includes(requestedAcceptanceScope)
+  ? requestedAcceptanceScope
   : 'full';
 const requiredPortraitViewports = [
   { id: '375x667', width: 375, height: 667 },
@@ -457,6 +460,51 @@ async function verifyArenaFlow(cdp, page, canvasRect, modeSnapshot) {
   };
 }
 
+/**
+ * Proves the other legitimate arena end condition without granting time,
+ * calling a manager method or changing its duration. The real 180-second
+ * timer runs under the rendered page until ArenaMatchManager ends the match.
+ */
+async function verifyArenaTimerExpiry(cdp, page, canvasRect) {
+  const homeStart = {
+    x: canvasRect.left + canvasRect.width * 0.5,
+    y: canvasRect.top + canvasRect.height * 0.773,
+  };
+  await dispatchTouchTap(cdp, homeStart.x, homeStart.y);
+  await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'MODE_SELECT', undefined, { timeout: 5000 });
+  const modeSnapshot = await readRuntimeSnapshot(page);
+  const arenaButton = modeSnapshot.ui?.modeArena;
+  const design = modeSnapshot.ui?.design;
+  assert(arenaButton?.active && design?.width > 0 && design?.height > 0,
+    `FAIL_ARENA_TIMER_MODE_LAYOUT: ${JSON.stringify({ arenaButton, design })}`);
+  const arenaPoint = {
+    x: canvasRect.left + canvasRect.width * ((arenaButton.x + design.width * 0.5) / design.width),
+    y: canvasRect.top + canvasRect.height * ((design.height * 0.5 - arenaButton.y) / design.height),
+  };
+  await dispatchTouchTap(cdp, arenaPoint.x, arenaPoint.y);
+  await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'ARENA', undefined, { timeout: 7000 });
+  const started = await readRuntimeSnapshot(page);
+  assert(started.arena?.running && started.arena?.durationSeconds === 180,
+    `FAIL_ARENA_TIMER_START: ${JSON.stringify(started.arena)}`);
+
+  // Keep the page foregrounded and wait for the native gameplay clock. The
+  // timeout only bounds a real wait; it does not manipulate the clock.
+  await page.waitForFunction(() => {
+    const snapshot = window.__BHR_QA__.snapshot();
+    return snapshot.gameState === 'SETTLEMENT' && snapshot.arena?.reason === 'TIME'
+      && snapshot.uiScreen === 'Settlement';
+  }, undefined, { timeout: 205000 });
+  const settled = await readRuntimeSnapshot(page);
+  assert(!settled.arena?.running && settled.arena?.elapsedSeconds >= settled.arena?.durationSeconds,
+    `FAIL_ARENA_TIMER_NOT_FINISHED: ${JSON.stringify(settled.arena)}`);
+  assert(settled.arena?.settlementReward?.coins > 0,
+    `FAIL_ARENA_TIMER_REWARD: ${JSON.stringify(settled.arena?.settlementReward)}`);
+  assert((settled.session?.coinsEarned || 0) >= settled.arena.settlementReward.coins,
+    `FAIL_ARENA_TIMER_REWARD_NOT_SAVED: ${JSON.stringify({ session: settled.session, reward: settled.arena.settlementReward })}`);
+  await page.screenshot({ path: path.join(evidenceDirectory, 'portrait-390x844-arena-time-settlement.png') });
+  return { started: started.arena, settled: settled.arena };
+}
+
 function validatePortraitSnapshot(viewport, canvasRect, runtimeSnapshot) {
   const portrait = runtimeSnapshot.ui?.portrait;
   assert(viewport.width < viewport.height, `FAIL_NOT_PORTRAIT: browser viewport ${viewport.width}x${viewport.height}`);
@@ -648,6 +696,11 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
     if (viewport.id === '390x844') {
       const cdp = await context.newCDPSession(page);
       report.camera = snapshot.camera;
+      if (acceptanceScope === 'arena-timer') {
+        report.arenaTimer = await verifyArenaTimerExpiry(cdp, page, canvasRect);
+        assert(runtimeErrors.length === 0, `Runtime console errors after timer expiry: ${runtimeErrors.join(' | ')}`);
+        return;
+      }
       const x = canvasRect.left + canvasRect.width * 0.5;
       const homeStartY = canvasRect.top + canvasRect.height * 0.773;
       await dispatchTouchTap(cdp, x, homeStartY);
@@ -933,6 +986,7 @@ const report = {
   verticalSlice: null,
   runtimePages: null,
   arena: null,
+  arenaTimer: null,
   consoleErrors: [],
   failures: [],
 };
@@ -949,7 +1003,7 @@ try {
   const baseUrl = `http://127.0.0.1:${address.port}/`;
   browser = await chromium.launch({ headless: true, args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-webgl'] });
 
-  const targetViewports = acceptanceScope === 'pages'
+  const targetViewports = acceptanceScope === 'pages' || acceptanceScope === 'arena-timer'
     ? requiredPortraitViewports.filter((viewport) => viewport.id === '390x844')
     : requiredPortraitViewports;
   for (const viewport of targetViewports) {
