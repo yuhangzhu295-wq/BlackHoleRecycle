@@ -1,0 +1,16 @@
+{
+  "name": "black-hole-recycle-arena-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Local authoritative Colyseus arena service for BlackHoleRecycle.",
+  "scripts": {
+    "start": "node src/index.mjs",
+    "test": "node --test test/arena-room.integration.test.mjs"
+  },
+  "dependencies": {
+    "@colyseus/schema": "5.0.27",
+    "@colyseus/sdk": "0.18.2",
+    "colyseus": "0.18.5"
+  }
+}

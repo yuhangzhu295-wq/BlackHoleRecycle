@@ -16,7 +16,8 @@
 - 没有可用广告单元时，复活页显示普通“立即复活”，不会伪造激励广告完成。
 - 微信与抖音构建已通过 Cocos Creator 3.8.3 产物校验；尚未等同于各自开发者工具或真机验收。
 - 抖音构建当前使用 Creator 默认 `testappId`。发布、登录和真机验收需要项目所有者提供真实抖音小游戏 AppID；不会在代码中猜测或伪造 AppID。
-- 商城、任务、签到、抽奖、在线匹配等未实现系统不应被视为可用功能。
+- `arena-server/` 包含经双客户端集成测试的 Colyseus 本地权威房间（输入序号校验与服务器位置积分）。它尚未承载吸收、战斗、复活与奖励，也没有公网 `wss://` 地址；Cocos 客户端仍不将它标为在线匹配。
+- 商城、任务、签到、抽奖等未实现系统不应被视为可用功能。
 
 ## 环境
 
@@ -41,6 +42,11 @@ npm run acceptance:v2 -- --scope=pages
 
 # 生产发布前置检查：会拒绝占位 AppID
 npm run preflight:release
+
+# 本地 Colyseus 多客户端权威移动集成测试（独立于 Cocos 客户端）
+cd arena-server
+npm install
+npm test
 ```
 
 最近一次完整 Web Mobile 验收的报告与截图位于 `cocos/docs/evidence/v2/portrait/`（构建证据不纳入 Git）。
