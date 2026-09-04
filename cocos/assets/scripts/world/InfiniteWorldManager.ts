@@ -239,12 +239,21 @@ class InfiniteWorldCell {
       // The 9:16 camera's visible street corridor is narrower than a whole
       // 64m cell. Keep homes beside the opening road rather than at the far
       // corners so the first playable frame reads as a neighbourhood.
-      this.spawn('buildingB', -6.5, -7.4, V3(1.8, 1.8, 1.8), 90, 'ResidentialHouseWest');
-      this.spawn('buildingC', 6.5, -7.4, V3(1.8, 1.8, 1.8), -90, 'ResidentialHouseEast');
+      this.spawn('buildingB', -8.2, -7.4, V3(2.7, 2.7, 2.7), 90, 'ResidentialHouseWest');
+      this.spawn('buildingC', 8.2, -7.4, V3(2.7, 2.7, 2.7), -90, 'ResidentialHouseEast');
+      // Actual CC0 commercial-kit landmarks frame the opening corridor. They
+      // add a readable service-city silhouette around the player without
+      // obstructing the starter recyclable cluster at z=5.
+      // Keep the CC0 commercial kit landmarks in the portrait play camera's
+      // field, framing the arena instead of leaving a large vacant lawn.
+      // They are decorative scene art, not collision or resource objects.
+      this.spawn('commercialBuildingF', -7.3, -2.8, V3(2.0, 2.0, 2.0), 90, 'NeighbourhoodMarket');
+      this.spawn('commercialBuildingG', 7.3, -2.8, V3(2.0, 2.0, 2.0), -90, 'NeighbourhoodClinic');
+      this.spawn('commercialBuildingH', 0, -14.4, V3(1.7, 1.7, 1.7), 0, 'NeighbourhoodService');
     };
     const trees = (): void => {
-      this.spawn('treeLarge', -6.8, -2.5, V3(2.15, 2.15, 2.15), 0, 'DistrictTreeLarge');
-      this.spawn('treeSmall', 6.8, -3.2, V3(2.25, 2.25, 2.25), 0, 'DistrictTreeSmall');
+      this.spawn('treeLarge', -9.8, 1.0, V3(3.6, 3.6, 3.6), 0, 'DistrictTreeLarge');
+      this.spawn('treeSmall', 9.8, 1.0, V3(3.8, 3.8, 3.8), 0, 'DistrictTreeSmall');
     };
     switch (kind) {
       case 'RESIDENTIAL':
@@ -362,6 +371,17 @@ export class InfiniteWorldManager extends Component {
     this.currentCell.set(0, 0, 0);
     this.rebaseCount = 0;
     this.updateCells(renderPlayerPosition);
+  }
+
+  /**
+   * Arena uses the same spawned T2 object as Endless, but places it beside
+   * the opening fight rather than directly in the black-hole camera line.
+   * The object remains a real locked/absorbable Book Stack with its original
+   * mass and FSM; only its idle render position changes for this mode.
+   */
+  public arrangeArenaOpening(): boolean {
+    const openingT2 = this.getAllObjects().find((object) => object.runtimeId === 't2_target_bed_box') || null;
+    return openingT2?.relocateIdle(5.8, 3.2, -24) || false;
   }
 
   /** Streams the 3×3 active grid for both X and Z; returns a rebase when needed. */

@@ -81,8 +81,9 @@ export class GameManager extends Component {
 
   /**
    * Keep the WebGL camera and Canvas in the same 9:16 letterboxed game view.
-   * SHOW_ALL is deliberate: FIXED_WIDTH expands the visible 3D surface to a
-   * landscape desktop frame, which leaves a portrait UI on top of a wide world.
+   * SHOW_ALL preserves the tested 3D portrait viewport. The surrounding page
+   * backdrop is styled separately so it does not present as a black browser
+   * frame on narrow devices.
    */
   private applyPortraitRuntimeContract(): void {
     view.setDesignResolutionSize(
@@ -321,6 +322,10 @@ export class GameManager extends Component {
     // Likewise, every arena's eight competitors begin against a freshly
     // generated resource field instead of a partially consumed endless run.
     this.infiniteWorldManager.resetSession(Vec3.ZERO);
+    // The arena shares genuine world pickups with Endless. Reframe the same
+    // T2 book stack beside the opening fight so it does not visually cover
+    // the local singularity, without changing the Endless vertical slice.
+    this.infiniteWorldManager.arrangeArenaOpening();
     this.playerController && (this.playerController.isPaused = false);
     this.compressionSystem && (this.compressionSystem.isPaused = false);
     this.machine.isPaused = false;

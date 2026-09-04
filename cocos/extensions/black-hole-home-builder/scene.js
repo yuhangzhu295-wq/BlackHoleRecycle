@@ -29,6 +29,9 @@ const MODE_IMAGE_URLS = [
 // prefab stays as its child and receives the normalization scale here, rather
 // than accepting arbitrary runtime scale values per object type.
 const OBJECT_ART_TEMPLATE_SPECS = [
+  { property: 'commercialBuildingFTemplate', name: 'CommercialBuildingFTemplate', url: 'db://assets/art/world/city/commercial-building-f.glb', scale: [1.65, 1.65, 1.65] },
+  { property: 'commercialBuildingGTemplate', name: 'CommercialBuildingGTemplate', url: 'db://assets/art/world/city/commercial-building-g.glb', scale: [1.65, 1.65, 1.65] },
+  { property: 'commercialBuildingHTemplate', name: 'CommercialBuildingHTemplate', url: 'db://assets/art/world/city/commercial-building-h.glb', scale: [1.65, 1.65, 1.65] },
   { property: 'sodaCanTemplate', name: 'SodaCanTemplate', url: 'db://assets/art/recyclables/food/soda-can.glb', scale: [1, 1, 1] },
   { property: 'waterBottleTemplate', name: 'WaterBottleTemplate', url: 'db://assets/art/recyclables/food/soda-bottle.glb', scale: [1, 1, 1] },
   { property: 'batteryTemplate', name: 'BatteryTemplate', url: 'db://assets/art/recyclables/props/battery.glb', scale: [1, 1, 1] },
@@ -491,6 +494,28 @@ function createGraphicButton(name, parent, text, x, y, width, height, fillColor,
   return node;
 }
 
+/**
+ * Uses the authored glossy home button art for the primary call to action.
+ * It remains a real Cocos Button with an editor-saved Label child; the skin
+ * changes presentation only and never stands in for an unavailable action.
+ */
+async function createPrimaryActionButton(name, parent, text, x, y, width, height, fontSize = 30) {
+  const { Color, UITransform } = require('cc');
+  const node = await createImageButton(
+    name,
+    parent,
+    width,
+    height,
+    'db://assets/textures/home/home_start_button.png',
+    true,
+  );
+  place(node, x, y, width, height);
+  const label = createLabel(`${name}Label`, node, text, fontSize, new Color(71, 48, 8, 255));
+  label.getComponent(UITransform).setContentSize(width - 28, height - 16);
+  label.setPosition(0, 0, 0);
+  return node;
+}
+
 function place(node, x, y, width, height) {
   const { UITransform } = require('cc');
   const transform = node.getComponent(UITransform);
@@ -656,6 +681,16 @@ exports.methods = {
     const created = [];
     const reused = [];
     for (const spec of OBJECT_ART_TEMPLATE_SPECS) {
+      // Reading an already-bound glTF through asset-db causes Creator to
+      // re-import every embedded-image subasset. Several legacy recyclable
+      // models intentionally have embedded colour maps, so that needless
+      // re-import can emit a platform-format error despite the template being
+      // complete and usable. Only resolve an asset when the scene genuinely
+      // needs to create its wrapper.
+      if (library[spec.property]?.children.length > 0) {
+        reused.push(spec.name);
+        continue;
+      }
       const prefab = await getImportedGltfPrefab(spec.url);
       const result = addObjectArtTemplate(library, spec, prefab);
       (result.created ? created : reused).push(spec.name);
@@ -985,23 +1020,26 @@ exports.methods = {
     const arena = createNode('ArenaHUD', canvas, 720, 1280);
     const arenaPage = arena.addComponent(getComponentClass('UIPage'));
     arenaPage.pageId = 2;
-    const arenaBoard = createRoundedPanel('LeaderboardPanel', arena, 282, 332, new Color(12, 27, 56, 226), 28);
-    place(arenaBoard, -194, 330, 282, 332);
-    caption(arena, 'ArenaTitle', '黑洞乱斗', 31, -194, 464, 246, 48, new Color(255, 239, 164, 255));
+    // Keep the match data visible but leave the city and nearby competitors
+    // readable. The older board occupied most of the upper-left portrait
+    // playfield and made the arena look empty even when real bots were there.
+    const arenaBoard = createRoundedPanel('LeaderboardPanel', arena, 236, 276, new Color(12, 27, 56, 226), 24);
+    place(arenaBoard, -226, 352, 236, 276);
+    caption(arena, 'ArenaTitle', '黑洞乱斗', 27, -226, 465, 214, 42, new Color(255, 239, 164, 255));
     for (let index = 0; index < 5; index++) {
-      const row = createRoundedPanel(`TopRow${index + 1}`, arena, 246, 42, new Color(49, 74, 124, 220), 12);
-      place(row, -194, 400 - index * 54, 246, 42);
-      caption(arena, `Top${index + 1}`, `${index + 1}. 等待匹配`, 18, -194, 400 - index * 54, 232, 38, new Color(244, 249, 255, 255));
+      const row = createRoundedPanel(`TopRow${index + 1}`, arena, 208, 34, new Color(49, 74, 124, 220), 10);
+      place(row, -226, 408 - index * 43, 208, 34);
+      caption(arena, `Top${index + 1}`, `${index + 1}. 等待匹配`, 15, -226, 408 - index * 43, 196, 30, new Color(244, 249, 255, 255));
     }
-    const timerPanel = createRoundedPanel('TimerPanel', arena, 176, 72, new Color(255, 248, 232, 244), 22);
-    place(timerPanel, 0, 486, 176, 72);
-    caption(arena, 'TimerValue', '03:00', 31, 0, 486, 160, 52, new Color(68, 56, 101, 255));
-    const statusPanel = createRoundedPanel('StatusPanel', arena, 268, 104, new Color(15, 42, 79, 232), 22);
-    place(statusPanel, 190, 400, 268, 104);
-    caption(arena, 'RankValue', '第 - / 8', 22, 190, 424, 246, 34, new Color(255, 239, 164, 255));
-    caption(arena, 'MassValue', '0 kg', 21, 190, 392, 246, 32, new Color(235, 248, 255, 255));
-    caption(arena, 'KillCaption', '淘汰', 16, 144, 360, 70, 28, new Color(185, 218, 255, 255));
-    caption(arena, 'KillValue', '0', 23, 222, 360, 56, 30, new Color(255, 205, 77, 255));
+    const timerPanel = createRoundedPanel('TimerPanel', arena, 160, 62, new Color(255, 248, 232, 244), 20);
+    place(timerPanel, 0, 492, 160, 62);
+    caption(arena, 'TimerValue', '03:00', 28, 0, 492, 148, 46, new Color(68, 56, 101, 255));
+    const statusPanel = createRoundedPanel('StatusPanel', arena, 220, 82, new Color(15, 42, 79, 232), 19);
+    place(statusPanel, 222, 415, 220, 82);
+    caption(arena, 'RankValue', '第 - / 8', 19, 222, 434, 200, 30, new Color(255, 239, 164, 255));
+    caption(arena, 'MassValue', '0 kg', 18, 222, 405, 200, 28, new Color(235, 248, 255, 255));
+    caption(arena, 'KillCaption', '淘汰', 14, 183, 380, 58, 24, new Color(185, 218, 255, 255));
+    caption(arena, 'KillValue', '0', 20, 251, 380, 46, 26, new Color(255, 205, 77, 255));
     caption(arena, 'StatusValue', '等待开局', 17, 0, -518, 420, 34, new Color(245, 249, 255, 255));
     createGraphicButton('BtnPause', arena, 'Ⅱ', 294, 500, 58, 58, new Color(42, 75, 111, 245), new Color(255, 255, 255, 255), 31);
     addJoystickOverlay(arena);
@@ -1026,7 +1064,7 @@ exports.methods = {
     place(countdownPanel, 0, 96, 218, 96);
     caption(revive, 'CountdownValue', '2.5s', 38, 0, 96, 198, 70, new Color(105, 70, 190, 255));
     caption(revive, 'RankValue', '当前第 - / 8', 22, 0, 16, 420, 40, new Color(74, 56, 99, 255));
-    createGraphicButton('BtnRevive', revive, '立即复活', 0, -114, 392, 98, new Color(255, 187, 31, 255), new Color(71, 48, 8, 255), 32);
+    await createPrimaryActionButton('BtnRevive', revive, '立即复活', 0, -114, 392, 98, 32);
     createGraphicButton('BtnGiveUp', revive, '结束本局', 0, -238, 340, 78, new Color(105, 70, 190, 255), new Color(255, 255, 255, 255), 26);
     revive.addComponent(getComponentClass('RevivePageController'));
     revive.active = false;
@@ -1043,7 +1081,7 @@ exports.methods = {
     place(pauseRibbon, 0, 250, 440, 92);
     caption(pause, 'Title', '游戏暂停', 50, 0, 250, 420, 74, new Color(255, 255, 255, 255));
     caption(pause, 'Subtitle', '当前进度已冻结', 24, 0, 156, 440, 46, new Color(74, 56, 99, 255));
-    createGraphicButton('BtnResume', pause, '继续游戏', 0, 44, 390, 104, new Color(255, 187, 31, 255), new Color(71, 48, 8, 255), 34);
+    await createPrimaryActionButton('BtnResume', pause, '继续游戏', 0, 44, 390, 104, 34);
     createGraphicButton('BtnSettle', pause, '结束并结算', 0, -94, 340, 88, new Color(122, 87, 212, 255), new Color(255, 255, 255, 255), 28);
     createGraphicButton('BtnHome', pause, '返回首页', 0, -208, 340, 78, new Color(69, 139, 218, 255), new Color(255, 255, 255, 255), 26);
     pause.addComponent(getComponentClass('PausePageController'));
@@ -1108,7 +1146,7 @@ exports.methods = {
       settlement.getChildByName(`ArenaRankName_${rank}`).active = false;
       settlement.getChildByName(`ArenaRankScore_${rank}`).active = false;
     }
-    createGraphicButton('BtnRestart', settlement, '再来一局', -142, -296, 270, 94, new Color(255, 187, 31, 255), new Color(71, 48, 8, 255), 28);
+    await createPrimaryActionButton('BtnRestart', settlement, '再来一局', -142, -296, 270, 94, 28);
     createGraphicButton('BtnHome', settlement, '返回首页', 142, -296, 270, 94, new Color(105, 70, 190, 255), new Color(255, 255, 255, 255), 28);
     settlement.addComponent(getComponentClass('SettlementPageController'));
     settlement.active = false;

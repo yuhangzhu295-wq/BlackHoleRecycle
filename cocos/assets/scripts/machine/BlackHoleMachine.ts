@@ -6,11 +6,12 @@ import { IMachineEvolutionConfig, MACHINE_EVOLUTION_CONFIG, ObjectTier } from '.
 import { eventBus } from '../core/EventBus';
 import { MeshFactory } from '../core/MeshFactory';
 import { MachineVisualLibrary } from './MachineVisualLibrary';
+import { WorldArtLibrary } from '../world/WorldArtLibrary';
 
 const { ccclass, property } = _decorator;
 
 /** The mesh selection changes only what a competitor displays, never its mass, radius or controls. */
-export type MachinePresentation = 'HYBRID' | 'SINGULARITY' | 'MACHINE';
+export type MachinePresentation = 'HYBRID' | 'SINGULARITY' | 'MACHINE' | 'BOT';
 
 @ccclass('BlackHoleMachine')
 export class BlackHoleMachine extends Component {
@@ -39,11 +40,20 @@ export class BlackHoleMachine extends Component {
   // 内部视觉节点容器
   private visualRoot: Node | null = null;
   private chassisNode: Node | null = null;
+  /** Creator-saved audited bulldozer instance used by Arena opponents. */
+  private arenaBotVisual: Node | null = null;
   private holeRim: Node | null = null;
   private innerSwirl: Node | null = null;
   private outerSwirl: Node | null = null;
   private readonly levelVisuals: Node[] = [];
   private visualElapsed: number = 0;
+  /**
+   * Imported glTF renderers may finish their first Web Mobile sub-model setup
+   * one frame after a machine is activated. Rebind the approved material on
+   * the following frames so an arena bot never flashes Creator's magenta
+   * fallback while its real chassis is coming online.
+   */
+  private materialRebindFrames: number = 0;
   private readonly movementDirection: Vec3 = new Vec3();
   private movementMagnitude: number = 0;
   private presentation: MachinePresentation = 'HYBRID';
@@ -173,6 +183,13 @@ export class BlackHoleMachine extends Component {
   public isPaused: boolean = false;
 
   public update(dt: number): void {
+    if (this.materialRebindFrames > 0) {
+      const activeAssembly = this.levelVisuals[this.currentLevel - 1] || null;
+      if (activeAssembly?.activeInHierarchy) {
+        this.getVisualLibrary().applyActiveLevelMaterials(activeAssembly, this.currentLevel);
+      }
+      this.materialRebindFrames--;
+    }
     if (this.isPaused || dt <= 0) return;
     this.visualElapsed += dt;
     if (this.innerSwirl) this.innerSwirl.setRotationFromEuler(0, this.visualElapsed * 90, 10);
@@ -230,10 +247,13 @@ export class BlackHoleMachine extends Component {
     // Exactly one full Creator-saved machine assembly is visible. Higher
     // levels therefore have genuinely different silhouettes and components.
     this.levelVisuals.forEach((visual, index) => {
-      visual.active = this.presentation !== 'SINGULARITY' && index === level - 1;
+      visual.active = (this.presentation === 'HYBRID' || this.presentation === 'MACHINE') && index === level - 1;
     });
     const activeAssembly = this.levelVisuals[level - 1] || null;
-    if (activeAssembly?.active) this.getVisualLibrary().applyActiveLevelMaterials(activeAssembly, level);
+    if (activeAssembly?.active) {
+      this.getVisualLibrary().applyActiveLevelMaterials(activeAssembly, level);
+      this.materialRebindFrames = 2;
+    }
 
     // 玩法吸附半径可快速增长；视觉外环仅作受控的等级提示，避免高等级
     // 出现覆盖街区、看起来像碰撞范围的浅色大圆。
@@ -241,7 +261,18 @@ export class BlackHoleMachine extends Component {
       const ringScale = 1.0 + Math.min(0.38, Math.max(0, this.currentConfig.suctionRadius - 2.4) * 0.075);
       this.holeRim.setScale(new Vec3(ringScale, 1.0, ringScale));
     }
-    if (this.coreNode) this.coreNode.active = this.presentation !== 'MACHINE';
+    if (this.coreNode) {
+      this.coreNode.active = this.presentation !== 'MACHINE' && this.presentation !== 'BOT';
+      // Arena's local player is intentionally a singularity rather than a
+      // crawler. Make that real play target visually dominant without
+      // changing the suction radius or collision/gameplay calculations.
+      // The prior 1.32 scale read as a small token in portrait play beside
+      // the full-size competitor vehicles.
+      const coreScale = this.presentation === 'SINGULARITY' ? 2.22 : 1.32;
+      this.coreNode.setScale(coreScale, 1.0, coreScale);
+    }
+    if (this.presentation === 'BOT') this.ensureArenaBotVisual();
+    if (this.arenaBotVisual) this.arenaBotVisual.active = this.presentation === 'BOT';
 
     // 缩放整体底盘
     const s = this.currentConfig.scale;
@@ -267,6 +298,26 @@ export class BlackHoleMachine extends Component {
     if (this.presentation === presentation) return;
     this.presentation = presentation;
     this.applyEvolutionLevel(this.currentLevel, false);
+  }
+
+  /**
+   * Arena bots use the same Creator-saved, audited bulldozer template that
+   * decorates the real streamed world. This prevents a glTF sub-model from
+   * falling back to magenta during the first Web Mobile frame while preserving
+   * the bot's genuine BlackHoleMachine movement, mass and combat authority.
+   */
+  private ensureArenaBotVisual(): void {
+    if (this.arenaBotVisual || !this.visualRoot) return;
+    const library = director.getScene()?.getComponentInChildren(WorldArtLibrary) || null;
+    if (!library) throw new Error('[BlackHoleMachine] Missing editor-saved WorldArtLibrary for Arena bot art.');
+    this.arenaBotVisual = library.spawn(
+      'bulldozer',
+      this.visualRoot,
+      new Vec3(0, 0.03, 0.88),
+      new Vec3(1.65, 1.65, 1.65),
+      180,
+      'ArenaBotBulldozer',
+    );
   }
 
   public triggerMagnetStorm(duration: number = 6.0): void {

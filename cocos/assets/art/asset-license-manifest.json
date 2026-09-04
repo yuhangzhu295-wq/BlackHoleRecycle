@@ -136,6 +136,42 @@
       "sha256": "40605608e9aca0c98e294acff4af0f74afa417a51d589be490ca98f33ce4c2f5"
     },
     {
+      "id": "kenney-commercial-building-f",
+      "source": "https://github.com/bevyengine/bevy_asset_files/raw/main/kenney/city-kit-commercial/building-f.glb",
+      "origin": "https://kenney.nl/assets/city-kit-commercial",
+      "license": "CC0 1.0 Universal",
+      "author": "Kenney",
+      "usage": "Neighbourhood market landmark for the playable opening city block.",
+      "modified": false,
+      "commercialAllowed": true,
+      "localPath": "assets/art/world/city/commercial-building-f.glb",
+      "sha256": "633a25f7fb3ccf98e304a885a36ed900aecee5bde7ecd554729dec753cceea78"
+    },
+    {
+      "id": "kenney-commercial-building-g",
+      "source": "https://github.com/bevyengine/bevy_asset_files/raw/main/kenney/city-kit-commercial/building-g.glb",
+      "origin": "https://kenney.nl/assets/city-kit-commercial",
+      "license": "CC0 1.0 Universal",
+      "author": "Kenney",
+      "usage": "Neighbourhood clinic landmark for the playable opening city block.",
+      "modified": false,
+      "commercialAllowed": true,
+      "localPath": "assets/art/world/city/commercial-building-g.glb",
+      "sha256": "9a28fa2fdfac07492ee95589882213cfd6eb32d6752cb3b2f5404604c676d27a"
+    },
+    {
+      "id": "kenney-commercial-building-h",
+      "source": "https://github.com/bevyengine/bevy_asset_files/raw/main/kenney/city-kit-commercial/building-h.glb",
+      "origin": "https://kenney.nl/assets/city-kit-commercial",
+      "license": "CC0 1.0 Universal",
+      "author": "Kenney",
+      "usage": "Neighbourhood service landmark for the playable opening city block.",
+      "modified": false,
+      "commercialAllowed": true,
+      "localPath": "assets/art/world/city/commercial-building-h.glb",
+      "sha256": "6881613ce218bb33a0f56137d4d33b00d307c47e518fbb21ccba1083efbea896"
+    },
+    {
       "id": "kenney-road-street-light",
       "source": "https://github.com/bevyengine/bevy_asset_files/raw/main/kenney/city-kit-roads/light-square.glb",
       "origin": "https://kenney.nl/assets/city-kit-roads",

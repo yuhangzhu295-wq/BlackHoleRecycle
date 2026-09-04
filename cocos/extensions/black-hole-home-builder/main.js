@@ -26,12 +26,35 @@ async function installArenaFromExplicitEnvironment() {
   console.info(`[black-hole-home-builder] Explicit arena scene save completed: ${JSON.stringify(arena)}`);
 }
 
+async function installObjectArtFromExplicitEnvironment() {
+  if (process.env.BHR_OBJECT_ART_AUTOBUILD !== '1') return;
+  const run = (method) => Editor.Message.request('scene', 'execute-scene-script', {
+    name: 'black-hole-home-builder', method, args: [],
+  });
+  let ready = null;
+  for (let attempt = 0; attempt < 45; attempt += 1) {
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    ready = await run('isArenaSceneReady');
+    if (ready?.ready) break;
+  }
+  if (!ready?.ready) throw new Error(`[black-hole-home-builder] Object-art scene was not ready: ${JSON.stringify(ready)}`);
+  const install = await run('installObjectArtRegistry');
+  const verification = await run('verifyObjectArtRegistry');
+  if (!install?.saved || !verification?.ok) {
+    throw new Error(`[black-hole-home-builder] Object-art install failed: ${JSON.stringify({ install, verification })}`);
+  }
+  console.info(`[black-hole-home-builder] Explicit object-art install completed: ${JSON.stringify(verification)}`);
+}
+
 module.exports = {
   // Scene-changing operations remain explicit extension menu actions.
   // Opening Creator must never mutate Game.scene.
   load() {
     installArenaFromExplicitEnvironment().catch((error) => {
       console.error('[black-hole-home-builder] Explicit arena scene save failed:', error);
+    });
+    installObjectArtFromExplicitEnvironment().catch((error) => {
+      console.error('[black-hole-home-builder] Explicit object-art install failed:', error);
     });
   },
   methods: {

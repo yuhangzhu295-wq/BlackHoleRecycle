@@ -38,10 +38,20 @@ export class CompressibleObject extends Component {
    * its position and this method intentionally becomes a no-op.
    */
   public setRoutePosition(x: number, z: number, yawDegrees: number): void {
-    if (this.fsm.getState() !== 'IDLE') return;
+    this.relocateIdle(x, z, yawDegrees);
+  }
+
+  /**
+   * Reposition an existing, still-idle world object without changing its
+   * template, tier, mass or suction state. Dynamic traffic and arena setup
+   * share this instead of manufacturing a cosmetic duplicate.
+   */
+  public relocateIdle(x: number, z: number, yawDegrees: number = 0): boolean {
+    if (this.fsm.getState() !== 'IDLE') return false;
     this.currentPos.set(x, this.currentPos.y, z);
     this.node.setPosition(this.currentPos);
     this.visualNode?.setRotationFromEuler(0, yawDegrees, 0);
+    return true;
   }
 
   /** Keep render-space pooled objects aligned when the infinite world rebases. */

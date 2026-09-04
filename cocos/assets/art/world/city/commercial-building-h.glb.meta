@@ -1,0 +1,123 @@
+{
+  "ver": "2.3.13",
+  "importer": "gltf",
+  "imported": true,
+  "uuid": "dab10dbb-e8a5-4fc0-ae7f-74adb3863dd9",
+  "files": [],
+  "subMetas": {
+    "dd72a": {
+      "importer": "gltf-mesh",
+      "uuid": "dab10dbb-e8a5-4fc0-ae7f-74adb3863dd9@dd72a",
+      "displayName": "",
+      "id": "dd72a",
+      "name": "building-h.mesh",
+      "userData": {
+        "gltfIndex": 0,
+        "triangleCount": 1512
+      },
+      "ver": "1.1.1",
+      "imported": true,
+      "files": [
+        ".bin",
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "96c50": {
+      "importer": "texture",
+      "uuid": "dab10dbb-e8a5-4fc0-ae7f-74adb3863dd9@96c50",
+      "displayName": "",
+      "id": "96c50",
+      "name": "colormap.texture",
+      "userData": {
+        "wrapModeS": "repeat",
+        "wrapModeT": "repeat",
+        "minfilter": "linear",
+        "magfilter": "linear",
+        "mipfilter": "linear",
+        "anisotropy": 0,
+        "isUuid": false,
+        "imageUuidOrDatabaseUri": "db://assets/art/world/city/Textures/colormap.png"
+      },
+      "ver": "1.0.22",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "9991c": {
+      "importer": "gltf-material",
+      "uuid": "dab10dbb-e8a5-4fc0-ae7f-74adb3863dd9@9991c",
+      "displayName": "",
+      "id": "9991c",
+      "name": "colormap.material",
+      "userData": {
+        "gltfIndex": 0
+      },
+      "ver": "1.0.14",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "2b0fb": {
+      "importer": "gltf-scene",
+      "uuid": "dab10dbb-e8a5-4fc0-ae7f-74adb3863dd9@2b0fb",
+      "displayName": "",
+      "id": "2b0fb",
+      "name": "commercial-building-h.prefab",
+      "userData": {
+        "gltfIndex": 0
+      },
+      "ver": "1.0.14",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    }
+  },
+  "userData": {
+    "imageMetas": [
+      {
+        "name": "colormap",
+        "uri": "db://assets/art/world/city/Textures/colormap.png"
+      }
+    ],
+    "lods": {
+      "enable": false,
+      "hasBuiltinLOD": false,
+      "options": [
+        {
+          "screenRatio": 0.25,
+          "faceCount": 1
+        },
+        {
+          "screenRatio": 0.125,
+          "faceCount": 0.25
+        },
+        {
+          "screenRatio": 0.01,
+          "faceCount": 0.1
+        }
+      ]
+    },
+    "assetFinder": {
+      "meshes": [
+        "dab10dbb-e8a5-4fc0-ae7f-74adb3863dd9@dd72a"
+      ],
+      "skeletons": [],
+      "textures": [
+        "dab10dbb-e8a5-4fc0-ae7f-74adb3863dd9@96c50"
+      ],
+      "materials": [
+        "dab10dbb-e8a5-4fc0-ae7f-74adb3863dd9@9991c"
+      ],
+      "scenes": [
+        "dab10dbb-e8a5-4fc0-ae7f-74adb3863dd9@2b0fb"
+      ]
+    }
+  }
+}

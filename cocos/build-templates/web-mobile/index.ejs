@@ -18,7 +18,10 @@
   <meta name="x5-page-mode" content="app">
   <link rel="stylesheet" type="text/css" href="<%= cssUrl %>"/>
   <style>
-    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #111827; }
+    /* SHOW_ALL preserves the verified 9:16 Cocos viewport on tall phones.
+       Match the opening park ground outside that viewport instead of showing
+       a black browser letterbox above and below the playable world. */
+    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #b2dc9d; }
     /* The physical phone may be taller than 9:16. Keep WebGL and UI together
        inside one portrait GameDiv instead of filling that surplus with 3D world. */
     body { display: flex; align-items: center; justify-content: center; }
