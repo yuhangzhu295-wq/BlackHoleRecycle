@@ -7,10 +7,13 @@
 import { _decorator, Component, director, Node } from 'cc';
 import { EndlessHUDController } from './EndlessHUDController';
 import { SettlementPageController } from './SettlementPageController';
+import { ArenaHUDController } from './ArenaHUDController';
+import { RevivePageController } from './RevivePageController';
+import { ArenaMatchSnapshot } from '../gameplay/ArenaMatchManager';
 
 const { ccclass } = _decorator;
 
-export type FormalScreenName = 'Gameplay' | 'Pause' | 'Settlement';
+export type FormalScreenName = 'Gameplay' | 'Arena' | 'Revive' | 'Pause' | 'Settlement';
 
 @ccclass('HUDView')
 export class HUDView extends Component {
@@ -22,22 +25,26 @@ export class HUDView extends Component {
 
   public showScreen(name: FormalScreenName): void {
     const endless = this.findPage('EndlessHUD');
+    const arena = this.findPage('ArenaHUD');
+    const revive = this.findPage('RevivePage');
     const pause = this.findPage('PausePage');
     const settlement = this.findPage('SettlementPage');
 
-    if (!endless || !pause || !settlement) {
+    if (!endless || !arena || !revive || !pause || !settlement) {
       console.error('[HUDView] Missing editor-saved formal runtime pages. Legacy HUD fallback is disabled.');
       return;
     }
 
     endless.active = name === 'Gameplay';
+    arena.active = name === 'Arena';
+    revive.active = name === 'Revive';
     pause.active = name === 'Pause';
     settlement.active = name === 'Settlement';
     this.currentScreenName = name;
   }
 
   public hideAllScreens(): void {
-    for (const name of ['EndlessHUD', 'PausePage', 'SettlementPage']) {
+    for (const name of ['EndlessHUD', 'ArenaHUD', 'RevivePage', 'PausePage', 'SettlementPage']) {
       const page = this.findPage(name);
       if (page) page.active = false;
     }
@@ -52,6 +59,21 @@ export class HUDView extends Component {
   public updateSettlement(absorbed: number, coins: number, level: number, regions: number, mass: number = 0): void {
     const controller = this.findPage('SettlementPage')?.getComponent(SettlementPageController);
     controller?.updateStats(absorbed, coins, level, regions, mass);
+  }
+
+  public updateArena(snapshot: ArenaMatchSnapshot): void {
+    const controller = this.findPage('ArenaHUD')?.getComponent(ArenaHUDController);
+    controller?.updateMatch(snapshot);
+  }
+
+  public updateRevive(snapshot: ArenaMatchSnapshot): void {
+    const controller = this.findPage('RevivePage')?.getComponent(RevivePageController);
+    controller?.updateState(snapshot);
+  }
+
+  public updateArenaSettlement(snapshot: ArenaMatchSnapshot): void {
+    const controller = this.findPage('SettlementPage')?.getComponent(SettlementPageController);
+    controller?.updateArenaStats(snapshot);
   }
 
   private findPage(name: string): Node | null {

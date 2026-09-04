@@ -529,6 +529,19 @@ exports.load = function load() {};
 exports.unload = function unload() {};
 
 exports.methods = {
+  /** Read-only readiness probe used by the explicit Creator-side installer. */
+  async isArenaSceneReady() {
+    const { director } = require('cc');
+    const scene = director.getScene();
+    const canvas = scene?.getChildByName('Canvas') || null;
+    const gameRoot = scene?.getChildByName('GameRoot') || null;
+    return {
+      ready: !!canvas && !!gameRoot,
+      scene: scene?.name || null,
+      canvas: !!canvas,
+      gameRoot: !!gameRoot,
+    };
+  },
   async buildMachineVisuals() {
     const { Node } = require('cc');
     const gameRoot = getGameRootFromEditorScene();
@@ -766,11 +779,11 @@ exports.methods = {
     const missingButtons = buttonNames.filter((name) => !root.getChildByName(name)?.getComponent(Button));
     const arena = root.getChildByName('BtnArena')?.getComponent(Button);
     return {
-      ok: missingSpriteFrames.length === 0 && missingButtons.length === 0 && arena?.interactable === false,
+      ok: missingSpriteFrames.length === 0 && missingButtons.length === 0 && arena?.interactable === true,
       rootUuid: root.uuid,
       spriteCount: requiredSprites.length - missingSpriteFrames.length,
       buttonCount: buttonNames.length - missingButtons.length,
-      arenaDisabled: arena?.interactable === false,
+      arenaEnabled: arena?.interactable === true,
       missingSpriteFrames,
       missingButtons,
     };
@@ -799,12 +812,12 @@ exports.methods = {
     const header = await createSprite('Header', root, 500, 116, 'db://assets/textures/home/mode_header.png');
     place(header, 0, 530, 500, 116);
 
-    // Four shelves preserve the V2 mode-page hierarchy. Only Endless has a
-    // Button because it is the sole implemented gameplay route; the other
-    // three are plain display nodes, explicitly labelled as unavailable.
+    // Four shelves preserve the V2 mode-page hierarchy. Arena and Endless are
+    // real gameplay routes; the two remaining cards stay display-only until
+    // their own business systems exist.
     const arenaShelf = await createSprite('ShelfArena', root, 600, 42, 'db://assets/textures/home/mode_card_shelf.png');
     place(arenaShelf, 0, 164, 600, 42);
-    const arena = await createImageButton('BtnArena', root, 610, 202, 'db://assets/textures/home/mode_arena_card.png', false);
+    const arena = await createImageButton('BtnArena', root, 610, 202, 'db://assets/textures/home/mode_arena_card.png', true);
     place(arena, 0, 274, 610, 202);
 
     const endlessShelf = await createSprite('ShelfEndless', root, 600, 42, 'db://assets/textures/home/mode_card_shelf.png');
@@ -884,6 +897,43 @@ exports.methods = {
     await Editor.Message.request('scene', 'save-scene');
     return { prefab: 'db://assets/prefabs/ui/HomePage.prefab', rootUuid: root.uuid };
   },
+  /**
+   * Attach arena authority through Cocos Creator itself. The component is
+   * intentionally never added by game runtime code, so a missing scene save
+   * cannot masquerade as a working arena.
+   */
+  async installArenaMatch() {
+    const { director, Node } = require('cc');
+    const scene = director.getScene();
+    const gameRoot = scene?.getChildByName('GameRoot');
+    if (!gameRoot) throw new Error('Game.scene does not contain GameRoot');
+    const gameManager = gameRoot.getComponent(getComponentClass('GameManager'));
+    if (!gameManager) throw new Error('GameRoot is missing GameManager');
+    let root = gameRoot.getChildByName('ArenaMatchRoot');
+    if (!root) {
+      root = new Node('ArenaMatchRoot');
+      gameRoot.addChild(root);
+    }
+    let arena = root.getComponent(getComponentClass('ArenaMatchManager'));
+    if (!arena) arena = root.addComponent(getComponentClass('ArenaMatchManager'));
+    root.active = false;
+    gameManager.arenaMatchManager = arena;
+    await Editor.Message.request('scene', 'save-scene');
+    return { saved: true, path: 'GameRoot/ArenaMatchRoot', rootUuid: root.uuid, component: 'ArenaMatchManager' };
+  },
+  async verifyArenaMatch() {
+    const { director } = require('cc');
+    const gameRoot = director.getScene()?.getChildByName('GameRoot');
+    const root = gameRoot?.getChildByName('ArenaMatchRoot') || null;
+    const arena = root?.getComponent(getComponentClass('ArenaMatchManager')) || null;
+    const gameManager = gameRoot?.getComponent(getComponentClass('GameManager')) || null;
+    return {
+      ok: !!root && !!arena && gameManager?.arenaMatchManager === arena,
+      rootExists: !!root,
+      componentExists: !!arena,
+      gameManagerBound: gameManager?.arenaMatchManager === arena,
+    };
+  },
   async buildRuntimePages() {
     const { director, Color, UITransform, Sprite } = require('cc');
     const scene = director.getScene();
@@ -892,7 +942,7 @@ exports.methods = {
     const RuntimePageInputRouter = getComponentClass('RuntimePageInputRouter');
     if (!canvas.getComponent(RuntimePageInputRouter)) canvas.addComponent(RuntimePageInputRouter);
 
-    for (const name of ['EndlessHUD', 'PausePage', 'SettlementPage']) {
+    for (const name of ['EndlessHUD', 'ArenaHUD', 'RevivePage', 'PausePage', 'SettlementPage']) {
       const oldPage = canvas.getChildByName(name);
       if (oldPage) oldPage.destroy();
     }
@@ -929,6 +979,58 @@ exports.methods = {
     endless.addComponent(getComponentClass('EndlessHUDController'));
     endless.active = false;
 
+    // Arena gameplay HUD. Its five leaderboard rows, timer, mass, rank and
+    // kills are all replaced by ArenaHUDController from ArenaMatchManager's
+    // real match snapshot; no design-time scores are presented as live data.
+    const arena = createNode('ArenaHUD', canvas, 720, 1280);
+    const arenaPage = arena.addComponent(getComponentClass('UIPage'));
+    arenaPage.pageId = 2;
+    const arenaBoard = createRoundedPanel('LeaderboardPanel', arena, 282, 332, new Color(12, 27, 56, 226), 28);
+    place(arenaBoard, -194, 330, 282, 332);
+    caption(arena, 'ArenaTitle', '黑洞乱斗', 31, -194, 464, 246, 48, new Color(255, 239, 164, 255));
+    for (let index = 0; index < 5; index++) {
+      const row = createRoundedPanel(`TopRow${index + 1}`, arena, 246, 42, new Color(49, 74, 124, 220), 12);
+      place(row, -194, 400 - index * 54, 246, 42);
+      caption(arena, `Top${index + 1}`, `${index + 1}. 等待匹配`, 18, -194, 400 - index * 54, 232, 38, new Color(244, 249, 255, 255));
+    }
+    const timerPanel = createRoundedPanel('TimerPanel', arena, 176, 72, new Color(255, 248, 232, 244), 22);
+    place(timerPanel, 0, 486, 176, 72);
+    caption(arena, 'TimerValue', '03:00', 31, 0, 486, 160, 52, new Color(68, 56, 101, 255));
+    const statusPanel = createRoundedPanel('StatusPanel', arena, 268, 104, new Color(15, 42, 79, 232), 22);
+    place(statusPanel, 190, 400, 268, 104);
+    caption(arena, 'RankValue', '第 - / 8', 22, 190, 424, 246, 34, new Color(255, 239, 164, 255));
+    caption(arena, 'MassValue', '0 kg', 21, 190, 392, 246, 32, new Color(235, 248, 255, 255));
+    caption(arena, 'KillCaption', '淘汰', 16, 144, 360, 70, 28, new Color(185, 218, 255, 255));
+    caption(arena, 'KillValue', '0', 23, 222, 360, 56, 30, new Color(255, 205, 77, 255));
+    caption(arena, 'StatusValue', '等待开局', 17, 0, -518, 420, 34, new Color(245, 249, 255, 255));
+    createGraphicButton('BtnPause', arena, 'Ⅱ', 294, 500, 58, 58, new Color(42, 75, 111, 245), new Color(255, 255, 255, 255), 31);
+    addJoystickOverlay(arena);
+    arena.addComponent(getComponentClass('ArenaHUDController'));
+    arena.active = false;
+
+    // Revive is an actual post-defeat branch. Countdown, rank and loss text
+    // are updated from the live match; the buttons either respawn the player
+    // or end the real local match.
+    const revive = createNode('RevivePage', canvas, 720, 1280);
+    const revivePage = revive.addComponent(getComponentClass('UIPage'));
+    revivePage.pageId = 4;
+    const reviveDim = createRoundedPanel('DimOverlay', revive, 720, 1280, new Color(5, 13, 31, 208), 0);
+    place(reviveDim, 0, 0, 720, 1280);
+    const reviveCard = createRoundedPanel('ReviveCard', revive, 620, 680, new Color(250, 248, 255, 255), 42);
+    place(reviveCard, 0, 16, 620, 680);
+    const reviveRibbon = createRoundedPanel('ReviveRibbon', revive, 420, 92, new Color(105, 70, 190, 255), 24);
+    place(reviveRibbon, 0, 268, 420, 92);
+    caption(revive, 'Title', '黑洞被吞噬', 46, 0, 268, 400, 68, new Color(255, 255, 255, 255));
+    caption(revive, 'LossValue', '掉落了部分质量', 22, 0, 174, 500, 44, new Color(74, 56, 99, 255));
+    const countdownPanel = createRoundedPanel('CountdownPanel', revive, 218, 96, new Color(238, 231, 255, 255), 24);
+    place(countdownPanel, 0, 96, 218, 96);
+    caption(revive, 'CountdownValue', '2.5s', 38, 0, 96, 198, 70, new Color(105, 70, 190, 255));
+    caption(revive, 'RankValue', '当前第 - / 8', 22, 0, 16, 420, 40, new Color(74, 56, 99, 255));
+    createGraphicButton('BtnRevive', revive, '立即复活', 0, -114, 392, 98, new Color(255, 187, 31, 255), new Color(71, 48, 8, 255), 32);
+    createGraphicButton('BtnGiveUp', revive, '结束本局', 0, -238, 340, 78, new Color(105, 70, 190, 255), new Color(255, 255, 255, 255), 26);
+    revive.addComponent(getComponentClass('RevivePageController'));
+    revive.active = false;
+
     // Pause page. Gameplay is frozen by GameManager before this page is shown.
     const pause = createNode('PausePage', canvas, 720, 1280);
     const pausePage = pause.addComponent(getComponentClass('UIPage'));
@@ -947,7 +1049,9 @@ exports.methods = {
     pause.addComponent(getComponentClass('PausePageController'));
     pause.active = false;
 
-    // Endless settlement. Every displayed result is overwritten with session data.
+    // The base card is used for endless results. Arena gets a separately
+    // composed, editor-saved top-five panel which is populated exclusively
+    // from ArenaMatchManager's live leaderboard by SettlementPageController.
     const settlement = createNode('SettlementPage', canvas, 720, 1280);
     const settlementPage = settlement.addComponent(getComponentClass('UIPage'));
     settlementPage.pageId = 5;
@@ -974,6 +1078,36 @@ exports.methods = {
     caption(settlement, 'LevelValue', 'LV.1', 32, 164, -17, 180, 48, new Color(68, 129, 209, 255));
     caption(settlement, 'RegionCaption', '探索区域', 26, -166, -97, 220, 44, rowColor);
     caption(settlement, 'RegionValue', '1', 32, 164, -97, 180, 48, new Color(62, 154, 95, 255));
+    const arenaLeaderboard = createRoundedPanel('ArenaLeaderboardPanel', settlement, 570, 492, new Color(242, 237, 255, 255), 26);
+    place(arenaLeaderboard, 0, 38, 570, 492);
+    caption(settlement, 'ArenaResult', '第 - / 8 名 · 0 kg', 24, 0, 264, 510, 40, new Color(77, 54, 109, 255));
+    const arenaRankColors = [
+      new Color(255, 207, 66, 255),
+      new Color(183, 210, 240, 255),
+      new Color(224, 157, 89, 255),
+      new Color(126, 104, 206, 255),
+      new Color(95, 152, 212, 255),
+    ];
+    for (let index = 0; index < 5; index += 1) {
+      const rank = index + 1;
+      const y = 185 - index * 82;
+      const row = createRoundedPanel(`ArenaRankRow_${rank}`, settlement, 522, 66, new Color(255, 255, 255, 230), 18);
+      place(row, 0, y, 522, 66);
+      const badge = createRoundedPanel(`ArenaRankBadgePanel_${rank}`, settlement, 50, 50, arenaRankColors[index], 16);
+      place(badge, -212, y, 50, 50);
+      caption(settlement, `ArenaRankBadge_${rank}`, `${rank}`, 24, -212, y, 46, 42, new Color(60, 43, 25, 255));
+      caption(settlement, `ArenaRankName_${rank}`, `选手 ${rank}`, 23, -110, y, 152, 42, new Color(56, 42, 82, 255));
+      caption(settlement, `ArenaRankScore_${rank}`, '0 kg · 0 淘汰', 18, 118, y, 210, 38, new Color(101, 82, 125, 255));
+    }
+    arenaLeaderboard.active = false;
+    settlement.getChildByName('ArenaResult').active = false;
+    for (let rank = 1; rank <= 5; rank += 1) {
+      settlement.getChildByName(`ArenaRankRow_${rank}`).active = false;
+      settlement.getChildByName(`ArenaRankBadgePanel_${rank}`).active = false;
+      settlement.getChildByName(`ArenaRankBadge_${rank}`).active = false;
+      settlement.getChildByName(`ArenaRankName_${rank}`).active = false;
+      settlement.getChildByName(`ArenaRankScore_${rank}`).active = false;
+    }
     createGraphicButton('BtnRestart', settlement, '再来一局', -142, -296, 270, 94, new Color(255, 187, 31, 255), new Color(71, 48, 8, 255), 28);
     createGraphicButton('BtnHome', settlement, '返回首页', 142, -296, 270, 94, new Color(105, 70, 190, 255), new Color(255, 255, 255, 255), 28);
     settlement.addComponent(getComponentClass('SettlementPageController'));
@@ -981,7 +1115,7 @@ exports.methods = {
 
     await Editor.Message.request('scene', 'save-scene');
     return {
-      savedPages: ['EndlessHUD', 'PausePage', 'SettlementPage'],
+      savedPages: ['EndlessHUD', 'ArenaHUD', 'RevivePage', 'PausePage', 'SettlementPage'],
       prefabCreation: 'not-run-from-scene-script',
     };
   },
@@ -990,8 +1124,10 @@ exports.methods = {
     const canvas = director.getScene()?.getChildByName('Canvas');
     const requirements = [
       { name: 'EndlessHUD', component: 'EndlessHUDController', buttons: ['BtnPause'], nodes: ['Joystick', 'JoystickBase', 'JoystickKnob'] },
+      { name: 'ArenaHUD', component: 'ArenaHUDController', buttons: ['BtnPause'], nodes: ['Top1', 'Top2', 'Top3', 'Top4', 'Top5', 'TimerValue', 'Joystick'] },
+      { name: 'RevivePage', component: 'RevivePageController', buttons: ['BtnRevive', 'BtnGiveUp'], nodes: ['CountdownValue', 'RankValue'] },
       { name: 'PausePage', component: 'PausePageController', buttons: ['BtnResume', 'BtnSettle', 'BtnHome'] },
-      { name: 'SettlementPage', component: 'SettlementPageController', buttons: ['BtnRestart', 'BtnHome'] },
+      { name: 'SettlementPage', component: 'SettlementPageController', buttons: ['BtnRestart', 'BtnHome'], nodes: ['ArenaLeaderboardPanel', 'ArenaRankRow_1', 'ArenaRankRow_5'] },
     ];
     const report = requirements.map((requirement) => {
       const root = canvas?.getChildByName(requirement.name);

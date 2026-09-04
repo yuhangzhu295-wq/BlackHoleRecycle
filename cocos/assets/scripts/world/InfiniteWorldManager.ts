@@ -239,12 +239,12 @@ class InfiniteWorldCell {
       // The 9:16 camera's visible street corridor is narrower than a whole
       // 64m cell. Keep homes beside the opening road rather than at the far
       // corners so the first playable frame reads as a neighbourhood.
-      this.spawn('buildingB', -5.6, -6.6, V3(2.35, 2.35, 2.35), 90, 'ResidentialHouseWest');
-      this.spawn('buildingC', 5.6, -6.6, V3(2.35, 2.35, 2.35), -90, 'ResidentialHouseEast');
+      this.spawn('buildingB', -6.5, -7.4, V3(1.8, 1.8, 1.8), 90, 'ResidentialHouseWest');
+      this.spawn('buildingC', 6.5, -7.4, V3(1.8, 1.8, 1.8), -90, 'ResidentialHouseEast');
     };
     const trees = (): void => {
-      this.spawn('treeLarge', -5.0, -1.8, V3(3.5, 3.5, 3.5), 0, 'DistrictTreeLarge');
-      this.spawn('treeSmall', 5.1, -2.4, V3(3.7, 3.7, 3.7), 0, 'DistrictTreeSmall');
+      this.spawn('treeLarge', -6.8, -2.5, V3(2.15, 2.15, 2.15), 0, 'DistrictTreeLarge');
+      this.spawn('treeSmall', 6.8, -3.2, V3(2.25, 2.25, 2.25), 0, 'DistrictTreeSmall');
     };
     switch (kind) {
       case 'RESIDENTIAL':
@@ -255,8 +255,8 @@ class InfiniteWorldCell {
         break;
       case 'PARK':
         lights();
-        for (const [x, z] of [[-8, -8], [8, -8], [-8, 8], [8, 8]]) this.spawn('treeLarge', x, z, V3(3.5, 3.5, 3.5), 0, 'ParkTree');
-        this.spawn('treeSmall', 0, -13, V3(3.8, 3.8, 3.8), 0, 'ParkTreeCenter');
+        for (const [x, z] of [[-9, -8], [9, -8], [-9, 8], [9, 8]]) this.spawn('treeLarge', x, z, V3(2.2, 2.2, 2.2), 0, 'ParkTree');
+        this.spawn('treeSmall', 0, -13, V3(2.35, 2.35, 2.35), 0, 'ParkTreeCenter');
         this.spawn('pathStones', -8, 0, V3(3.5, 1, 7.5), 90, 'ParkWalkwayWest');
         this.spawn('pathStones', 8, 0, V3(3.5, 1, 7.5), 90, 'ParkWalkwayEast');
         this.spawn('fence', 0, 15, V3(4.5, 1.5, 4.5), 0, 'ParkFence');
@@ -348,6 +348,22 @@ export class InfiniteWorldManager extends Component {
     this.updateCells(Vec3.ZERO);
   }
 
+  /**
+   * Begin an independent playable session without carrying absorbed objects,
+   * arena mass fragments, traffic positions or origin rebases into the next
+   * mode. This is deliberately a world lifecycle operation, not a test-only
+   * respawn: both Endless and Arena call it from their visible Start action.
+   */
+  public resetSession(renderPlayerPosition: Readonly<Vec3> = Vec3.ZERO): void {
+    if (!this.initialized || !this.objectPool) return;
+    for (const cell of this.activeCells.values()) cell.recycle(this.objectPool);
+    this.activeCells.clear();
+    this.logicalOrigin.set(0, 0, 0);
+    this.currentCell.set(0, 0, 0);
+    this.rebaseCount = 0;
+    this.updateCells(renderPlayerPosition);
+  }
+
   /** Streams the 3×3 active grid for both X and Z; returns a rebase when needed. */
   public updateCells(renderPlayerPosition: Readonly<Vec3>): WorldRebase | null {
     if (!this.initialized || !this.objectPool || !this.artLibrary) return null;
@@ -387,8 +403,8 @@ export class InfiniteWorldManager extends Component {
     isMagnetStorm: boolean,
     onAbsorb: (object: CompressibleObject) => void,
   ): void {
+    this.updateDynamicTraffic(dt);
     for (const cell of this.activeCells.values()) {
-      cell.updateDynamicTraffic(dt);
       for (const object of cell.objects) {
         const state = object.getState();
         if (state !== 'ABSORBED' && state !== 'RECYCLED'
@@ -397,6 +413,47 @@ export class InfiniteWorldManager extends Component {
         }
       }
     }
+  }
+
+  /** Arena owns resource selection, while streamed traffic remains shared. */
+  public updateDynamicTraffic(dt: number): void {
+    for (const cell of this.activeCells.values()) cell.updateDynamicTraffic(dt);
+  }
+
+  /**
+   * Drop real, absorbable recyclable bundles after an arena defeat. They are
+   * allocated from the same Creator-backed object pool and use the same
+   * CompressibleObject FSM as every ordinary world pickup.
+   */
+  public spawnArenaMassFragments(position: Readonly<Vec3>, totalMass: number, sourceId: string): number {
+    if (!this.objectPool) return 0;
+    const cell = this.activeCells.get(cellKey({ x: this.currentCell.x, z: this.currentCell.z }));
+    if (!cell) return 0;
+    const count = Math.max(2, Math.min(6, Math.round(totalMass / 250)));
+    const fragmentMass = Math.max(25, Math.round(totalMass / count));
+    const base = OBJECT_TEMPLATES[0];
+    const fragmentTemplate: IObjectTemplate = {
+      ...base,
+      type: 'arena_mass_fragment',
+      name: 'Compressed Mass Fragment',
+      tier: ObjectTier.T1,
+      mass: fragmentMass,
+      value: Math.max(1, Math.round(fragmentMass / 10)),
+      radius: 0.34,
+    };
+    for (let index = 0; index < count; index++) {
+      const angle = (Math.PI * 2 * index) / count;
+      const object = this.objectPool.get();
+      object.spawn(
+        fragmentTemplate,
+        position.x + Math.cos(angle) * (1.1 + (index % 2) * 0.35),
+        position.z + Math.sin(angle) * (1.1 + (index % 2) * 0.35),
+        0.35,
+        `arena_fragment_${sourceId}_${this.rebaseCount}_${index}`,
+      );
+      cell.objects.push(object);
+    }
+    return count;
   }
 
   public getAllObjects(): CompressibleObject[] {

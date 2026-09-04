@@ -44,6 +44,9 @@ const OBJECT_ART_BINDINGS: Readonly<Record<string, ObjectArtBinding>> = {
   delivery_van: { kind: 'deliveryVan', scale: unitScale(), yOffset: 0, yaw: 0 },
   garbage_truck: { kind: 'garbageTruck', scale: unitScale(), yOffset: 0, yaw: 0 },
   container: { kind: 'shippingContainer', scale: unitScale(), yOffset: 0, yaw: 0 },
+  // Defeated arena competitors drop real compressed recyclable bundles,
+  // never invisible score tokens or primitive placeholders.
+  arena_mass_fragment: { kind: 'recyclingBox', scale: unitScale(), yOffset: 0, yaw: 0 },
 };
 
 export function getObjectArtBinding(type: string): ObjectArtBinding {

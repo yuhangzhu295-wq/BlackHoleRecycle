@@ -9,6 +9,9 @@ import { MachineVisualLibrary } from './MachineVisualLibrary';
 
 const { ccclass, property } = _decorator;
 
+/** The mesh selection changes only what a competitor displays, never its mass, radius or controls. */
+export type MachinePresentation = 'HYBRID' | 'SINGULARITY' | 'MACHINE';
+
 @ccclass('BlackHoleMachine')
 export class BlackHoleMachine extends Component {
   @property(Node)
@@ -43,6 +46,7 @@ export class BlackHoleMachine extends Component {
   private visualElapsed: number = 0;
   private readonly movementDirection: Vec3 = new Vec3();
   private movementMagnitude: number = 0;
+  private presentation: MachinePresentation = 'HYBRID';
 
   onLoad(): void {
     this.buildVisibleGeometry();
@@ -78,6 +82,10 @@ export class BlackHoleMachine extends Component {
     // 2. 黑洞核心：低矮、宽阔的深渊圆盘，在竖屏俯视镜头下保持为清楚的圆形。
     this.coreNode = new Node('CoreNode');
     this.coreNode.setPosition(0, 0.16, 0);
+    // The singularity is the game's primary interactive affordance. Scale its
+    // visual layers together (not its physical suction radius) so it remains
+    // legible in a mobile isometric city without changing game balance.
+    this.coreNode.setScale(1.32, 1.0, 1.32);
     this.visualRoot.addChild(this.coreNode);
 
     // 黑洞中心深渊 (纯黑无反光)
@@ -222,10 +230,10 @@ export class BlackHoleMachine extends Component {
     // Exactly one full Creator-saved machine assembly is visible. Higher
     // levels therefore have genuinely different silhouettes and components.
     this.levelVisuals.forEach((visual, index) => {
-      visual.active = index === level - 1;
+      visual.active = this.presentation !== 'SINGULARITY' && index === level - 1;
     });
     const activeAssembly = this.levelVisuals[level - 1] || null;
-    if (activeAssembly) this.getVisualLibrary().applyActiveLevelMaterials(activeAssembly, level);
+    if (activeAssembly?.active) this.getVisualLibrary().applyActiveLevelMaterials(activeAssembly, level);
 
     // 玩法吸附半径可快速增长；视觉外环仅作受控的等级提示，避免高等级
     // 出现覆盖街区、看起来像碰撞范围的浅色大圆。
@@ -233,6 +241,7 @@ export class BlackHoleMachine extends Component {
       const ringScale = 1.0 + Math.min(0.38, Math.max(0, this.currentConfig.suctionRadius - 2.4) * 0.075);
       this.holeRim.setScale(new Vec3(ringScale, 1.0, ringScale));
     }
+    if (this.coreNode) this.coreNode.active = this.presentation !== 'MACHINE';
 
     // 缩放整体底盘
     const s = this.currentConfig.scale;
@@ -241,9 +250,23 @@ export class BlackHoleMachine extends Component {
     if (triggerEvent) {
       eventBus.emit('MACHINE_EVOLVED', {
         level: this.currentLevel,
-        config: this.currentConfig
+        config: this.currentConfig,
+        // A match can contain several real BlackHoleMachine instances. The
+        // profile listener must distinguish the local player from arena bots.
+        machine: this,
       });
     }
+  }
+
+  /**
+   * Arena presents the local player as the black hole and opponents as their
+   * actual Creator-saved crawler machines, matching the competitive visual
+   * language while retaining the same real gameplay component underneath.
+   */
+  public setPresentation(presentation: MachinePresentation): void {
+    if (this.presentation === presentation) return;
+    this.presentation = presentation;
+    this.applyEvolutionLevel(this.currentLevel, false);
   }
 
   public triggerMagnetStorm(duration: number = 6.0): void {

@@ -9,6 +9,7 @@ import { HUDView } from '../ui/HUDView';
 import { RuntimePageInputRouter } from '../ui/RuntimePageInputRouter';
 import { CompressionSystem } from './CompressionSystem';
 import { PlayerController } from './PlayerController';
+import { ArenaMatchManager, ArenaMatchSnapshot } from './ArenaMatchManager';
 import { eventBus } from '../core/EventBus';
 import { saveService } from '../data/SaveService';
 import { analyticsService } from '../analytics/AnalyticsService';
@@ -17,7 +18,7 @@ import { MACHINE_EVOLUTION_CONFIG } from '../data/GameConfig';
 
 const { ccclass, property } = _decorator;
 
-export type GameSessionState = 'HOME' | 'MODE_SELECT' | 'PLAYING' | 'PAUSED' | 'SETTLEMENT';
+export type GameSessionState = 'HOME' | 'MODE_SELECT' | 'PLAYING' | 'ARENA' | 'REVIVING' | 'PAUSED' | 'SETTLEMENT';
 
 @ccclass('GameManager')
 export class GameManager extends Component {
@@ -34,6 +35,10 @@ export class GameManager extends Component {
   @property(HUDView)
   public hud: HUDView | null = null;
 
+  /** Creator-saved arena authority; no runtime fallback is permitted. */
+  @property(ArenaMatchManager)
+  public arenaMatchManager: ArenaMatchManager | null = null;
+
   public playerController: PlayerController | null = null;
   public compressionSystem: CompressionSystem | null = null;
 
@@ -45,10 +50,16 @@ export class GameManager extends Component {
   public isPaused: boolean = false;
   public gameState: GameSessionState = 'HOME';
   public regionsVisitedCount: number = 1;
+  private pausedGameplayState: 'PLAYING' | 'ARENA' = 'PLAYING';
+  private lastSessionMode: 'ENDLESS' | 'ARENA' = 'ENDLESS';
 
   // Portrait isometric framing: the centre ray deliberately lands ahead of the
   // machine so the player remains in the lower interaction band.
-  private cameraOffset: Vec3 = new Vec3(0, 21.0, 20.5);
+  // Pull the portrait camera closer to the playable district. The previous
+  // framing made the real black-hole core and surrounding authored props read
+  // as tiny test objects instead of the dense, isometric city composition
+  // established by the V2 visual contract.
+  private cameraOffset: Vec3 = new Vec3(0, 16.6, 16.2);
   private cameraTarget: Vec3 = new Vec3();
   private readonly portraitWidth = 720;
   private readonly portraitHeight = 1280;
@@ -87,7 +98,7 @@ export class GameManager extends Component {
       // The generated project declarations do not re-export that enum, while
       // Camera.fovAxis remains the native engine property being configured.
       this.mainCamera.fovAxis = 0;
-      this.mainCamera.fov = 42;
+      this.mainCamera.fov = 38;
     }
 
   }
@@ -138,6 +149,16 @@ export class GameManager extends Component {
       }
     }
 
+    // ArenaMatchManager owns real bots, resource claims, combat and respawn.
+    // Requiring this Creator-saved component prevents a cosmetic UI page from
+    // silently appearing without an actual match behind it.
+    if (!this.arenaMatchManager) {
+      this.arenaMatchManager = scene?.getComponentInChildren(ArenaMatchManager) || null;
+      if (!this.arenaMatchManager) {
+        throw new Error('[GameManager] Missing editor-saved ArenaMatchManager. Run the arena installer before previewing.');
+      }
+    }
+
     // 6. 自动挂载或查找 HUDView
     if (!this.hud) {
       this.hud = scene?.getComponentInChildren(HUDView) || null;
@@ -177,7 +198,8 @@ export class GameManager extends Component {
   }
 
   private bindEvents(): void {
-    eventBus.on('MACHINE_EVOLVED', ({ level, config }) => {
+    eventBus.on('MACHINE_EVOLVED', ({ level, machine: evolvedMachine }: { level: number; machine?: BlackHoleMachine }) => {
+      if (evolvedMachine && evolvedMachine !== this.machine) return;
       platformAdapter.vibrate('heavy');
       saveService.setMachineLevel(level);
       this.updateHUD();
@@ -219,11 +241,30 @@ export class GameManager extends Component {
     eventBus.on('MODE_ENDLESS_REQUESTED', () => {
       this.startEndlessGame();
     });
+
+    eventBus.on('MODE_ARENA_REQUESTED', () => {
+      this.startArenaGame();
+    });
+
+    eventBus.on('ARENA_REVIVE_REQUESTED', () => {
+      this.arenaMatchManager?.reviveLocal();
+    });
+
+    eventBus.on('ARENA_GIVE_UP_REQUESTED', () => {
+      this.arenaMatchManager?.forfeitLocal();
+    });
+
+    eventBus.on('GAME_RESTART_CURRENT', () => {
+      if (this.lastSessionMode === 'ARENA') this.startArenaGame();
+      else this.startEndlessGame();
+    });
   }
 
   private sessionStartCoins: number = 0;
 
   public startEndlessGame(): void {
+    this.arenaMatchManager?.stopMatch();
+    this.lastSessionMode = 'ENDLESS';
     this.setV2HomeVisible(false);
     this.gameState = 'PLAYING';
     this.isPaused = false;
@@ -239,9 +280,15 @@ export class GameManager extends Component {
 
     // 将机器归位
     if (this.machine) {
+      this.machine.node.active = true;
       this.machine.node.setPosition(0, 0, 0);
       this.machine.resetMovement();
+      this.machine.setPresentation('HYBRID');
     }
+    // Arena bots and their dropped fragments share the genuine world object
+    // pool. A visible new Endless run must start with a fresh 3×3 resource
+    // grid rather than inheriting objects consumed by the prior match.
+    this.infiniteWorldManager?.resetSession(Vec3.ZERO);
 
     analyticsService.track('endless_start', {
       initialCoins: this.currentCoins
@@ -254,37 +301,90 @@ export class GameManager extends Component {
     this.updateHUD();
   }
 
-  public togglePause(): void {
-    if (this.gameState !== 'PLAYING' && this.gameState !== 'PAUSED') return;
+  /** Starts the actual offline arena roster: local player plus seven real bots. */
+  public startArenaGame(): void {
+    if (!this.machine || !this.infiniteWorldManager || !this.arenaMatchManager) {
+      console.error('[GameManager] Arena cannot start without the Creator-saved machine, world and match manager.');
+      return;
+    }
+    this.lastSessionMode = 'ARENA';
+    this.setV2HomeVisible(false);
+    this.gameState = 'ARENA';
+    this.isPaused = false;
+    this.totalAbsorbedCount = 0;
+    this.absorbedTierCounts = {};
+    this.score = 0;
+    this.sessionStartCoins = this.currentCoins;
+    this.machine.node.active = true;
+    this.machine.node.setPosition(0, 0, 0);
+    this.machine.resetMovement();
+    // Likewise, every arena's eight competitors begin against a freshly
+    // generated resource field instead of a partially consumed endless run.
+    this.infiniteWorldManager.resetSession(Vec3.ZERO);
+    this.playerController && (this.playerController.isPaused = false);
+    this.compressionSystem && (this.compressionSystem.isPaused = false);
+    this.machine.isPaused = false;
+    this.hud?.showScreen('Arena');
+    this.arenaMatchManager.startMatch(this.machine, this.infiniteWorldManager, {
+      onLocalObjectAbsorbed: (object) => this.onObjectAbsorbed(object),
+      onLocalDefeated: (snapshot) => this.openArenaRevive(snapshot),
+      onLocalRespawned: (snapshot) => this.resumeArenaAfterRespawn(snapshot),
+      onMatchFinished: (snapshot) => this.showArenaSettlement(snapshot),
+    });
+    this.hud?.updateArena(this.arenaMatchManager.getSnapshot());
+    analyticsService.track('arena_start', { roster: 8, bots: 7, mode: 'local-offline' });
+  }
 
-    this.isPaused = !this.isPaused;
-    this.gameState = this.isPaused ? 'PAUSED' : 'PLAYING';
+  public togglePause(): void {
+    if (this.gameState !== 'PLAYING' && this.gameState !== 'ARENA' && this.gameState !== 'PAUSED') return;
+
+    if (!this.isPaused) {
+      this.pausedGameplayState = this.gameState === 'ARENA' ? 'ARENA' : 'PLAYING';
+      this.isPaused = true;
+      this.gameState = 'PAUSED';
+    } else {
+      this.isPaused = false;
+      this.gameState = this.pausedGameplayState;
+    }
 
     if (this.playerController) this.playerController.isPaused = this.isPaused;
     if (this.compressionSystem) this.compressionSystem.isPaused = this.isPaused;
     if (this.machine) this.machine.isPaused = this.isPaused;
+    if (this.pausedGameplayState === 'ARENA') this.arenaMatchManager?.setMatchPaused(this.isPaused);
 
     if (this.hud) {
-      this.hud.showScreen(this.isPaused ? 'Pause' : 'Gameplay');
+      this.hud.showScreen(this.isPaused ? 'Pause' : this.pausedGameplayState === 'ARENA' ? 'Arena' : 'Gameplay');
     }
   }
 
   public returnToHome(): void {
+    this.arenaMatchManager?.stopMatch();
     this.isPaused = false;
     this.gameState = 'HOME';
     if (this.playerController) this.playerController.isPaused = false;
     if (this.compressionSystem) this.compressionSystem.isPaused = false;
     if (this.machine) this.machine.isPaused = false;
+    this.arenaMatchManager?.setMatchPaused(false);
+    if (this.machine) this.machine.node.active = true;
     this.hud?.hideAllScreens();
     this.setV2HomeVisible(true);
   }
 
   public triggerSettlement(): void {
+    if (this.lastSessionMode === 'ARENA' && (
+      this.gameState === 'ARENA'
+      || this.gameState === 'REVIVING'
+      || (this.gameState === 'PAUSED' && this.pausedGameplayState === 'ARENA')
+    )) {
+      this.arenaMatchManager?.forfeitLocal();
+      return;
+    }
     this.gameState = 'SETTLEMENT';
     this.isPaused = true;
     if (this.playerController) this.playerController.isPaused = true;
     if (this.compressionSystem) this.compressionSystem.isPaused = true;
     if (this.machine) this.machine.isPaused = true;
+    this.arenaMatchManager?.setMatchPaused(true);
 
     if (this.hud) {
       this.hud.updateSettlement(
@@ -296,6 +396,35 @@ export class GameManager extends Component {
       );
       this.hud.showScreen('Settlement');
     }
+  }
+
+  private openArenaRevive(snapshot: ArenaMatchSnapshot): void {
+    this.gameState = 'REVIVING';
+    if (this.playerController) this.playerController.isPaused = true;
+    if (this.compressionSystem) this.compressionSystem.isPaused = true;
+    this.hud?.updateRevive(snapshot);
+    this.hud?.showScreen('Revive');
+  }
+
+  private resumeArenaAfterRespawn(snapshot: ArenaMatchSnapshot): void {
+    this.gameState = 'ARENA';
+    if (this.playerController) this.playerController.isPaused = false;
+    if (this.compressionSystem) this.compressionSystem.isPaused = false;
+    if (this.machine) this.machine.isPaused = false;
+    this.arenaMatchManager?.setMatchPaused(false);
+    this.hud?.updateArena(snapshot);
+    this.hud?.showScreen('Arena');
+  }
+
+  private showArenaSettlement(snapshot: ArenaMatchSnapshot): void {
+    this.gameState = 'SETTLEMENT';
+    this.isPaused = true;
+    if (this.playerController) this.playerController.isPaused = true;
+    if (this.compressionSystem) this.compressionSystem.isPaused = true;
+    if (this.machine) this.machine.isPaused = true;
+    this.arenaMatchManager?.setMatchPaused(true);
+    this.hud?.updateArenaSettlement(snapshot);
+    this.hud?.showScreen('Settlement');
   }
 
   public onObjectAbsorbed(obj: CompressibleObject): void {
@@ -366,6 +495,8 @@ export class GameManager extends Component {
     const home = canvas?.getChildByName('HomePage') || null;
     const mode = canvas?.getChildByName('ModeSelectPage') || null;
     const endlessHud = canvas?.getChildByName('EndlessHUD') || null;
+    const arenaHud = canvas?.getChildByName('ArenaHUD') || null;
+    const revivePage = canvas?.getChildByName('RevivePage') || null;
     const pausePage = canvas?.getChildByName('PausePage') || null;
     const settlementPage = canvas?.getChildByName('SettlementPage') || null;
     const joystick = endlessHud?.getChildByName('Joystick') || null;
@@ -445,11 +576,23 @@ export class GameManager extends Component {
         joystickBase: describe(joystick?.getChildByName('JoystickBase') || null),
         joystickKnob: describe(joystick?.getChildByName('JoystickKnob') || null),
       },
+      arenaHUD: {
+        root: describe(arenaHud),
+        pauseButton: describe(arenaHud?.getChildByName('BtnPause') || null),
+        joystick: describe(arenaHud?.getChildByName('Joystick') || null),
+        timer: describe(arenaHud?.getChildByName('TimerValue') || null),
+      },
       formalPages: {
         pause: describe(pausePage),
         pauseResume: describe(pausePage?.getChildByName('BtnResume') || null),
         pauseSettle: describe(pausePage?.getChildByName('BtnSettle') || null),
+        pauseHome: describe(pausePage?.getChildByName('BtnHome') || null),
         settlement: describe(settlementPage),
+        settlementRestart: describe(settlementPage?.getChildByName('BtnRestart') || null),
+        settlementHome: describe(settlementPage?.getChildByName('BtnHome') || null),
+        revive: describe(revivePage),
+        reviveNow: describe(revivePage?.getChildByName('BtnRevive') || null),
+        reviveGiveUp: describe(revivePage?.getChildByName('BtnGiveUp') || null),
       },
       runtimePageInput: runtimePageInput?.lastInputDiagnostic || null,
       logo: describe(homeNode('Logo')),
@@ -564,6 +707,7 @@ export class GameManager extends Component {
             visibleObjectCount: this.infiniteWorldManager?.getVisibleObjectCount() || 0,
             streaming: this.infiniteWorldManager?.getSnapshot() || null,
           },
+          arena: this.arenaMatchManager?.getSnapshot() || null,
           sceneVisuals: this.getActiveVisualDiagnostics(),
           objects: sampledObjs,
           compression: {
@@ -633,8 +777,8 @@ export class GameManager extends Component {
 
     let mPos = this.machine.node.position.clone();
 
-    // 2. 驱动场景物理与物体状态机
-    if (this.gameState === 'PLAYING') {
+    // 2. Drive streaming plus the active gameplay authority.
+    if (this.gameState === 'PLAYING' || this.gameState === 'ARENA' || this.gameState === 'REVIVING') {
       if (this.infiniteWorldManager) {
         // Production 2D grid streaming and origin rebasing. The machine remains
         // in compact render coordinates while the manager retains logical X/Z.
@@ -647,20 +791,29 @@ export class GameManager extends Component {
           );
           mPos = this.machine.node.position.clone();
         }
-        this.regionsVisitedCount = Math.max(this.regionsVisitedCount, this.infiniteWorldManager.getRegionIndex() + 1);
-
-        // 驱动可压缩物体的引力、运动、碰撞与吞噬判定
-        this.infiniteWorldManager.updateObjects(
-          dt,
-          mPos,
-          this.machine.getSuctionRadius(),
-          this.machine.getMaxTier(),
-          this.machine.isMagnetStormActive,
-          (obj) => this.onObjectAbsorbed(obj)
-        );
+        if (this.gameState === 'PLAYING') {
+          this.regionsVisitedCount = Math.max(this.regionsVisitedCount, this.infiniteWorldManager.getRegionIndex() + 1);
+          // Endless mode has exactly one resource consumer.
+          this.infiniteWorldManager.updateObjects(
+            dt,
+            mPos,
+            this.machine.getSuctionRadius(),
+            this.machine.getMaxTier(),
+            this.machine.isMagnetStormActive,
+            (obj) => this.onObjectAbsorbed(obj)
+          );
+        } else {
+          // ArenaMatchManager performs the same suction FSM with an explicit
+          // owner per object, then resolves bots, gravity pull and respawn.
+          this.arenaMatchManager?.updateMatch(dt);
+          const snapshot = this.arenaMatchManager?.getSnapshot();
+          if (snapshot) {
+            if (this.gameState === 'ARENA') this.hud?.updateArena(snapshot);
+            else this.hud?.updateRevive(snapshot);
+          }
+        }
       }
-
-      this.updateHUD();
+      if (this.gameState === 'PLAYING') this.updateHUD();
     }
 
     // 3. 相机平滑跟随 (垂直 FOV 锁定的 9:16 俯视视角)

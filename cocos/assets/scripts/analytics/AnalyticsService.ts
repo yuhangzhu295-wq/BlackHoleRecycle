@@ -7,6 +7,7 @@ export type AnalyticsEventType =
   | 'game_launch'
   | 'session_start'
   | 'endless_start'
+  | 'arena_start'
   | 'first_move'
   | 'first_absorb'
   | 'first_upgrade'

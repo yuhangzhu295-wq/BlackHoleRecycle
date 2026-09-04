@@ -97,6 +97,16 @@
       },
       {
         "path": "i18n:menu.extension",
+        "label": "安装 V2 竞技乱斗实体管理器（编辑器保存）",
+        "message": "install-arena-match"
+      },
+      {
+        "path": "i18n:menu.extension",
+        "label": "验证 V2 竞技乱斗实体管理器",
+        "message": "verify-arena-match"
+      },
+      {
+        "path": "i18n:menu.extension",
         "label": "创建 V2 运行时 HUD、暂停页与结算页（编辑器保存）",
         "message": "build-runtime-pages"
       },
@@ -124,6 +134,8 @@
       "prepare-mode-sprites": { "methods": ["prepareModeSprites"] },
       "build-mode-select": { "methods": ["buildModeSelect"] },
       "verify-mode-select": { "methods": ["verifyModeSelect"] },
+      "install-arena-match": { "methods": ["installArenaMatch"] },
+      "verify-arena-match": { "methods": ["verifyArenaMatch"] },
       "build-runtime-pages": { "methods": ["buildRuntimePages"] },
       "verify-runtime-pages": { "methods": ["verifyRuntimePages"] }
     }

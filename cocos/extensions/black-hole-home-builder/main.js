@@ -1,9 +1,39 @@
 'use strict';
 
+async function installArenaFromExplicitEnvironment() {
+  if (process.env.BHR_ARENA_AUTOBUILD !== '1') return;
+  // This branch is intentionally opt-in. A normal Creator launch remains
+  // read-only; the repair command below asks Creator itself to save the three
+  // scoped arena changes after its scene and script registry are ready.
+  const run = (method) => Editor.Message.request('scene', 'execute-scene-script', {
+    name: 'black-hole-home-builder', method, args: [],
+  });
+  let ready = null;
+  for (let attempt = 0; attempt < 45; attempt += 1) {
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    ready = await run('isArenaSceneReady');
+    if (ready?.ready) break;
+  }
+  if (!ready?.ready) {
+    throw new Error(`[black-hole-home-builder] Game.scene was not ready for arena save: ${JSON.stringify(ready)}`);
+  }
+  const mode = await run('buildModeSelect');
+  const pages = await run('buildRuntimePages');
+  const arena = await run('installArenaMatch');
+  if (!mode?.rootUuid || !pages?.savedPages?.includes('ArenaHUD') || !arena?.saved) {
+    throw new Error(`[black-hole-home-builder] Explicit arena scene save failed: ${JSON.stringify({ mode, pages, arena })}`);
+  }
+  console.info(`[black-hole-home-builder] Explicit arena scene save completed: ${JSON.stringify(arena)}`);
+}
+
 module.exports = {
   // Scene-changing operations remain explicit extension menu actions.
   // Opening Creator must never mutate Game.scene.
-  load() {},
+  load() {
+    installArenaFromExplicitEnvironment().catch((error) => {
+      console.error('[black-hole-home-builder] Explicit arena scene save failed:', error);
+    });
+  },
   methods: {
     async buildMachineVisuals() {
       return Editor.Message.request('scene', 'execute-scene-script', {
@@ -121,6 +151,20 @@ module.exports = {
       return Editor.Message.request('scene', 'execute-scene-script', {
         name: 'black-hole-home-builder',
         method: 'verifyModeSelect',
+        args: [],
+      });
+    },
+    async installArenaMatch() {
+      return Editor.Message.request('scene', 'execute-scene-script', {
+        name: 'black-hole-home-builder',
+        method: 'installArenaMatch',
+        args: [],
+      });
+    },
+    async verifyArenaMatch() {
+      return Editor.Message.request('scene', 'execute-scene-script', {
+        name: 'black-hole-home-builder',
+        method: 'verifyArenaMatch',
         args: [],
       });
     },

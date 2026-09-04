@@ -297,6 +297,162 @@ async function verifyRuntimePages(cdp, page, canvasRect) {
   return { pause, resume, settle, finalScreen: 'Settlement' };
 }
 
+/**
+ * Drives the playable offline arena only through the real, rendered controls.
+ * The QA bridge supplies diagnostics and positions read-only; it never calls a
+ * game setter, grants mass, changes a score or emits an event.
+ */
+async function verifyArenaFlow(cdp, page, canvasRect, modeSnapshot) {
+  const pointFor = (node, name) => {
+    const design = modeSnapshot.ui?.design;
+    assert(node?.active, `FAIL_ARENA_NODE_INACTIVE_${name}: ${JSON.stringify(node)}`);
+    assert(design?.width > 0 && design?.height > 0,
+      `FAIL_ARENA_DESIGN: ${JSON.stringify(design)}`);
+    return {
+      x: canvasRect.left + canvasRect.width * ((node.x + design.width * 0.5) / design.width),
+      y: canvasRect.top + canvasRect.height * ((design.height * 0.5 - node.y) / design.height),
+    };
+  };
+
+  const arenaButton = modeSnapshot.ui?.modeArena;
+  const arenaPoint = pointFor(arenaButton, 'MODE_ARENA');
+  await dispatchTouchTap(cdp, arenaPoint.x, arenaPoint.y);
+  try {
+    await page.waitForFunction(() => {
+      const snapshot = window.__BHR_QA__.snapshot();
+      return snapshot.gameState === 'ARENA' && snapshot.ui?.arenaHUD?.root?.active === true;
+    }, undefined, { timeout: 7000 });
+  } catch (error) {
+    const actual = await readRuntimeSnapshot(page);
+    throw new Error(`FAIL_MODE_ARENA_TOUCH: ${JSON.stringify({
+      arenaButton,
+      arenaPoint,
+      gameState: actual.gameState,
+      arena: actual.arena,
+      router: actual.ui?.runtimePageInput,
+      error: error instanceof Error ? error.message : String(error),
+    })}`);
+  }
+
+  const initial = await readRuntimeSnapshot(page);
+  assert(initial.arena?.running, `FAIL_ARENA_NOT_RUNNING: ${JSON.stringify(initial.arena)}`);
+  assert(initial.arena?.competitorCount === 8 && initial.arena?.leaderboard?.length === 8,
+    `FAIL_ARENA_ROSTER_1_7: ${JSON.stringify(initial.arena)}`);
+  assert(Object.keys(initial.arena?.botStates || {}).length === 7,
+    `FAIL_ARENA_BOT_FILL: ${JSON.stringify(initial.arena?.botStates)}`);
+  assert(initial.ui?.arenaHUD?.joystick?.active,
+    `FAIL_ARENA_VISIBLE_JOYSTICK: ${JSON.stringify(initial.ui?.arenaHUD)}`);
+  await page.screenshot({ path: path.join(evidenceDirectory, 'portrait-390x844-arena.png') });
+
+  // Give real bots time to navigate toward and physically absorb world items.
+  // No timer or leaderboard entry is faked: the next assertion requires an
+  // actual bot's consumed counter and mass to advance from live world objects.
+  const collectionDeadline = Date.now() + 18000;
+  let collected = initial;
+  let hunter = null;
+  let defeated = null;
+  while (Date.now() < collectionDeadline) {
+    // Poll quickly enough to capture the real 2.5-second revive phase rather
+    // than allowing an autonomous respawn to erase its visible evidence.
+    await page.waitForTimeout(120);
+    collected = await readRuntimeSnapshot(page);
+    const localMass = collected.arena?.localMass || 0;
+    hunter = (collected.arena?.leaderboard || []).find((entry) => !entry.isLocal
+      && entry.alive && entry.shieldSeconds <= 0
+      && entry.consumed > 0 && entry.mass >= Math.max(1, localMass) * 1.32) || null;
+    if (collected.gameState === 'REVIVING' && collected.arena?.localAlive === false) {
+      defeated = collected;
+    }
+    if (defeated && hunter) break;
+  }
+  assert((collected.arena?.leaderboard || []).some((entry) => !entry.isLocal && entry.consumed > 0),
+    `FAIL_ARENA_BOT_COLLECT: ${JSON.stringify(collected.arena)}`);
+  assert(hunter, `FAIL_ARENA_NO_STRONG_BOT_FOR_REAL_CONSUME: ${JSON.stringify(collected.arena)}`);
+  assert(defeated, `FAIL_ARENA_CONSUME_PLAYER_TIMEOUT: ${JSON.stringify(collected.arena)}`);
+  assert(defeated.gameState === 'REVIVING' && defeated.arena?.localAlive === false,
+    `FAIL_ARENA_CONSUME_PLAYER: ${JSON.stringify({ gameState: defeated.gameState, arena: defeated.arena })}`);
+  assert(defeated.ui?.formalPages?.revive?.active,
+    `FAIL_ARENA_REVIVE_PAGE: ${JSON.stringify(defeated.ui?.formalPages)}`);
+  await page.screenshot({ path: path.join(evidenceDirectory, 'portrait-390x844-revive.png') });
+
+  const revive = pointFor(defeated.ui?.formalPages?.reviveNow, 'REVIVE_NOW');
+  await dispatchTouchTap(cdp, revive.x, revive.y);
+  try {
+    await page.waitForFunction(() => {
+      const snapshot = window.__BHR_QA__.snapshot();
+      return snapshot.gameState === 'ARENA' && snapshot.arena?.localAlive === true
+        && snapshot.arena?.leaderboard?.find((entry) => entry.isLocal)?.shieldSeconds > 0;
+    }, undefined, { timeout: 5000 });
+  } catch (error) {
+    const actual = await readRuntimeSnapshot(page);
+    throw new Error(`FAIL_ARENA_RESPAWN: ${JSON.stringify({
+      revive,
+      gameState: actual.gameState,
+      arena: actual.arena,
+      router: actual.ui?.runtimePageInput,
+      error: error instanceof Error ? error.message : String(error),
+    })}`);
+  }
+  const respawned = await readRuntimeSnapshot(page);
+
+  // Prove the arena's visible joystick is still wired to the real local
+  // player after respawn. The local player has spawn shield, so this input is
+  // not racing an immediate second defeat.
+  const arenaJoystick = respawned.ui?.arenaHUD?.joystick;
+  const design = respawned.ui?.design;
+  assert(arenaJoystick?.active && design?.width > 0 && design?.height > 0,
+    `FAIL_ARENA_JOYSTICK_LAYOUT: ${JSON.stringify({ arenaJoystick, design })}`);
+  const joystick = {
+    x: canvasRect.left + canvasRect.width * ((arenaJoystick.x + design.width * 0.5) / design.width),
+    y: canvasRect.top + canvasRect.height * ((design.height * 0.5 - arenaJoystick.y) / design.height),
+  };
+  await beginTouchJoystick(cdp, joystick.x, joystick.y, joystick.x - 38, joystick.y - 18);
+  await page.waitForTimeout(180);
+  const arenaMoving = await readRuntimeSnapshot(page);
+  assert(Math.hypot(arenaMoving.machine.movementInput.x, arenaMoving.machine.movementInput.y) > 0.1,
+    `FAIL_ARENA_JOYSTICK_TOUCH: ${JSON.stringify({
+      input: arenaMoving.machine.movementInput,
+      touch: arenaMoving.machine.touchDiagnostic,
+      activeTouchId: arenaMoving.machine.activeTouchId,
+      gameState: arenaMoving.gameState,
+    })}`);
+  await releaseTouchJoystick(cdp);
+
+  // End the match through the visible pause/settle controls. This produces a
+  // real FORFEIT match result and arena settlement rather than invoking a
+  // private finish method.
+  const arenaPause = pointFor(respawned.ui?.arenaHUD?.pauseButton, 'ARENA_PAUSE');
+  await dispatchTouchTap(cdp, arenaPause.x, arenaPause.y);
+  await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'PAUSED', undefined, { timeout: 5000 });
+  const paused = await readRuntimeSnapshot(page);
+  const settle = pointFor(paused.ui?.formalPages?.pauseSettle, 'ARENA_SETTLE');
+  await dispatchTouchTap(cdp, settle.x, settle.y);
+  await page.waitForFunction(() => {
+    const snapshot = window.__BHR_QA__.snapshot();
+    return snapshot.gameState === 'SETTLEMENT' && snapshot.arena?.reason === 'FORFEIT';
+  }, undefined, { timeout: 5000 });
+  const settled = await readRuntimeSnapshot(page);
+  await page.screenshot({ path: path.join(evidenceDirectory, 'portrait-390x844-arena-settlement.png') });
+
+  const home = pointFor(settled.ui?.formalPages?.settlementHome, 'ARENA_SETTLEMENT_HOME');
+  await dispatchTouchTap(cdp, home.x, home.y);
+  await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'HOME', undefined, { timeout: 5000 });
+  const homeSnapshot = await readRuntimeSnapshot(page);
+  const start = pointFor(homeSnapshot.ui?.start, 'ARENA_HOME_START');
+  await dispatchTouchTap(cdp, start.x, start.y);
+  await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'MODE_SELECT', undefined, { timeout: 5000 });
+
+  return {
+    arenaButton: arenaPoint,
+    initial: initial.arena,
+    collected: collected.arena,
+    hunter: { id: hunter.id, mass: hunter.mass, consumed: hunter.consumed, position: hunter.position },
+    revived: respawned.arena,
+    settled: settled.arena,
+    returnMode: (await readRuntimeSnapshot(page)).ui?.modePage,
+  };
+}
+
 function validatePortraitSnapshot(viewport, canvasRect, runtimeSnapshot) {
   const portrait = runtimeSnapshot.ui?.portrait;
   assert(viewport.width < viewport.height, `FAIL_NOT_PORTRAIT: browser viewport ${viewport.width}x${viewport.height}`);
@@ -444,7 +600,15 @@ async function driveJoystickToLogicalPoint(cdp, page, joystick, target, label, a
     await page.waitForTimeout(holdMs);
     const engaged = await readRuntimeSnapshot(page);
     assert(Math.hypot(engaged.machine.movementInput.x, engaged.machine.movementInput.y) > 0.1,
-      `FAIL_VERTICAL_SLICE_GUIDED_TOUCH_${label}: ${JSON.stringify(engaged.machine.movementInput)}`);
+      `FAIL_VERTICAL_SLICE_GUIDED_TOUCH_${label}: ${JSON.stringify({
+        input: engaged.machine.movementInput,
+        gameState: engaged.gameState,
+        player: engaged.player,
+        touch: engaged.machine.touchDiagnostic,
+        activeTouchId: engaged.machine.activeTouchId,
+        arena: engaged.arena,
+        runtimeInput: engaged.ui?.runtimePageInput,
+      })}`);
     await releaseTouchJoystick(cdp);
     await page.waitForTimeout(220);
     finalSnapshot = await readRuntimeSnapshot(page);
@@ -485,11 +649,16 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
       await dispatchTouchTap(cdp, x, homeStartY);
       await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'MODE_SELECT', undefined, { timeout: 5000 });
       await page.waitForFunction(() => window.__BHR_QA__.snapshot().ui?.modePage?.active === true, undefined, { timeout: 5000 });
-      const modeSnapshot = await readRuntimeSnapshot(page);
+      let modeSnapshot = await readRuntimeSnapshot(page);
       assert(modeSnapshot.ui?.modePage?.width > 0 && modeSnapshot.ui?.modePage?.height > 0,
         `FAIL_MODE_PAGE_LAYOUT: ${JSON.stringify(modeSnapshot.ui?.modePage)}`);
       await page.waitForTimeout(250);
       await page.screenshot({ path: path.join(evidenceDirectory, 'portrait-390x844-mode.png') });
+
+      report.arena = await verifyArenaFlow(cdp, page, canvasRect, modeSnapshot);
+      modeSnapshot = await readRuntimeSnapshot(page);
+      assert(modeSnapshot.gameState === 'MODE_SELECT' && modeSnapshot.ui?.modePage?.active,
+        `FAIL_ARENA_RETURN_TO_MODE: ${JSON.stringify({ gameState: modeSnapshot.gameState, ui: modeSnapshot.ui?.modePage })}`);
 
       const endlessModeButton = modeSnapshot.ui?.modeEndless;
       const modeDesign = modeSnapshot.ui?.design;
@@ -754,6 +923,7 @@ const report = {
   openingWorldVisuals: null,
   verticalSlice: null,
   runtimePages: null,
+  arena: null,
   consoleErrors: [],
   failures: [],
 };

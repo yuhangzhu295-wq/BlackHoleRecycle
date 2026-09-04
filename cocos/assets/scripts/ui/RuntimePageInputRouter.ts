@@ -13,8 +13,8 @@ export interface RuntimePageInputDiagnostic {
   targetName: string | null;
   touchX: number;
   touchY: number;
-  action: 'NONE' | 'HOME_START' | 'HOME_MODE' | 'MODE_BACK' | 'MODE_ENDLESS'
-    | 'PAUSE' | 'RESUME' | 'SETTLE' | 'HOME' | 'RESTART';
+  action: 'NONE' | 'HOME_START' | 'HOME_MODE' | 'MODE_BACK' | 'MODE_ARENA' | 'MODE_ENDLESS'
+    | 'PAUSE' | 'RESUME' | 'SETTLE' | 'HOME' | 'RESTART' | 'REVIVE' | 'GIVE_UP';
 }
 
 @ccclass('RuntimePageInputRouter')
@@ -72,6 +72,12 @@ export class RuntimePageInputRouter extends Component {
       eventBus.emit('MODE_BACK_REQUESTED');
       return;
     }
+    if (this.hitVisibleButton('ModeSelectPage', 'BtnArena', event)) {
+      event.propagationStopped = true;
+      this.lastInputDiagnostic.action = 'MODE_ARENA';
+      eventBus.emit('MODE_ARENA_REQUESTED');
+      return;
+    }
     if (this.hitVisibleButton('ModeSelectPage', 'BtnEndless', event)) {
       event.propagationStopped = true;
       this.lastInputDiagnostic.action = 'MODE_ENDLESS';
@@ -83,6 +89,25 @@ export class RuntimePageInputRouter extends Component {
       event.propagationStopped = true;
       this.lastInputDiagnostic.action = 'PAUSE';
       eventBus.emit('UI_TRIGGER_PAUSE');
+      return;
+    }
+    if (this.hitVisibleButton('ArenaHUD', 'BtnPause', event)) {
+      event.propagationStopped = true;
+      this.lastInputDiagnostic.action = 'PAUSE';
+      eventBus.emit('UI_TRIGGER_PAUSE');
+      return;
+    }
+
+    if (this.hitVisibleButton('RevivePage', 'BtnRevive', event)) {
+      event.propagationStopped = true;
+      this.lastInputDiagnostic.action = 'REVIVE';
+      eventBus.emit('ARENA_REVIVE_REQUESTED');
+      return;
+    }
+    if (this.hitVisibleButton('RevivePage', 'BtnGiveUp', event)) {
+      event.propagationStopped = true;
+      this.lastInputDiagnostic.action = 'GIVE_UP';
+      eventBus.emit('ARENA_GIVE_UP_REQUESTED');
       return;
     }
 
@@ -108,7 +133,7 @@ export class RuntimePageInputRouter extends Component {
     if (this.hitVisibleButton('SettlementPage', 'BtnRestart', event)) {
       event.propagationStopped = true;
       this.lastInputDiagnostic.action = 'RESTART';
-      eventBus.emit('GAME_START_ENDLESS');
+      eventBus.emit('GAME_RESTART_CURRENT');
       return;
     }
     if (this.hitVisibleButton('SettlementPage', 'BtnHome', event)) {

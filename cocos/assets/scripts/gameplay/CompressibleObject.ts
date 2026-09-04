@@ -25,6 +25,8 @@ export class CompressibleObject extends Component {
   private lockTimer: number = 0;
   private visualNode: Node | null = null;
   private lockIndicatorNode: Node | null = null;
+  /** The actual machine currently pulling this entity into its black hole. */
+  private captureOwnerId: string | null = null;
 
   public getPosition(): Vec3 {
     return this.currentPos;
@@ -118,6 +120,7 @@ export class CompressibleObject extends Component {
     this.suckTimer = 0;
     this.isLockAlertActive = false;
     this.lockTimer = 0;
+    this.captureOwnerId = null;
 
     this.buildVisibleNode();
     this.applyTemplateArt();
@@ -148,6 +151,10 @@ export class CompressibleObject extends Component {
     return this.fsm.getState();
   }
 
+  public getCaptureOwnerId(): string | null {
+    return this.captureOwnerId;
+  }
+
   public showLockAlert(): void {
     if (this.lockTimer > 0) return;
     this.isLockAlertActive = true;
@@ -164,10 +171,15 @@ export class CompressibleObject extends Component {
     machinePos: Vec3,
     suctionRadius: number,
     machineMaxTier: ObjectTier,
-    isMagnetStorm: boolean = false
+    isMagnetStorm: boolean = false,
+    consumerId: string = 'endless-player',
   ): boolean {
     const state = this.fsm.getState();
     if (state === 'ABSORBED' || state === 'RECYCLED') return false;
+
+    // A bot cannot earn an object which has already entered the same real
+    // suction state for another competitor.
+    if (this.captureOwnerId && this.captureOwnerId !== consumerId) return false;
 
     if (this.lockTimer > 0) {
       this.lockTimer -= dt;
@@ -183,7 +195,10 @@ export class CompressibleObject extends Component {
     if (state === 'IDLE') {
       if (distSq < suctionRadius * suctionRadius) {
         if (this.template.tier > machineMaxTier && !isMagnetStorm) this.showLockAlert();
-        else this.fsm.setState('ATTRACTED');
+        else {
+          this.captureOwnerId = consumerId;
+          this.fsm.setState('ATTRACTED');
+        }
       }
       return false;
     }
@@ -207,6 +222,7 @@ export class CompressibleObject extends Component {
   }
 
   public recycle(): void {
+    this.captureOwnerId = null;
     this.fsm.setState('RECYCLED');
   }
 }
