@@ -268,7 +268,9 @@ export class BlackHoleMachine extends Component {
       // changing the suction radius or collision/gameplay calculations.
       // The prior 1.32 scale read as a small token in portrait play beside
       // the full-size competitor vehicles.
-      const coreScale = this.presentation === 'SINGULARITY' ? 2.22 : 1.32;
+      // Preserve a clear local-player silhouette after the portrait camera
+      // widens enough to frame the surrounding city.
+      const coreScale = this.presentation === 'SINGULARITY' ? 2.52 : 1.32;
       this.coreNode.setScale(coreScale, 1.0, coreScale);
     }
     if (this.presentation === 'BOT') this.ensureArenaBotVisual();

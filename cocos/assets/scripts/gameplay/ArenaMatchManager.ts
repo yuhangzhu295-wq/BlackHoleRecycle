@@ -478,11 +478,10 @@ export class ArenaMatchManager extends Component {
   private spawnPosition(slot: number): Vec3 {
     if (slot === 0) return new Vec3(0, 0, 0);
     const angle = (Math.PI * 2 * (slot - 1)) / 7 + Math.PI * 0.13;
-    // A 20m ring left every authentic bot outside the portrait opening shot,
-    // making the match look vacant despite an eight-player roster.  This is
-    // only an initial location: bots retain their same movement, resource
-    // claims, collision and respawn rules once the match begins.
-    return new Vec3(Math.cos(angle) * 8.8, 0, Math.sin(angle) * 8.8);
+    // Start within the portrait play corridor so the actual seven-bot roster
+    // is visible in the opening frame.  Spawn shields still prevent an
+    // immediate combat outcome, and movement/resource rules are unchanged.
+    return new Vec3(Math.cos(angle) * 5.8, 0, Math.sin(angle) * 5.8);
   }
 
   private levelForMass(mass: number): number {

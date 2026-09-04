@@ -99,7 +99,10 @@ export class GameManager extends Component {
       // The generated project declarations do not re-export that enum, while
       // Camera.fovAxis remains the native engine property being configured.
       this.mainCamera.fovAxis = 0;
-      this.mainCamera.fov = 38;
+      // A portrait WebGL view has a very narrow horizontal frustum.  A small
+      // vertical FOV expansion keeps the authored street assets in frame
+      // without changing the game-space camera follow or any collision data.
+      this.mainCamera.fov = 48;
     }
 
   }

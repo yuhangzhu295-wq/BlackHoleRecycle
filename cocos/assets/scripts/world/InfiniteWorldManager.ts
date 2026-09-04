@@ -239,26 +239,26 @@ class InfiniteWorldCell {
       // The 9:16 camera's visible street corridor is narrower than a whole
       // 64m cell. Keep homes beside the opening road rather than at the far
       // corners so the first playable frame reads as a neighbourhood.
-      this.spawn('buildingB', -8.2, -7.4, V3(2.7, 2.7, 2.7), 90, 'ResidentialHouseWest');
-      this.spawn('buildingC', 8.2, -7.4, V3(2.7, 2.7, 2.7), -90, 'ResidentialHouseEast');
+      this.spawn('buildingB', -4.7, -7.0, V3(2.15, 2.15, 2.15), 90, 'ResidentialHouseWest');
+      this.spawn('buildingC', 4.7, -7.0, V3(2.15, 2.15, 2.15), -90, 'ResidentialHouseEast');
       // Actual CC0 commercial-kit landmarks frame the opening corridor. They
       // add a readable service-city silhouette around the player without
       // obstructing the starter recyclable cluster at z=5.
       // Keep the CC0 commercial kit landmarks in the portrait play camera's
       // field, framing the arena instead of leaving a large vacant lawn.
       // They are decorative scene art, not collision or resource objects.
-      this.spawn('commercialBuildingF', -7.6, -9.2, V3(1.75, 1.75, 1.75), 90, 'NeighbourhoodMarket');
-      this.spawn('commercialBuildingG', 7.6, -9.2, V3(1.75, 1.75, 1.75), -90, 'NeighbourhoodClinic');
-      this.spawn('commercialBuildingH', 0, -16.8, V3(1.55, 1.55, 1.55), 0, 'NeighbourhoodService');
+      this.spawn('commercialBuildingF', -2.65, -9.8, V3(1.55, 1.55, 1.55), 90, 'NeighbourhoodMarket');
+      this.spawn('commercialBuildingG', 2.65, -9.8, V3(1.55, 1.55, 1.55), -90, 'NeighbourhoodClinic');
+      this.spawn('commercialBuildingH', 0, -15.4, V3(1.5, 1.5, 1.5), 0, 'NeighbourhoodService');
       // Tall city silhouettes make the opening arena read as a real urban
       // block instead of an isolated lawn. They remain background art and
       // do not participate in resource collisions or bot navigation.
-      this.spawn('commercialSkyscraperA', -11.6, -18.2, V3(1.9, 1.9, 1.9), 90, 'ArenaSkylineWest');
-      this.spawn('commercialSkyscraperB', 11.6, -18.2, V3(1.9, 1.9, 1.9), -90, 'ArenaSkylineEast');
+      this.spawn('commercialSkyscraperA', -4.6, -14.2, V3(1.18, 1.18, 1.18), 90, 'ArenaSkylineWest');
+      this.spawn('commercialSkyscraperB', 4.6, -14.2, V3(1.18, 1.18, 1.18), -90, 'ArenaSkylineEast');
     };
     const trees = (): void => {
-      this.spawn('treeLarge', -9.8, 1.0, V3(3.6, 3.6, 3.6), 0, 'DistrictTreeLarge');
-      this.spawn('treeSmall', 9.8, 1.0, V3(3.8, 3.8, 3.8), 0, 'DistrictTreeSmall');
+      this.spawn('treeLarge', -4.8, 0.8, V3(2.65, 2.65, 2.65), 0, 'DistrictTreeLarge');
+      this.spawn('treeSmall', 4.8, 0.8, V3(2.8, 2.8, 2.8), 0, 'DistrictTreeSmall');
     };
     switch (kind) {
       case 'RESIDENTIAL':
