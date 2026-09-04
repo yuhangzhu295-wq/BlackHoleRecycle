@@ -1,22 +1,36 @@
-# Current Product Audit
+# Current Product Audit — 2026-09-04
 
-## 1. 架构与运行环境 (Architecture & Runtime)
-- `GameConfig`, `SaveService`, `ObjectPool`, `EventBus`: **REAL_IMPLEMENTED** (Core framework is solid).
-- `GameManager.ts`: **PARTIAL** (Contains fake `setTimeout` compression and fake `triggerEvolve` hook).
-- `BlackHoleMachine.ts`: **PARTIAL** (Evolution is partially real but UI/animation feedback is lacking).
-- `WorldChunkManager.ts`: **PARTIAL** (Basic chunk logic exists, but `currentTheme` is hardcoded to Bedroom; RegionSequence not truly implemented).
+## Verified implemented paths
 
-## 2. 核心 Gameplay (Core Gameplay)
-- **Suction & Movement**: **REAL_IMPLEMENTED** (Proper math calculation and Tier lock logic in `CompressibleObject.ts`).
-- **Compression System**: **FAKE_IMPLEMENTATION** (Currently using `setTimeout` + `console.log` in `GameManager.onObjectAbsorbed` to simulate buffer and resource spawning).
-- **Region Sequence**: **NOT_IMPLEMENTED** (Only `REGION_THEMES[0]` is used. No real progression between Bedroom, Warehouse, and Supermarket).
-- **Evolution Trigger**: **PARTIAL** (Real trigger exists via mass accumulation, but QA script uses a fake `triggerEvolve()` backdoor).
+- `GameManager`, `BlackHoleMachine`, `CompressionSystem`, `CompressibleObject`, `SaveService`, `EventBus`, and `ObjectPool` are production runtime code using Cocos Creator 3.8.3 engine types. The Web QA bridge is read-only; the acceptance suite does not use a mass grant, teleport, or target-position setter.
+- Player movement is continuous, camera-relative velocity from a fixed portrait joystick. It locks the first touch ID, ignores secondary touches, stops on release, and has been exercised in all eight directions through real CDP touch.
+- Endless play uses `InfiniteWorldManager`'s 2D X/Z cell grid with origin rebasing. The full runtime acceptance drives north, south, east, and west long-distance travel and checks active streamed cells rather than legacy Z-only chunks.
+- Gameplay objects retain their actual `CompressibleObject` suction state machine. Their semantic visuals are resolved through `ObjectArtRegistry` to audited Creator-imported art; there is no chair-to-tire or sofa-to-van fallback.
+- The vertical slice is real at runtime: LV1 starts at T1/2.4m, visibly locks T2, absorbs T1 to evolve, reaches LV2/3.4m, then absorbs T2. Current full acceptance evidence recorded LV2, mass 1540, 30 T1 and 1 T2 absorbed.
+- `Game.scene` contains Creator-saved portrait Home, Mode Select, gameplay HUD, Arena HUD, Revive, Pause, Settlement, and Machine Info page nodes. Their actions drive live state and real save data rather than placeholder buttons.
+- Arena currently has one local player and seven active Cocos bots. Every row of its leaderboard, respawn, object claim, combat result, and settlement reward is derived from the local match state. The UI labels this truthfully as local 1v7.
 
-## 3. UI 流程 (UI Flow)
-- **Home, ModeSelect, RegionTransition, Upgrade, Settlement**: **FAKE_IMPLEMENTATION** (Nodes are created dynamically but only contain placeholder text or don't exist at all; no real buttons or interactive flow).
-- **Gameplay HUD**: **PARTIAL** (Rendered via code, but mixed with `RuntimeHUDCanvas` hacks. Needs to be part of a real flow).
-- **Pause System**: **FAKE_IMPLEMENTATION** (Clicking pause just does `console.log('[GameManager] Game paused')` without pausing anything).
+## Runtime and build evidence
 
-## 4. 自动化 QA (Automated QA)
-- **E2E Playwright Script**: **FAKE_IMPLEMENTATION** (Uses fake `triggerEvolve()` and doesn't actually play the game or assert gameplay state properly).
-- **QA Bridge (`window.__BHR_QA__`)**: **PARTIAL** (Contains mutators like `triggerEvolve`, needs to be STRICT READ ONLY).
+- `npm run typecheck:cocos`: 0 TypeScript errors.
+- `npm run test:cocos`: 6/6 logic regressions pass. This is source-level regression evidence only, not an engine-runtime pass.
+- `npm run acceptance:v2 -- --scope=full`: official Cocos Creator 3.8.3 Web Mobile build plus real Playwright/CDP touch. The latest full run passed with browser console errors `[]` and no acceptance failures.
+- `npm run build:all`: Web Mobile, WeChat Game, and ByteDance Mini Game packages built successfully with Creator 3.8.3. The ByteDance package still uses `testappId`, so it is buildable but not release-ready.
+- `arena-server/` has a separate Colyseus integration test that connects two actual SDK clients to one server-authoritative room and observes replicated motion. It is not yet connected to the Cocos production arena route.
+
+## Deliberate boundaries / remaining work
+
+1. **Online arena is not product-complete.** The server currently owns multiplayer joining, input sequencing, stale-input timeout, position integration, and arena bounds only. Object ownership, suction, combat, revive, rewards, Cocos client SDK integration, and a public `wss://` endpoint still need to become server-authoritative before the game may advertise human matchmaking.
+2. **Visual direction is structurally aligned, not pixel-identical.** The five current V2 pages use the required portrait hierarchy, real data, city/park context, card/ribbon/panel vocabulary, and real navigation. The reference art has substantially richer bespoke illustration, character art, and UI texture work than the audited open assets currently in the repository.
+3. **Release ownership is required.** A real ByteDance Mini Game AppID and a public TLS WebSocket deployment are account-owned configuration. They must be supplied by the project owner; the repository deliberately does not guess credentials or IDs.
+4. **Device evidence is still pending.** Browser Web Mobile runtime evidence is real, but it is not a substitute for a WeChat or ByteDance developer-tool/device session.
+
+## Status
+
+- `VERTICAL_SLICE_GATE`: PASS
+- `PORTRAIT_RUNTIME_GATE`: PASS
+- `LOCAL_ARENA_GATE`: PASS
+- `CROSS_PLATFORM_BUILD_GATE`: PASS (release IDs excluded)
+- `ONLINE_HUMAN_ARENA_GATE`: IN PROGRESS
+- `VISUAL_DESIGN_MATCH`: PARTIAL — same product structure and interaction language, not bespoke-reference equivalence
+- `RELEASE_GATE`: BLOCKED BY OWNER-PROVIDED APPID / DEPLOYMENT
