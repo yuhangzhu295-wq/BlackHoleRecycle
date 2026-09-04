@@ -254,13 +254,19 @@ export class BlackHoleMachine extends Component {
     this.currentLevel = level;
     this.currentConfig = MACHINE_EVOLUTION_CONFIG[level - 1] || MACHINE_EVOLUTION_CONFIG[0];
 
-    // Exactly one full Creator-saved machine assembly is visible. Higher
-    // levels therefore have genuinely different silhouettes and components.
+    // Exactly one Creator-saved upgrade assembly is selected per level.
+    // HYBRID is the player-facing presentation: its chassis is suppressed so
+    // LV1 reads as the black hole from the reference, while the authored
+    // upgrade modules (starting with LV2's real turbines) remain visible.
+    // MACHINE is deliberately left as the complete saved assembly for places
+    // that need to present the recycler vehicle itself.
     this.levelVisuals.forEach((visual, index) => {
       visual.active = (this.presentation === 'HYBRID' || this.presentation === 'MACHINE') && index === level - 1;
     });
     const activeAssembly = this.levelVisuals[level - 1] || null;
     if (activeAssembly?.active) {
+      const chassis = activeAssembly.getChildByName('CrawlerChassis') || null;
+      if (chassis) chassis.active = this.presentation !== 'HYBRID';
       this.getVisualLibrary().applyActiveLevelMaterials(activeAssembly, level);
       this.materialRebindFrames = 2;
     }

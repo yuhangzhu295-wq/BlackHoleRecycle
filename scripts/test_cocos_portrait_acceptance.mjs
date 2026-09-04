@@ -1135,6 +1135,15 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
           starterObjects: upgradedSnapshot.objects.filter((object) => object.tier === 1
             && Math.abs(object.x) < 2 && object.z > 3 && object.z < 7),
         })}`);
+      const lv2Visuals = upgradedSnapshot.machine.visualMaterials || [];
+      const activeLv2Turbines = lv2Visuals.filter((renderer) => renderer.active
+        && String(renderer.path).includes('MachineVisual_LV2/MagneticTurbine'));
+      const activeHybridChassis = lv2Visuals.filter((renderer) => renderer.active
+        && String(renderer.path).includes('MachineVisual_LV2/CrawlerChassis'));
+      assert(activeLv2Turbines.length >= 2,
+        `FAIL_LV2_TURBINES_NOT_RENDERED: ${JSON.stringify(lv2Visuals)}`);
+      assert(activeHybridChassis.length === 0,
+        `FAIL_HYBRID_CHASSIS_OBSCURES_BLACK_HOLE: ${JSON.stringify(activeHybridChassis)}`);
       assert((upgradedSnapshot.session.absorbedTiers?.[1] || 0) > 0,
         `FAIL_VERTICAL_SLICE_NO_T1_CLUSTER_ABSORPTION: ${JSON.stringify(upgradedSnapshot.session?.absorbedTiers)}`);
 
