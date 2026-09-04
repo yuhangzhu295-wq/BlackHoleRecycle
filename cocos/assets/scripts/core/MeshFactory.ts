@@ -83,7 +83,15 @@ export class MeshFactory {
     }
 
     const mat = new Material();
-    mat.initialize({ effectName: 'builtin-unlit' });
+    // Runtime-created core meshes have neither a texture nor vertex colours.
+    // Declare both native effect macros explicitly, matching the proven
+    // Web-Mobile world material contract. Leaving the imported defaults in
+    // place lets some generated core meshes select an unresolved variant and
+    // render as the engine's magenta fallback despite a valid `mainColor`.
+    mat.initialize({
+      effectName: 'builtin-unlit',
+      defines: { USE_TEXTURE: false, USE_VERTEX_COLOR: false },
+    });
     
     const color = new Color();
     Color.fromHEX(color, hexColor);

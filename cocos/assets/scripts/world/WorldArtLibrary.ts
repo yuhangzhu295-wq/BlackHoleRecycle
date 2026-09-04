@@ -278,7 +278,14 @@ export class WorldArtLibrary extends Component {
     const material = this.getRuntimeMaterial(kind);
     const applyToNode = (node: Node): void => {
       const renderer = node.getComponent(MeshRenderer);
-      if (renderer) renderer.setMaterial(material, 0);
+      if (renderer) {
+        // Multi-material GLB meshes must receive the runtime-safe material in
+        // each sub-mesh slot. Leaving any original slot intact can surface as
+        // the platform's missing-material magenta after Web Mobile packing.
+        const primitiveCount = renderer.mesh?.struct.primitives.length || 0;
+        const slotCount = Math.max(1, renderer.sharedMaterials.length, primitiveCount);
+        for (let slot = 0; slot < slotCount; slot++) renderer.setSharedMaterial(material, slot);
+      }
       node.children.forEach(applyToNode);
     };
     applyToNode(visual);
@@ -295,7 +302,9 @@ export class WorldArtLibrary extends Component {
     // so the imported UVs sample the Creator-owned external colour map.
     material.initialize({
       effectName: 'builtin-unlit',
-      defines: texture ? { USE_TEXTURE: true } : undefined
+      // Imported vertex colours are not the art contract; the audited
+      // texture/palette controls deterministic Web Mobile output.
+      defines: { USE_TEXTURE: Boolean(texture), USE_VERTEX_COLOR: false }
     });
     if (texture) {
       // Preserve the authored Kenney UV colour map and use the audited art

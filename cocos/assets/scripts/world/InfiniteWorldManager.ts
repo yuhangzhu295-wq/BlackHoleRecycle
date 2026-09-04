@@ -3,7 +3,7 @@
  * WorldChunkManager, this owns a real two-dimensional X/Z grid around the
  * player and keeps logical world coordinates separate from rendered ones.
  */
-import { _decorator, Component, director, Node, Vec3 } from 'cc';
+import { _decorator, Color, Component, director, MeshRenderer, Node, Vec3 } from 'cc';
 import { IObjectTemplate, IRegionThemeConfig, OBJECT_TEMPLATES, ObjectTier, REGION_THEMES } from '../data/GameConfig';
 import { ObjectPool } from '../core/ObjectPool';
 import { eventBus } from '../core/EventBus';
@@ -95,6 +95,50 @@ class InfiniteWorldCell {
     this.dynamicVehicles.forEach((vehicle) => vehicle.applyWorldRebase(shift.x));
   }
 
+  /**
+   * Read-only evidence for the opening-cell environment. It makes a Web
+   * Mobile visual failure diagnosable without altering a scene or prefab at
+   * runtime: QA can prove whether the grass mesh exists, is active and has a
+   * valid material before judging the captured frame.
+   */
+  public getVisualDiagnostics(): ReadonlyArray<Record<string, unknown>> {
+    const relevant = new Set(['DistrictGround', 'FourWayRoad', 'DistrictRoad']);
+    const rows: Array<Record<string, unknown>> = [];
+    for (const child of this.node.children) {
+      if (!relevant.has(child.name)) continue;
+      const renderers: Array<Record<string, unknown>> = [];
+      const visit = (node: Node): void => {
+        const renderer = node.getComponent(MeshRenderer);
+        if (renderer) {
+          const primitiveCount = renderer.mesh?.struct.primitives.length || 0;
+          const slotCount = Math.max(1, renderer.sharedMaterials.length, primitiveCount);
+          const materials = Array.from({ length: slotCount }, (_, index) => {
+            const material = renderer.getRenderMaterial(index);
+            const rawColor = material?.getProperty('mainColor');
+            const color = rawColor instanceof Color
+              ? { r: rawColor.r, g: rawColor.g, b: rawColor.b, a: rawColor.a }
+              : null;
+            return {
+              effect: material?.effectName || null,
+              valid: material?.validate() || false,
+              color,
+            };
+          });
+          renderers.push({ name: node.name, primitiveCount, materialCount: materials.length, materials });
+        }
+        node.children.forEach(visit);
+      };
+      visit(child);
+      rows.push({
+        name: child.name,
+        active: child.activeInHierarchy,
+        worldPosition: { x: child.worldPosition.x, y: child.worldPosition.y, z: child.worldPosition.z },
+        renderers,
+      });
+    }
+    return rows;
+  }
+
   private spawn(
     kind: WorldArtKind,
     x: number,
@@ -149,19 +193,27 @@ class InfiniteWorldCell {
   private buildEnvironment(): void {
     const half = this.cellSize * 0.5;
 
-    // Four grass quadrants keep the cell visually continuous during streaming.
-    // They sit fractionally below the imported asphalt to avoid mobile depth
-    // fighting at road edges.
+    // Four 32m grass quadrants cover the full 64m cell. `tile-low` is a 1m
+    // source mesh: scale 16 here previously left a 16×16m hole at the cell
+    // centre, exposing the scene skybox's neutral ground exactly where the
+    // player spawns. The authored scene's legacy neutral floor is at y=0, so
+    // streamed terrain is slightly above it and asphalt above the grass.
     for (const x of [-half * 0.5, half * 0.5]) {
       for (const z of [-half * 0.5, half * 0.5]) {
-        this.spawn('terrainTile', x, z, V3(16, 1, 16), 0, 'DistrictGround', -0.04);
+        this.spawn('terrainTile', x, z, V3(32, 1, 32), 0, 'DistrictGround', 0.01);
       }
     }
 
+    // The spawn cell begins on grass with the road ahead of the player.  The
+    // previous 12x crossroad occupied the whole portrait view and hid the
+    // district landmarks, so it read as an empty asphalt test pad rather
+    // than a navigable city neighbourhood.
+    const isOpeningCell = this.coord.x === 0 && this.coord.z === 0;
+    const roadZ = isOpeningCell ? -11 : 0;
     if (this.district.kind === 'RESIDENTIAL' || this.district.kind === 'PARK' || this.district.kind === 'DOWNTOWN') {
-      this.spawn('roadCrossroad', 0, 0, V3(12, 1, 12), 0, 'FourWayRoad', 0.02);
+      this.spawn('roadCrossroad', 0, roadZ, V3(5.6, 1, 5.6), 0, 'FourWayRoad', 0.05);
     } else {
-      this.spawn('roadStraight', 0, 0, V3(12, 1, 22), this.district.kind === 'PARKING' ? 90 : 0, 'DistrictRoad', 0.02);
+      this.spawn('roadStraight', 0, roadZ, V3(5.6, 1, 10), this.district.kind === 'PARKING' ? 90 : 0, 'DistrictRoad', 0.05);
     }
 
     this.buildDistrictLandmarks(this.district.kind);
@@ -354,6 +406,12 @@ export class InfiniteWorldManager extends Component {
     return this.currentRegionIndex;
   }
 
+  /** The visible district label is separate from the progression theme. */
+  public getCurrentDistrictName(): string {
+    return this.activeCells.get(cellKey({ x: this.currentCell.x, z: this.currentCell.z }))?.district.label
+      || this.currentTheme.name;
+  }
+
   public getSnapshot(): Record<string, unknown> {
     return {
       mode: '2D_GRID',
@@ -361,6 +419,7 @@ export class InfiniteWorldManager extends Component {
       activeCellCount: this.activeCells.size,
       expectedActiveCellCount: InfiniteWorldManager.ACTIVE_CELL_COUNT,
       currentCell: { x: this.currentCell.x, z: this.currentCell.z },
+      currentDistrict: this.getCurrentDistrictName(),
       logicalOrigin: { x: this.logicalOrigin.x, z: this.logicalOrigin.z },
       rebaseCount: this.rebaseCount,
       // Do not spread Map.values(): Cocos' ES5 build transform emits a single
@@ -372,6 +431,7 @@ export class InfiniteWorldManager extends Component {
         district: cell.district.kind,
       })),
       dynamicVehicles: Array.from(this.activeCells.values(), (cell) => cell.dynamicVehicles.map((vehicle) => vehicle.getSnapshot())).flat(),
+      visualDiagnostics: this.activeCells.get(cellKey({ x: this.currentCell.x, z: this.currentCell.z }))?.getVisualDiagnostics() || [],
     };
   }
 

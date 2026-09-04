@@ -151,6 +151,23 @@ function getComponentClass(name) {
   return type;
 }
 
+// The editor scene is rooted at `Game`, while gameplay content is nested
+// below `Game/GameRoot`.  Keeping the lookup here avoids a fragile assumption
+// about the director scene's immediate child list in every editor command.
+function getGameRootFromEditorScene() {
+  const { director } = require('cc');
+  const scene = director.getScene();
+  if (!scene) return null;
+  const pending = [...scene.children];
+  while (pending.length > 0) {
+    const node = pending.shift();
+    if (!node) continue;
+    if (node.name === 'GameRoot') return node;
+    pending.push(...node.children);
+  }
+  return null;
+}
+
 function createNode(name, parent, width, height) {
   const { Node, UITransform, Layers } = require('cc');
   const node = new Node(name);
@@ -258,6 +275,10 @@ async function buildMachineVisualPrefab(gameRoot, spec, importedSources) {
   }
   await Editor.Message.request('scene', 'save-scene');
   await Editor.Message.request('scene', 'create-prefab', assembly.uuid, spec.prefabUrl);
+  // `destroy()` is deferred by Cocos. Detach first so the editor's following
+  // save cannot serialize this temporary prefab-construction node into
+  // Game.scene as a second, invalid render instance.
+  assembly.removeFromParent();
   assembly.destroy();
   await Editor.Message.request('scene', 'save-scene');
 }
@@ -465,8 +486,8 @@ exports.unload = function unload() {};
 
 exports.methods = {
   async buildMachineVisuals() {
-    const { director, Node } = require('cc');
-    const gameRoot = director.getScene()?.getChildByName('GameRoot');
+    const { Node } = require('cc');
+    const gameRoot = getGameRootFromEditorScene();
     if (!gameRoot) throw new Error('Game.scene does not contain GameRoot');
     const importedSources = {};
     for (const [key, url] of Object.entries(MACHINE_UPGRADE_ASSET_URLS)) {
@@ -490,6 +511,31 @@ exports.methods = {
       prefabUrls: MACHINE_VISUAL_SPECS.map((spec) => spec.prefabUrl),
       levels: MACHINE_VISUAL_SPECS.map((spec) => ({ level: spec.level, partNames: spec.parts.map((part) => part.name) })),
     };
+  },
+  /**
+   * Removes the temporary GameRoot assemblies used while Creator saves each
+   * MachineVisual prefab. This must run in the Cocos scene process: deleting
+   * those serialized nodes by text editing would corrupt scene ownership and
+   * violates the project asset contract.
+   */
+  async cleanupMachineVisualResidue() {
+    const gameRoot = getGameRootFromEditorScene();
+    if (!gameRoot) {
+      const { director } = require('cc');
+      const scene = director.getScene();
+      return {
+        pending: true,
+        sceneName: scene?.name || null,
+        rootChildren: scene?.children.map((node) => node.name) || [],
+      };
+    }
+    const residues = gameRoot.children.filter((child) => /^MachineVisual_LV[1-5]$/.test(child.name));
+    for (const residue of residues) {
+      residue.removeFromParent();
+      residue.destroy();
+    }
+    await Editor.Message.request('scene', 'save-scene');
+    return { saved: true, removed: residues.map((node) => node.name), count: residues.length };
   },
   async verifyMachineVisuals() {
     const { director } = require('cc');
@@ -568,8 +614,7 @@ exports.methods = {
     return { saved: true, created, reused, total: OBJECT_ART_TEMPLATE_SPECS.length };
   },
   async verifyObjectArtRegistry() {
-    const { director } = require('cc');
-    const gameRoot = director.getScene()?.getChildByName('GameRoot');
+    const gameRoot = getGameRootFromEditorScene();
     const library = gameRoot?.getChildByName('WorldArtLibrary')?.getComponent(getComponentClass('WorldArtLibrary')) || null;
     if (!library) return { ok: false, error: 'GameRoot/WorldArtLibrary is missing.' };
     const missing = OBJECT_ART_TEMPLATE_SPECS

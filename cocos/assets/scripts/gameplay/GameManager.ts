@@ -1,7 +1,7 @@
 /**
  * 游戏主控制器与运行时生命周期驱动 (GameManager.ts)
  */
-import { _decorator, Component, Node, Camera, Vec3, math, director, DirectionalLight, Color, Canvas, UITransform, view, ResolutionPolicy } from 'cc';
+import { _decorator, Component, Node, Camera, Vec3, math, director, DirectionalLight, Color, Canvas, MeshRenderer, Sprite, UITransform, view, ResolutionPolicy } from 'cc';
 import { BlackHoleMachine } from '../machine/BlackHoleMachine';
 import { InfiniteWorldManager } from '../world/InfiniteWorldManager';
 import { CompressibleObject } from './CompressibleObject';
@@ -320,7 +320,9 @@ export class GameManager extends Component {
 
   private updateHUD(): void {
     if (this.hud && this.machine) {
-      const regionName = this.infiniteWorldManager?.currentTheme.name || '卧室杂物区';
+      const regionName = this.infiniteWorldManager?.getCurrentDistrictName()
+        || this.infiniteWorldManager?.currentTheme.name
+        || '住宅街区';
       this.hud.updateStats(
         this.machine.currentMass,
         this.machine.currentLevel,
@@ -362,6 +364,7 @@ export class GameManager extends Component {
   private getV2HomeLayoutSnapshot(): Record<string, unknown> {
     const canvas = director.getScene()?.getChildByName('Canvas') || null;
     const home = canvas?.getChildByName('HomePage') || null;
+    const mode = canvas?.getChildByName('ModeSelectPage') || null;
     const endlessHud = canvas?.getChildByName('EndlessHUD') || null;
     const pausePage = canvas?.getChildByName('PausePage') || null;
     const settlementPage = canvas?.getChildByName('SettlementPage') || null;
@@ -427,6 +430,10 @@ export class GameManager extends Component {
         z: uiCamera.node.position.z
       } : null,
       home: describe(home),
+      // Keep this distinct from the HomePage "mode" action button snapshot
+      // below.  QA needs the page's actual hierarchy/visibility after the
+      // user performs a touch navigation, not merely the trigger button.
+      modePage: describe(mode),
       runtimeHUD: {
         endless: describe(endlessHud),
         pauseButton: describe(endlessHud?.getChildByName('BtnPause') || null),
@@ -544,6 +551,7 @@ export class GameManager extends Component {
             x: this.machine?.velocity.x ?? 0,
             z: this.machine?.velocity.z ?? 0,
           },
+          visualMaterials: this.machine?.getVisualMaterialDiagnostics() || [],
           },
           world: {
             currentRegion: this.infiniteWorldManager?.currentTheme.id || 'bedroom',
@@ -552,6 +560,7 @@ export class GameManager extends Component {
             visibleObjectCount: this.infiniteWorldManager?.getVisibleObjectCount() || 0,
             streaming: this.infiniteWorldManager?.getSnapshot() || null,
           },
+          sceneVisuals: this.getActiveVisualDiagnostics(),
           objects: sampledObjs,
           compression: {
             state: this.compressionSystem?.state || 'IDLE',
@@ -576,6 +585,41 @@ export class GameManager extends Component {
         };
       }
     };
+  }
+
+  /** Read-only scan used only to identify real Web Mobile visual fallbacks. */
+  private getActiveVisualDiagnostics(): Record<string, unknown> {
+    const invalidMeshes: Array<Record<string, unknown>> = [];
+    const sprites: Array<Record<string, unknown>> = [];
+    const visit = (node: Node, path: string): void => {
+      if (!node.activeInHierarchy) return;
+      const renderer = node.getComponent(MeshRenderer);
+      if (renderer) {
+        const primitiveCount = renderer.mesh?.struct.primitives.length || 0;
+        const slotCount = Math.max(1, primitiveCount, renderer.sharedMaterials.length);
+        const slots = Array.from({ length: slotCount }, (_, index) => {
+          const material = renderer.getRenderMaterial(index);
+          return { effect: material?.effectName || null, valid: material?.validate() || false };
+        });
+        if (slots.some((slot) => !slot.valid || !slot.effect)) {
+          invalidMeshes.push({ path, primitiveCount, slots });
+        }
+      }
+      const sprite = node.getComponent(Sprite);
+      if (sprite) {
+        sprites.push({
+          path,
+          frame: sprite.spriteFrame?.name || null,
+          texture: sprite.spriteFrame?.texture?.name || null,
+          frameValid: sprite.spriteFrame?.isValid || false,
+          textureValid: sprite.spriteFrame?.texture?.isValid || false,
+        });
+      }
+      node.children.forEach((child) => visit(child, `${path}/${child.name}`));
+    };
+    const scene = director.getScene();
+    if (scene) visit(scene, scene.name);
+    return { invalidMeshes, sprites };
   }
 
   update(dt: number): void {

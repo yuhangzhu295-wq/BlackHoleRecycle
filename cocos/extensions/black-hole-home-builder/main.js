@@ -1,6 +1,9 @@
 'use strict';
 
 module.exports = {
+  // Residue recovery is intentionally explicit through the extension menu.
+  // It must never rewrite Game.scene merely because an editor was opened.
+  load() {},
   methods: {
     async buildMachineVisuals() {
       return Editor.Message.request('scene', 'execute-scene-script', {
@@ -13,6 +16,13 @@ module.exports = {
       return Editor.Message.request('scene', 'execute-scene-script', {
         name: 'black-hole-home-builder',
         method: 'verifyMachineVisuals',
+        args: [],
+      });
+    },
+    async cleanupMachineVisualResidue() {
+      return Editor.Message.request('scene', 'execute-scene-script', {
+        name: 'black-hole-home-builder',
+        method: 'cleanupMachineVisualResidue',
         args: [],
       });
     },

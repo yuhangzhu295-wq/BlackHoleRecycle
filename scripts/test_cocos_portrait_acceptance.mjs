@@ -19,7 +19,12 @@ const creatorExe = process.env.COCOS_CREATOR_EXE || 'C:\\ProgramData\\cocos\\edi
 const buildDirectory = path.join(cocosProject, 'build', 'web-mobile');
 const evidenceDirectory = path.join(cocosProject, 'docs', 'evidence', 'v2', 'portrait');
 const reportPath = path.join(evidenceDirectory, 'acceptance-report.json');
-const acceptanceScope = process.env.BHR_ACCEPTANCE_SCOPE || 'full';
+// `npm run acceptance:v2 -- --scope=pages` is the ergonomic local visual-QA
+// command. Keep the environment variable for CI, but do not silently ignore
+// the documented CLI form and accidentally start the long 500m traversal.
+const acceptanceScope = process.argv.includes('--scope=pages') || process.env.BHR_ACCEPTANCE_SCOPE === 'pages'
+  ? 'pages'
+  : 'full';
 const requiredPortraitViewports = [
   { id: '375x667', width: 375, height: 667 },
   { id: '390x844', width: 390, height: 844 },
@@ -479,15 +484,40 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
       const homeStartY = canvasRect.top + canvasRect.height * 0.773;
       await dispatchTouchTap(cdp, x, homeStartY);
       await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'MODE_SELECT', undefined, { timeout: 5000 });
+      await page.waitForFunction(() => window.__BHR_QA__.snapshot().ui?.modePage?.active === true, undefined, { timeout: 5000 });
+      const modeSnapshot = await readRuntimeSnapshot(page);
+      assert(modeSnapshot.ui?.modePage?.width > 0 && modeSnapshot.ui?.modePage?.height > 0,
+        `FAIL_MODE_PAGE_LAYOUT: ${JSON.stringify(modeSnapshot.ui?.modePage)}`);
+      await page.waitForTimeout(250);
       await page.screenshot({ path: path.join(evidenceDirectory, 'portrait-390x844-mode.png') });
 
       const endlessY = canvasRect.top + canvasRect.height * 0.645;
       await dispatchTouchTap(cdp, x, endlessY);
       await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'PLAYING', undefined, { timeout: 5000 });
       const gameplaySnapshot = await readRuntimeSnapshot(page);
+      // Capture the actual opening composition before any later diagnostic
+      // assertion can abort the run. This prevents a previous passing run's
+      // PNG being mistaken for evidence of a currently failing build.
+      await page.screenshot({ path: path.join(evidenceDirectory, 'portrait-390x844-endless-initial.png') });
       assert(gameplaySnapshot.ui.runtimeHUD?.joystick?.active,
         `FAIL_VISIBLE_JOYSTICK: ${JSON.stringify(gameplaySnapshot.ui.runtimeHUD)}`);
+      const visualMaterials = gameplaySnapshot.machine?.visualMaterials || [];
+      const activeVisualMaterials = visualMaterials.filter((renderer) => renderer.active);
+      assert(activeVisualMaterials.length > 0,
+        'FAIL_MACHINE_VISUAL_MATERIALS: no real MeshRenderer diagnostics were exposed');
+      // Hidden future-level assemblies have no native sub-model yet. Only the
+      // activated player assembly can issue a frame draw, so only it belongs
+      // to this runtime material invariant.
+      assert(activeVisualMaterials.every((renderer) => renderer.slots?.every((slot) => slot.valid && slot.effect)),
+        `FAIL_MACHINE_VISUAL_MATERIALS: ${JSON.stringify(activeVisualMaterials)}`);
+      report.machineMaterialDiagnostics = activeVisualMaterials;
       report.infiniteWorld.initial = validateInfiniteWorldSnapshot(gameplaySnapshot);
+      const openingWorldVisuals = gameplaySnapshot.world?.streaming?.visualDiagnostics || [];
+      const grassVisuals = openingWorldVisuals.filter((row) => row.name === 'DistrictGround');
+      assert(grassVisuals.length === 4 && grassVisuals.every((row) => row.active
+        && row.renderers?.some((renderer) => renderer.materials?.every((material) => material.valid && material.effect))),
+      `FAIL_OPENING_GRASS_RENDERER: ${JSON.stringify(openingWorldVisuals)}`);
+      report.openingWorldVisuals = openingWorldVisuals;
       const dynamicBefore = gameplaySnapshot.world?.streaming?.dynamicVehicles || [];
       assert(dynamicBefore.length > 0,
         `FAIL_DYNAMIC_VEHICLE_MISSING: ${JSON.stringify(gameplaySnapshot.world?.streaming)}`);
@@ -686,6 +716,7 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
 
 const report = {
   status: 'RUNNING',
+  scope: acceptanceScope,
   runner: 'official-cocos-cli + Playwright CDP touch',
   build: null,
   viewports: [],
@@ -694,6 +725,8 @@ const report = {
   camera: null,
   infiniteWorld: { initial: null, cardinal500m: [] },
   dynamicVehicles: null,
+  machineMaterialDiagnostics: null,
+  openingWorldVisuals: null,
   verticalSlice: null,
   runtimePages: null,
   consoleErrors: [],

@@ -22,6 +22,11 @@
       },
       {
         "path": "i18n:menu.extension",
+        "label": "清理 V2 回收机预制体临时节点（编辑器保存）",
+        "message": "cleanup-machine-visual-residue"
+      },
+      {
+        "path": "i18n:menu.extension",
         "label": "安装 V2 履带回收机底盘（编辑器保存）",
         "message": "install-machine-chassis-template"
       },
@@ -99,6 +104,7 @@
     "messages": {
       "build-machine-visuals": { "methods": ["buildMachineVisuals"] },
       "verify-machine-visuals": { "methods": ["verifyMachineVisuals"] },
+      "cleanup-machine-visual-residue": { "methods": ["cleanupMachineVisualResidue"] },
       "install-machine-chassis-template": { "methods": ["installMachineChassisTemplate"] },
       "verify-machine-chassis-template": { "methods": ["verifyMachineChassisTemplate"] },
       "install-object-art-registry": { "methods": ["installObjectArtRegistry"] },

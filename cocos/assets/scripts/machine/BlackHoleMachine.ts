@@ -1,7 +1,7 @@
 /**
  * 黑洞吸尘机 3D 核心组件与 5 级结构进化系统 (BlackHoleMachine.ts)
  */
-import { _decorator, Component, director, Node, Vec3, math } from 'cc';
+import { _decorator, Color, Component, director, MeshRenderer, Node, Vec3, math } from 'cc';
 import { IMachineEvolutionConfig, MACHINE_EVOLUTION_CONFIG, ObjectTier } from '../data/GameConfig';
 import { eventBus } from '../core/EventBus';
 import { MeshFactory } from '../core/MeshFactory';
@@ -112,6 +112,39 @@ export class BlackHoleMachine extends Component {
     return library;
   }
 
+  /**
+   * Read-only renderer state for real Web Mobile visual QA. This deliberately
+   * exposes no material or mesh setter: it only lets the acceptance bridge
+   * prove which saved model parts and runtime effects are actually rendered.
+   */
+  public getVisualMaterialDiagnostics(): ReadonlyArray<Record<string, unknown>> {
+    const rows: Array<Record<string, unknown>> = [];
+    const visit = (node: Node, path: string): void => {
+      const renderer = node.getComponent(MeshRenderer);
+      if (renderer) {
+        const primitiveCount = renderer.mesh?.struct.primitives.length || 0;
+        const slotCount = Math.max(1, renderer.sharedMaterials.length, primitiveCount);
+        const slots = Array.from({ length: slotCount }, (_, index) => {
+          const material = renderer.getRenderMaterial(index);
+          const rawColor = material?.getProperty('mainColor');
+          const color = rawColor instanceof Color
+            ? { r: rawColor.r, g: rawColor.g, b: rawColor.b, a: rawColor.a }
+            : null;
+          return {
+            index,
+            effect: material?.effectName || null,
+            valid: material?.validate() || false,
+            color,
+          };
+        });
+        rows.push({ path, active: node.activeInHierarchy, primitiveCount, slots });
+      }
+      node.children.forEach((child) => visit(child, `${path}/${child.name}`));
+    };
+    if (this.visualRoot) visit(this.visualRoot, this.visualRoot.name);
+    return rows;
+  }
+
   /** Receives camera-relative, normalized intent. It contains no arena/world boundary logic. */
   public setMovementDirection(direction: Readonly<Vec3>, magnitude: number): void {
     this.movementDirection.set(direction.x, 0, direction.z);
@@ -191,6 +224,8 @@ export class BlackHoleMachine extends Component {
     this.levelVisuals.forEach((visual, index) => {
       visual.active = index === level - 1;
     });
+    const activeAssembly = this.levelVisuals[level - 1] || null;
+    if (activeAssembly) this.getVisualLibrary().applyActiveLevelMaterials(activeAssembly, level);
 
     // 缩放吸力外环
     if (this.holeRim) {
