@@ -113,5 +113,44 @@ export class BotMovementInput implements IMovementInput {
   }
 }
 
-/** Network adapter; a future authoritative match feeds the same normalized contract. */
-export class NetworkMovementInput extends BotMovementInput {}
+/**
+ * Adapter for an authoritative remote-player input stream.
+ *
+ * This intentionally does not inherit the bot adapter: a networked player
+ * may only move from a newer server-approved sample.  Keeping the sequence
+ * guard here prevents an out-of-order WebSocket/Colyseus packet from reviving
+ * an old direction after the client has already received a release sample.
+ */
+export class NetworkMovementInput implements IMovementInput {
+  public readonly moveInput: Vec2 = new Vec2();
+  public isActive: boolean = false;
+  private latestSequence: number = -1;
+
+  public applyAuthoritativeInput(sequence: number, x: number, y: number, active: boolean): boolean {
+    if (!Number.isFinite(sequence) || sequence <= this.latestSequence) return false;
+    this.latestSequence = sequence;
+
+    if (!active || !Number.isFinite(x) || !Number.isFinite(y)) {
+      this.moveInput.set(0, 0);
+      this.isActive = false;
+      return true;
+    }
+
+    const magnitude = Math.sqrt(x * x + y * y);
+    if (magnitude <= 0.0001) {
+      this.moveInput.set(0, 0);
+      this.isActive = false;
+      return true;
+    }
+
+    const scale = Math.min(1, magnitude) / magnitude;
+    this.moveInput.set(x * scale, y * scale);
+    this.isActive = true;
+    return true;
+  }
+
+  public reset(): void {
+    this.moveInput.set(0, 0);
+    this.isActive = false;
+  }
+}
