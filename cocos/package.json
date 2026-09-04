@@ -18,6 +18,9 @@
   ],
   "author": "Antigravity DevTeam",
   "license": "MIT",
+  "dependencies": {
+    "@colyseus/sdk": "0.18.2"
+  },
   "devDependencies": {
     "playwright": "^1.62.1",
     "typescript": "^5.3.3"

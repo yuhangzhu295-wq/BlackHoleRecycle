@@ -25,7 +25,7 @@ const reportPath = path.join(evidenceDirectory, 'acceptance-report.json');
 const requestedAcceptanceScope = process.argv.find((argument) => argument.startsWith('--scope='))?.slice('--scope='.length)
   || process.env.BHR_ACCEPTANCE_SCOPE
   || 'full';
-const acceptanceScope = ['full', 'pages', 'arena-timer'].includes(requestedAcceptanceScope)
+const acceptanceScope = ['full', 'pages', 'arena-timer', 'network'].includes(requestedAcceptanceScope)
   ? requestedAcceptanceScope
   : 'full';
 const requiredPortraitViewports = [
@@ -98,6 +98,46 @@ function createStaticServer(rootDirectory) {
     });
     server.listen(0, '127.0.0.1', () => resolve(server));
   });
+}
+
+const networkProbePort = 25784;
+const networkProbeEndpoint = `http://127.0.0.1:${networkProbePort}`;
+
+/** Start the shipped arena service; this never substitutes a mocked room. */
+function startNetworkProbeServer() {
+  const child = spawn(process.execPath, ['src/index.mjs', String(networkProbePort)], {
+    cwd: path.join(repoRoot, 'arena-server'),
+    stdio: ['ignore', 'pipe', 'pipe'],
+    windowsHide: true,
+  });
+  let output = '';
+  child.stdout.on('data', (chunk) => { output += chunk.toString(); });
+  child.stderr.on('data', (chunk) => { output += chunk.toString(); });
+  return { child, output: () => output };
+}
+
+async function waitForNetworkProbeServer(probe) {
+  const deadline = Date.now() + 8_000;
+  while (Date.now() < deadline) {
+    try {
+      const response = await fetch(`${networkProbeEndpoint}/health`);
+      if (response.ok) return;
+    } catch {
+      // The real Colyseus process is still binding its HTTP/WebSocket port.
+    }
+    await new Promise((resolve) => setTimeout(resolve, 75));
+  }
+  throw new Error(`Arena network probe server did not become healthy. ${probe.output()}`);
+}
+
+async function stopNetworkProbeServer(probe) {
+  if (!probe || probe.child.exitCode !== null) return;
+  const exited = new Promise((resolve) => probe.child.once('exit', resolve));
+  probe.child.kill('SIGTERM');
+  await Promise.race([
+    exited,
+    new Promise((_, reject) => setTimeout(() => reject(new Error('Arena network probe server did not stop.')), 3_000)),
+  ]);
 }
 
 async function dispatchTouchTap(cdp, x, y) {
@@ -210,6 +250,29 @@ async function verifySecondaryTouchDoesNotHijack(cdp, page, canvasRect, joystick
 
 async function readRuntimeSnapshot(page) {
   return page.evaluate(() => window.__BHR_QA__.snapshot());
+}
+
+/**
+ * The game root itself creates the Colyseus client from the WebGL bundle.
+ * Only server-replicated data is observed here: no test setter may create a
+ * player, mass value, pickup or room state.
+ */
+async function verifyNetworkProbe(page) {
+  try {
+    await page.waitForFunction(() => window.__BHR_QA__.snapshot().network?.status === 'CONNECTED', undefined, { timeout: 10_000 });
+  } catch (error) {
+    const actual = await readRuntimeSnapshot(page);
+    throw new Error(`FAIL_COCOS_COLYSEUS_CONNECT: ${JSON.stringify({ network: actual.network, error: String(error) })}`);
+  }
+  const snapshot = await readRuntimeSnapshot(page);
+  const network = snapshot.network;
+  assert(network?.lastError === null, `FAIL_COCOS_COLYSEUS_ERROR: ${JSON.stringify(network)}`);
+  assert(network?.snapshot?.localSessionId, `FAIL_COCOS_COLYSEUS_SESSION: ${JSON.stringify(network)}`);
+  assert(network.snapshot.players.some((player) => player.id === network.snapshot.localSessionId),
+    `FAIL_COCOS_COLYSEUS_LOCAL_PLAYER: ${JSON.stringify(network.snapshot)}`);
+  assert(network.snapshot.pickups.length >= 16,
+    `FAIL_COCOS_COLYSEUS_OPENING_PICKUPS: ${JSON.stringify(network.snapshot)}`);
+  return network;
 }
 
 /**
@@ -776,6 +839,11 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
     if (viewport.id === '390x844') {
       const cdp = await context.newCDPSession(page);
       report.camera = snapshot.camera;
+      if (acceptanceScope === 'network') {
+        report.network = await verifyNetworkProbe(page);
+        assert(runtimeErrors.length === 0, `Runtime console errors after Colyseus connection: ${runtimeErrors.join(' | ')}`);
+        return;
+      }
       if (acceptanceScope === 'arena-timer') {
         report.arenaTimer = await verifyArenaTimerExpiry(cdp, page, canvasRect);
         assert(runtimeErrors.length === 0, `Runtime console errors after timer expiry: ${runtimeErrors.join(' | ')}`);
@@ -1088,23 +1156,31 @@ const report = {
   runtimePages: null,
   arena: null,
   arenaTimer: null,
+  network: null,
   consoleErrors: [],
   failures: [],
 };
 
 let server;
 let browser;
+let networkProbeServer;
 try {
   console.log('[acceptance:v2] Building Web Mobile with Cocos Creator 3.8.3...');
   report.build = await buildCocosWebMobile();
   assert(existsSync(path.join(buildDirectory, 'index.html')), `Missing official Cocos build output: ${buildDirectory}`);
 
+  if (acceptanceScope === 'network') {
+    networkProbeServer = startNetworkProbeServer();
+    await waitForNetworkProbeServer(networkProbeServer);
+  }
   server = await createStaticServer(buildDirectory);
   const address = server.address();
-  const baseUrl = `http://127.0.0.1:${address.port}/`;
+  const baseUrl = acceptanceScope === 'network'
+    ? `http://127.0.0.1:${address.port}/?arenaProbe=${encodeURIComponent(networkProbeEndpoint)}`
+    : `http://127.0.0.1:${address.port}/`;
   browser = await chromium.launch({ headless: true, args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-webgl'] });
 
-  const targetViewports = acceptanceScope === 'pages' || acceptanceScope === 'arena-timer'
+  const targetViewports = acceptanceScope === 'pages' || acceptanceScope === 'arena-timer' || acceptanceScope === 'network'
     ? requiredPortraitViewports.filter((viewport) => viewport.id === '390x844')
     : requiredPortraitViewports;
   for (const viewport of targetViewports) {
@@ -1121,6 +1197,7 @@ try {
 } finally {
   if (browser) await browser.close();
   if (server) await new Promise((resolve) => server.close(resolve));
+  await stopNetworkProbeServer(networkProbeServer);
   writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
   console.log(`[acceptance:v2] Report: ${reportPath}`);
 }

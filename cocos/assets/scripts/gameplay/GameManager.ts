@@ -10,6 +10,7 @@ import { RuntimePageInputRouter } from '../ui/RuntimePageInputRouter';
 import { CompressionSystem } from './CompressionSystem';
 import { PlayerController } from './PlayerController';
 import { ArenaMatchManager, ArenaMatchSnapshot } from './ArenaMatchManager';
+import { ColyseusArenaClient } from '../network/ColyseusArenaClient';
 import { eventBus } from '../core/EventBus';
 import { saveService } from '../data/SaveService';
 import { analyticsService } from '../analytics/AnalyticsService';
@@ -54,6 +55,12 @@ export class GameManager extends Component {
   private lastSessionMode: 'ENDLESS' | 'ARENA' = 'ENDLESS';
   /** Read-only QA evidence for real Home skin selection requests. */
   private homeSkinSelectionCount: number = 0;
+  /**
+   * Transport is intentionally created with the game root rather than hidden
+   * behind a browser-only global. It is not advertised as online matchmaking
+   * until its replicated snapshots drive the arena renderer.
+   */
+  private readonly networkArenaClient: ColyseusArenaClient = new ColyseusArenaClient();
 
   // Portrait isometric framing: the centre ray deliberately lands ahead of the
   // machine so the player remains in the lower interaction band.
@@ -83,10 +90,14 @@ export class GameManager extends Component {
     this.bindEvents();
     this.initWorld();
     this.setupQABridge();
+    this.startNetworkProbeIfRequested();
   }
 
   onDestroy(): void {
     view.off('canvas-resize', this.applyPortraitRuntimeContract, this);
+    // A future server-backed arena can outlive a scene transition. Always
+    // release the real Colyseus room instead of leaving a live socket behind.
+    void this.networkArenaClient.leave();
   }
 
   /**
@@ -810,6 +821,13 @@ export class GameManager extends Component {
             streaming: this.infiniteWorldManager?.getSnapshot() || null,
           },
           arena: this.arenaMatchManager?.getSnapshot() || null,
+          // This is copied from the actual Colyseus room callback. QA receives
+          // no setters and cannot manufacture an arena snapshot locally.
+          network: {
+            status: this.networkArenaClient.status,
+            lastError: this.networkArenaClient.lastError,
+            snapshot: this.networkArenaClient.snapshot,
+          },
           sceneVisuals: this.getActiveVisualDiagnostics(),
           objects: sampledObjs,
           compression: {
@@ -838,6 +856,24 @@ export class GameManager extends Component {
         };
       }
     };
+  }
+
+  /**
+   * Explicitly opt-in browser integration probe. It exists to exercise the
+   * exact Cocos bundle against an actual Colyseus room without turning the
+   * user-facing local 1v7 arena into a mislabeled online mode. Production
+   * sessions receive no endpoint and therefore never open this connection.
+   */
+  private startNetworkProbeIfRequested(): void {
+    const runtimeLocation = (globalThis as { location?: { search?: unknown } }).location;
+    if (typeof runtimeLocation?.search !== 'string') return;
+    const endpoint = new URLSearchParams(runtimeLocation.search).get('arenaProbe')?.trim() || '';
+    if (!endpoint) return;
+    void this.networkArenaClient.join(endpoint, 'Cocos Runtime Probe').catch((error: unknown) => {
+      // Preserve the real handshake failure for browser console/QA evidence;
+      // do not synthesize an offline room if the endpoint is unavailable.
+      console.error('[GameManager] Colyseus runtime probe failed.', error);
+    });
   }
 
   /** Read-only scan used only to identify real Web Mobile visual fallbacks. */
