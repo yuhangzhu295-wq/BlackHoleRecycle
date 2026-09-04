@@ -434,6 +434,10 @@ export class GameManager extends Component {
       // below.  QA needs the page's actual hierarchy/visibility after the
       // user performs a touch navigation, not merely the trigger button.
       modePage: describe(mode),
+      modeArena: describe(mode?.getChildByName('BtnArena') || null),
+      modeEndless: describe(mode?.getChildByName('BtnEndless') || null),
+      modeBrawlLocked: describe(mode?.getChildByName('LockedBrawlCard') || null),
+      modeLeaderboardLocked: describe(mode?.getChildByName('LockedLeaderboardCard') || null),
       runtimeHUD: {
         endless: describe(endlessHud),
         pauseButton: describe(endlessHud?.getChildByName('BtnPause') || null),

@@ -13,7 +13,8 @@ export interface RuntimePageInputDiagnostic {
   targetName: string | null;
   touchX: number;
   touchY: number;
-  action: 'NONE' | 'PAUSE' | 'RESUME' | 'SETTLE' | 'HOME' | 'RESTART';
+  action: 'NONE' | 'HOME_START' | 'HOME_MODE' | 'MODE_BACK' | 'MODE_ENDLESS'
+    | 'PAUSE' | 'RESUME' | 'SETTLE' | 'HOME' | 'RESTART';
 }
 
 @ccclass('RuntimePageInputRouter')
@@ -48,6 +49,35 @@ export class RuntimePageInputRouter extends Component {
       touchY: location.y,
       action: 'NONE',
     };
+
+    // Home and mode pages use the same Canvas/SHOW_ALL transform as the
+    // runtime overlays. On a mobile browser their visible Button can receive
+    // Canvas as the native target, so route the actual touched serialized
+    // rect before considering in-game controls.
+    if (this.hitVisibleButton('HomePage', 'BtnStart', event)) {
+      event.propagationStopped = true;
+      this.lastInputDiagnostic.action = 'HOME_START';
+      eventBus.emit('HOME_START_REQUESTED');
+      return;
+    }
+    if (this.hitVisibleButton('HomePage', 'BtnMode', event)) {
+      event.propagationStopped = true;
+      this.lastInputDiagnostic.action = 'HOME_MODE';
+      eventBus.emit('HOME_MODE_REQUESTED');
+      return;
+    }
+    if (this.hitVisibleButton('ModeSelectPage', 'BtnBack', event)) {
+      event.propagationStopped = true;
+      this.lastInputDiagnostic.action = 'MODE_BACK';
+      eventBus.emit('MODE_BACK_REQUESTED');
+      return;
+    }
+    if (this.hitVisibleButton('ModeSelectPage', 'BtnEndless', event)) {
+      event.propagationStopped = true;
+      this.lastInputDiagnostic.action = 'MODE_ENDLESS';
+      eventBus.emit('MODE_ENDLESS_REQUESTED');
+      return;
+    }
 
     if (this.hitVisibleButton('EndlessHUD', 'BtnPause', event)) {
       event.propagationStopped = true;

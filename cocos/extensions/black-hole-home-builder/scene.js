@@ -787,6 +787,11 @@ exports.methods = {
     const root = createNode('ModeSelectPage', canvas, 720, 1280);
     const page = root.addComponent(getComponentClass('UIPage'));
     page.pageId = 1;
+    const modeCaption = (parent, name, text, fontSize, x, y, width, height, color) => {
+      const label = createLabel(name, parent, text, fontSize, color);
+      place(label, x, y, width, height);
+      return label;
+    };
 
     await createSprite('Background', root, 720, 1280, 'db://assets/textures/home/mode_background.png');
     const back = await createImageButton('BtnBack', root, 104, 104, 'db://assets/textures/home/mode_back.png');
@@ -794,28 +799,46 @@ exports.methods = {
     const header = await createSprite('Header', root, 500, 116, 'db://assets/textures/home/mode_header.png');
     place(header, 0, 530, 500, 116);
 
-    const arenaShelf = await createSprite('ShelfArena', root, 600, 52, 'db://assets/textures/home/mode_card_shelf.png');
-    place(arenaShelf, 0, 78, 600, 52);
-    const arena = await createImageButton('BtnArena', root, 610, 278, 'db://assets/textures/home/mode_arena_card.png', false);
-    place(arena, 0, 185, 610, 278);
+    // Four shelves preserve the V2 mode-page hierarchy. Only Endless has a
+    // Button because it is the sole implemented gameplay route; the other
+    // three are plain display nodes, explicitly labelled as unavailable.
+    const arenaShelf = await createSprite('ShelfArena', root, 600, 42, 'db://assets/textures/home/mode_card_shelf.png');
+    place(arenaShelf, 0, 164, 600, 42);
+    const arena = await createImageButton('BtnArena', root, 610, 202, 'db://assets/textures/home/mode_arena_card.png', false);
+    place(arena, 0, 274, 610, 202);
 
-    const endlessShelf = await createSprite('ShelfEndless', root, 600, 52, 'db://assets/textures/home/mode_card_shelf.png');
-    place(endlessShelf, 0, -292, 600, 52);
-    const endless = await createImageButton('BtnEndless', root, 610, 278, 'db://assets/textures/home/mode_endless_card.png');
-    place(endless, 0, -185, 610, 278);
+    const endlessShelf = await createSprite('ShelfEndless', root, 600, 42, 'db://assets/textures/home/mode_card_shelf.png');
+    place(endlessShelf, 0, -76, 600, 42);
+    const endless = await createImageButton('BtnEndless', root, 610, 202, 'db://assets/textures/home/mode_endless_card.png');
+    place(endless, 0, 34, 610, 202);
+
+    const createLockedMode = async (key, title, description, y, color) => {
+      const shelf = await createSprite(`Shelf${key}`, root, 600, 42, 'db://assets/textures/home/mode_card_shelf.png');
+      place(shelf, 0, y - 110, 600, 42);
+      const card = createRoundedPanel(`Locked${key}Card`, root, 610, 202, color, 28);
+      place(card, 0, y, 610, 202);
+      modeCaption(card, `${key}Title`, title, 34, 0, 34, 520, 58, new Color(255, 255, 255, 255));
+      modeCaption(card, `${key}Description`, description, 20, 0, -18, 520, 40, new Color(229, 237, 255, 255));
+      const state = createRoundedPanel(`${key}LockedState`, card, 184, 42, new Color(27, 48, 83, 220), 18);
+      place(state, 0, -65, 184, 42);
+      modeCaption(state, `${key}LockedCaption`, '🔒 暂未开放', 19, 0, 0, 172, 36, new Color(255, 239, 164, 255));
+    };
+    await createLockedMode('Brawl', '黑洞乱斗', '多人竞速玩法正在制作', -206, new Color(74, 68, 133, 255));
+    await createLockedMode('Leaderboard', '限时排行榜', '赛季排名功能正在制作', -446, new Color(63, 105, 156, 255));
     const bestCaption = createLabel('EndlessBestCaption', root, '最高分', 19, new Color(255, 255, 255, 255));
     bestCaption.getComponent(UITransform).setContentSize(100, 34);
-    place(bestCaption, -164, -247, 100, 34);
+    place(bestCaption, -164, -60, 100, 34);
     const bestValue = createLabel('EndlessBestValue', root, '0', 20, new Color(229, 255, 91, 255));
     bestValue.getComponent(UITransform).setContentSize(110, 34);
-    place(bestValue, -79, -247, 110, 34);
+    place(bestValue, -79, -60, 110, 34);
 
     root.addComponent(getComponentClass('ModeSelectPageController'));
     root.active = false;
     await Editor.Message.request('scene', 'save-scene');
-    await Editor.Message.request('scene', 'create-prefab', root.uuid, 'db://assets/prefabs/ui/ModeSelectPage.prefab');
-    await Editor.Message.request('scene', 'save-scene');
-    return { prefab: 'db://assets/prefabs/ui/ModeSelectPage.prefab', rootUuid: root.uuid };
+    // Existing projects own the previously saved prefab. Overwriting it from a
+    // scene script opens Creator's native confirmation dialog and blocks the
+    // workflow; the runtime consumes this Creator-saved scene page directly.
+    return { prefab: null, prefabCreation: 'not-run-from-scene-script', rootUuid: root.uuid };
   },
   async buildHome() {
     const { director, UITransform, Widget, Color } = require('cc');

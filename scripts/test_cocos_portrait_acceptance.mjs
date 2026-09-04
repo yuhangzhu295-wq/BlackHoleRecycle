@@ -491,9 +491,34 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
       await page.waitForTimeout(250);
       await page.screenshot({ path: path.join(evidenceDirectory, 'portrait-390x844-mode.png') });
 
-      const endlessY = canvasRect.top + canvasRect.height * 0.645;
-      await dispatchTouchTap(cdp, x, endlessY);
-      await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'PLAYING', undefined, { timeout: 5000 });
+      const endlessModeButton = modeSnapshot.ui?.modeEndless;
+      const modeDesign = modeSnapshot.ui?.design;
+      assert(endlessModeButton?.active && modeDesign?.width > 0 && modeDesign?.height > 0,
+        `FAIL_ENDLESS_MODE_BUTTON_LAYOUT: ${JSON.stringify({ endlessModeButton, modeDesign })}`);
+      // The page can change visual shelf spacing. Read the actual
+      // Creator-saved button transform and still dispatch an ordinary CDP
+      // touch at its visible centre rather than retaining a stale hard-coded
+      // Y coordinate.
+      const endlessX = canvasRect.left + canvasRect.width
+        * ((endlessModeButton.x + modeDesign.width * 0.5) / modeDesign.width);
+      const endlessY = canvasRect.top + canvasRect.height
+        * ((modeDesign.height * 0.5 - endlessModeButton.y) / modeDesign.height);
+      await dispatchTouchTap(cdp, endlessX, endlessY);
+      try {
+        await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'PLAYING', undefined, { timeout: 5000 });
+      } catch (error) {
+        const actual = await readRuntimeSnapshot(page);
+        throw new Error(`FAIL_MODE_ENDLESS_TOUCH: ${JSON.stringify({
+          endlessModeButton,
+          modeDesign,
+          tap: { x: endlessX, y: endlessY },
+          gameState: actual.gameState,
+          modePage: actual.ui?.modePage,
+          modeEndless: actual.ui?.modeEndless,
+          router: actual.ui?.runtimePageInput,
+          error: error instanceof Error ? error.message : String(error),
+        })}`);
+      }
       const gameplaySnapshot = await readRuntimeSnapshot(page);
       // Capture the actual opening composition before any later diagnostic
       // assertion can abort the run. This prevents a previous passing run's
