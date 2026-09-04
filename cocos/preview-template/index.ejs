@@ -25,7 +25,6 @@
             #content.content { min-height: 100vh; }
             #content .contentWrap { width: 100%; height: 100%; }
             #GameDiv.wrapper, #Cocos3dGameContainer, #GameCanvas { width: 100% !important; height: 100% !important; }
-            #btn-show-fps.checked { display: none; }
         </style>
     </head>
     <body style="overflow: hidden;">
@@ -190,7 +189,7 @@
     <div class="item"><button id="btn-rotate" class="">Rotate</button></div>
     <span style="font-size: small;" class="item">Debug Mode:</span>
     <div class="item">
-        <select id="opts-debug-mode" value="INFO">
+        <select id="opts-debug-mode" value="NONE">
             <option value="NONE">None</option>
             <option value="VERBOSE">Verbose</option>
             <option value="INFO">Info</option>
@@ -201,7 +200,7 @@
             <option value="ERROR_FOR_WEB_PAGE">Error For Web Page</option>
         </select>
     </div>
-    <div class="item"><button id="btn-show-fps" class="checked">Show FPS</button></div>
+    <div class="item"><button id="btn-show-fps" class="">Show FPS</button></div>
     <div class="item">
         <span style="font-size: small;" class="item">FPS:</span><input id="input-set-fps" type="number" value="60" />
     </div>
