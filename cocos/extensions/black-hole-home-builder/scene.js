@@ -849,9 +849,9 @@ exports.methods = {
     const header = await createSprite('Header', root, 500, 116, 'db://assets/textures/home/mode_header.png');
     place(header, 0, 530, 500, 116);
 
-    // Four shelves preserve the V2 mode-page hierarchy. Arena and Endless are
-    // real gameplay routes; the two remaining cards stay display-only until
-    // their own business systems exist.
+    // The V2 mode contract deliberately presents only two real routes.  Do
+    // not place locked legacy cards below them: that would imply unavailable
+    // game systems and violates the focused vertical-slice navigation.
     const arenaShelf = await createSprite('ShelfArena', root, 600, 42, 'db://assets/textures/home/mode_card_shelf.png');
     place(arenaShelf, 0, 164, 600, 42);
     const arena = await createImageButton('BtnArena', root, 610, 202, 'db://assets/textures/home/mode_arena_card.png', true);
@@ -862,19 +862,6 @@ exports.methods = {
     const endless = await createImageButton('BtnEndless', root, 610, 202, 'db://assets/textures/home/mode_endless_card.png');
     place(endless, 0, 34, 610, 202);
 
-    const createLockedMode = async (key, title, description, y, color) => {
-      const shelf = await createSprite(`Shelf${key}`, root, 600, 42, 'db://assets/textures/home/mode_card_shelf.png');
-      place(shelf, 0, y - 110, 600, 42);
-      const card = createRoundedPanel(`Locked${key}Card`, root, 610, 202, color, 28);
-      place(card, 0, y, 610, 202);
-      modeCaption(card, `${key}Title`, title, 34, 0, 34, 520, 58, new Color(255, 255, 255, 255));
-      modeCaption(card, `${key}Description`, description, 20, 0, -18, 520, 40, new Color(229, 237, 255, 255));
-      const state = createRoundedPanel(`${key}LockedState`, card, 184, 42, new Color(27, 48, 83, 220), 18);
-      place(state, 0, -65, 184, 42);
-      modeCaption(state, `${key}LockedCaption`, '🔒 暂未开放', 19, 0, 0, 172, 36, new Color(255, 239, 164, 255));
-    };
-    await createLockedMode('Brawl', '黑洞乱斗', '多人竞速玩法正在制作', -206, new Color(74, 68, 133, 255));
-    await createLockedMode('Leaderboard', '限时排行榜', '赛季排名功能正在制作', -446, new Color(63, 105, 156, 255));
     const bestCaption = createLabel('EndlessBestCaption', root, '最高分', 19, new Color(255, 255, 255, 255));
     bestCaption.getComponent(UITransform).setContentSize(100, 34);
     place(bestCaption, -164, -60, 100, 34);

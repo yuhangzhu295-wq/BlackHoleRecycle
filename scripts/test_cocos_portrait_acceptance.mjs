@@ -656,6 +656,11 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
       let modeSnapshot = await readRuntimeSnapshot(page);
       assert(modeSnapshot.ui?.modePage?.width > 0 && modeSnapshot.ui?.modePage?.height > 0,
         `FAIL_MODE_PAGE_LAYOUT: ${JSON.stringify(modeSnapshot.ui?.modePage)}`);
+      assert(!modeSnapshot.ui?.modeBrawlLocked && !modeSnapshot.ui?.modeLeaderboardLocked,
+        `FAIL_MODE_LEGACY_LOCKED_CARDS_PRESENT: ${JSON.stringify({
+          brawl: modeSnapshot.ui?.modeBrawlLocked,
+          leaderboard: modeSnapshot.ui?.modeLeaderboardLocked,
+        })}`);
       await page.waitForTimeout(250);
       await page.screenshot({ path: path.join(evidenceDirectory, 'portrait-390x844-mode.png') });
 
