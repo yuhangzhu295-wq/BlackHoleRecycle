@@ -17,6 +17,11 @@ cocos/local/
 cocos/profiles/
 cocos/native/
 cocos/build/
+cocos/.creator/
+
+# Tool-generated local state
+__pycache__/
+*.py[cod]
 
 # OS & Editor
 .DS_Store
