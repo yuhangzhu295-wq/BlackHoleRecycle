@@ -1,8 +1,7 @@
 /**
- * Fallback hit routing for editor-saved full-screen pages in a letterboxed
- * browser viewport.  The normal Cocos Button path remains the primary path;
- * this only handles a touch whose native event target is Canvas because the
- * engine did not hit a visible Button after SHOW_ALL scaling.
+ * Fallback hit routing for editor-saved full-screen portrait pages. The normal
+ * Cocos Button path remains primary; this handles the Canvas target when a
+ * browser forwards a touch before the nested Button target resolves.
  */
 import { _decorator, Component, EventTouch, Node, UITransform, Vec2, view } from 'cc';
 import { eventBus } from '../core/EventBus';
@@ -27,9 +26,9 @@ export class RuntimePageInputRouter extends Component {
   };
 
   onEnable(): void {
-    // Capture precedes Cocos' target-phase Button hit test. This is required
-    // when SHOW_ALL makes a Button's native hit rectangle diverge from its
-    // rendered position: use the editor-saved visual rect first.
+    // Capture precedes Cocos' target-phase Button hit test. Use the saved
+    // visual rectangle first so full-height mobile canvas events remain
+    // reliable even when the browser targets Canvas.
     this.node.on(Node.EventType.TOUCH_END, this.onCanvasTouchEnd, this, true);
   }
 
@@ -38,11 +37,11 @@ export class RuntimePageInputRouter extends Component {
   }
 
   private onCanvasTouchEnd(event: EventTouch): void {
-    // In a letterboxed browser viewport Cocos may target an active page root
-    // instead of Canvas even when its child Button visual is under the touch.
-    // Route by the current visible page and the editor-saved Button transform,
-    // never by event.target identity. The page transitions below are spatially
-    // disjoint, so a native Button click cannot toggle the same action twice.
+    // Cocos can target an active page root instead of Canvas even when its
+    // child Button visual is under the touch. Route by the current visible page
+    // and editor-saved Button transform, never by event.target identity. The
+    // page transitions below are spatially disjoint, so a native Button click
+    // cannot toggle the same action twice.
 
     const location = event.getLocation();
     const uiLocation = event.getUILocation();
@@ -178,18 +177,18 @@ export class RuntimePageInputRouter extends Component {
     if (!button?.activeInHierarchy || !transform) return false;
 
     const viewport = view.getViewportRect();
-    const design = view.getDesignResolutionSize();
-    if (viewport.width <= 0 || viewport.height <= 0 || design.width <= 0 || design.height <= 0) {
+    const visible = view.getVisibleSize();
+    if (viewport.width <= 0 || viewport.height <= 0 || visible.width <= 0 || visible.height <= 0) {
       return false;
     }
     // EventTouch.getLocation is viewport-local with a bottom-left origin.
-    // Convert that physical point exactly once into the Canvas design space.
-    // The acceptance runner now taps the button's world location inside this
-    // viewport, including the SHOW_ALL letterbox, so this is an inverse pair.
+    // Convert it to the actual visible Canvas space, rather than the 9:16
+    // nominal design size. FIXED_WIDTH deliberately makes this taller on
+    // modern phones and `UITransform.isHit` operates in that visible space.
     const location = event.getLocation();
     return transform.isHit(new Vec2(
-      (location.x / viewport.width) * design.width,
-      (location.y / viewport.height) * design.height,
+      (location.x / viewport.width) * visible.width,
+      (location.y / viewport.height) * visible.height,
     ));
   }
 }

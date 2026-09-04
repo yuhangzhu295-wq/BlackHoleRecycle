@@ -220,19 +220,17 @@ async function readRuntimeSnapshot(page) {
  */
 function pointForVisibleNode(canvasRect, snapshot, node, name) {
   const ui = snapshot?.ui;
-  const design = ui?.design;
-  assert(node?.active && node?.world,
+  assert(node?.active && node?.screen,
     `FAIL_VISIBLE_NODE_INACTIVE_${name}: ${JSON.stringify(node)}`);
-  assert(design?.width > 0 && design?.height > 0,
-    `FAIL_VISIBLE_NODE_LAYOUT_${name}: ${JSON.stringify({ design, node })}`);
+  assert(Number.isFinite(node.screen.x) && Number.isFinite(node.screen.y),
+    `FAIL_VISIBLE_NODE_LAYOUT_${name}: ${JSON.stringify({ ui, node })}`);
 
-  // The DOM GameCanvas can be a different CSS height from Cocos' internal
-  // frame after the page applies a portrait letterbox. Its browser rect is
-  // the final input surface, so map the saved world-space point to that rect
-  // directly instead of mixing the two coordinate systems.
+  // UI Camera output is the actual screen-space centre after Creator applies
+  // the current resolution policy. It remains correct when FIXED_WIDTH makes
+  // the visible portrait area taller than the nominal 720×1280 design size.
   return {
-    x: canvasRect.left + canvasRect.width * (node.world.x / design.width),
-    y: canvasRect.top + canvasRect.height * (1 - node.world.y / design.height),
+    x: canvasRect.left + canvasRect.width * node.screen.x,
+    y: canvasRect.top + canvasRect.height * node.screen.y,
   };
 }
 
@@ -586,14 +584,14 @@ function validatePortraitSnapshot(viewport, canvasRect, runtimeSnapshot) {
   const portrait = runtimeSnapshot.ui?.portrait;
   assert(viewport.width < viewport.height, `FAIL_NOT_PORTRAIT: browser viewport ${viewport.width}x${viewport.height}`);
   assert(canvasRect.width < canvasRect.height, `FAIL_NOT_PORTRAIT: canvas rect ${canvasRect.width}x${canvasRect.height}`);
-  assert(Math.abs(canvasRect.width / canvasRect.height - 9 / 16) < 0.035,
-    `FAIL_PORTRAIT_ASPECT: canvas ratio ${canvasRect.width / canvasRect.height}`);
+  assert(Math.abs(canvasRect.width - viewport.width) < 1 && Math.abs(canvasRect.height - viewport.height) < 1,
+    `FAIL_FULL_SCREEN_CANVAS: canvas=${JSON.stringify(canvasRect)} viewport=${JSON.stringify(viewport)}`);
   assert(portrait?.designIsPortrait, 'FAIL_PORTRAIT_DESIGN: design resolution is not portrait');
   assert(portrait?.frameIsPortrait, `FAIL_PORTRAIT_FRAME: frame ${JSON.stringify(runtimeSnapshot.ui.frame)}`);
   assert(portrait?.viewportIsPortrait, `FAIL_PORTRAIT_OVERLAY_ONLY: 3D viewport ${JSON.stringify(portrait?.viewport)}`);
   assert(portrait?.viewportWithinFrame, 'FAIL_PORTRAIT_OVERLAY_ONLY: 3D viewport extends beyond the game frame');
-  assert(Math.abs(portrait.viewportRatio - 9 / 16) < 0.035,
-    `FAIL_PORTRAIT_OVERLAY_ONLY: 3D viewport ratio ${portrait.viewportRatio}`);
+  assert(Math.abs(portrait.viewportRatio - viewport.width / viewport.height) < 0.035,
+    `FAIL_VIEWPORT_ADAPTATION: expected=${viewport.width / viewport.height} actual=${portrait.viewportRatio}`);
 }
 
 function getLogicalPlayerPosition(runtimeSnapshot) {
@@ -765,6 +763,11 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
     const snapshot = await readRuntimeSnapshot(page);
     validatePortraitSnapshot(viewport, canvasRect, snapshot);
     assert(runtimeErrors.length === 0, `Runtime console errors: ${runtimeErrors.join(' | ')}`);
+
+    // Preserve the read-only initial layout snapshot with the evidence so
+    // visual QA can audit actual safe-area placement rather than estimating
+    // positions from screenshots.
+    if (viewport.id === '390x844') report.initialLayout = snapshot.ui;
 
     const screenshot = path.join(evidenceDirectory, `portrait-${viewport.id}-home.png`);
     await page.screenshot({ path: screenshot });

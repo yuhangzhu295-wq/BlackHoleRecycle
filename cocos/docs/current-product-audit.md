@@ -3,6 +3,7 @@
 ## Verified implemented paths
 
 - `GameManager`, `BlackHoleMachine`, `CompressionSystem`, `CompressibleObject`, `SaveService`, `EventBus`, and `ObjectPool` are production runtime code using Cocos Creator 3.8.3 engine types. The Web QA bridge is read-only; the acceptance suite does not use a mass grant, teleport, or target-position setter.
+- Portrait rendering uses Cocos `FIXED_WIDTH`, so the game owns the entire physical portrait canvas rather than putting a 9:16 WebGL surface inside tall-phone browser letterbox. The verified 375×667, 390×844, and 430×932 frames all have a full-size game canvas. The lower-right joystick is kept inside a 92px westward drag-safe margin on a 390px phone; this is a real input-layout correction, not an acceptance exception.
 - Player movement is continuous, camera-relative velocity from a fixed portrait joystick. It locks the first touch ID, ignores secondary touches, stops on release, and has been exercised in all eight directions through real CDP touch.
 - Endless play uses `InfiniteWorldManager`'s 2D X/Z cell grid with origin rebasing. The full runtime acceptance drives north, south, east, and west long-distance travel and checks active streamed cells rather than legacy Z-only chunks.
 - Gameplay objects retain their actual `CompressibleObject` suction state machine. Their semantic visuals are resolved through `ObjectArtRegistry` to audited Creator-imported art; there is no chair-to-tire or sofa-to-van fallback.
@@ -14,7 +15,7 @@
 
 - `npm run typecheck:cocos`: 0 TypeScript errors.
 - `npm run test:cocos`: 6/6 logic regressions pass. This is source-level regression evidence only, not an engine-runtime pass.
-- `npm run acceptance:v2 -- --scope=full`: official Cocos Creator 3.8.3 Web Mobile build plus real Playwright/CDP touch. The latest full run passed with browser console errors `[]` and no acceptance failures.
+- `npm run acceptance:v2 -- --scope=full`: official Cocos Creator 3.8.3 Web Mobile build plus real Playwright/CDP touch. The latest full run passed with browser console errors `[]` and no acceptance failures: full-height portrait canvas at three phone sizes, eight-direction joystick input, 500m north/south/west/east travel with origin rebasing, dynamic-road turns, T1 lock → LV2 → T2 intake, and local-arena revive/settlement.
 - `npm run build:all`: Web Mobile, WeChat Game, and ByteDance Mini Game packages built successfully with Creator 3.8.3. The ByteDance package still uses `testappId`, so it is buildable but not release-ready.
 - `arena-server/` has a separate Colyseus integration test that connects two actual SDK clients to one server-authoritative room and observes replicated movement, pickup suction, LV2/T2 progression, defeat, dropped recyclable mass, and respawn. It is not yet connected to the Cocos production arena route.
 

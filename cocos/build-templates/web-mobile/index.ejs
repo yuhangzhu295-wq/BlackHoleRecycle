@@ -18,18 +18,14 @@
   <meta name="x5-page-mode" content="app">
   <link rel="stylesheet" type="text/css" href="<%= cssUrl %>"/>
   <style>
-    /* SHOW_ALL preserves the verified 9:16 Cocos viewport on tall phones.
-       Match the opening park ground outside that viewport instead of showing
-       a black browser letterbox above and below the playable world. */
-    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #b2dc9d; }
-    /* The physical phone may be taller than 9:16. Keep WebGL and UI together
-       inside one portrait GameDiv instead of filling that surplus with 3D world. */
-    body { display: flex; align-items: center; justify-content: center; }
+    /* The product owns the full portrait display. Cocos FIXED_WIDTH keeps the
+       authored horizontal field while the extra height on modern phones is a
+       real, touchable game area rather than browser letterbox. */
+    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #101820; }
     #GameDiv {
-      width: min(100vw, calc(100vh * 9 / 16)) !important;
-      height: min(100vh, calc(100vw * 16 / 9)) !important;
-      margin: auto !important;
-      flex: 0 0 auto;
+      width: 100vw !important;
+      height: 100vh !important;
+      margin: 0 !important;
     }
     #Cocos3dGameContainer, #GameCanvas { width: 100% !important; height: 100% !important; }
   </style>

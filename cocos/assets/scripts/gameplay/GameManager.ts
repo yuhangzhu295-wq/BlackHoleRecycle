@@ -90,16 +90,17 @@ export class GameManager extends Component {
   }
 
   /**
-   * Keep the WebGL camera and Canvas in the same 9:16 letterboxed game view.
-   * SHOW_ALL preserves the tested 3D portrait viewport. The surrounding page
-   * backdrop is styled separately so it does not present as a black browser
-   * frame on narrow devices.
+   * Fill a real portrait device without turning its extra height into browser
+   * letterbox.  FIXED_WIDTH keeps the authored 720-unit horizontal gameplay
+   * span and reveals additional vertical city/UI room on 19.5:9 phones.
+   * That is the same composition rule used by the reference screens: portrait
+   * is mandatory, but the app owns the whole physical screen.
    */
   private applyPortraitRuntimeContract(): void {
     view.setDesignResolutionSize(
       this.portraitWidth,
       this.portraitHeight,
-      ResolutionPolicy.SHOW_ALL
+      ResolutionPolicy.FIXED_WIDTH
     );
     view.off('canvas-resize', this.applyPortraitRuntimeContract, this);
     view.on('canvas-resize', this.applyPortraitRuntimeContract, this);

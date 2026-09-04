@@ -18,8 +18,17 @@ export class JoystickVisual extends Component {
 
   private playerController: PlayerController | null = null;
   private readonly knobRadius: number = 68;
+  /**
+   * The authored x=232 placed the 196-unit control almost against the right
+   * edge after full-height FIXED_WIDTH adaptation.  At 390px wide that left
+   * fewer than 45 physical pixels for a westward drag, so a player could not
+   * request full left input.  This position leaves a real 92px drag radius
+   * while preserving the lower-right affordance from the V2 reference.
+   */
+  private readonly rightHandSafeX: number = 148;
 
   onLoad(): void {
+    this.node.setPosition(this.rightHandSafeX, this.node.position.y, this.node.position.z);
     this.drawBase();
     this.drawKnob();
   }
