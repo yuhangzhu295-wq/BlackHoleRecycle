@@ -14,6 +14,7 @@ const RESPAWN_MILLISECONDS = 2_500;
 const SHIELD_MILLISECONDS = 3_000;
 const CONSUME_RATIO = 1.32;
 const CONSUME_DISTANCE = 1.28;
+const BOT_NAMES = ['蓝莓', '矿石', '风暴', '火花', '雪球', '流光', '哨兵', '哨兵·零'];
 
 function finiteNumber(value) {
   return typeof value === 'number' && Number.isFinite(value);
@@ -38,31 +39,44 @@ function normalizedDisplayName(value) {
 export class ArenaRoom extends Room {
   maxClients = MAX_CLIENTS;
   lastInputAtMilliseconds = new Map();
+  humanSlots = new Map();
   nextPickupId = 0;
 
   onCreate() {
     this.setState(new ArenaState());
     this.state.phase = 'RUNNING';
+    // Keep every public room readable and playable from the first player.
+    // Human joins claim a concrete slot and replace only its server Bot; no
+    // client ever fabricates roster entries or simulated bot mass locally.
+    for (let slot = 0; slot < MAX_CLIENTS; slot += 1) this.spawnBot(slot);
     this.spawnOpeningCluster();
     this.setSimulationInterval((deltaTime) => this.step(deltaTime), 50);
     this.onMessage('input', (client, payload) => this.acceptInput(client, payload));
   }
 
   onJoin(client, options) {
+    const slot = this.claimBotSlot();
+    if (slot === null) {
+      throw new Error('Arena roster has no available bot slot.');
+    }
     const player = new ArenaPlayerState();
     player.displayName = normalizedDisplayName(options?.displayName);
-    const slot = this.state.players.size;
-    const angle = (Math.PI * 2 * slot) / MAX_CLIENTS;
-    player.x = Math.cos(angle) * 8;
-    player.z = Math.sin(angle) * 8;
+    player.isBot = false;
+    player.connected = true;
+    this.placeAtSlot(player, slot);
     this.state.players.set(client.sessionId, player);
+    this.humanSlots.set(client.sessionId, slot);
     this.lastInputAtMilliseconds.set(client.sessionId, this.state.elapsedMilliseconds);
+    this.state.phase = 'RUNNING';
   }
 
   onLeave(client) {
+    const slot = this.humanSlots.get(client.sessionId);
     this.state.players.delete(client.sessionId);
     this.lastInputAtMilliseconds.delete(client.sessionId);
-    if (this.state.players.size === 0) this.state.phase = 'LOBBY';
+    this.humanSlots.delete(client.sessionId);
+    if (slot !== undefined) this.spawnBot(slot);
+    if (this.humanSlots.size === 0) this.state.phase = 'LOBBY';
   }
 
   acceptInput(client, payload) {
@@ -99,8 +113,9 @@ export class ArenaRoom extends Room {
         return;
       }
       player.shieldMilliseconds = Math.max(0, player.shieldMilliseconds - deltaMilliseconds);
-      const inputX = inputAge <= INPUT_TIMEOUT_MILLISECONDS ? player.inputX : 0;
-      const inputY = inputAge <= INPUT_TIMEOUT_MILLISECONDS ? player.inputY : 0;
+      if (player.isBot) this.updateBotIntent(sessionId, player);
+      const inputX = player.isBot || inputAge <= INPUT_TIMEOUT_MILLISECONDS ? player.inputX : 0;
+      const inputY = player.isBot || inputAge <= INPUT_TIMEOUT_MILLISECONDS ? player.inputY : 0;
       player.x += inputX * MOVE_SPEED_METERS_PER_SECOND * deltaSeconds;
       player.z += inputY * MOVE_SPEED_METERS_PER_SECOND * deltaSeconds;
 
@@ -127,6 +142,65 @@ export class ArenaRoom extends Room {
     // It is intentionally beyond the LV1 radius but within the LV2 loop
     // after the player travels towards it using an ordinary input message.
     this.spawnPickup(8, -4.4, 2, 180, 'opening-t2');
+  }
+
+  /** Every bot occupies a stable compass slot so replacing it never teleports a human roster. */
+  spawnBot(slot) {
+    const bot = new ArenaPlayerState();
+    bot.displayName = BOT_NAMES[slot] || `回收机 ${slot + 1}`;
+    bot.isBot = true;
+    bot.connected = false;
+    this.placeAtSlot(bot, slot);
+    this.state.players.set(`bot-${slot}`, bot);
+  }
+
+  placeAtSlot(player, slot) {
+    const angle = (Math.PI * 2 * slot) / MAX_CLIENTS;
+    player.x = Math.cos(angle) * 8;
+    player.z = Math.sin(angle) * 8;
+  }
+
+  claimBotSlot() {
+    for (let slot = 0; slot < MAX_CLIENTS; slot += 1) {
+      const id = `bot-${slot}`;
+      if (this.state.players.has(id)) {
+        this.state.players.delete(id);
+        return slot;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Server-only deterministic steering. Bots seek a real recyclable their
+   * current level can consume. Their position and intake remain ordinary room
+   * simulation fields, so they obey exactly the same suction/combat rules as
+   * human competitors and never receive a client-side score shortcut.
+   */
+  updateBotIntent(sessionId, player) {
+    if (this.state.phase !== 'RUNNING' || !player.alive) {
+      player.inputX = 0;
+      player.inputY = 0;
+      return;
+    }
+    let target = null;
+    let targetDistance = Number.POSITIVE_INFINITY;
+    this.state.pickups.forEach((pickup) => {
+      if (pickup.state === 'ABSORBED' || pickup.tier > player.maxTier) return;
+      if (pickup.capturedBy && pickup.capturedBy !== sessionId) return;
+      const distance = Math.hypot(pickup.x - player.x, pickup.z - player.z);
+      if (distance < targetDistance) {
+        target = pickup;
+        targetDistance = distance;
+      }
+    });
+    if (!target || targetDistance <= 0.03) {
+      player.inputX = 0;
+      player.inputY = 0;
+      return;
+    }
+    player.inputX = (target.x - player.x) / targetDistance;
+    player.inputY = (target.z - player.z) / targetDistance;
   }
 
   spawnPickup(x, z, tier, mass, id = `pickup-${this.nextPickupId++}`) {
@@ -237,10 +311,9 @@ export class ArenaRoom extends Room {
   }
 
   respawn(sessionId, player) {
-    const slot = [...this.state.players.keys()].indexOf(sessionId);
-    const angle = (Math.PI * 2 * Math.max(0, slot)) / MAX_CLIENTS;
-    player.x = Math.cos(angle) * 8;
-    player.z = Math.sin(angle) * 8;
+    const botSlot = player.isBot ? Number.parseInt(sessionId.slice('bot-'.length), 10) : null;
+    const slot = player.isBot ? botSlot : this.humanSlots.get(sessionId);
+    this.placeAtSlot(player, Number.isInteger(slot) ? slot : 0);
     player.alive = true;
     player.respawnMilliseconds = 0;
     player.shieldMilliseconds = SHIELD_MILLISECONDS;

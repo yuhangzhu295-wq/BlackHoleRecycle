@@ -63,8 +63,12 @@ test('two Colyseus clients receive authoritative movement, LV2 evolution and T2 
     secondRoom.onMessage('player_defeated', () => {});
 
     await sleep(160);
-    assert.equal(firstRoom.state.players.size, 2);
-    assert.equal(secondRoom.state.players.size, 2);
+    assert.equal(firstRoom.state.players.size, 8);
+    assert.equal(secondRoom.state.players.size, 8);
+    const connectedCompetitors = [...firstRoom.state.players.values()].filter((player) => player.connected);
+    const botCompetitors = [...firstRoom.state.players.values()].filter((player) => player.isBot);
+    assert.equal(connectedCompetitors.length, 2, 'Expected two actual SDK clients in the roster.');
+    assert.equal(botCompetitors.length, 6, 'Expected server-authoritative bot fill for the other six slots.');
     const before = firstRoom.state.players.get(firstRoom.sessionId);
     assert.equal(before.level, 1);
     assert.equal(before.maxTier, 1);

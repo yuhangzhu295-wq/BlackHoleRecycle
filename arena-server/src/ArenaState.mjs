@@ -9,6 +9,8 @@ export const ArenaPlayerState = schema({
   inputY: t.number().default(0),
   lastInputSequence: t.uint32().default(0),
   connected: t.boolean().default(true),
+  /** Server-created competitor when a human slot has not been claimed. */
+  isBot: t.boolean().default(false),
   mass: t.uint32().default(140),
   level: t.uint8().default(1),
   maxTier: t.uint8().default(1),

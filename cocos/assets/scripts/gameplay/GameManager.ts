@@ -61,6 +61,8 @@ export class GameManager extends Component {
    * until its replicated snapshots drive the arena renderer.
    */
   private readonly networkArenaClient: ColyseusArenaClient = new ColyseusArenaClient();
+  /** Send the exact normalized joystick intent to a joined authoritative room at 20Hz. */
+  private networkInputAccumulator: number = 0;
 
   // Portrait isometric framing: the centre ray deliberately lands ahead of the
   // machine so the player remains in the lower interaction band.
@@ -912,6 +914,7 @@ export class GameManager extends Component {
   }
 
   update(dt: number): void {
+    this.forwardNetworkArenaInput(dt);
     // 1. 暂停短路保护
     if (this.isPaused) return;
     if (!this.machine || !this.mainCamera) return;
@@ -968,5 +971,25 @@ export class GameManager extends Component {
     // A 42° pitch keeps the local singularity in the lower interaction zone
     // and reserves the upper half for the city block and approaching rivals.
     this.mainCamera.node.setRotationFromEuler(-42, 0, 0);
+  }
+
+  /**
+   * This is transport only: the local joystick remains the sole source of
+   * player intent, while the Colyseus room remains the sole authority for the
+   * remote position. No mass, pickup, combat or movement state is written by
+   * this method. It is dormant unless an explicit arena endpoint joined.
+   */
+  private forwardNetworkArenaInput(dt: number): void {
+    if (this.networkArenaClient.status !== 'CONNECTED') return;
+    this.networkInputAccumulator += Math.max(0, dt);
+    if (this.networkInputAccumulator < 0.05) return;
+    this.networkInputAccumulator = 0;
+    const input = this.playerController?.moveInput;
+    const active = this.gameState === 'PLAYING' && !this.isPaused && !!input && input.lengthSqr() > 0.01;
+    this.networkArenaClient.sendMovement(
+      active ? input!.x : 0,
+      active ? input!.y : 0,
+      active,
+    );
   }
 }

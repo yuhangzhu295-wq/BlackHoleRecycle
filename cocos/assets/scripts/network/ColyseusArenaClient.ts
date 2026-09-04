@@ -16,12 +16,14 @@ export interface AuthoritativeArenaPlayer {
   readonly displayName: string;
   readonly x: number;
   readonly z: number;
+  readonly lastInputSequence: number;
   readonly mass: number;
   readonly level: number;
   readonly maxTier: number;
   readonly suctionRadius: number;
   readonly collected: number;
   readonly kills: number;
+  readonly isBot: boolean;
   readonly alive: boolean;
   readonly respawnMilliseconds: number;
   readonly shieldMilliseconds: number;
@@ -67,12 +69,14 @@ type ArenaPlayerLike = {
   displayName?: unknown;
   x?: unknown;
   z?: unknown;
+  lastInputSequence?: unknown;
   mass?: unknown;
   level?: unknown;
   maxTier?: unknown;
   suctionRadius?: unknown;
   collected?: unknown;
   kills?: unknown;
+  isBot?: unknown;
   alive?: unknown;
   respawnMilliseconds?: unknown;
   shieldMilliseconds?: unknown;
@@ -210,12 +214,14 @@ export class ColyseusArenaClient {
         displayName: text(player.displayName, `players.${id}.displayName`),
         x: finite(player.x, `players.${id}.x`),
         z: finite(player.z, `players.${id}.z`),
+        lastInputSequence: finite(player.lastInputSequence, `players.${id}.lastInputSequence`),
         mass: finite(player.mass, `players.${id}.mass`),
         level: finite(player.level, `players.${id}.level`),
         maxTier: finite(player.maxTier, `players.${id}.maxTier`),
         suctionRadius: finite(player.suctionRadius, `players.${id}.suctionRadius`),
         collected: finite(player.collected, `players.${id}.collected`),
         kills: finite(player.kills, `players.${id}.kills`),
+        isBot: bool(player.isBot, `players.${id}.isBot`),
         alive: bool(player.alive, `players.${id}.alive`),
         respawnMilliseconds: finite(player.respawnMilliseconds, `players.${id}.respawnMilliseconds`),
         shieldMilliseconds: finite(player.shieldMilliseconds, `players.${id}.shieldMilliseconds`),

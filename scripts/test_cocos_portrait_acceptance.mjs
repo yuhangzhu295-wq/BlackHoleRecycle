@@ -257,7 +257,7 @@ async function readRuntimeSnapshot(page) {
  * Only server-replicated data is observed here: no test setter may create a
  * player, mass value, pickup or room state.
  */
-async function verifyNetworkProbe(page) {
+async function verifyNetworkProbe(cdp, page, canvasRect) {
   try {
     await page.waitForFunction(() => window.__BHR_QA__.snapshot().network?.status === 'CONNECTED', undefined, { timeout: 10_000 });
   } catch (error) {
@@ -272,7 +272,49 @@ async function verifyNetworkProbe(page) {
     `FAIL_COCOS_COLYSEUS_LOCAL_PLAYER: ${JSON.stringify(network.snapshot)}`);
   assert(network.snapshot.pickups.length >= 16,
     `FAIL_COCOS_COLYSEUS_OPENING_PICKUPS: ${JSON.stringify(network.snapshot)}`);
-  return network;
+
+  // Begin the normal visible Endless route through the actual saved controls;
+  // this gives PlayerController a real joystick surface. The game root then
+  // forwards only its normalized input to the authoritative room.
+  const home = await readRuntimeSnapshot(page);
+  const start = pointForVisibleNode(canvasRect, home, home.ui?.start, 'NETWORK_HOME_START');
+  await dispatchTouchTap(cdp, start.x, start.y);
+  await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'MODE_SELECT', undefined, { timeout: 5_000 });
+  const mode = await readRuntimeSnapshot(page);
+  const endless = pointForVisibleNode(canvasRect, mode, mode.ui?.modeEndless, 'NETWORK_MODE_ENDLESS');
+  await dispatchTouchTap(cdp, endless.x, endless.y);
+  await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'PLAYING', undefined, { timeout: 5_000 });
+  const playing = await readRuntimeSnapshot(page);
+  const localBefore = playing.network?.snapshot?.players?.find((player) => player.id === playing.network?.snapshot?.localSessionId);
+  assert(localBefore, `FAIL_COCOS_COLYSEUS_MISSING_LOCAL_BEFORE_INPUT: ${JSON.stringify(playing.network)}`);
+  const joystick = pointForVisibleNode(canvasRect, playing, playing.ui?.runtimeHUD?.joystick, 'NETWORK_ENDLESS_JOYSTICK');
+  await beginTouchJoystick(cdp, joystick.x, joystick.y, joystick.x + 38, joystick.y - 18);
+  try {
+    await page.waitForFunction((before) => {
+      const current = window.__BHR_QA__.snapshot().network?.snapshot;
+      const local = current?.players?.find((player) => player.id === current.localSessionId);
+      return !!local
+        && local.lastInputSequence > before.sequence
+        && Math.hypot(local.x - before.x, local.z - before.z) > 0.35;
+    }, {
+      x: localBefore.x,
+      z: localBefore.z,
+      sequence: localBefore.lastInputSequence,
+    }, { timeout: 8_000 });
+  } catch (error) {
+    const actual = await readRuntimeSnapshot(page);
+    throw new Error(`FAIL_COCOS_COLYSEUS_INPUT_FORWARD: ${JSON.stringify({
+      before: localBefore,
+      network: actual.network,
+      playerInput: actual.machine?.movementInput,
+      error: String(error),
+    })}`);
+  } finally {
+    await releaseTouchJoystick(cdp);
+  }
+  const after = await readRuntimeSnapshot(page);
+  const localAfter = after.network.snapshot.players.find((player) => player.id === after.network.snapshot.localSessionId);
+  return { ...after.network, inputForwarding: { before: localBefore, after: localAfter } };
 }
 
 /**
@@ -840,7 +882,7 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
       const cdp = await context.newCDPSession(page);
       report.camera = snapshot.camera;
       if (acceptanceScope === 'network') {
-        report.network = await verifyNetworkProbe(page);
+        report.network = await verifyNetworkProbe(cdp, page, canvasRect);
         assert(runtimeErrors.length === 0, `Runtime console errors after Colyseus connection: ${runtimeErrors.join(' | ')}`);
         return;
       }
