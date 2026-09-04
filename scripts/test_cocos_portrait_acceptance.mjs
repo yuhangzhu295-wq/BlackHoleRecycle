@@ -213,22 +213,40 @@ async function readRuntimeSnapshot(page) {
 }
 
 /**
+ * Convert a Creator UI node's actual world centre into a browser touch point.
+ * Cocos' SHOW_ALL viewport can be vertically letterboxed inside GameCanvas,
+ * so a node's local `x/y` is not enough once it is nested under SafeAreaRoot.
+ * The returned point still drives CDP touch exactly as a phone player would.
+ */
+function pointForVisibleNode(canvasRect, snapshot, node, name) {
+  const ui = snapshot?.ui;
+  const design = ui?.design;
+  assert(node?.active && node?.world,
+    `FAIL_VISIBLE_NODE_INACTIVE_${name}: ${JSON.stringify(node)}`);
+  assert(design?.width > 0 && design?.height > 0,
+    `FAIL_VISIBLE_NODE_LAYOUT_${name}: ${JSON.stringify({ design, node })}`);
+
+  // The DOM GameCanvas can be a different CSS height from Cocos' internal
+  // frame after the page applies a portrait letterbox. Its browser rect is
+  // the final input surface, so map the saved world-space point to that rect
+  // directly instead of mixing the two coordinate systems.
+  return {
+    x: canvasRect.left + canvasRect.width * (node.world.x / design.width),
+    y: canvasRect.top + canvasRect.height * (1 - node.world.y / design.height),
+  };
+}
+
+/**
  * The Home skin card must cause a real, persisted selection change through
  * the same visible CDP touch as a phone player. The QA bridge only reads the
  * resulting save snapshot and input diagnostic.
  */
 async function verifyHomeSkin(cdp, page, canvasRect) {
   const before = await readRuntimeSnapshot(page);
-  const design = before.ui?.design;
   const skin = before.ui?.skin;
   assert(skin?.active && skin?.interactable === true,
     `FAIL_HOME_SKIN_NOT_INTERACTABLE: ${JSON.stringify(skin)}`);
-  assert(design?.width > 0 && design?.height > 0,
-    `FAIL_HOME_SKIN_DESIGN: ${JSON.stringify(design)}`);
-  const point = {
-    x: canvasRect.left + canvasRect.width * ((skin.x + design.width * 0.5) / design.width),
-    y: canvasRect.top + canvasRect.height * ((design.height * 0.5 - skin.y) / design.height),
-  };
+  const point = pointForVisibleNode(canvasRect, before, skin, 'HOME_SKIN');
   const previousSkinId = before.save?.skinId;
   await dispatchTouchTap(cdp, point.x, point.y);
   try {
@@ -264,18 +282,10 @@ async function verifyHomeSkin(cdp, page, canvasRect) {
  */
 async function verifyMachineInfo(cdp, page, canvasRect) {
   const before = await readRuntimeSnapshot(page);
-  const design = before.ui?.design;
   const machineButton = before.ui?.machine;
-  assert(machineButton?.active && machineButton?.interactable === true && design?.width > 0 && design?.height > 0,
-    `FAIL_HOME_MACHINE_NOT_INTERACTABLE: ${JSON.stringify({ machineButton, design })}`);
-  const pointFor = (node, name) => {
-    assert(node?.active, `FAIL_MACHINE_INFO_NODE_INACTIVE_${name}: ${JSON.stringify(node)}`);
-    return {
-      x: canvasRect.left + canvasRect.width * ((node.x + design.width * 0.5) / design.width),
-      y: canvasRect.top + canvasRect.height * ((design.height * 0.5 - node.y) / design.height),
-    };
-  };
-  const open = pointFor(machineButton, 'OPEN');
+  assert(machineButton?.active && machineButton?.interactable === true,
+    `FAIL_HOME_MACHINE_NOT_INTERACTABLE: ${JSON.stringify({ machineButton })}`);
+  const open = pointForVisibleNode(canvasRect, before, machineButton, 'MACHINE_INFO_OPEN');
   await dispatchTouchTap(cdp, open.x, open.y);
   try {
     await page.waitForFunction(() => {
@@ -294,9 +304,14 @@ async function verifyMachineInfo(cdp, page, canvasRect) {
   assert(opened.player?.isDragging === false && opened.machine?.velocity?.x === 0 && opened.machine?.velocity?.z === 0,
     `FAIL_MACHINE_INFO_INPUT_NOT_PAUSED: ${JSON.stringify({ player: opened.player, machine: opened.machine })}`);
   await page.screenshot({ path: path.join(evidenceDirectory, 'portrait-390x844-machine-info.png') });
-  const close = pointFor(opened.ui?.machineInfoBack, 'BACK');
+  const close = pointForVisibleNode(canvasRect, opened, opened.ui?.machineInfoBack, 'MACHINE_INFO_BACK');
   await dispatchTouchTap(cdp, close.x, close.y);
-  await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'HOME', undefined, { timeout: 5000 });
+  try {
+    await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'HOME', undefined, { timeout: 5000 });
+  } catch (error) {
+    const actual = await readRuntimeSnapshot(page);
+    throw new Error(`FAIL_MACHINE_INFO_BACK: ${JSON.stringify({ close, state: actual.gameState, ui: actual.ui, error: String(error) })}`);
+  }
   const closed = await readRuntimeSnapshot(page);
   assert(closed.ui?.home?.active && closed.ui?.machine?.active,
     `FAIL_MACHINE_INFO_RETURN_HOME: ${JSON.stringify({ state: closed.gameState, ui: closed.ui })}`);
@@ -310,21 +325,7 @@ async function verifyMachineInfo(cdp, page, canvasRect) {
  */
 async function verifyRuntimePages(cdp, page, canvasRect) {
   const before = await readRuntimeSnapshot(page);
-  const design = before.ui?.design;
-  const pointFor = (node, name) => {
-    assert(node?.active, `FAIL_RUNTIME_PAGE_NODE_INACTIVE_${name}: ${JSON.stringify(node)}`);
-    assert(design?.width > 0 && design?.height > 0,
-      `FAIL_RUNTIME_PAGE_DESIGN: ${JSON.stringify(design)}`);
-    // Page nodes are editor-saved in portrait design coordinates.  Their
-    // camera screen projection is intentionally not used here: SHOW_ALL can
-    // report that projection in the full WebGL frame instead of the visible
-    // browser viewport. This remains a raw CDP touch on the displayed button.
-    return {
-      x: canvasRect.left + canvasRect.width * ((node.x + design.width * 0.5) / design.width),
-      y: canvasRect.top + canvasRect.height * ((design.height * 0.5 - node.y) / design.height),
-    };
-  };
-  const pause = pointFor(before.ui?.runtimeHUD?.pauseButton, 'PAUSE');
+  const pause = pointForVisibleNode(canvasRect, before, before.ui?.runtimeHUD?.pauseButton, 'PAUSE');
 
   await dispatchTouchTap(cdp, pause.x, pause.y);
   try {
@@ -346,7 +347,7 @@ async function verifyRuntimePages(cdp, page, canvasRect) {
   await page.screenshot({ path: path.join(evidenceDirectory, 'portrait-390x844-pause.png') });
 
   const paused = await readRuntimeSnapshot(page);
-  const resume = pointFor(paused.ui?.formalPages?.pauseResume, 'RESUME');
+  const resume = pointForVisibleNode(canvasRect, paused, paused.ui?.formalPages?.pauseResume, 'RESUME');
   await dispatchTouchTap(cdp, resume.x, resume.y);
   try {
     await page.waitForFunction(() => {
@@ -368,7 +369,7 @@ async function verifyRuntimePages(cdp, page, canvasRect) {
   await dispatchTouchTap(cdp, pause.x, pause.y);
   await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'PAUSED', undefined, { timeout: 5000 });
   const pausedForSettlement = await readRuntimeSnapshot(page);
-  const settle = pointFor(pausedForSettlement.ui?.formalPages?.pauseSettle, 'SETTLE');
+  const settle = pointForVisibleNode(canvasRect, pausedForSettlement, pausedForSettlement.ui?.formalPages?.pauseSettle, 'SETTLE');
   await dispatchTouchTap(cdp, settle.x, settle.y);
   try {
     await page.waitForFunction(() => {
@@ -397,19 +398,8 @@ async function verifyRuntimePages(cdp, page, canvasRect) {
  * game setter, grants mass, changes a score or emits an event.
  */
 async function verifyArenaFlow(cdp, page, canvasRect, modeSnapshot) {
-  const pointFor = (node, name) => {
-    const design = modeSnapshot.ui?.design;
-    assert(node?.active, `FAIL_ARENA_NODE_INACTIVE_${name}: ${JSON.stringify(node)}`);
-    assert(design?.width > 0 && design?.height > 0,
-      `FAIL_ARENA_DESIGN: ${JSON.stringify(design)}`);
-    return {
-      x: canvasRect.left + canvasRect.width * ((node.x + design.width * 0.5) / design.width),
-      y: canvasRect.top + canvasRect.height * ((design.height * 0.5 - node.y) / design.height),
-    };
-  };
-
   const arenaButton = modeSnapshot.ui?.modeArena;
-  const arenaPoint = pointFor(arenaButton, 'MODE_ARENA');
+  const arenaPoint = pointForVisibleNode(canvasRect, modeSnapshot, arenaButton, 'MODE_ARENA');
   await dispatchTouchTap(cdp, arenaPoint.x, arenaPoint.y);
   try {
     await page.waitForFunction(() => {
@@ -478,7 +468,7 @@ async function verifyArenaFlow(cdp, page, canvasRect, modeSnapshot) {
     `FAIL_ARENA_REVIVE_PAGE: ${JSON.stringify(defeated.ui?.formalPages)}`);
   await page.screenshot({ path: path.join(evidenceDirectory, 'portrait-390x844-revive.png') });
 
-  const revive = pointFor(defeated.ui?.formalPages?.reviveNow, 'REVIVE_NOW');
+  const revive = pointForVisibleNode(canvasRect, defeated, defeated.ui?.formalPages?.reviveNow, 'REVIVE_NOW');
   await dispatchTouchTap(cdp, revive.x, revive.y);
   try {
     await page.waitForFunction(() => {
@@ -502,13 +492,7 @@ async function verifyArenaFlow(cdp, page, canvasRect, modeSnapshot) {
   // player after respawn. The local player has spawn shield, so this input is
   // not racing an immediate second defeat.
   const arenaJoystick = respawned.ui?.arenaHUD?.joystick;
-  const design = respawned.ui?.design;
-  assert(arenaJoystick?.active && design?.width > 0 && design?.height > 0,
-    `FAIL_ARENA_JOYSTICK_LAYOUT: ${JSON.stringify({ arenaJoystick, design })}`);
-  const joystick = {
-    x: canvasRect.left + canvasRect.width * ((arenaJoystick.x + design.width * 0.5) / design.width),
-    y: canvasRect.top + canvasRect.height * ((design.height * 0.5 - arenaJoystick.y) / design.height),
-  };
+  const joystick = pointForVisibleNode(canvasRect, respawned, arenaJoystick, 'ARENA_JOYSTICK');
   await beginTouchJoystick(cdp, joystick.x, joystick.y, joystick.x - 38, joystick.y - 18);
   await page.waitForTimeout(180);
   const arenaMoving = await readRuntimeSnapshot(page);
@@ -524,11 +508,11 @@ async function verifyArenaFlow(cdp, page, canvasRect, modeSnapshot) {
   // End the match through the visible pause/settle controls. This produces a
   // real FORFEIT match result and arena settlement rather than invoking a
   // private finish method.
-  const arenaPause = pointFor(respawned.ui?.arenaHUD?.pauseButton, 'ARENA_PAUSE');
+  const arenaPause = pointForVisibleNode(canvasRect, respawned, respawned.ui?.arenaHUD?.pauseButton, 'ARENA_PAUSE');
   await dispatchTouchTap(cdp, arenaPause.x, arenaPause.y);
   await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'PAUSED', undefined, { timeout: 5000 });
   const paused = await readRuntimeSnapshot(page);
-  const settle = pointFor(paused.ui?.formalPages?.pauseSettle, 'ARENA_SETTLE');
+  const settle = pointForVisibleNode(canvasRect, paused, paused.ui?.formalPages?.pauseSettle, 'ARENA_SETTLE');
   await dispatchTouchTap(cdp, settle.x, settle.y);
   await page.waitForFunction(() => {
     const snapshot = window.__BHR_QA__.snapshot();
@@ -541,11 +525,11 @@ async function verifyArenaFlow(cdp, page, canvasRect, modeSnapshot) {
     `FAIL_ARENA_SETTLEMENT_NOT_SAVED: ${JSON.stringify({ session: settled.session, reward: settled.arena.settlementReward })}`);
   await page.screenshot({ path: path.join(evidenceDirectory, 'portrait-390x844-arena-settlement.png') });
 
-  const home = pointFor(settled.ui?.formalPages?.settlementHome, 'ARENA_SETTLEMENT_HOME');
+  const home = pointForVisibleNode(canvasRect, settled, settled.ui?.formalPages?.settlementHome, 'ARENA_SETTLEMENT_HOME');
   await dispatchTouchTap(cdp, home.x, home.y);
   await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'HOME', undefined, { timeout: 5000 });
   const homeSnapshot = await readRuntimeSnapshot(page);
-  const start = pointFor(homeSnapshot.ui?.start, 'ARENA_HOME_START');
+  const start = pointForVisibleNode(canvasRect, homeSnapshot, homeSnapshot.ui?.start, 'ARENA_HOME_START');
   await dispatchTouchTap(cdp, start.x, start.y);
   await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'MODE_SELECT', undefined, { timeout: 5000 });
 
@@ -566,21 +550,14 @@ async function verifyArenaFlow(cdp, page, canvasRect, modeSnapshot) {
  * timer runs under the rendered page until ArenaMatchManager ends the match.
  */
 async function verifyArenaTimerExpiry(cdp, page, canvasRect) {
-  const homeStart = {
-    x: canvasRect.left + canvasRect.width * 0.5,
-    y: canvasRect.top + canvasRect.height * 0.773,
-  };
+  const homeSnapshot = await readRuntimeSnapshot(page);
+  const startButton = homeSnapshot.ui?.start;
+  const homeStart = pointForVisibleNode(canvasRect, homeSnapshot, startButton, 'ARENA_TIMER_HOME_START');
   await dispatchTouchTap(cdp, homeStart.x, homeStart.y);
   await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'MODE_SELECT', undefined, { timeout: 5000 });
   const modeSnapshot = await readRuntimeSnapshot(page);
   const arenaButton = modeSnapshot.ui?.modeArena;
-  const design = modeSnapshot.ui?.design;
-  assert(arenaButton?.active && design?.width > 0 && design?.height > 0,
-    `FAIL_ARENA_TIMER_MODE_LAYOUT: ${JSON.stringify({ arenaButton, design })}`);
-  const arenaPoint = {
-    x: canvasRect.left + canvasRect.width * ((arenaButton.x + design.width * 0.5) / design.width),
-    y: canvasRect.top + canvasRect.height * ((design.height * 0.5 - arenaButton.y) / design.height),
-  };
+  const arenaPoint = pointForVisibleNode(canvasRect, modeSnapshot, arenaButton, 'ARENA_TIMER_MODE_ARENA');
   await dispatchTouchTap(cdp, arenaPoint.x, arenaPoint.y);
   await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'ARENA', undefined, { timeout: 7000 });
   const started = await readRuntimeSnapshot(page);
@@ -803,11 +780,17 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
       }
       report.homeSkin = await verifyHomeSkin(cdp, page, canvasRect);
       report.machineInfo = await verifyMachineInfo(cdp, page, canvasRect);
-      const x = canvasRect.left + canvasRect.width * 0.5;
-      const homeStartY = canvasRect.top + canvasRect.height * 0.773;
-      await dispatchTouchTap(cdp, x, homeStartY);
-      await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'MODE_SELECT', undefined, { timeout: 5000 });
-      await page.waitForFunction(() => window.__BHR_QA__.snapshot().ui?.modePage?.active === true, undefined, { timeout: 5000 });
+      const homeSnapshot = await readRuntimeSnapshot(page);
+      const startButton = homeSnapshot.ui?.start;
+      const start = pointForVisibleNode(canvasRect, homeSnapshot, startButton, 'HOME_START');
+      await dispatchTouchTap(cdp, start.x, start.y);
+      try {
+        await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'MODE_SELECT', undefined, { timeout: 5000 });
+        await page.waitForFunction(() => window.__BHR_QA__.snapshot().ui?.modePage?.active === true, undefined, { timeout: 5000 });
+      } catch (error) {
+        const actual = await readRuntimeSnapshot(page);
+        throw new Error(`FAIL_HOME_START_TOUCH: ${JSON.stringify({ startButton, tap: start, state: actual.gameState, ui: actual.ui, error: String(error) })}`);
+      }
       let modeSnapshot = await readRuntimeSnapshot(page);
       assert(modeSnapshot.ui?.modePage?.width > 0 && modeSnapshot.ui?.modePage?.height > 0,
         `FAIL_MODE_PAGE_LAYOUT: ${JSON.stringify(modeSnapshot.ui?.modePage)}`);
@@ -825,26 +808,15 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
         `FAIL_ARENA_RETURN_TO_MODE: ${JSON.stringify({ gameState: modeSnapshot.gameState, ui: modeSnapshot.ui?.modePage })}`);
 
       const endlessModeButton = modeSnapshot.ui?.modeEndless;
-      const modeDesign = modeSnapshot.ui?.design;
-      assert(endlessModeButton?.active && modeDesign?.width > 0 && modeDesign?.height > 0,
-        `FAIL_ENDLESS_MODE_BUTTON_LAYOUT: ${JSON.stringify({ endlessModeButton, modeDesign })}`);
-      // The page can change visual shelf spacing. Read the actual
-      // Creator-saved button transform and still dispatch an ordinary CDP
-      // touch at its visible centre rather than retaining a stale hard-coded
-      // Y coordinate.
-      const endlessX = canvasRect.left + canvasRect.width
-        * ((endlessModeButton.x + modeDesign.width * 0.5) / modeDesign.width);
-      const endlessY = canvasRect.top + canvasRect.height
-        * ((modeDesign.height * 0.5 - endlessModeButton.y) / modeDesign.height);
-      await dispatchTouchTap(cdp, endlessX, endlessY);
+      const endless = pointForVisibleNode(canvasRect, modeSnapshot, endlessModeButton, 'MODE_ENDLESS');
+      await dispatchTouchTap(cdp, endless.x, endless.y);
       try {
         await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'PLAYING', undefined, { timeout: 5000 });
       } catch (error) {
         const actual = await readRuntimeSnapshot(page);
         throw new Error(`FAIL_MODE_ENDLESS_TOUCH: ${JSON.stringify({
           endlessModeButton,
-          modeDesign,
-          tap: { x: endlessX, y: endlessY },
+          tap: endless,
           gameState: actual.gameState,
           modePage: actual.ui?.modePage,
           modeEndless: actual.ui?.modeEndless,
@@ -935,8 +907,14 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
 
       // Must touch the centre of the editor-saved lower-right joystick, rather
       // than an arbitrary lower-right input region.
-      const joystickStartX = canvasRect.left + canvasRect.width * 0.822;
-      const joystickStartY = canvasRect.top + canvasRect.height * 0.867;
+      const joystickCenter = pointForVisibleNode(
+        canvasRect,
+        gameplaySnapshot,
+        gameplaySnapshot.ui?.runtimeHUD?.joystick,
+        'ENDLESS_JOYSTICK',
+      );
+      const joystickStartX = joystickCenter.x;
+      const joystickStartY = joystickCenter.y;
       const joystickOffsetX = canvasRect.width * 0.11;
       const joystickOffsetY = canvasRect.height * 0.05;
       const joystick = {

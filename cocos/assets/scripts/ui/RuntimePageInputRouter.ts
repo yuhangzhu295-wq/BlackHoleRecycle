@@ -13,6 +13,8 @@ export interface RuntimePageInputDiagnostic {
   targetName: string | null;
   touchX: number;
   touchY: number;
+  uiTouchX: number;
+  uiTouchY: number;
   action: 'NONE' | 'HOME_START' | 'HOME_MODE' | 'HOME_SKIN' | 'HOME_MACHINE' | 'MACHINE_BACK' | 'MODE_BACK' | 'MODE_ARENA' | 'MODE_ENDLESS'
     | 'PAUSE' | 'RESUME' | 'SETTLE' | 'HOME' | 'RESTART' | 'REVIVE' | 'GIVE_UP';
 }
@@ -21,7 +23,7 @@ export interface RuntimePageInputDiagnostic {
 export class RuntimePageInputRouter extends Component {
   /** Read-only data consumed by the Cocos runtime acceptance bridge. */
   public lastInputDiagnostic: RuntimePageInputDiagnostic = {
-    targetName: null, touchX: 0, touchY: 0, action: 'NONE',
+    targetName: null, touchX: 0, touchY: 0, uiTouchX: 0, uiTouchY: 0, action: 'NONE',
   };
 
   onEnable(): void {
@@ -43,10 +45,13 @@ export class RuntimePageInputRouter extends Component {
     // disjoint, so a native Button click cannot toggle the same action twice.
 
     const location = event.getLocation();
+    const uiLocation = event.getUILocation();
     this.lastInputDiagnostic = {
       targetName: (event.target as Node | null)?.name || null,
       touchX: location.x,
       touchY: location.y,
+      uiTouchX: uiLocation.x,
+      uiTouchY: uiLocation.y,
       action: 'NONE',
     };
 
@@ -163,7 +168,12 @@ export class RuntimePageInputRouter extends Component {
 
   private hitVisibleButton(pageName: string, buttonName: string, event: EventTouch): boolean {
     const page = this.node.getChildByName(pageName);
-    const button = page?.getChildByName(buttonName);
+    // Home page controls are deliberately grouped under SafeAreaRoot so they
+    // stay inside notch/inset bounds. Runtime pages keep their controls at the
+    // page root. Resolve both editor-saved layouts without fabricating a
+    // replacement Button or relying on an unrelated Canvas event target.
+    const button = page?.getChildByName(buttonName)
+      || page?.getChildByName('SafeAreaRoot')?.getChildByName(buttonName);
     const transform = button?.getComponent(UITransform);
     if (!button?.activeInHierarchy || !transform) return false;
 
@@ -172,14 +182,14 @@ export class RuntimePageInputRouter extends Component {
     if (viewport.width <= 0 || viewport.height <= 0 || design.width <= 0 || design.height <= 0) {
       return false;
     }
-
-    // EventTouch is expressed in the actual browser viewport, with a
-    // bottom-left origin. Canvas UI lives in the portrait design space.
+    // EventTouch.getLocation is viewport-local with a bottom-left origin.
+    // Convert that physical point exactly once into the Canvas design space.
+    // The acceptance runner now taps the button's world location inside this
+    // viewport, including the SHOW_ALL letterbox, so this is an inverse pair.
     const location = event.getLocation();
-    const designPoint = new Vec2(
+    return transform.isHit(new Vec2(
       (location.x / viewport.width) * design.width,
-      (location.y / viewport.height) * design.height
-    );
-    return transform.isHit(designPoint);
+      (location.y / viewport.height) * design.height,
+    ));
   }
 }

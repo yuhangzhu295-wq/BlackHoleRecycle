@@ -926,7 +926,7 @@ exports.methods = {
     };
   },
   async buildModeSelect() {
-    const { director, UITransform, Color } = require('cc');
+    const { director, UITransform, Color, Sprite } = require('cc');
     const scene = director.getScene();
     const canvas = scene?.getChildByName('Canvas');
     if (!canvas) throw new Error('Game.scene does not contain Canvas');
@@ -956,6 +956,15 @@ exports.methods = {
     place(arenaShelf, 0, 164, 600, 42);
     const arena = await createImageButton('BtnArena', root, 610, 202, 'db://assets/textures/home/mode_arena_card.png', true);
     place(arena, 0, 274, 610, 202);
+    // The source artwork was created before ArenaMatchManager existed and
+    // carries a stale “功能建设中” badge. Cover only that badge with an
+    // authored Sprite surface and a truthful capability label; the button
+    // beneath remains the same real local 1v7 match route.
+    const arenaAvailability = await createSprite('ArenaAvailability', root, 236, 44, 'db://assets/textures/home/home_hud_panel.png');
+    arenaAvailability.getComponent(Sprite).color = new Color(37, 106, 193, 255);
+    place(arenaAvailability, -158, 204, 236, 44);
+    const arenaAvailabilityLabel = createLabel('ArenaAvailabilityLabel', root, '1v7 本地竞技 · 已开放', 17, new Color(255, 255, 255, 255));
+    place(arenaAvailabilityLabel, -158, 204, 224, 34);
 
     const endlessShelf = await createSprite('ShelfEndless', root, 600, 42, 'db://assets/textures/home/mode_card_shelf.png');
     place(endlessShelf, 0, -76, 600, 42);
@@ -991,12 +1000,12 @@ exports.methods = {
     root.addComponent(getComponentClass('HomePageController'));
     root.addComponent(getComponentClass('HomePageVisual'));
 
-    // The Home page must expose the same actual streamed city/park that the
-    // player enters after pressing Start.  Keep this editor-saved Sprite node
-    // for the page contract, but make it transparent instead of covering the
-    // live 3D WorldArtLibrary composition with a separate fake 2D town.
+    // Home is a non-interactive destination rather than an active gameplay
+    // camera. Use the authored, text-free city park art to meet the V2 bright
+    // isometric city composition; it carries no coins, levels or gameplay
+    // state, all of which remain bound to the live controllers above it.
     const background = await createSprite('Background', root, 720, 1280, 'db://assets/textures/home/home_city_park.png');
-    background.getComponent(Sprite).color = new Color(255, 255, 255, 0);
+    background.getComponent(Sprite).color = new Color(255, 255, 255, 255);
     const safeArea = createNode('SafeAreaRoot', root, 720, 1280);
     const safeAreaWidget = safeArea.addComponent(Widget);
     safeAreaWidget.isAlignTop = safeAreaWidget.isAlignBottom = true;
@@ -1021,10 +1030,11 @@ exports.methods = {
     coinPanel.getComponent(UITransform).setContentSize(236, 66);
     machinePanel.getComponent(UITransform).setContentSize(236, 66);
 
+    // The runtime reads this Creator-saved scene page directly. Do not force
+    // an overwrite of a separately user-owned HomePage.prefab: Creator would
+    // present an overwrite dialog and make automated scene authoring ambiguous.
     await Editor.Message.request('scene', 'save-scene');
-    await Editor.Message.request('scene', 'create-prefab', root.uuid, 'db://assets/prefabs/ui/HomePage.prefab');
-    await Editor.Message.request('scene', 'save-scene');
-    return { prefab: 'db://assets/prefabs/ui/HomePage.prefab', rootUuid: root.uuid };
+    return { prefab: 'scene-owned', rootUuid: root.uuid };
   },
   /**
    * Build the Home "machine" destination through Creator's scene process.

@@ -23,18 +23,23 @@ export class HomePageVisual extends Component {
     this.resize('CoinValue', 140, 50, -190, 560);
     this.resize('MachineName', 200, 34, 216, 580);
     this.resize('MachineValue', 200, 34, 216, 544);
-    this.resize('Logo', 600, 180, 0, 398);
+    // Keep the title inside the V2 reference's 17%-34% top band. The prior
+    // position began above the safe visual hierarchy on 9:16 phones.
+    this.resize('Logo', 600, 180, 0, 315);
     this.resize('HeroBlackHole', 360, 360, 0, 35);
-    this.resize('BtnStart', 430, 104, 0, -350);
+    this.resize('BtnStart', 430, 104, 0, -295);
     this.resize('BtnMode', 168, 142, -190, -510);
     this.resize('BtnSkin', 168, 142, 0, -510);
     this.resize('BtnMachine', 168, 142, 190, -510);
     this.resize('BtnSettings', 80, 80, 288, -540);
 
     this.centerButtonLabel('BtnStart');
-    this.centerButtonLabel('BtnMode');
-    this.centerButtonLabel('BtnSkin');
-    this.centerButtonLabel('BtnMachine');
+    // The three small action cards carry pictograms in their upper half. Keep
+    // their captions on the lower strip just like the V2 home reference;
+    // centering them over the icons made both affordances harder to read.
+    this.positionButtonLabel('BtnMode', -46);
+    this.positionButtonLabel('BtnSkin', -46);
+    this.positionButtonLabel('BtnMachine', -46);
   }
 
   private resize(name: string, width: number, height: number, x: number, y: number): void {
@@ -46,9 +51,13 @@ export class HomePageVisual extends Component {
   }
 
   private centerButtonLabel(buttonName: string): void {
+    this.positionButtonLabel(buttonName, 0);
+  }
+
+  private positionButtonLabel(buttonName: string, y: number): void {
     const button = this.findNode(buttonName);
     const label = button?.getChildByName(`${buttonName}Label`);
-    if (label) label.setPosition(0, 0, 0);
+    if (label) label.setPosition(0, y, 0);
   }
 
   private findNode(name: string): Node | null {

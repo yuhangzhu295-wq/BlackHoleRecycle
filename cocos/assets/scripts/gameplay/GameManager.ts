@@ -606,6 +606,7 @@ export class GameManager extends Component {
         height: transform?.height || 0,
         scaleX: node.scale.x,
         scaleY: node.scale.y,
+        world: worldPoint ? { x: worldPoint.x, y: worldPoint.y, z: worldPoint.z } : null,
         // Normalized visual centre after Canvas/viewport letterboxing. The
         // acceptance runner uses this read-only point to tap the actual
         // editor-saved button rather than assuming a design-resolution map.
