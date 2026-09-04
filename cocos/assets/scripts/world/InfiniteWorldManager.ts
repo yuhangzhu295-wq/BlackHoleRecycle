@@ -239,30 +239,71 @@ class InfiniteWorldCell {
       // The 9:16 camera's visible street corridor is narrower than a whole
       // 64m cell. Keep homes beside the opening road rather than at the far
       // corners so the first playable frame reads as a neighbourhood.
-      this.spawn('buildingB', -4.7, -7.0, V3(2.15, 2.15, 2.15), 90, 'ResidentialHouseWest');
-      this.spawn('buildingC', 4.7, -7.0, V3(2.15, 2.15, 2.15), -90, 'ResidentialHouseEast');
+      this.spawn('buildingB', -10.0, -10.5, V3(0.72, 0.72, 0.72), 90, 'ResidentialHouseWest');
+      this.spawn('buildingC', 10.0, -10.5, V3(0.72, 0.72, 0.72), -90, 'ResidentialHouseEast');
       // Actual CC0 commercial-kit landmarks frame the opening corridor. They
       // add a readable service-city silhouette around the player without
       // obstructing the starter recyclable cluster at z=5.
       // Keep the CC0 commercial kit landmarks in the portrait play camera's
       // field, framing the arena instead of leaving a large vacant lawn.
       // They are decorative scene art, not collision or resource objects.
-      this.spawn('commercialBuildingF', -2.65, -9.8, V3(1.55, 1.55, 1.55), 90, 'NeighbourhoodMarket');
-      this.spawn('commercialBuildingG', 2.65, -9.8, V3(1.55, 1.55, 1.55), -90, 'NeighbourhoodClinic');
-      this.spawn('commercialBuildingH', 0, -15.4, V3(1.5, 1.5, 1.5), 0, 'NeighbourhoodService');
+      this.spawn('commercialBuildingF', -6.2, -13.5, V3(0.48, 0.48, 0.48), 90, 'NeighbourhoodMarket');
+      this.spawn('commercialBuildingG', 6.2, -13.5, V3(0.48, 0.48, 0.48), -90, 'NeighbourhoodClinic');
+      this.spawn('commercialBuildingH', 0, -15.0, V3(0.46, 0.46, 0.46), 0, 'NeighbourhoodService');
       // Tall city silhouettes make the opening arena read as a real urban
       // block instead of an isolated lawn. They remain background art and
       // do not participate in resource collisions or bot navigation.
-      this.spawn('commercialSkyscraperA', -4.6, -14.2, V3(1.18, 1.18, 1.18), 90, 'ArenaSkylineWest');
-      this.spawn('commercialSkyscraperB', 4.6, -14.2, V3(1.18, 1.18, 1.18), -90, 'ArenaSkylineEast');
+      this.spawn('commercialSkyscraperA', -10.5, -16.0, V3(0.38, 0.38, 0.38), 90, 'ArenaSkylineWest');
+      this.spawn('commercialSkyscraperB', 10.5, -16.0, V3(0.38, 0.38, 0.38), -90, 'ArenaSkylineEast');
+
+      // A real CC0 park assembly makes the arena's first screen read as a
+      // public garden instead of a bare turf field. These are visual-only
+      // glTF instances: the playable suction lane remains physically clear.
+      this.spawn('parkFountain', 0, -11.0, V3(1.15, 1.15, 1.15), 0, 'OpeningParkFountain', 0.07);
+      this.spawn('parkBench', -5.5, -9.3, V3(1.2, 1.2, 1.2), 72, 'OpeningParkBenchWest', 0.07);
+      this.spawn('parkBench', 5.5, -9.3, V3(1.2, 1.2, 1.2), -72, 'OpeningParkBenchEast', 0.07);
+      this.spawn('parkTrashcan', -5.8, -12.5, V3(1.1, 1.1, 1.1), 0, 'OpeningParkTrashcanWest', 0.07);
+      this.spawn('parkTrashcan', 5.8, -12.5, V3(1.1, 1.1, 1.1), 0, 'OpeningParkTrashcanEast', 0.07);
+      this.spawn('parkLantern', -5.8, -6.2, V3(1.25, 1.25, 1.25), 0, 'OpeningParkLanternWest', 0.07);
+      this.spawn('parkLantern', 5.8, -6.2, V3(1.25, 1.25, 1.25), 0, 'OpeningParkLanternEast', 0.07);
+      this.spawn('parkHedgeLong', -7.2, -9.2, V3(1.2, 1.2, 1.2), 90, 'OpeningParkHedgeWest', 0.07);
+      this.spawn('parkHedgeLong', 7.2, -9.2, V3(1.2, 1.2, 1.2), 90, 'OpeningParkHedgeEast', 0.07);
+      this.spawn('parkHedgeCorner', -6.8, -13.0, V3(1.2, 1.2, 1.2), 0, 'OpeningParkHedgeCornerWest', 0.07);
+      this.spawn('parkHedgeCorner', 6.8, -13.0, V3(1.2, 1.2, 1.2), 180, 'OpeningParkHedgeCornerEast', 0.07);
+      this.spawn('parkBush', -4.9, -13.8, V3(1.2, 1.2, 1.2), 0, 'OpeningParkBushWest', 0.07);
+      this.spawn('parkBush', 4.9, -13.8, V3(1.2, 1.2, 1.2), 0, 'OpeningParkBushEast', 0.07);
+      this.spawn('parkFlowerA', -3.4, -8.0, V3(1.35, 1.35, 1.35), 0, 'OpeningParkFlowerWest', 0.07);
+      this.spawn('parkFlowerB', 3.4, -8.0, V3(1.35, 1.35, 1.35), 0, 'OpeningParkFlowerEast', 0.07);
+      const openingGrassTiles: ReadonlyArray<readonly [number, number]> = [
+        [-6, -4], [0, -4], [6, -4], [-6, -15], [0, -15], [6, -15],
+      ];
+      openingGrassTiles.forEach(([x, z], index) => {
+        this.spawn('parkGrassTile', x, z, V3(1.6, 1.0, 1.6), 0, `OpeningParkGrassTile${index}`, 0.025);
+      });
+      this.spawn('parkCobblePath', -3.0, -11.0, V3(1.22, 1.0, 1.22), 0, 'OpeningParkCobbleWest', 0.075);
+      this.spawn('parkCobblePath', 3.0, -11.0, V3(1.22, 1.0, 1.22), 0, 'OpeningParkCobbleEast', 0.075);
+
+      // Bring the same real park vocabulary down to the hole's play zone.
+      // The centre and all starter-object routes stay clear; each item is
+      // outside the active suction lane and has no collision component.
+      this.spawn('parkBench', -5.4, 1.8, V3(0.82, 0.82, 0.82), 82, 'OpeningPlayBenchWest', 0.07);
+      this.spawn('parkBench', 5.4, 1.8, V3(0.82, 0.82, 0.82), -82, 'OpeningPlayBenchEast', 0.07);
+      this.spawn('parkHedgeLong', -7.2, 0.5, V3(1.0, 1.0, 1.0), 90, 'OpeningPlayHedgeWest', 0.07);
+      this.spawn('parkHedgeLong', 7.2, 0.5, V3(1.0, 1.0, 1.0), 90, 'OpeningPlayHedgeEast', 0.07);
+      this.spawn('parkBush', -4.2, -0.8, V3(0.92, 0.92, 0.92), 0, 'OpeningPlayBushWest', 0.07);
+      this.spawn('parkBush', 4.2, -0.8, V3(0.92, 0.92, 0.92), 0, 'OpeningPlayBushEast', 0.07);
+      this.spawn('parkFlowerA', -3.4, 3.5, V3(1.05, 1.05, 1.05), 0, 'OpeningPlayFlowerWest', 0.07);
+      this.spawn('parkFlowerB', 3.4, 3.5, V3(1.05, 1.05, 1.05), 0, 'OpeningPlayFlowerEast', 0.07);
+      this.spawn('parkTree', -8.3, 1.2, V3(0.7, 0.7, 0.7), 0, 'OpeningPlayTreeWest', 0.07);
+      this.spawn('parkTreeLarge', 8.3, 1.2, V3(0.7, 0.7, 0.7), 0, 'OpeningPlayTreeEast', 0.07);
 
       // Frame the first playable lawn with actual imported city props. The
       // earlier opening contained correct road/building assets only at the
       // far edge, leaving the portrait playfield as an empty green plane.
       // These are decorative WorldArtLibrary instances, never generated
       // primitives and never duplicate collectible collision objects.
-      this.spawn('treeSmall', -7.6, 4.6, V3(2.25, 2.25, 2.25), 0, 'OpeningGardenTreeWest');
-      this.spawn('treeLarge', 7.4, 5.2, V3(2.05, 2.05, 2.05), 0, 'OpeningGardenTreeEast');
+      this.spawn('parkTree', -7.6, 4.6, V3(1.0, 1.0, 1.0), 0, 'OpeningGardenTreeWest', 0.07);
+      this.spawn('parkTreeLarge', 7.4, 5.2, V3(0.9, 0.9, 0.9), 0, 'OpeningGardenTreeEast', 0.07);
       this.spawn('pathStones', -8.0, 8.8, V3(2.7, 1, 3.6), 90, 'OpeningGardenWalkwayWest');
       this.spawn('pathStones', 8.0, 8.8, V3(2.7, 1, 3.6), 90, 'OpeningGardenWalkwayEast');
       this.spawn('recyclingBox', -4.9, 5.0, V3(0.9, 0.9, 0.9), 18, 'OpeningRecyclingBox');
@@ -277,15 +318,15 @@ class InfiniteWorldCell {
       // leaves the centre lane clear for drag control while framing it with
       // the park trees visible in the portrait gameplay reference.
       const openingTrees: ReadonlyArray<readonly [number, number, number, string]> = [
-        [-8.6, 10.5, 1.7, 'OpeningParkTreeFarWest'],
-        [8.6, 10.5, 1.7, 'OpeningParkTreeFarEast'],
-        [-6.7, 2.1, 1.35, 'OpeningParkTreeWest'],
-        [6.7, 2.1, 1.35, 'OpeningParkTreeEast'],
-        [-8.6, -3.4, 1.35, 'OpeningParkTreeRoadWest'],
-        [8.6, -3.4, 1.35, 'OpeningParkTreeRoadEast'],
+        [-8.6, 10.5, 0.9, 'OpeningParkTreeFarWest'],
+        [8.6, 10.5, 0.9, 'OpeningParkTreeFarEast'],
+        [-6.7, 2.1, 0.8, 'OpeningParkTreeWest'],
+        [6.7, 2.1, 0.8, 'OpeningParkTreeEast'],
+        [-8.6, -3.4, 0.75, 'OpeningParkTreeRoadWest'],
+        [8.6, -3.4, 0.75, 'OpeningParkTreeRoadEast'],
       ];
       openingTrees.forEach(([x, z, size, name], index) => {
-        this.spawn(index % 2 === 0 ? 'treeLarge' : 'treeSmall', x, z, V3(size, size, size), 0, name);
+        this.spawn(index % 2 === 0 ? 'parkTreeLarge' : 'parkTree', x, z, V3(size, size, size), 0, name, 0.07);
       });
 
     };
@@ -302,8 +343,22 @@ class InfiniteWorldCell {
         break;
       case 'PARK':
         lights();
-        for (const [x, z] of [[-9, -8], [9, -8], [-9, 8], [9, 8]]) this.spawn('treeLarge', x, z, V3(2.2, 2.2, 2.2), 0, 'ParkTree');
-        this.spawn('treeSmall', 0, -13, V3(2.35, 2.35, 2.35), 0, 'ParkTreeCenter');
+        for (const [x, z] of [[-9, -8], [9, -8], [-9, 8], [9, 8]]) this.spawn('parkTreeLarge', x, z, V3(1.0, 1.0, 1.0), 0, 'ParkTree', 0.07);
+        this.spawn('parkFountain', 0, -7, V3(1.15, 1.15, 1.15), 0, 'ParkFountain', 0.07);
+        for (const [x, z, yaw] of [[-6, -7, 70], [6, -7, -70], [-6, 5, 110], [6, 5, -110]] as const) {
+          this.spawn('parkBench', x, z, V3(1.2, 1.2, 1.2), yaw, 'ParkBench', 0.07);
+        }
+        for (const [x, z] of [[-5, -12], [5, -12], [-5, 11], [5, 11]] as const) {
+          this.spawn('parkBush', x, z, V3(1.25, 1.25, 1.25), 0, 'ParkBush', 0.07);
+        }
+        this.spawn('parkHedgeLong', -8.5, 0, V3(1.2, 1.2, 1.2), 90, 'ParkHedgeWest', 0.07);
+        this.spawn('parkHedgeLong', 8.5, 0, V3(1.2, 1.2, 1.2), 90, 'ParkHedgeEast', 0.07);
+        for (const [x, z] of [[-6, -1], [0, -1], [6, -1], [-6, -13], [0, -13], [6, -13]] as const) {
+          this.spawn('parkGrassTile', x, z, V3(1.6, 1.0, 1.6), 0, 'ParkGrassTile', 0.025);
+        }
+        this.spawn('parkCobblePath', -3, -7, V3(1.2, 1.0, 1.2), 0, 'ParkCobbleWest', 0.075);
+        this.spawn('parkCobblePath', 3, -7, V3(1.2, 1.0, 1.2), 0, 'ParkCobbleEast', 0.075);
+        this.spawn('parkTree', 0, -13, V3(1.0, 1.0, 1.0), 0, 'ParkTreeCenter', 0.07);
         this.spawn('pathStones', -8, 0, V3(3.5, 1, 7.5), 90, 'ParkWalkwayWest');
         this.spawn('pathStones', 8, 0, V3(3.5, 1, 7.5), 90, 'ParkWalkwayEast');
         this.spawn('fence', 0, 15, V3(4.5, 1.5, 4.5), 0, 'ParkFence');

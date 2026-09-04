@@ -18,6 +18,19 @@ export type WorldArtKind =
   | 'treeLarge'
   | 'pathStones'
   | 'fence'
+  | 'parkFountain'
+  | 'parkBench'
+  | 'parkBush'
+  | 'parkHedgeLong'
+  | 'parkHedgeCorner'
+  | 'parkLantern'
+  | 'parkTrashcan'
+  | 'parkFlowerA'
+  | 'parkFlowerB'
+  | 'parkGrassTile'
+  | 'parkCobblePath'
+  | 'parkTree'
+  | 'parkTreeLarge'
   | 'commercialBuildingA'
   | 'commercialBuildingD'
   | 'commercialBuildingF'
@@ -63,6 +76,21 @@ const WORLD_ART_COLORS: Record<WorldArtKind, string> = {
   treeLarge: '#54a962',
   pathStones: '#f1d5a4',
   fence: '#f2ae4d',
+  // Tiny Treats uses one authored CC0 colour atlas for the park set. White
+  // deliberately preserves its fountain water, hedge, flower, and wood hues.
+  parkFountain: '#ffffff',
+  parkBench: '#ffffff',
+  parkBush: '#ffffff',
+  parkHedgeLong: '#ffffff',
+  parkHedgeCorner: '#ffffff',
+  parkLantern: '#ffffff',
+  parkTrashcan: '#ffffff',
+  parkFlowerA: '#ffffff',
+  parkFlowerB: '#ffffff',
+  parkGrassTile: '#ffffff',
+  parkCobblePath: '#ffffff',
+  parkTree: '#ffffff',
+  parkTreeLarge: '#ffffff',
   commercialBuildingA: '#f7b267',
   commercialBuildingD: '#ff8f70',
   commercialBuildingF: '#f3b76d',
@@ -130,6 +158,21 @@ export class WorldArtLibrary extends Component {
 
   @property(Node)
   public fenceTemplate: Node | null = null;
+
+  /** CC0 Tiny Treats park-set templates; Creator saves their imported meshes. */
+  @property(Node) public parkFountainTemplate: Node | null = null;
+  @property(Node) public parkBenchTemplate: Node | null = null;
+  @property(Node) public parkBushTemplate: Node | null = null;
+  @property(Node) public parkHedgeLongTemplate: Node | null = null;
+  @property(Node) public parkHedgeCornerTemplate: Node | null = null;
+  @property(Node) public parkLanternTemplate: Node | null = null;
+  @property(Node) public parkTrashcanTemplate: Node | null = null;
+  @property(Node) public parkFlowerATemplate: Node | null = null;
+  @property(Node) public parkFlowerBTemplate: Node | null = null;
+  @property(Node) public parkGrassTileTemplate: Node | null = null;
+  @property(Node) public parkCobblePathTemplate: Node | null = null;
+  @property(Node) public parkTreeTemplate: Node | null = null;
+  @property(Node) public parkTreeLargeTemplate: Node | null = null;
 
   @property(Node)
   public commercialBuildingATemplate: Node | null = null;
@@ -220,6 +263,10 @@ export class WorldArtLibrary extends Component {
   @property(Texture2D)
   public vehicleColorTexture: Texture2D | null = null;
 
+  /** Authored CC0 Tiny Treats colour atlas for the detailed public-park set. */
+  @property(Texture2D)
+  public prettyParkColorTexture: Texture2D | null = null;
+
   /** Authored colour map from the audited tracked player chassis. */
   @property(Texture2D)
   public bulldozerColorTexture: Texture2D | null = null;
@@ -243,6 +290,19 @@ export class WorldArtLibrary extends Component {
       case 'treeLarge': return this.treeLargeTemplate;
       case 'pathStones': return this.pathStonesTemplate;
       case 'fence': return this.fenceTemplate;
+      case 'parkFountain': return this.parkFountainTemplate;
+      case 'parkBench': return this.parkBenchTemplate;
+      case 'parkBush': return this.parkBushTemplate;
+      case 'parkHedgeLong': return this.parkHedgeLongTemplate;
+      case 'parkHedgeCorner': return this.parkHedgeCornerTemplate;
+      case 'parkLantern': return this.parkLanternTemplate;
+      case 'parkTrashcan': return this.parkTrashcanTemplate;
+      case 'parkFlowerA': return this.parkFlowerATemplate;
+      case 'parkFlowerB': return this.parkFlowerBTemplate;
+      case 'parkGrassTile': return this.parkGrassTileTemplate;
+      case 'parkCobblePath': return this.parkCobblePathTemplate;
+      case 'parkTree': return this.parkTreeTemplate;
+      case 'parkTreeLarge': return this.parkTreeLargeTemplate;
       case 'commercialBuildingA': return this.commercialBuildingATemplate;
       case 'commercialBuildingD': return this.commercialBuildingDTemplate;
       case 'commercialBuildingF': return this.commercialBuildingFTemplate;
@@ -350,6 +410,10 @@ export class WorldArtLibrary extends Component {
     // `builtin-unlit` defaults USE_TEXTURE to false even if a texture property
     // is later assigned. Initialize the native effect with the macro enabled
     // so the imported UVs sample the Creator-owned external colour map.
+    //
+    // `builtin-standard` is intentionally not used here: assigning it to the
+    // copied glTF sub-meshes causes a Web Mobile local descriptor-set error in
+    // Creator 3.8.3. The unlit path is therefore the tested mobile-safe one.
     material.initialize({
       effectName: 'builtin-unlit',
       // Imported vertex colours are not the art contract; the audited
@@ -391,6 +455,20 @@ export class WorldArtLibrary extends Component {
       case 'pathStones':
       case 'fence':
         return this.suburbanColorTexture;
+      case 'parkFountain':
+      case 'parkBench':
+      case 'parkBush':
+      case 'parkHedgeLong':
+      case 'parkHedgeCorner':
+      case 'parkLantern':
+      case 'parkTrashcan':
+      case 'parkFlowerA':
+      case 'parkFlowerB':
+      case 'parkGrassTile':
+      case 'parkCobblePath':
+      case 'parkTree':
+      case 'parkTreeLarge':
+        return this.prettyParkColorTexture;
       case 'commercialBuildingA':
       case 'commercialBuildingD':
       case 'commercialBuildingF':
@@ -418,6 +496,9 @@ export class WorldArtLibrary extends Component {
     const required: WorldArtKind[] = [
       'roadStraight', 'roadCrossroad', 'terrainTile', 'buildingB', 'buildingC',
       'treeSmall', 'treeLarge', 'pathStones', 'fence', 'commercialBuildingA',
+      'parkFountain', 'parkBench', 'parkBush', 'parkHedgeLong', 'parkHedgeCorner',
+      'parkLantern', 'parkTrashcan', 'parkFlowerA', 'parkFlowerB', 'parkGrassTile', 'parkCobblePath',
+      'parkTree', 'parkTreeLarge',
       'commercialBuildingD', 'commercialBuildingF', 'commercialBuildingG', 'commercialBuildingH',
       'commercialSkyscraperA', 'commercialSkyscraperB',
       'streetLight', 'constructionCone', 'bulldozer', 'garbageTruck',
@@ -427,7 +508,7 @@ export class WorldArtLibrary extends Component {
       'monitor', 'shelf', 'crate', 'sofa', 'shippingContainer',
     ];
     required.forEach((kind) => this.getTemplate(kind));
-    if (!this.roadColorTexture || !this.suburbanColorTexture || !this.commercialColorTexture || !this.vehicleColorTexture) {
+    if (!this.roadColorTexture || !this.suburbanColorTexture || !this.commercialColorTexture || !this.vehicleColorTexture || !this.prettyParkColorTexture) {
       throw new Error('[WorldArtLibrary] Missing one or more Creator-imported external colour maps.');
     }
   }

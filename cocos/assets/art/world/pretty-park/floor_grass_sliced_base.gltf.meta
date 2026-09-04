@@ -1,0 +1,139 @@
+{
+  "ver": "2.3.13",
+  "importer": "gltf",
+  "imported": true,
+  "uuid": "9048f656-cd03-4f48-aea0-69f1977de173",
+  "files": [],
+  "subMetas": {
+    "6f131": {
+      "importer": "gltf-mesh",
+      "uuid": "9048f656-cd03-4f48-aea0-69f1977de173@6f131",
+      "displayName": "",
+      "id": "6f131",
+      "name": "floor_grass_sliced_base.mesh",
+      "userData": {
+        "gltfIndex": 0,
+        "triangleCount": 12
+      },
+      "ver": "1.1.1",
+      "imported": true,
+      "files": [
+        ".bin",
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "296dd": {
+      "importer": "gltf-embeded-image",
+      "uuid": "9048f656-cd03-4f48-aea0-69f1977de173@296dd",
+      "displayName": "",
+      "id": "296dd",
+      "name": "tiny_treats_grass_texture.image",
+      "userData": {
+        "gltfIndex": 0
+      },
+      "ver": "1.0.3",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "e39f7": {
+      "importer": "texture",
+      "uuid": "9048f656-cd03-4f48-aea0-69f1977de173@e39f7",
+      "displayName": "",
+      "id": "e39f7",
+      "name": "UnnamedTexture.texture",
+      "userData": {
+        "wrapModeS": "repeat",
+        "wrapModeT": "repeat",
+        "minfilter": "linear",
+        "magfilter": "linear",
+        "mipfilter": "linear",
+        "anisotropy": 0,
+        "isUuid": true,
+        "imageUuidOrDatabaseUri": "9048f656-cd03-4f48-aea0-69f1977de173@296dd"
+      },
+      "ver": "1.0.22",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "09dfd": {
+      "importer": "gltf-material",
+      "uuid": "9048f656-cd03-4f48-aea0-69f1977de173@09dfd",
+      "displayName": "",
+      "id": "09dfd",
+      "name": "tiny_treats_grass.material",
+      "userData": {
+        "gltfIndex": 0
+      },
+      "ver": "1.0.14",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "3132a": {
+      "importer": "gltf-scene",
+      "uuid": "9048f656-cd03-4f48-aea0-69f1977de173@3132a",
+      "displayName": "",
+      "id": "3132a",
+      "name": "floor_grass_sliced_base.prefab",
+      "userData": {
+        "gltfIndex": 0
+      },
+      "ver": "1.0.14",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    }
+  },
+  "userData": {
+    "imageMetas": [
+      {
+        "name": "tiny_treats_grass_texture",
+        "uri": "9048f656-cd03-4f48-aea0-69f1977de173@296dd"
+      }
+    ],
+    "lods": {
+      "enable": false,
+      "hasBuiltinLOD": false,
+      "options": [
+        {
+          "screenRatio": 0.25,
+          "faceCount": 1
+        },
+        {
+          "screenRatio": 0.125,
+          "faceCount": 0.25
+        },
+        {
+          "screenRatio": 0.01,
+          "faceCount": 0.1
+        }
+      ]
+    },
+    "assetFinder": {
+      "meshes": [
+        "9048f656-cd03-4f48-aea0-69f1977de173@6f131"
+      ],
+      "skeletons": [],
+      "textures": [
+        "9048f656-cd03-4f48-aea0-69f1977de173@e39f7"
+      ],
+      "materials": [
+        "9048f656-cd03-4f48-aea0-69f1977de173@09dfd"
+      ],
+      "scenes": [
+        "9048f656-cd03-4f48-aea0-69f1977de173@3132a"
+      ]
+    }
+  }
+}

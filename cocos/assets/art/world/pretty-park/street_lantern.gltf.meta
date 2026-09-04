@@ -1,0 +1,123 @@
+{
+  "ver": "2.3.13",
+  "importer": "gltf",
+  "imported": true,
+  "uuid": "a6496db0-fab6-45d3-a7d4-8f4a98c76b6f",
+  "files": [],
+  "subMetas": {
+    "72d80": {
+      "importer": "gltf-mesh",
+      "uuid": "a6496db0-fab6-45d3-a7d4-8f4a98c76b6f@72d80",
+      "displayName": "",
+      "id": "72d80",
+      "name": "street_lantern.mesh",
+      "userData": {
+        "gltfIndex": 0,
+        "triangleCount": 424
+      },
+      "ver": "1.1.1",
+      "imported": true,
+      "files": [
+        ".bin",
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "e39f7": {
+      "importer": "texture",
+      "uuid": "a6496db0-fab6-45d3-a7d4-8f4a98c76b6f@e39f7",
+      "displayName": "",
+      "id": "e39f7",
+      "name": "UnnamedTexture.texture",
+      "userData": {
+        "wrapModeS": "repeat",
+        "wrapModeT": "repeat",
+        "minfilter": "linear",
+        "magfilter": "linear",
+        "mipfilter": "linear",
+        "anisotropy": 0,
+        "isUuid": false,
+        "imageUuidOrDatabaseUri": "db://assets/art/world/pretty-park/tiny_treats_texture_1.png"
+      },
+      "ver": "1.0.22",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "9b94c": {
+      "importer": "gltf-material",
+      "uuid": "a6496db0-fab6-45d3-a7d4-8f4a98c76b6f@9b94c",
+      "displayName": "",
+      "id": "9b94c",
+      "name": "tiny_treats_1.material",
+      "userData": {
+        "gltfIndex": 0
+      },
+      "ver": "1.0.14",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "fd750": {
+      "importer": "gltf-scene",
+      "uuid": "a6496db0-fab6-45d3-a7d4-8f4a98c76b6f@fd750",
+      "displayName": "",
+      "id": "fd750",
+      "name": "street_lantern.prefab",
+      "userData": {
+        "gltfIndex": 0
+      },
+      "ver": "1.0.14",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    }
+  },
+  "userData": {
+    "imageMetas": [
+      {
+        "name": "tiny_treats_texture_1",
+        "uri": "db://assets/art/world/pretty-park/tiny_treats_texture_1.png"
+      }
+    ],
+    "lods": {
+      "enable": false,
+      "hasBuiltinLOD": false,
+      "options": [
+        {
+          "screenRatio": 0.25,
+          "faceCount": 1
+        },
+        {
+          "screenRatio": 0.125,
+          "faceCount": 0.25
+        },
+        {
+          "screenRatio": 0.01,
+          "faceCount": 0.1
+        }
+      ]
+    },
+    "assetFinder": {
+      "meshes": [
+        "a6496db0-fab6-45d3-a7d4-8f4a98c76b6f@72d80"
+      ],
+      "skeletons": [],
+      "textures": [
+        "a6496db0-fab6-45d3-a7d4-8f4a98c76b6f@e39f7"
+      ],
+      "materials": [
+        "a6496db0-fab6-45d3-a7d4-8f4a98c76b6f@9b94c"
+      ],
+      "scenes": [
+        "a6496db0-fab6-45d3-a7d4-8f4a98c76b6f@fd750"
+      ]
+    }
+  }
+}

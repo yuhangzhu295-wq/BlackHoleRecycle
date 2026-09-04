@@ -19,3 +19,9 @@
 ### 4. Playwright
 - **许可证**：Apache-2.0 License
 - **用途**：端到端自动化测试套件与性能基准回归。
+
+### 5. Tiny Treats - Pretty Park 1.0
+- **作者**：Isa Lousberg / Tiny Treats
+- **来源**：https://github.com/TinyTreats-Game-Assets/Tiny-Treats-Pretty-Park-1.0
+- **许可证**：CC0 1.0 Universal
+- **用途**：竞技场和流式世界中的喷泉、绿篱、长椅、花卉、路灯与垃圾桶真实 glTF 模型。
