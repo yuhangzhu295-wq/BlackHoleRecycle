@@ -25,6 +25,18 @@ const MODE_IMAGE_URLS = [
   'db://assets/textures/home/mode_endless_card.png',
 ];
 
+// Formal runtime pages use these authored Sprite surfaces rather than
+// RoundedPanelGraphic/Graphics rectangles. They contain no text or gameplay
+// data, so all displayed values remain bound to the live controllers.
+const RUNTIME_UI_IMAGE_URLS = [
+  'db://assets/textures/home/mode_card_shelf.png',
+  'db://assets/textures/home/mode_card_shelf.png',
+  'db://assets/textures/home/home_hud_panel.png',
+];
+let runtimePanelFrame = null;
+let runtimeRibbonFrame = null;
+let runtimeDimFrame = null;
+
 // Each wrapper is a regular scene Node saved by Cocos Creator. The glTF
 // prefab stays as its child and receives the normalization scale here, rather
 // than accepting arbitrary runtime scale values per object type.
@@ -456,6 +468,21 @@ async function prepareModeSprites() {
   return prepareSprites(MODE_IMAGE_URLS);
 }
 
+async function prepareRuntimeUISprites() {
+  await prepareSprites(RUNTIME_UI_IMAGE_URLS);
+  runtimePanelFrame = await getImportedSpriteFrame(RUNTIME_UI_IMAGE_URLS[0]);
+  runtimeRibbonFrame = await getImportedSpriteFrame(RUNTIME_UI_IMAGE_URLS[1]);
+  runtimeDimFrame = await getImportedSpriteFrame(RUNTIME_UI_IMAGE_URLS[2]);
+  // One authored frame is intentionally reused as a true nine-slice panel
+  // across HUD cards and result rows. The inset is set on the Creator-owned
+  // SpriteFrame before scene save, never rebuilt at runtime.
+  runtimePanelFrame.insetTop = 30;
+  runtimePanelFrame.insetBottom = 30;
+  runtimePanelFrame.insetLeft = 30;
+  runtimePanelFrame.insetRight = 30;
+  return { total: RUNTIME_UI_IMAGE_URLS.length };
+}
+
 async function prepareSprites(assetUrls) {
   const changed = [];
   for (const url of assetUrls) {
@@ -516,16 +543,38 @@ async function createImageButton(name, parent, width, height, assetUrl, interact
   return node;
 }
 
-/**
- * Runtime pages need neutral surfaces that do not inherit pixels from the
- * Home HUD texture atlas. These Graphics nodes are created and then saved by
- * Creator just like every other page node; they are not a runtime fallback.
- */
+/** Creator-saved sprite/9-slice surface for every formal HUD and modal card. */
 function createRoundedPanel(name, parent, width, height, color, radius = 28) {
+  const { Sprite } = require('cc');
+  if (!runtimePanelFrame) throw new Error('Runtime panel SpriteFrame is not prepared.');
   const node = createNode(name, parent, width, height);
-  const panel = node.addComponent(getComponentClass('RoundedPanelGraphic'));
-  panel.fillColor = color;
-  panel.cornerRadius = radius;
+  const panel = node.addComponent(Sprite);
+  panel.sizeMode = Sprite.SizeMode.CUSTOM;
+  panel.type = Sprite.Type.SLICED;
+  panel.spriteFrame = runtimePanelFrame;
+  panel.color = color;
+  return node;
+}
+
+function createTitleRibbon(name, parent, width, height, color) {
+  const { Sprite } = require('cc');
+  if (!runtimeRibbonFrame) throw new Error('Runtime title-ribbon SpriteFrame is not prepared.');
+  const node = createNode(name, parent, width, height);
+  const ribbon = node.addComponent(Sprite);
+  ribbon.sizeMode = Sprite.SizeMode.CUSTOM;
+  ribbon.spriteFrame = runtimeRibbonFrame;
+  ribbon.color = color;
+  return node;
+}
+
+function createDimSprite(name, parent, width, height, color) {
+  const { Sprite } = require('cc');
+  if (!runtimeDimFrame) throw new Error('Runtime dim SpriteFrame is not prepared.');
+  const node = createNode(name, parent, width, height);
+  const dim = node.addComponent(Sprite);
+  dim.sizeMode = Sprite.SizeMode.CUSTOM;
+  dim.spriteFrame = runtimeDimFrame;
+  dim.color = color;
   return node;
 }
 
@@ -929,7 +978,7 @@ exports.methods = {
     return { prefab: null, prefabCreation: 'not-run-from-scene-script', rootUuid: root.uuid };
   },
   async buildHome() {
-    const { director, UITransform, Widget, Color } = require('cc');
+    const { director, UITransform, Widget, Color, Sprite } = require('cc');
     const scene = director.getScene();
     const canvas = scene && scene.getChildByName('Canvas');
     if (!canvas) throw new Error('Game.scene does not contain Canvas');
@@ -942,7 +991,12 @@ exports.methods = {
     root.addComponent(getComponentClass('HomePageController'));
     root.addComponent(getComponentClass('HomePageVisual'));
 
-    await createSprite('Background', root, 720, 1280, 'db://assets/textures/home/home_city_park.png');
+    // The Home page must expose the same actual streamed city/park that the
+    // player enters after pressing Start.  Keep this editor-saved Sprite node
+    // for the page contract, but make it transparent instead of covering the
+    // live 3D WorldArtLibrary composition with a separate fake 2D town.
+    const background = await createSprite('Background', root, 720, 1280, 'db://assets/textures/home/home_city_park.png');
+    background.getComponent(Sprite).color = new Color(255, 255, 255, 0);
     const safeArea = createNode('SafeAreaRoot', root, 720, 1280);
     const safeAreaWidget = safeArea.addComponent(Widget);
     safeAreaWidget.isAlignTop = safeAreaWidget.isAlignBottom = true;
@@ -1014,6 +1068,7 @@ exports.methods = {
     const scene = director.getScene();
     const canvas = scene?.getChildByName('Canvas');
     if (!canvas) throw new Error('Game.scene does not contain Canvas');
+    await prepareRuntimeUISprites();
     const RuntimePageInputRouter = getComponentClass('RuntimePageInputRouter');
     if (!canvas.getComponent(RuntimePageInputRouter)) canvas.addComponent(RuntimePageInputRouter);
 
@@ -1107,7 +1162,7 @@ exports.methods = {
     const revive = createNode('RevivePage', canvas, 720, 1280);
     const revivePage = revive.addComponent(getComponentClass('UIPage'));
     revivePage.pageId = 4;
-    const reviveDim = createRoundedPanel('DimOverlay', revive, 720, 1280, new Color(5, 13, 31, 208), 0);
+    const reviveDim = createDimSprite('DimOverlay', revive, 720, 1280, new Color(5, 13, 31, 208));
     place(reviveDim, 0, 0, 720, 1280);
     const reviveCard = createRoundedPanel('ReviveCard', revive, 620, 790, new Color(250, 248, 255, 255), 42);
     place(reviveCard, 0, -5, 620, 790);
@@ -1123,7 +1178,7 @@ exports.methods = {
     const reviveAccentBlue = createRoundedPanel('ReviveAccentBlue', revive, 460, 38, new Color(72, 163, 255, 255), 18);
     place(reviveAccentBlue, 0, 243, 460, 38);
     reviveAccentBlue.setRotationFromEuler(0, 0, 6);
-    const reviveRibbon = createRoundedPanel('ReviveRibbon', revive, 440, 102, new Color(105, 70, 190, 255), 26);
+    const reviveRibbon = createTitleRibbon('ReviveRibbon', revive, 440, 102, new Color(105, 70, 190, 255));
     place(reviveRibbon, 0, 270, 440, 102);
     caption(revive, 'Title', '复活继续', 50, 0, 270, 420, 72, new Color(255, 230, 102, 255));
     caption(revive, 'LossValue', '黑洞被吞噬 · 掉落了部分质量', 22, 0, 164, 500, 44, new Color(74, 56, 99, 255));
@@ -1140,11 +1195,11 @@ exports.methods = {
     const pause = createNode('PausePage', canvas, 720, 1280);
     const pausePage = pause.addComponent(getComponentClass('UIPage'));
     pausePage.pageId = 6;
-    const dim = createRoundedPanel('DimOverlay', pause, 720, 1280, new Color(4, 12, 27, 218), 0);
+    const dim = createDimSprite('DimOverlay', pause, 720, 1280, new Color(4, 12, 27, 218));
     place(dim, 0, 0, 720, 1280);
     const pauseCard = createRoundedPanel('PauseCard', pause, 620, 640, new Color(247, 245, 255, 255), 40);
     place(pauseCard, 0, 10, 620, 640);
-    const pauseRibbon = createRoundedPanel('PauseRibbon', pause, 440, 92, new Color(105, 70, 190, 255), 24);
+    const pauseRibbon = createTitleRibbon('PauseRibbon', pause, 440, 92, new Color(105, 70, 190, 255));
     place(pauseRibbon, 0, 250, 440, 92);
     caption(pause, 'Title', '游戏暂停', 50, 0, 250, 420, 74, new Color(255, 255, 255, 255));
     caption(pause, 'Subtitle', '当前进度已冻结', 24, 0, 156, 440, 46, new Color(74, 56, 99, 255));
@@ -1160,11 +1215,11 @@ exports.methods = {
     const settlement = createNode('SettlementPage', canvas, 720, 1280);
     const settlementPage = settlement.addComponent(getComponentClass('UIPage'));
     settlementPage.pageId = 5;
-    const settlementDim = createRoundedPanel('DimOverlay', settlement, 720, 1280, new Color(5, 14, 29, 210), 0);
+    const settlementDim = createDimSprite('DimOverlay', settlement, 720, 1280, new Color(5, 14, 29, 210));
     place(settlementDim, 0, 0, 720, 1280);
     const settlementCard = createRoundedPanel('SettlementCard', settlement, 660, 1120, new Color(255, 253, 247, 255), 42);
     place(settlementCard, 0, 0, 660, 1120);
-    const settlementRibbon = createRoundedPanel('SettlementRibbon', settlement, 492, 112, new Color(105, 70, 190, 255), 28);
+    const settlementRibbon = createTitleRibbon('SettlementRibbon', settlement, 492, 112, new Color(105, 70, 190, 255));
     place(settlementRibbon, 0, 452, 492, 112);
     caption(settlement, 'Title', '本局结算', 56, 0, 452, 470, 78, new Color(255, 222, 86, 255));
     caption(settlement, 'Subtitle', '无尽吞噬 · 本局数据', 24, 0, 370, 420, 46, new Color(73, 55, 99, 255));
@@ -1270,7 +1325,8 @@ exports.methods = {
     const report = requirements.map((requirement) => {
       const root = canvas?.getChildByName(requirement.name);
       const missingButtons = requirement.buttons.filter((buttonName) => !root?.getChildByName(buttonName)?.getComponent(Button));
-      const missingNodes = (requirement.nodes || []).filter((nodeName) => !root?.getChildByName(nodeName));
+      const joystick = root?.getChildByName('Joystick');
+      const missingNodes = (requirement.nodes || []).filter((nodeName) => !root?.getChildByName(nodeName) && !joystick?.getChildByName(nodeName));
       return {
         name: requirement.name,
         exists: !!root,
@@ -1279,6 +1335,12 @@ exports.methods = {
         missingNodes,
       };
     });
-    return { ok: report.every((entry) => entry.exists && entry.controller && entry.missingButtons.length === 0 && entry.missingNodes.length === 0), report };
+    const LegacyRoundedPanelGraphic = getComponentClass('RoundedPanelGraphic');
+    const legacyPanelCount = canvas ? canvas.getComponentsInChildren(LegacyRoundedPanelGraphic).length : -1;
+    return {
+      ok: report.every((entry) => entry.exists && entry.controller && entry.missingButtons.length === 0 && entry.missingNodes.length === 0) && legacyPanelCount === 0,
+      report,
+      legacyPanelCount,
+    };
   },
 };

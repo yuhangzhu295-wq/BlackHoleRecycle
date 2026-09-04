@@ -220,9 +220,12 @@ class InfiniteWorldCell {
     const isOpeningCell = this.coord.x === 0 && this.coord.z === 0;
     const roadZ = isOpeningCell ? -11 : 0;
     if (this.district.kind === 'RESIDENTIAL' || this.district.kind === 'PARK' || this.district.kind === 'DOWNTOWN') {
-      this.spawn('roadCrossroad', 0, roadZ, V3(5.6, 1, 5.6), 0, 'FourWayRoad', 0.05);
+      // `road-crossroad-path` is authored as a 1 m kit piece. Scale it to a
+      // true road junction so it spans the widened portrait city view rather
+      // than reading as a small grey stamp behind the fountain.
+      this.spawn('roadCrossroad', 0, roadZ, V3(12.0, 1, 12.0), 0, 'FourWayRoad', 0.05);
     } else {
-      this.spawn('roadStraight', 0, roadZ, V3(5.6, 1, 10), this.district.kind === 'PARKING' ? 90 : 0, 'DistrictRoad', 0.05);
+      this.spawn('roadStraight', 0, roadZ, V3(12.0, 1, 18.0), this.district.kind === 'PARKING' ? 90 : 0, 'DistrictRoad', 0.05);
     }
 
     this.buildDistrictLandmarks(this.district.kind);
@@ -239,22 +242,22 @@ class InfiniteWorldCell {
       // The 9:16 camera's visible street corridor is narrower than a whole
       // 64m cell. Keep homes beside the opening road rather than at the far
       // corners so the first playable frame reads as a neighbourhood.
-      this.spawn('buildingB', -10.0, -10.5, V3(0.72, 0.72, 0.72), 90, 'ResidentialHouseWest');
-      this.spawn('buildingC', 10.0, -10.5, V3(0.72, 0.72, 0.72), -90, 'ResidentialHouseEast');
+      this.spawn('buildingB', -6.8, -10.5, V3(1.35, 1.35, 1.35), 90, 'ResidentialHouseWest');
+      this.spawn('buildingC', 6.8, -10.5, V3(1.35, 1.35, 1.35), -90, 'ResidentialHouseEast');
       // Actual CC0 commercial-kit landmarks frame the opening corridor. They
       // add a readable service-city silhouette around the player without
       // obstructing the starter recyclable cluster at z=5.
       // Keep the CC0 commercial kit landmarks in the portrait play camera's
       // field, framing the arena instead of leaving a large vacant lawn.
       // They are decorative scene art, not collision or resource objects.
-      this.spawn('commercialBuildingF', -6.2, -13.5, V3(0.48, 0.48, 0.48), 90, 'NeighbourhoodMarket');
-      this.spawn('commercialBuildingG', 6.2, -13.5, V3(0.48, 0.48, 0.48), -90, 'NeighbourhoodClinic');
-      this.spawn('commercialBuildingH', 0, -15.0, V3(0.46, 0.46, 0.46), 0, 'NeighbourhoodService');
+      this.spawn('commercialBuildingF', -3.9, -13.5, V3(1.25, 1.25, 1.25), 90, 'NeighbourhoodMarket');
+      this.spawn('commercialBuildingG', 3.9, -13.5, V3(1.25, 1.25, 1.25), -90, 'NeighbourhoodClinic');
+      this.spawn('commercialBuildingH', 0, -16.2, V3(1.2, 1.2, 1.2), 0, 'NeighbourhoodService');
       // Tall city silhouettes make the opening arena read as a real urban
       // block instead of an isolated lawn. They remain background art and
       // do not participate in resource collisions or bot navigation.
-      this.spawn('commercialSkyscraperA', -10.5, -16.0, V3(0.38, 0.38, 0.38), 90, 'ArenaSkylineWest');
-      this.spawn('commercialSkyscraperB', 10.5, -16.0, V3(0.38, 0.38, 0.38), -90, 'ArenaSkylineEast');
+      this.spawn('commercialSkyscraperA', -7.4, -17.2, V3(1.1, 1.1, 1.1), 90, 'ArenaSkylineWest');
+      this.spawn('commercialSkyscraperB', 7.4, -17.2, V3(1.1, 1.1, 1.1), -90, 'ArenaSkylineEast');
 
       // A real CC0 park assembly makes the arena's first screen read as a
       // public garden instead of a bare turf field. These are visual-only
@@ -339,7 +342,7 @@ class InfiniteWorldCell {
         homes(); trees(); lights();
         this.spawn('pathStones', -7.3, -14.5, V3(3.2, 1, 4.6), 90, 'ResidentialWalkway');
         this.spawn('fence', 7.3, -15.5, V3(3.2, 1.5, 3.8), 90, 'ResidentialFence');
-        this.spawn('sedan', 3.1, -8.5, V3(0.78, 0.78, 0.78), -90, 'ResidentialParkedSedan');
+      this.spawn('sedan', 3.1, -8.5, V3(1.35, 1.35, 1.35), -90, 'ResidentialParkedSedan');
         break;
       case 'PARK':
         lights();

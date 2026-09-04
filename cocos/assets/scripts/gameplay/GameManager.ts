@@ -62,10 +62,13 @@ export class GameManager extends Component {
   // as tiny test objects instead of the dense, isometric city composition
   // established by the V2 visual contract.
   // This framing keeps the home neighbourhood legible and the local player
-  // within the lower interaction band. Arena uses a presentation-specific
-  // core scale below, rather than moving the common endless camera so far
-  // back that its city landmarks become tiny tokens.
-  private cameraOffset: Vec3 = new Vec3(0, 16.6, 16.2);
+  // The portrait arena needs to frame a playable city block, not a close-up
+  // lawn.  At the former 16.6 m elevation the horizontal phone frustum was
+  // only wide enough for the singularity and hid the editor-saved roads,
+  // buildings and park models at the playable edges.  This wider, still
+  // touch-readable 48° composition keeps the local target in the lower
+  // interaction band while putting actual street landmarks in frame.
+  private cameraOffset: Vec3 = new Vec3(0, 21.0, 19.6);
   private cameraTarget: Vec3 = new Vec3();
   private readonly portraitWidth = 720;
   private readonly portraitHeight = 1280;
@@ -106,9 +109,9 @@ export class GameManager extends Component {
       // The generated project declarations do not re-export that enum, while
       // Camera.fovAxis remains the native engine property being configured.
       this.mainCamera.fovAxis = 0;
-      // A portrait WebGL view has a very narrow horizontal frustum.  A small
-      // vertical FOV expansion keeps the authored street assets in frame
-      // without changing the game-space camera follow or any collision data.
+      // Vertical FOV remains deliberately modest for mobile readability; the
+      // wider city composition comes from the authored follow offset above,
+      // never from a gameplay-space scale or collision change.
       this.mainCamera.fov = 48;
     }
 
@@ -877,6 +880,8 @@ export class GameManager extends Component {
       math.lerp(cPos.y, this.cameraTarget.y, dt * 5.0),
       math.lerp(cPos.z, this.cameraTarget.z, dt * 5.0)
     );
+    // A 42° pitch keeps the local singularity in the lower interaction zone
+    // and reserves the upper half for the city block and approaching rivals.
     this.mainCamera.node.setRotationFromEuler(-42, 0, 0);
   }
 }

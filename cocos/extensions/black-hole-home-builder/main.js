@@ -47,6 +47,56 @@ async function installObjectArtFromExplicitEnvironment() {
 }
 
 /**
+ * Explicit Home-only authoring action.  It is intentionally separate from
+ * normal Creator startup and delegates all scene mutation to the existing
+ * editor scene script followed by Creator's own save-scene call.
+ */
+async function installHomeFromExplicitEnvironment() {
+  if (process.env.BHR_HOME_AUTOBUILD !== '1') return;
+  const run = (method) => Editor.Message.request('scene', 'execute-scene-script', {
+    name: 'black-hole-home-builder', method, args: [],
+  });
+  let ready = null;
+  for (let attempt = 0; attempt < 45; attempt += 1) {
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    ready = await run('isArenaSceneReady');
+    if (ready?.ready) break;
+  }
+  if (!ready?.ready) throw new Error(`[black-hole-home-builder] Home scene was not ready: ${JSON.stringify(ready)}`);
+  const home = await run('buildHome');
+  const verification = await run('verifyHome');
+  if (!home?.rootUuid || !verification?.ok) {
+    throw new Error(`[black-hole-home-builder] Explicit Home scene save failed: ${JSON.stringify({ home, verification })}`);
+  }
+  console.info(`[black-hole-home-builder] Explicit Home scene save completed: ${JSON.stringify(verification)}`);
+}
+
+/**
+ * Explicit runtime-page authoring action. It imports the dedicated Sprite
+ * surfaces, rebuilds the formal HUD/modal pages, then asks Creator to verify
+ * that no legacy Graphics panel component remains in the saved scene.
+ */
+async function installRuntimePagesFromExplicitEnvironment() {
+  if (process.env.BHR_RUNTIME_PAGES_AUTOBUILD !== '1') return;
+  const run = (method) => Editor.Message.request('scene', 'execute-scene-script', {
+    name: 'black-hole-home-builder', method, args: [],
+  });
+  let ready = null;
+  for (let attempt = 0; attempt < 45; attempt += 1) {
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    ready = await run('isArenaSceneReady');
+    if (ready?.ready) break;
+  }
+  if (!ready?.ready) throw new Error(`[black-hole-home-builder] Runtime pages were not ready: ${JSON.stringify(ready)}`);
+  const pages = await run('buildRuntimePages');
+  const verification = await run('verifyRuntimePages');
+  if (!pages?.savedPages?.includes('ArenaHUD') || !verification?.ok) {
+    throw new Error(`[black-hole-home-builder] Explicit runtime-page save failed: ${JSON.stringify({ pages, verification })}`);
+  }
+  console.info(`[black-hole-home-builder] Explicit runtime-page save completed: ${JSON.stringify(verification)}`);
+}
+
+/**
  * Opt-in repair for assemblies temporarily inserted while Creator writes a
  * machine prefab. It deliberately calls the scene script and save-scene;
  * this must never be approximated by text-editing Game.scene.
@@ -77,6 +127,12 @@ module.exports = {
     });
     installObjectArtFromExplicitEnvironment().catch((error) => {
       console.error('[black-hole-home-builder] Explicit object-art install failed:', error);
+    });
+    installHomeFromExplicitEnvironment().catch((error) => {
+      console.error('[black-hole-home-builder] Explicit Home scene save failed:', error);
+    });
+    installRuntimePagesFromExplicitEnvironment().catch((error) => {
+      console.error('[black-hole-home-builder] Explicit runtime-page save failed:', error);
     });
     cleanupMachineResidueFromExplicitEnvironment().catch((error) => {
       console.error('[black-hole-home-builder] Explicit machine cleanup failed:', error);

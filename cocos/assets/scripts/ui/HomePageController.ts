@@ -62,11 +62,13 @@ export class HomePageController extends Component {
   private bindButtons(): void {
     this.bindButton('BtnStart', () => eventBus.emit('HOME_START_REQUESTED'));
     this.bindButton('BtnMode', () => eventBus.emit('HOME_MODE_REQUESTED'));
-    // BtnSkin is intentionally routed by RuntimePageInputRouter. That
-    // Canvas-level handler is the compatibility path for SHOW_ALL touch
-    // coordinates and is also invoked for an ordinary native Button touch.
-    // Registering a second Button CLICK handler here would cycle the two
-    // starter skins twice and leave the player with the original appearance.
+    // The Canvas-level RuntimePageInputRouter remains the SHOW_ALL fallback.
+    // This native binding is also required after Creator rebuilds a page:
+    // when the engine correctly targets BtnSkin, its capture fallback is not
+    // guaranteed to hit the design-space rect.  The fallback marks that
+    // event handled before target delivery, so one physical tap still cycles
+    // exactly one genuinely unlocked skin.
+    this.bindButton('BtnSkin', () => eventBus.emit('HOME_SKIN_REQUESTED'));
   }
 
   /**

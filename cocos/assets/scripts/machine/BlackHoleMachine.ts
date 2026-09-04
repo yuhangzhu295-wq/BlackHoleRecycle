@@ -283,6 +283,10 @@ export class BlackHoleMachine extends Component {
       // Arena needs the local singularity to read as the player's focal
       // point, but it must not hide the 1v7 city block, rivals and real
       // pickup clusters behind a screen-filling disc.
+      // The actual portrait capture is the authority here: 3.05 filled over
+      // half the phone width and obscured the nearby vehicles.  This size
+      // keeps the local singularity near the 18–23% target without changing
+      // physical suction range, mass or collisions.
       const coreScale = this.presentation === 'SINGULARITY' ? 1.85 : 1.32;
       this.coreNode.setScale(coreScale, 1.0, coreScale);
     }
@@ -360,7 +364,10 @@ export class BlackHoleMachine extends Component {
       new Vec3(0, 0.03, 0.88),
       // Keep bot silhouettes readable beside the local singularity instead
       // of allowing a source-scale crawler to dominate the portrait frame.
-      new Vec3(1.12, 1.12, 1.12),
+      // This is a visual child only; the size was calibrated from the real
+      // portrait capture so seven opponents remain readable without blocking
+      // the actual local target, mass, movement or combat calculations.
+      new Vec3(1.45, 1.45, 1.45),
       180,
       'ArenaBotBulldozer',
     );
