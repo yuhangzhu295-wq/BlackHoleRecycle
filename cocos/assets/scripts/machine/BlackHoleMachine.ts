@@ -98,29 +98,37 @@ export class BlackHoleMachine extends Component {
     this.coreNode.setScale(1.32, 1.0, 1.32);
     this.visualRoot.addChild(this.coreNode);
 
-    // 黑洞中心深渊 (纯黑无反光)
+    // A deep-violet body keeps the singularity readable against the green
+    // district before the animated black core and luminous rings are added.
+    const abyssBase = new Node('AbyssBase');
+    abyssBase.setPosition(0, 0.01, 0);
+    this.coreNode.addChild(abyssBase);
+    MeshFactory.attachMesh(abyssBase, MeshFactory.getCylinderMesh(1.10, 1.10, 0.055, 64), '#281660', 1.0, 0.0);
+
+    // Black centre (visual only; this is deliberately smaller than the rim
+    // so the full object reads as a glossy vortex instead of a flat void).
     const holeInner = new Node('HoleInner');
-    holeInner.setPosition(0, 0, 0);
+    holeInner.setPosition(0, 0.06, 0);
     this.coreNode.addChild(holeInner);
-    MeshFactory.attachMesh(holeInner, MeshFactory.getCylinderMesh(0.96, 0.96, 0.10), '#05040e', 1.0, 0.0);
+    MeshFactory.attachMesh(holeInner, MeshFactory.getCylinderMesh(0.56, 0.56, 0.075, 64), '#05040e', 1.0, 0.0);
 
     // 三层紫色涡流环：它们是黑洞特效的实体表现，随时间反向转动以传达吞噬感。
     this.innerSwirl = new Node('InnerSwirl');
-    this.innerSwirl.setPosition(0, 0.065, 0);
+    this.innerSwirl.setPosition(0, 0.105, 0);
     this.coreNode.addChild(this.innerSwirl);
-    MeshFactory.attachMesh(this.innerSwirl, MeshFactory.getTorusMesh(0.40, 0.04), '#b89cff', 0.1, 0.5);
+    MeshFactory.attachMesh(this.innerSwirl, MeshFactory.getTorusMesh(0.38, 0.035), '#e0d5ff', 0.1, 0.5);
 
     this.outerSwirl = new Node('OuterSwirl');
-    this.outerSwirl.setPosition(0, 0.075, 0);
+    this.outerSwirl.setPosition(0, 0.115, 0);
     this.outerSwirl.setRotationFromEuler(0, 0, 16);
     this.coreNode.addChild(this.outerSwirl);
-    MeshFactory.attachMesh(this.outerSwirl, MeshFactory.getTorusMesh(0.70, 0.05), '#7654e8', 0.1, 0.5);
+    MeshFactory.attachMesh(this.outerSwirl, MeshFactory.getTorusMesh(0.72, 0.045), '#8b62f4', 0.1, 0.5);
 
     // 发光外环是黑洞的视觉轮廓，不能被用作真实吸附半径的地图标尺。
     this.holeRim = new Node('HoleRing');
-    this.holeRim.setPosition(0, 0.09, 0);
+    this.holeRim.setPosition(0, 0.125, 0);
     this.coreNode.addChild(this.holeRim);
-    MeshFactory.attachMesh(this.holeRim, MeshFactory.getTorusMesh(0.92, 0.045), '#8f6cf2', 0.1, 0.5);
+    MeshFactory.attachMesh(this.holeRim, MeshFactory.getTorusMesh(1.03, 0.04), '#c8adff', 0.1, 0.5);
 
   }
 

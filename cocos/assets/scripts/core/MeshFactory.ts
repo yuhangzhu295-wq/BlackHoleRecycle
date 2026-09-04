@@ -55,10 +55,10 @@ export class MeshFactory {
     return this.meshCache.get(key)!;
   }
 
-  public static getTorusMesh(radius: number = 1, tube: number = 0.15): Mesh {
-    const key = `torus_${radius}_${tube}`;
+  public static getTorusMesh(radius: number = 1, tube: number = 0.15, radialSegments: number = 64): Mesh {
+    const key = `torus_${radius}_${tube}_${radialSegments}`;
     if (!this.meshCache.has(key)) {
-      const mesh = utils.createMesh(primitives.torus(radius, tube, { radialSegments: 24, tubularSegments: 16 }));
+      const mesh = utils.createMesh(primitives.torus(radius, tube, { radialSegments, tubularSegments: 16 }));
       this.meshCache.set(key, mesh);
     }
     return this.meshCache.get(key)!;
