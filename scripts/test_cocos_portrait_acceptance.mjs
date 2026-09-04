@@ -251,10 +251,56 @@ async function verifyHomeSkin(cdp, page, canvasRect) {
   const after = await readRuntimeSnapshot(page);
   assert(after.save?.skinId !== previousSkinId,
     `FAIL_HOME_SKIN_NOT_SAVED: ${JSON.stringify({ before: previousSkinId, after: after.save?.skinId })}`);
-  assert(after.ui?.machine?.active === false && after.ui?.settings?.active === false,
-    `FAIL_HOME_UNIMPLEMENTED_ACTION_VISIBLE: ${JSON.stringify({ machine: after.ui?.machine, settings: after.ui?.settings })}`);
+  assert(after.ui?.machine?.active === true && after.ui?.machine?.interactable === true && after.ui?.settings?.active === false,
+    `FAIL_HOME_ACTION_VISIBILITY: ${JSON.stringify({ machine: after.ui?.machine, settings: after.ui?.settings })}`);
   await page.screenshot({ path: path.join(evidenceDirectory, 'portrait-390x844-home-skin.png') });
   return { point, previousSkinId, selectedSkinId: after.save?.skinId };
+}
+
+/**
+ * The green Home machine card must lead to a real, Creator-saved status page.
+ * This is driven by ordinary touch and confirms values originate from the
+ * active BlackHoleMachine/configuration, rather than a decorative mock page.
+ */
+async function verifyMachineInfo(cdp, page, canvasRect) {
+  const before = await readRuntimeSnapshot(page);
+  const design = before.ui?.design;
+  const machineButton = before.ui?.machine;
+  assert(machineButton?.active && machineButton?.interactable === true && design?.width > 0 && design?.height > 0,
+    `FAIL_HOME_MACHINE_NOT_INTERACTABLE: ${JSON.stringify({ machineButton, design })}`);
+  const pointFor = (node, name) => {
+    assert(node?.active, `FAIL_MACHINE_INFO_NODE_INACTIVE_${name}: ${JSON.stringify(node)}`);
+    return {
+      x: canvasRect.left + canvasRect.width * ((node.x + design.width * 0.5) / design.width),
+      y: canvasRect.top + canvasRect.height * ((design.height * 0.5 - node.y) / design.height),
+    };
+  };
+  const open = pointFor(machineButton, 'OPEN');
+  await dispatchTouchTap(cdp, open.x, open.y);
+  try {
+    await page.waitForFunction(() => {
+      const snapshot = window.__BHR_QA__.snapshot();
+      return snapshot.gameState === 'MACHINE_INFO' && snapshot.ui?.machineInfo?.active === true;
+    }, undefined, { timeout: 5000 });
+  } catch (error) {
+    const actual = await readRuntimeSnapshot(page);
+    throw new Error(`FAIL_MACHINE_INFO_OPEN: ${JSON.stringify({ open, actual: actual.ui, state: actual.gameState, error: String(error) })}`);
+  }
+  const opened = await readRuntimeSnapshot(page);
+  assert(opened.ui?.machineInfoData?.currentName?.includes(`LV.${opened.machine?.level}`)
+    && opened.ui?.machineInfoData?.currentRadius?.includes(String(opened.machine?.suctionRadius?.toFixed(1)))
+    && opened.ui?.machineInfoData?.currentTier === `T${opened.machine?.maxTier}`,
+  `FAIL_MACHINE_INFO_LIVE_DATA: ${JSON.stringify({ machine: opened.machine, data: opened.ui?.machineInfoData })}`);
+  assert(opened.player?.isDragging === false && opened.machine?.velocity?.x === 0 && opened.machine?.velocity?.z === 0,
+    `FAIL_MACHINE_INFO_INPUT_NOT_PAUSED: ${JSON.stringify({ player: opened.player, machine: opened.machine })}`);
+  await page.screenshot({ path: path.join(evidenceDirectory, 'portrait-390x844-machine-info.png') });
+  const close = pointFor(opened.ui?.machineInfoBack, 'BACK');
+  await dispatchTouchTap(cdp, close.x, close.y);
+  await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'HOME', undefined, { timeout: 5000 });
+  const closed = await readRuntimeSnapshot(page);
+  assert(closed.ui?.home?.active && closed.ui?.machine?.active,
+    `FAIL_MACHINE_INFO_RETURN_HOME: ${JSON.stringify({ state: closed.gameState, ui: closed.ui })}`);
+  return { open, close, data: opened.ui?.machineInfoData };
 }
 
 /**
@@ -756,6 +802,7 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
         return;
       }
       report.homeSkin = await verifyHomeSkin(cdp, page, canvasRect);
+      report.machineInfo = await verifyMachineInfo(cdp, page, canvasRect);
       const x = canvasRect.left + canvasRect.width * 0.5;
       const homeStartY = canvasRect.top + canvasRect.height * 0.773;
       await dispatchTouchTap(cdp, x, homeStartY);

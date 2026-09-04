@@ -8,4 +8,6 @@ export enum UIPageId {
   Settlement = 5,
   Pause = 6,
   Upgrade = 7,
+  /** Read-only current-machine and progression reference opened from Home. */
+  MachineInfo = 8,
 }

@@ -1027,6 +1027,61 @@ exports.methods = {
     return { prefab: 'db://assets/prefabs/ui/HomePage.prefab', rootUuid: root.uuid };
   },
   /**
+   * Build the Home "machine" destination through Creator's scene process.
+   * The page contains only read-only runtime/configuration facts; it never
+   * grants levels or coins and is intentionally not an upgrade shop.
+   */
+  async buildMachineInfoPage() {
+    const { director, Color } = require('cc');
+    const scene = director.getScene();
+    const canvas = scene?.getChildByName('Canvas');
+    if (!canvas) throw new Error('Game.scene does not contain Canvas');
+    await prepareRuntimeUISprites();
+
+    const oldPage = canvas.getChildByName('MachineInfoPage');
+    if (oldPage) oldPage.destroy();
+    const page = createNode('MachineInfoPage', canvas, 720, 1280);
+    const pageComponent = page.addComponent(getComponentClass('UIPage'));
+    pageComponent.pageId = 8;
+    const caption = (name, text, fontSize, x, y, width, height, color = new Color(255, 255, 255, 255)) => {
+      const label = createLabel(name, page, text, fontSize, color);
+      place(label, x, y, width, height);
+      return label;
+    };
+    const dim = createDimSprite('DimOverlay', page, 720, 1280, new Color(5, 15, 33, 214));
+    place(dim, 0, 0, 720, 1280);
+    const card = createRoundedPanel('MachineCard', page, 660, 1120, new Color(255, 253, 247, 255), 42);
+    place(card, 0, 0, 660, 1120);
+    const ribbon = createTitleRibbon('MachineRibbon', page, 500, 108, new Color(52, 153, 98, 255));
+    place(ribbon, 0, 462, 500, 108);
+    caption('Title', '机器档案', 54, 0, 462, 470, 76, new Color(255, 239, 161, 255));
+    caption('Subtitle', '当前回收能力与真实成长记录', 22, 0, 386, 500, 40, new Color(74, 56, 99, 255));
+
+    const currentPanel = createRoundedPanel('CurrentPanel', page, 560, 206, new Color(237, 250, 239, 255), 24);
+    place(currentPanel, 0, 258, 560, 206);
+    caption('CurrentNameValue', '初级黑洞 · LV.1', 30, 0, 314, 520, 46, new Color(35, 106, 65, 255));
+    caption('CurrentMassCaption', '当前质量', 19, -173, 246, 150, 30, new Color(78, 98, 82, 255));
+    caption('CurrentMassValue', '0 kg', 22, -173, 212, 150, 36, new Color(44, 76, 54, 255));
+    caption('CurrentRadiusCaption', '吸附半径', 19, 0, 246, 150, 30, new Color(78, 98, 82, 255));
+    caption('CurrentRadiusValue', '2.4 m', 22, 0, 212, 150, 36, new Color(44, 76, 54, 255));
+    caption('CurrentTierCaption', '可吸附', 19, 173, 246, 150, 30, new Color(78, 98, 82, 255));
+    caption('CurrentTierValue', 'T1', 22, 173, 212, 150, 36, new Color(44, 76, 54, 255));
+    caption('ProgressValue', '下一等级：0 / 900 kg', 20, 0, 142, 500, 38, new Color(114, 63, 193, 255));
+
+    for (let level = 1; level <= 5; level += 1) {
+      const y = 54 - (level - 1) * 105;
+      const row = createRoundedPanel(`LevelRow${level}`, page, 564, 82, new Color(244, 239, 255, 255), 18);
+      place(row, 0, y, 564, 82);
+      caption(`LevelRowText${level}`, `LV.${level}`, 19, 0, y, 530, 64, new Color(78, 58, 104, 255));
+    }
+
+    createGraphicButton('BtnBack', page, '返回首页', 0, -502, 390, 84, new Color(105, 70, 190, 255), new Color(255, 255, 255, 255), 28);
+    page.addComponent(getComponentClass('MachineInfoPageController'));
+    page.active = false;
+    await Editor.Message.request('scene', 'save-scene');
+    return { saved: true, path: 'Canvas/MachineInfoPage', rootUuid: page.uuid };
+  },
+  /**
    * Attach arena authority through Cocos Creator itself. The component is
    * intentionally never added by game runtime code, so a missing scene save
    * cannot masquerade as a working arena.
@@ -1321,6 +1376,7 @@ exports.methods = {
       { name: 'RevivePage', component: 'RevivePageController', buttons: ['BtnRevive', 'BtnGiveUp'], nodes: ['CountdownValue', 'RankValue'] },
       { name: 'PausePage', component: 'PausePageController', buttons: ['BtnResume', 'BtnSettle', 'BtnHome'] },
       { name: 'SettlementPage', component: 'SettlementPageController', buttons: ['BtnRestart', 'BtnHome'], nodes: ['ArenaLeaderboardPanel', 'ArenaRankRow_1', 'ArenaRankRow_5', 'ArenaStatMassValue', 'ArenaRewardValue'] },
+      { name: 'MachineInfoPage', component: 'MachineInfoPageController', buttons: ['BtnBack'], nodes: ['CurrentNameValue', 'CurrentMassValue', 'CurrentRadiusValue', 'CurrentTierValue', 'ProgressValue', 'LevelRowText1', 'LevelRowText5'] },
     ];
     const report = requirements.map((requirement) => {
       const root = canvas?.getChildByName(requirement.name);

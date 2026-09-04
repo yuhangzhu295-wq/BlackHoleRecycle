@@ -1,7 +1,7 @@
 /**
  * 游戏主控制器与运行时生命周期驱动 (GameManager.ts)
  */
-import { _decorator, Button, Component, Node, Camera, Vec3, math, director, DirectionalLight, Color, Canvas, MeshRenderer, Sprite, UITransform, view, ResolutionPolicy } from 'cc';
+import { _decorator, Button, Component, Node, Camera, Vec3, math, director, DirectionalLight, Color, Canvas, Label, MeshRenderer, Sprite, UITransform, view, ResolutionPolicy } from 'cc';
 import { BlackHoleMachine } from '../machine/BlackHoleMachine';
 import { InfiniteWorldManager } from '../world/InfiniteWorldManager';
 import { CompressibleObject } from './CompressibleObject';
@@ -18,7 +18,7 @@ import { MACHINE_EVOLUTION_CONFIG, SKINS_CONFIG } from '../data/GameConfig';
 
 const { ccclass, property } = _decorator;
 
-export type GameSessionState = 'HOME' | 'MODE_SELECT' | 'PLAYING' | 'ARENA' | 'REVIVING' | 'PAUSED' | 'SETTLEMENT';
+export type GameSessionState = 'HOME' | 'MODE_SELECT' | 'MACHINE_INFO' | 'PLAYING' | 'ARENA' | 'REVIVING' | 'PAUSED' | 'SETTLEMENT';
 
 @ccclass('GameManager')
 export class GameManager extends Component {
@@ -252,6 +252,14 @@ export class GameManager extends Component {
       this.cycleHomeSkin();
     });
 
+    eventBus.on('HOME_MACHINE_REQUESTED', () => {
+      this.openMachineInfo();
+    });
+
+    eventBus.on('MACHINE_INFO_BACK_REQUESTED', () => {
+      this.returnToHome();
+    });
+
     eventBus.on('MODE_BACK_REQUESTED', () => {
       this.returnToHome();
     });
@@ -309,9 +317,7 @@ export class GameManager extends Component {
     this.setV2HomeVisible(false);
     this.gameState = 'PLAYING';
     this.isPaused = false;
-    if (this.playerController) this.playerController.isPaused = false;
-    if (this.compressionSystem) this.compressionSystem.isPaused = false;
-    if (this.machine) this.machine.isPaused = false;
+    this.setPlayerSimulationPaused(false);
     
     this.totalAbsorbedCount = 0;
     this.absorbedTierCounts = {};
@@ -366,9 +372,7 @@ export class GameManager extends Component {
     // T2 book stack beside the opening fight so it does not visually cover
     // the local singularity, without changing the Endless vertical slice.
     this.infiniteWorldManager.arrangeArenaOpening();
-    this.playerController && (this.playerController.isPaused = false);
-    this.compressionSystem && (this.compressionSystem.isPaused = false);
-    this.machine.isPaused = false;
+    this.setPlayerSimulationPaused(false);
     this.hud?.showScreen('Arena');
     this.arenaMatchManager.startMatch(this.machine, this.infiniteWorldManager, {
       onLocalObjectAbsorbed: (object) => this.onObjectAbsorbed(object),
@@ -406,9 +410,9 @@ export class GameManager extends Component {
     this.arenaMatchManager?.stopMatch();
     this.isPaused = false;
     this.gameState = 'HOME';
-    if (this.playerController) this.playerController.isPaused = false;
-    if (this.compressionSystem) this.compressionSystem.isPaused = false;
-    if (this.machine) this.machine.isPaused = false;
+    // A home/menu page has no joystick.  Pausing the real machine prevents a
+    // lower-screen drag from becoming an invisible gameplay input.
+    this.setPlayerSimulationPaused(true);
     this.arenaMatchManager?.setMatchPaused(false);
     if (this.machine) this.machine.node.active = true;
     this.hud?.hideAllScreens();
@@ -516,8 +520,10 @@ export class GameManager extends Component {
     const canvas = director.getScene()?.getChildByName('Canvas');
     const home = canvas?.getChildByName('HomePage');
     const mode = canvas?.getChildByName('ModeSelectPage');
+    const machineInfo = canvas?.getChildByName('MachineInfoPage');
     if (home) home.active = visible;
     if (mode) mode.active = false;
+    if (machineInfo) machineInfo.active = false;
   }
 
   /** 仅显示由 Cocos Creator 保存的 V2 模式选择页，不回退到旧运行时 HUD。 */
@@ -532,8 +538,37 @@ export class GameManager extends Component {
 
     if (home) home.active = false;
     mode.active = true;
+    this.setPlayerSimulationPaused(true);
     this.hud?.hideAllScreens();
     this.gameState = 'MODE_SELECT';
+  }
+
+  /** Opens the Creator-saved, read-only machine progression page from Home. */
+  private openMachineInfo(): void {
+    if (this.gameState !== 'HOME') return;
+    const canvas = director.getScene()?.getChildByName('Canvas');
+    const home = canvas?.getChildByName('HomePage') || null;
+    const mode = canvas?.getChildByName('ModeSelectPage') || null;
+    const page = canvas?.getChildByName('MachineInfoPage') || null;
+    if (!page) {
+      console.error('[GameManager] Missing editor-saved MachineInfoPage. Machine action is unavailable.');
+      return;
+    }
+    if (home) home.active = false;
+    if (mode) mode.active = false;
+    page.active = true;
+    this.setPlayerSimulationPaused(true);
+    this.hud?.hideAllScreens();
+    this.gameState = 'MACHINE_INFO';
+  }
+
+  private setPlayerSimulationPaused(paused: boolean): void {
+    if (this.playerController) this.playerController.isPaused = paused;
+    if (this.compressionSystem) this.compressionSystem.isPaused = paused;
+    if (this.machine) {
+      this.machine.isPaused = paused;
+      if (paused) this.machine.stopMovement();
+    }
   }
 
   /**
@@ -549,6 +584,7 @@ export class GameManager extends Component {
     const revivePage = canvas?.getChildByName('RevivePage') || null;
     const pausePage = canvas?.getChildByName('PausePage') || null;
     const settlementPage = canvas?.getChildByName('SettlementPage') || null;
+    const machineInfoPage = canvas?.getChildByName('MachineInfoPage') || null;
     const joystick = endlessHud?.getChildByName('Joystick') || null;
     const homeNode = (name: string): Node | null => home?.getChildByName(name) || home?.getChildByName('SafeAreaRoot')?.getChildByName(name) || null;
     const canvasComponent = canvas?.getComponent(Canvas) || null;
@@ -579,6 +615,7 @@ export class GameManager extends Component {
         } : null,
       };
     };
+    const labelText = (node: Node | null): string | null => node?.getComponent(Label)?.string || null;
 
     const design = view.getDesignResolutionSize();
     const visible = view.getVisibleSize();
@@ -617,6 +654,16 @@ export class GameManager extends Component {
       // below.  QA needs the page's actual hierarchy/visibility after the
       // user performs a touch navigation, not merely the trigger button.
       modePage: describe(mode),
+      machineInfo: describe(machineInfoPage),
+      machineInfoBack: describe(machineInfoPage?.getChildByName('BtnBack') || null),
+      machineInfoData: {
+        currentName: labelText(machineInfoPage?.getChildByName('CurrentNameValue') || null),
+        currentMass: labelText(machineInfoPage?.getChildByName('CurrentMassValue') || null),
+        currentRadius: labelText(machineInfoPage?.getChildByName('CurrentRadiusValue') || null),
+        currentTier: labelText(machineInfoPage?.getChildByName('CurrentTierValue') || null),
+        progress: labelText(machineInfoPage?.getChildByName('ProgressValue') || null),
+        levelRows: MACHINE_EVOLUTION_CONFIG.map((config) => labelText(machineInfoPage?.getChildByName(`LevelRowText${config.level}`) || null)),
+      },
       modeArena: describe(mode?.getChildByName('BtnArena') || null),
       modeEndless: describe(mode?.getChildByName('BtnEndless') || null),
       modeBrawlLocked: describe(mode?.getChildByName('LockedBrawlCard') || null),

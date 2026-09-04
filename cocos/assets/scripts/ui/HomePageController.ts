@@ -3,10 +3,11 @@
  * 节点、Sprite、Label、Button 均由 Cocos Creator 保存到 HomePage.prefab；
  * 本组件只读取真实存档数据、绑定事件并驱动已存在的组件。
  */
-import { _decorator, Button, Color, Component, Label, Node, Sprite } from 'cc';
+import { _decorator, Button, Color, Component, director, Label, Node, Sprite } from 'cc';
 import { eventBus } from '../core/EventBus';
 import { MACHINE_EVOLUTION_CONFIG, SKINS_CONFIG } from '../data/GameConfig';
 import { saveService } from '../data/SaveService';
+import { BlackHoleMachine } from '../machine/BlackHoleMachine';
 
 const { ccclass } = _decorator;
 
@@ -37,8 +38,13 @@ export class HomePageController extends Component {
       coinLabel.string = this.formatNumber(saveService.data.coins);
     }
 
+    // The home status must represent the machine that is actually loaded in
+    // the 3D scene, not merely a historical best level stored on disk.  A
+    // separate machine page explains persistent progression; this compact
+    // card stays truthful about the current playable machine.
+    const machine = director.getScene()?.getComponentInChildren(BlackHoleMachine) || null;
     const savedLevel = Math.max(1, Math.min(MACHINE_EVOLUTION_CONFIG.length, saveService.data.machineLevel));
-    const machineConfig = MACHINE_EVOLUTION_CONFIG[savedLevel - 1];
+    const machineConfig = machine?.currentConfig || MACHINE_EVOLUTION_CONFIG[savedLevel - 1];
 
     const machineLabel = this.findLabel('MachineValue');
     if (machineLabel) {
@@ -69,15 +75,15 @@ export class HomePageController extends Component {
     // event handled before target delivery, so one physical tap still cycles
     // exactly one genuinely unlocked skin.
     this.bindButton('BtnSkin', () => eventBus.emit('HOME_SKIN_REQUESTED'));
+    this.bindButton('BtnMachine', () => eventBus.emit('HOME_MACHINE_REQUESTED'));
   }
 
   /**
-   * “皮肤”已接到真实存档与材质切换。当前最新 Home 合同只要求
-   * “模式”和“皮肤”两个快捷入口；没有正式 Creator 页面支撑的机器、
-   * 设置入口不应作为灰色假按钮出现在玩家界面中。
+   * “皮肤”与“机器”均已接到真实存档或机器状态。设置尚未有正式
+   * Creator 页面支撑，因此不能作为灰色假按钮出现在玩家界面中。
    */
   private hideUnavailableActions(): void {
-    for (const name of ['BtnMachine', 'BtnSettings']) {
+    for (const name of ['BtnSettings']) {
       const node = this.findNode(name);
       if (node) node.active = false;
     }
