@@ -1,7 +1,7 @@
 /** 编辑器保存的结算页数据绑定与真实按钮事件。 */
 import { _decorator, Button, Component, Label } from 'cc';
 import { eventBus } from '../core/EventBus';
-import { ArenaMatchSnapshot } from '../gameplay/ArenaMatchManager';
+import { ArenaMatchSnapshot, ArenaSettlementReward } from '../gameplay/ArenaMatchManager';
 
 const { ccclass } = _decorator;
 
@@ -37,11 +37,19 @@ export class SettlementPageController extends Component {
   }
 
   /** Arena uses the same saved settlement card, with labels bound to match facts. */
-  public updateArenaStats(snapshot: ArenaMatchSnapshot): void {
+  public updateArenaStats(snapshot: ArenaMatchSnapshot, reward: ArenaSettlementReward): void {
     this.setArenaLeaderboardVisible(true);
     this.setLabel('Title', '竞技结算');
     this.setLabel('Subtitle', snapshot.reason === 'FORFEIT' ? '黑洞乱斗 · 已退出' : '黑洞乱斗 · 时间结束');
     this.setLabel('ArenaResult', `第 ${snapshot.localRank || '-'} / ${snapshot.competitorCount} 名 · ${Math.round(snapshot.localMass)} kg`);
+    this.setLabel('ArenaStatMassValue', `${Math.round(snapshot.localMass)} kg`);
+    this.setLabel('ArenaStatKillsValue', `${snapshot.localKills} 次`);
+    this.setLabel('ArenaStatTimeValue', this.formatDuration(snapshot.elapsedSeconds));
+    this.setLabel('ArenaRewardValue', `+${reward.coins}`);
+    this.setLabel(
+      'ArenaRewardBreakdown',
+      `质量 ${reward.massCoins} · 收集 ${reward.collectedCoins} · 淘汰 ${reward.eliminationCoins} · 生存 ${reward.survivalCoins} · 名次 ${reward.placementCoins}`,
+    );
 
     // The ranking panel is intentionally filled only from the match snapshot.
     // Keep the player-visible row even when they are outside the top ranks:
@@ -113,6 +121,18 @@ export class SettlementPageController extends Component {
         child.active = !visible;
       }
     }
+    for (const name of [
+      'ArenaStatMassPanel', 'ArenaStatKillsPanel', 'ArenaStatTimePanel', 'ArenaRewardPanel',
+      'ArenaStatMassCaption', 'ArenaStatMassValue', 'ArenaStatKillsCaption', 'ArenaStatKillsValue',
+      'ArenaStatTimeCaption', 'ArenaStatTimeValue', 'ArenaRewardCaption', 'ArenaRewardValue', 'ArenaRewardBreakdown',
+    ]) {
+      this.setNodeActive(name, visible);
+    }
+  }
+
+  private formatDuration(seconds: number): string {
+    const total = Math.max(0, Math.floor(seconds));
+    return `${Math.floor(total / 60)}:${`${total % 60}`.padStart(2, '0')}`;
   }
 
   private setNodeActive(name: string, active: boolean): void {

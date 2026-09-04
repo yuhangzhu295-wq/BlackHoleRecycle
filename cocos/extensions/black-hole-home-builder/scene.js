@@ -1124,12 +1124,12 @@ exports.methods = {
     settlementPage.pageId = 5;
     const settlementDim = createRoundedPanel('DimOverlay', settlement, 720, 1280, new Color(5, 14, 29, 210), 0);
     place(settlementDim, 0, 0, 720, 1280);
-    const settlementCard = createRoundedPanel('SettlementCard', settlement, 660, 1020, new Color(255, 253, 247, 255), 42);
-    place(settlementCard, 0, 0, 660, 1020);
+    const settlementCard = createRoundedPanel('SettlementCard', settlement, 660, 1120, new Color(255, 253, 247, 255), 42);
+    place(settlementCard, 0, 0, 660, 1120);
     const settlementRibbon = createRoundedPanel('SettlementRibbon', settlement, 492, 112, new Color(105, 70, 190, 255), 28);
-    place(settlementRibbon, 0, 412, 492, 112);
-    caption(settlement, 'Title', '本局结算', 56, 0, 412, 470, 78, new Color(255, 222, 86, 255));
-    caption(settlement, 'Subtitle', '无尽吞噬 · 本局数据', 24, 0, 330, 420, 46, new Color(73, 55, 99, 255));
+    place(settlementRibbon, 0, 452, 492, 112);
+    caption(settlement, 'Title', '本局结算', 56, 0, 452, 470, 78, new Color(255, 222, 86, 255));
+    caption(settlement, 'Subtitle', '无尽吞噬 · 本局数据', 24, 0, 370, 420, 46, new Color(73, 55, 99, 255));
     const rowColor = new Color(74, 56, 40, 255);
     for (const y of [223, 143, 63, -17, -97]) {
       const row = createRoundedPanel(`StatRow_${y}`, settlement, 530, 62, new Color(243, 237, 255, 255), 18);
@@ -1145,9 +1145,9 @@ exports.methods = {
     caption(settlement, 'LevelValue', 'LV.1', 32, 164, -17, 180, 48, new Color(68, 129, 209, 255));
     caption(settlement, 'RegionCaption', '探索区域', 26, -166, -97, 220, 44, rowColor);
     caption(settlement, 'RegionValue', '1', 32, 164, -97, 180, 48, new Color(62, 154, 95, 255));
-    const arenaLeaderboard = createRoundedPanel('ArenaLeaderboardPanel', settlement, 570, 590, new Color(242, 237, 255, 255), 26);
-    place(arenaLeaderboard, 0, 18, 570, 590);
-    caption(settlement, 'ArenaResult', '第 - / 8 名 · 0 kg', 24, 0, 288, 510, 40, new Color(77, 54, 109, 255));
+    const arenaLeaderboard = createRoundedPanel('ArenaLeaderboardPanel', settlement, 570, 530, new Color(242, 237, 255, 255), 26);
+    place(arenaLeaderboard, 0, 100, 570, 530);
+    caption(settlement, 'ArenaResult', '第 - / 8 名 · 0 kg', 24, 0, 322, 510, 40, new Color(77, 54, 109, 255));
     const arenaRankColors = [
       new Color(255, 207, 66, 255),
       new Color(183, 210, 240, 255),
@@ -1157,7 +1157,7 @@ exports.methods = {
     ];
     for (let index = 0; index < 5; index += 1) {
       const rank = index + 1;
-      const y = 210 - index * 82;
+      const y = 248 - index * 74;
       const row = createRoundedPanel(`ArenaRankRow_${rank}`, settlement, 522, 66, new Color(255, 255, 255, 230), 18);
       place(row, 0, y, 522, 66);
       const badge = createRoundedPanel(`ArenaRankBadgePanel_${rank}`, settlement, 50, 50, arenaRankColors[index], 16);
@@ -1167,12 +1167,28 @@ exports.methods = {
       caption(settlement, `ArenaRankScore_${rank}`, '0 kg · 0 淘汰', 18, 118, y, 210, 38, new Color(101, 82, 125, 255));
     }
     const arenaPlayerRow = createRoundedPanel('ArenaPlayerRow', settlement, 522, 70, new Color(221, 248, 205, 255), 18);
-    place(arenaPlayerRow, 0, -204, 522, 70);
+    place(arenaPlayerRow, 0, -124, 522, 70);
     const arenaPlayerBadge = createRoundedPanel('ArenaPlayerBadgePanel', settlement, 50, 50, new Color(104, 193, 89, 255), 16);
-    place(arenaPlayerBadge, -212, -204, 50, 50);
-    caption(settlement, 'ArenaPlayerBadge', '-', 24, -212, -204, 46, 42, new Color(25, 82, 32, 255));
-    caption(settlement, 'ArenaPlayerName', '我', 26, -110, -204, 152, 42, new Color(29, 118, 37, 255));
-    caption(settlement, 'ArenaPlayerScore', '0 kg · 0 淘汰', 18, 118, -204, 210, 38, new Color(42, 122, 53, 255));
+    place(arenaPlayerBadge, -212, -124, 50, 50);
+    caption(settlement, 'ArenaPlayerBadge', '-', 24, -212, -124, 46, 42, new Color(25, 82, 32, 255));
+    caption(settlement, 'ArenaPlayerName', '我', 26, -110, -124, 152, 42, new Color(29, 118, 37, 255));
+    caption(settlement, 'ArenaPlayerScore', '0 kg · 0 淘汰', 18, 118, -124, 210, 38, new Color(42, 122, 53, 255));
+    const arenaStatSpecs = [
+      { key: 'Mass', x: -184, caption: '最终质量', value: '0 kg', color: new Color(114, 63, 193, 255) },
+      { key: 'Kills', x: 0, caption: '击败对手', value: '0 次', color: new Color(217, 126, 40, 255) },
+      { key: 'Time', x: 184, caption: '生存时长', value: '0:00', color: new Color(56, 137, 198, 255) },
+    ];
+    for (const stat of arenaStatSpecs) {
+      const panel = createRoundedPanel(`ArenaStat${stat.key}Panel`, settlement, 164, 104, new Color(241, 237, 255, 255), 22);
+      place(panel, stat.x, -244, 164, 104);
+      caption(settlement, `ArenaStat${stat.key}Caption`, stat.caption, 17, stat.x, -221, 150, 30, new Color(83, 63, 108, 255));
+      caption(settlement, `ArenaStat${stat.key}Value`, stat.value, 25, stat.x, -259, 152, 40, stat.color);
+    }
+    const arenaReward = createRoundedPanel('ArenaRewardPanel', settlement, 522, 94, new Color(255, 244, 202, 255), 24);
+    place(arenaReward, 0, -366, 522, 94);
+    caption(settlement, 'ArenaRewardCaption', '本局获得金币', 22, -150, -348, 244, 38, new Color(120, 80, 31, 255));
+    caption(settlement, 'ArenaRewardValue', '+0', 34, 164, -348, 180, 46, new Color(215, 139, 20, 255));
+    caption(settlement, 'ArenaRewardBreakdown', '质量 0 · 收集 0 · 淘汰 0 · 生存 0 · 名次 0', 15, 0, -385, 480, 28, new Color(137, 104, 58, 255));
     arenaLeaderboard.active = false;
     settlement.getChildByName('ArenaResult').active = false;
     for (let rank = 1; rank <= 5; rank += 1) {
@@ -1185,8 +1201,15 @@ exports.methods = {
     for (const name of ['ArenaPlayerRow', 'ArenaPlayerBadgePanel', 'ArenaPlayerBadge', 'ArenaPlayerName', 'ArenaPlayerScore']) {
       settlement.getChildByName(name).active = false;
     }
-    await createPrimaryActionButton('BtnRestart', settlement, '再来一局', -142, -356, 270, 94, 28);
-    createGraphicButton('BtnHome', settlement, '返回首页', 142, -356, 270, 94, new Color(105, 70, 190, 255), new Color(255, 255, 255, 255), 28);
+    for (const name of [
+      'ArenaStatMassPanel', 'ArenaStatKillsPanel', 'ArenaStatTimePanel', 'ArenaRewardPanel',
+      'ArenaStatMassCaption', 'ArenaStatMassValue', 'ArenaStatKillsCaption', 'ArenaStatKillsValue',
+      'ArenaStatTimeCaption', 'ArenaStatTimeValue', 'ArenaRewardCaption', 'ArenaRewardValue', 'ArenaRewardBreakdown',
+    ]) {
+      settlement.getChildByName(name).active = false;
+    }
+    await createPrimaryActionButton('BtnRestart', settlement, '再来一局', -142, -480, 270, 94, 28);
+    createGraphicButton('BtnHome', settlement, '返回首页', 142, -480, 270, 94, new Color(105, 70, 190, 255), new Color(255, 255, 255, 255), 28);
     settlement.addComponent(getComponentClass('SettlementPageController'));
     settlement.active = false;
 
@@ -1204,7 +1227,7 @@ exports.methods = {
       { name: 'ArenaHUD', component: 'ArenaHUDController', buttons: ['BtnPause'], nodes: ['Top1', 'Top2', 'Top3', 'Top4', 'Top5', 'TimerValue', 'Joystick'] },
       { name: 'RevivePage', component: 'RevivePageController', buttons: ['BtnRevive', 'BtnGiveUp'], nodes: ['CountdownValue', 'RankValue'] },
       { name: 'PausePage', component: 'PausePageController', buttons: ['BtnResume', 'BtnSettle', 'BtnHome'] },
-      { name: 'SettlementPage', component: 'SettlementPageController', buttons: ['BtnRestart', 'BtnHome'], nodes: ['ArenaLeaderboardPanel', 'ArenaRankRow_1', 'ArenaRankRow_5'] },
+      { name: 'SettlementPage', component: 'SettlementPageController', buttons: ['BtnRestart', 'BtnHome'], nodes: ['ArenaLeaderboardPanel', 'ArenaRankRow_1', 'ArenaRankRow_5', 'ArenaStatMassValue', 'ArenaRewardValue'] },
     ];
     const report = requirements.map((requirement) => {
       const root = canvas?.getChildByName(requirement.name);

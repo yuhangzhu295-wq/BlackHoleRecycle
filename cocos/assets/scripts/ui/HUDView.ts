@@ -9,7 +9,7 @@ import { EndlessHUDController } from './EndlessHUDController';
 import { SettlementPageController } from './SettlementPageController';
 import { ArenaHUDController } from './ArenaHUDController';
 import { RevivePageController } from './RevivePageController';
-import { ArenaMatchSnapshot } from '../gameplay/ArenaMatchManager';
+import { ArenaMatchSnapshot, ArenaSettlementReward } from '../gameplay/ArenaMatchManager';
 
 const { ccclass } = _decorator;
 
@@ -71,9 +71,9 @@ export class HUDView extends Component {
     controller?.updateState(snapshot);
   }
 
-  public updateArenaSettlement(snapshot: ArenaMatchSnapshot): void {
+  public updateArenaSettlement(snapshot: ArenaMatchSnapshot, reward: ArenaSettlementReward): void {
     const controller = this.findPage('SettlementPage')?.getComponent(SettlementPageController);
-    controller?.updateArenaStats(snapshot);
+    controller?.updateArenaStats(snapshot, reward);
   }
 
   private findPage(name: string): Node | null {

@@ -48,6 +48,22 @@ export interface ArenaMatchSnapshot {
   readonly botStates: Readonly<Record<string, ArenaBotState>>;
   readonly eliminationCount: number;
   readonly reason: 'RUNNING' | 'TIME' | 'FORFEIT';
+  /** Calculated from this exact final match state; GameManager persists it once. */
+  readonly settlementReward: ArenaSettlementReward;
+}
+
+/**
+ * The arena's reward ledger.  Each field is derived from a completed local
+ * match, so the result page can explain the earned amount without presenting
+ * a synthetic prize or a separately hard-coded rank reward.
+ */
+export interface ArenaSettlementReward {
+  readonly coins: number;
+  readonly massCoins: number;
+  readonly collectedCoins: number;
+  readonly eliminationCoins: number;
+  readonly survivalCoins: number;
+  readonly placementCoins: number;
 }
 
 export interface ArenaMatchCallbacks {
@@ -86,6 +102,14 @@ const ARENA_RADIUS = 44;
 const GRAVITY_RANGE = 4.8;
 const CONSUME_RANGE = 1.28;
 const CONSUME_RATIO = 1.32;
+const EMPTY_SETTLEMENT_REWARD: ArenaSettlementReward = {
+  coins: 0,
+  massCoins: 0,
+  collectedCoins: 0,
+  eliminationCoins: 0,
+  survivalCoins: 0,
+  placementCoins: 0,
+};
 
 const distanceXZ = (left: Readonly<Vec3>, right: Readonly<Vec3>): number => {
   const x = left.x - right.x;
@@ -117,6 +141,8 @@ export class ArenaMatchManager extends Component {
   private readonly competitors: ArenaCompetitor[] = [];
   private readonly steering: Vec3 = new Vec3();
   private eliminationCount: number = 0;
+  private settlementReward: ArenaSettlementReward = EMPTY_SETTLEMENT_REWARD;
+  private settlementRewardClaimed: boolean = false;
 
   public startMatch(
     playerMachine: BlackHoleMachine,
@@ -128,6 +154,8 @@ export class ArenaMatchManager extends Component {
     this.elapsedSeconds = 0;
     this.endReason = 'RUNNING';
     this.eliminationCount = 0;
+    this.settlementReward = EMPTY_SETTLEMENT_REWARD;
+    this.settlementRewardClaimed = false;
     this.world = world;
     this.callbacks = callbacks;
     this.node.active = true;
@@ -230,6 +258,17 @@ export class ArenaMatchManager extends Component {
     if (this.running) this.finish('FORFEIT');
   }
 
+  /**
+   * Claims the already-calculated reward at most once.  Persistence deliberately
+   * lives in GameManager/SaveService; this gameplay authority only provides the
+   * auditable final-match calculation.
+   */
+  public claimSettlementReward(): ArenaSettlementReward | null {
+    if (this.running || this.endReason === 'RUNNING' || this.settlementRewardClaimed) return null;
+    this.settlementRewardClaimed = true;
+    return this.settlementReward;
+  }
+
   public getSnapshot(): ArenaMatchSnapshot {
     const ordered = this.getLeaderboard();
     const local = this.getLocalCompetitor();
@@ -254,6 +293,7 @@ export class ArenaMatchManager extends Component {
       botStates,
       eliminationCount: this.eliminationCount,
       reason: this.endReason,
+      settlementReward: this.settlementReward,
     };
   }
 
@@ -447,8 +487,36 @@ export class ArenaMatchManager extends Component {
     if (!this.running) return;
     this.endReason = reason;
     this.running = false;
+    this.settlementReward = this.calculateSettlementReward();
     for (const competitor of this.competitors) competitor.machine.stopMovement();
     this.callbacks?.onMatchFinished(this.getSnapshot());
+  }
+
+  /**
+   * A transparent, deterministic balance rule: material collected, local mass,
+   * eliminations, time survived and the rank computed by getLeaderboard all
+   * contribute.  Even a player who exits early receives only facts earned in
+   * that running match; there is no random or UI-only payout.
+   */
+  private calculateSettlementReward(): ArenaSettlementReward {
+    const ordered = this.getLeaderboard();
+    const local = this.getLocalCompetitor();
+    const localRank = local ? ordered.findIndex((entry) => entry.id === local.id) + 1 : 0;
+    const massCoins = Math.max(0, Math.floor(((local?.machine.currentMass || 0) - START_MASS) / 75));
+    const collectedCoins = Math.max(0, local?.consumed || 0) * 2;
+    const eliminationCoins = Math.max(0, local?.kills || 0) * 8;
+    const survivalCoins = Math.max(0, Math.floor(this.elapsedSeconds / 15));
+    // A placement always reflects all eight physical competitors.  The final
+    // entry still gets a small placement amount rather than a UI-only base gift.
+    const placementCoins = localRank > 0 ? Math.max(1, this.competitors.length - localRank + 1) * 3 : 0;
+    return {
+      coins: massCoins + collectedCoins + eliminationCoins + survivalCoins + placementCoins,
+      massCoins,
+      collectedCoins,
+      eliminationCoins,
+      survivalCoins,
+      placementCoins,
+    };
   }
 
   private getLeaderboard(): ArenaLeaderboardEntry[] {

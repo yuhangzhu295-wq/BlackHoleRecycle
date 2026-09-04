@@ -432,6 +432,10 @@ async function verifyArenaFlow(cdp, page, canvasRect, modeSnapshot) {
     return snapshot.gameState === 'SETTLEMENT' && snapshot.arena?.reason === 'FORFEIT';
   }, undefined, { timeout: 5000 });
   const settled = await readRuntimeSnapshot(page);
+  assert(settled.arena?.settlementReward?.coins > 0,
+    `FAIL_ARENA_SETTLEMENT_REWARD: ${JSON.stringify(settled.arena?.settlementReward)}`);
+  assert((settled.session?.coinsEarned || 0) >= settled.arena.settlementReward.coins,
+    `FAIL_ARENA_SETTLEMENT_NOT_SAVED: ${JSON.stringify({ session: settled.session, reward: settled.arena.settlementReward })}`);
   await page.screenshot({ path: path.join(evidenceDirectory, 'portrait-390x844-arena-settlement.png') });
 
   const home = pointFor(settled.ui?.formalPages?.settlementHome, 'ARENA_SETTLEMENT_HOME');
