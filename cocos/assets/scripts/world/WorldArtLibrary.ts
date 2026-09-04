@@ -23,6 +23,8 @@ export type WorldArtKind =
   | 'commercialBuildingF'
   | 'commercialBuildingG'
   | 'commercialBuildingH'
+  | 'commercialSkyscraperA'
+  | 'commercialSkyscraperB'
   | 'streetLight'
   | 'constructionCone'
   | 'bulldozer'
@@ -66,6 +68,8 @@ const WORLD_ART_COLORS: Record<WorldArtKind, string> = {
   commercialBuildingF: '#f3b76d',
   commercialBuildingG: '#72b9e6',
   commercialBuildingH: '#e99085',
+  commercialSkyscraperA: '#ffb86b',
+  commercialSkyscraperB: '#75b8ef',
   streetLight: '#fef3c7',
   constructionCone: '#ff7a00',
   bulldozer: '#35a85e',
@@ -141,6 +145,12 @@ export class WorldArtLibrary extends Component {
 
   @property(Node)
   public commercialBuildingHTemplate: Node | null = null;
+
+  @property(Node)
+  public commercialSkyscraperATemplate: Node | null = null;
+
+  @property(Node)
+  public commercialSkyscraperBTemplate: Node | null = null;
 
   @property(Node)
   public streetLightTemplate: Node | null = null;
@@ -238,6 +248,8 @@ export class WorldArtLibrary extends Component {
       case 'commercialBuildingF': return this.commercialBuildingFTemplate;
       case 'commercialBuildingG': return this.commercialBuildingGTemplate;
       case 'commercialBuildingH': return this.commercialBuildingHTemplate;
+      case 'commercialSkyscraperA': return this.commercialSkyscraperATemplate;
+      case 'commercialSkyscraperB': return this.commercialSkyscraperBTemplate;
       case 'streetLight': return this.streetLightTemplate;
       case 'constructionCone': return this.constructionConeTemplate;
       case 'bulldozer': return this.bulldozerTemplate;
@@ -365,6 +377,8 @@ export class WorldArtLibrary extends Component {
       case 'commercialBuildingF':
       case 'commercialBuildingG':
       case 'commercialBuildingH':
+      case 'commercialSkyscraperA':
+      case 'commercialSkyscraperB':
         return this.commercialColorTexture;
       case 'garbageTruck':
       case 'sedan':
@@ -386,6 +400,7 @@ export class WorldArtLibrary extends Component {
       'roadStraight', 'roadCrossroad', 'terrainTile', 'buildingB', 'buildingC',
       'treeSmall', 'treeLarge', 'pathStones', 'fence', 'commercialBuildingA',
       'commercialBuildingD', 'commercialBuildingF', 'commercialBuildingG', 'commercialBuildingH',
+      'commercialSkyscraperA', 'commercialSkyscraperB',
       'streetLight', 'constructionCone', 'bulldozer', 'garbageTruck',
       'sedan', 'deliveryVan', 'recyclingBox', 'tire', 'recyclingBolt', 'turbineWheel',
       'sodaCan', 'waterBottle', 'battery', 'toyDuck', 'apple', 'paperScrap',

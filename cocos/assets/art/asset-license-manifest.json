@@ -172,6 +172,30 @@
       "sha256": "6881613ce218bb33a0f56137d4d33b00d307c47e518fbb21ccba1083efbea896"
     },
     {
+      "id": "kenney-commercial-skyscraper-a",
+      "source": "https://github.com/bevyengine/bevy_asset_files/raw/main/kenney/city-kit-commercial/building-skyscraper-a.glb",
+      "origin": "https://kenney.nl/assets/city-kit-commercial",
+      "license": "CC0 1.0 Universal",
+      "author": "Kenney",
+      "usage": "West skyline landmark for the playable arena city block.",
+      "modified": false,
+      "commercialAllowed": true,
+      "localPath": "assets/art/world/city/commercial-skyscraper-a.glb",
+      "sha256": "d8339bbb75944ff91d1ec9a70ec6dead71bd98b94a42d3dd0fc1f3b107ddbe85"
+    },
+    {
+      "id": "kenney-commercial-skyscraper-b",
+      "source": "https://github.com/bevyengine/bevy_asset_files/raw/main/kenney/city-kit-commercial/building-skyscraper-b.glb",
+      "origin": "https://kenney.nl/assets/city-kit-commercial",
+      "license": "CC0 1.0 Universal",
+      "author": "Kenney",
+      "usage": "East skyline landmark for the playable arena city block.",
+      "modified": false,
+      "commercialAllowed": true,
+      "localPath": "assets/art/world/city/commercial-skyscraper-b.glb",
+      "sha256": "3a383e8a0a8819023d30b2aee1c6f40fa6bc28990227a306a86e531f36c6b8d5"
+    },
+    {
       "id": "kenney-road-street-light",
       "source": "https://github.com/bevyengine/bevy_asset_files/raw/main/kenney/city-kit-roads/light-square.glb",
       "origin": "https://kenney.nl/assets/city-kit-roads",

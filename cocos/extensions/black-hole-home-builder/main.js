@@ -46,6 +46,28 @@ async function installObjectArtFromExplicitEnvironment() {
   console.info(`[black-hole-home-builder] Explicit object-art install completed: ${JSON.stringify(verification)}`);
 }
 
+/**
+ * Opt-in repair for assemblies temporarily inserted while Creator writes a
+ * machine prefab. It deliberately calls the scene script and save-scene;
+ * this must never be approximated by text-editing Game.scene.
+ */
+async function cleanupMachineResidueFromExplicitEnvironment() {
+  if (process.env.BHR_MACHINE_CLEANUP !== '1') return;
+  const run = (method) => Editor.Message.request('scene', 'execute-scene-script', {
+    name: 'black-hole-home-builder', method, args: [],
+  });
+  let ready = null;
+  for (let attempt = 0; attempt < 45; attempt += 1) {
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    ready = await run('isArenaSceneReady');
+    if (ready?.ready) break;
+  }
+  if (!ready?.ready) throw new Error(`[black-hole-home-builder] Machine cleanup scene was not ready: ${JSON.stringify(ready)}`);
+  const cleanup = await run('cleanupMachineVisualResidue');
+  if (!cleanup?.saved) throw new Error(`[black-hole-home-builder] Machine cleanup failed: ${JSON.stringify(cleanup)}`);
+  console.info(`[black-hole-home-builder] Explicit machine cleanup completed: ${JSON.stringify(cleanup)}`);
+}
+
 module.exports = {
   // Scene-changing operations remain explicit extension menu actions.
   // Opening Creator must never mutate Game.scene.
@@ -55,6 +77,9 @@ module.exports = {
     });
     installObjectArtFromExplicitEnvironment().catch((error) => {
       console.error('[black-hole-home-builder] Explicit object-art install failed:', error);
+    });
+    cleanupMachineResidueFromExplicitEnvironment().catch((error) => {
+      console.error('[black-hole-home-builder] Explicit machine cleanup failed:', error);
     });
   },
   methods: {

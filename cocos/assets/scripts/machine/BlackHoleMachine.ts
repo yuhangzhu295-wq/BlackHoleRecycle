@@ -314,7 +314,9 @@ export class BlackHoleMachine extends Component {
       'bulldozer',
       this.visualRoot,
       new Vec3(0, 0.03, 0.88),
-      new Vec3(1.65, 1.65, 1.65),
+      // Keep bot silhouettes readable beside the local singularity instead
+      // of allowing a source-scale crawler to dominate the portrait frame.
+      new Vec3(1.12, 1.12, 1.12),
       180,
       'ArenaBotBulldozer',
     );

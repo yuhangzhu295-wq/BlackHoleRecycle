@@ -44,10 +44,13 @@ export class SettlementPageController extends Component {
     this.setLabel('ArenaResult', `第 ${snapshot.localRank || '-'} / ${snapshot.competitorCount} 名 · ${Math.round(snapshot.localMass)} kg`);
 
     // The ranking panel is intentionally filled only from the match snapshot.
-    // It is not a decorative, static five-player list: a player can see their
-    // own mass, kills and placement change with the actual arena outcome.
+    // Keep the player-visible row even when they are outside the top ranks:
+    // a top-five-only list can otherwise hide the result that this screen is
+    // supposed to explain.  This is a layout choice, not synthetic ranking
+    // data; score, mass, eliminations and placement remain match facts.
+    const leaders = snapshot.leaderboard.filter((entry) => !entry.isLocal).slice(0, 4);
     for (let index = 0; index < 5; index += 1) {
-      const entry = snapshot.leaderboard[index];
+      const entry = leaders[index];
       const row = this.node.getChildByName(`ArenaRankRow_${index + 1}`);
       if (!row) continue;
       row.active = Boolean(entry);
@@ -56,9 +59,22 @@ export class SettlementPageController extends Component {
       this.setNodeActive(`ArenaRankName_${index + 1}`, Boolean(entry));
       this.setNodeActive(`ArenaRankScore_${index + 1}`, Boolean(entry));
       if (!entry) continue;
-      this.setLabel(`ArenaRankBadge_${index + 1}`, `${index + 1}`);
-      this.setLabel(`ArenaRankName_${index + 1}`, entry.isLocal ? '你' : entry.name);
+      const rank = snapshot.leaderboard.findIndex((candidate) => candidate.id === entry.id) + 1;
+      this.setLabel(`ArenaRankBadge_${index + 1}`, `${rank}`);
+      this.setLabel(`ArenaRankName_${index + 1}`, entry.name);
       this.setLabel(`ArenaRankScore_${index + 1}`, `${Math.round(entry.mass)} kg · ${entry.kills} 淘汰`);
+    }
+
+    const local = snapshot.leaderboard.find((entry) => entry.isLocal) || null;
+    this.setNodeActive('ArenaPlayerRow', Boolean(local));
+    this.setNodeActive('ArenaPlayerBadgePanel', Boolean(local));
+    this.setNodeActive('ArenaPlayerBadge', Boolean(local));
+    this.setNodeActive('ArenaPlayerName', Boolean(local));
+    this.setNodeActive('ArenaPlayerScore', Boolean(local));
+    if (local) {
+      this.setLabel('ArenaPlayerBadge', `${snapshot.localRank || '-'}`);
+      this.setLabel('ArenaPlayerName', '我');
+      this.setLabel('ArenaPlayerScore', `${Math.round(local.mass)} kg · ${local.kills} 淘汰`);
     }
   }
 
@@ -88,6 +104,9 @@ export class SettlementPageController extends Component {
       this.setNodeActive(`ArenaRankBadge_${rank}`, visible);
       this.setNodeActive(`ArenaRankName_${rank}`, visible);
       this.setNodeActive(`ArenaRankScore_${rank}`, visible);
+    }
+    for (const name of ['ArenaPlayerRow', 'ArenaPlayerBadgePanel', 'ArenaPlayerBadge', 'ArenaPlayerName', 'ArenaPlayerScore']) {
+      this.setNodeActive(name, visible);
     }
     for (const child of this.node.children) {
       if (child.name.startsWith('StatRow_') || /^(Absorbed|Mass|Coin|Level|Region)(Caption|Value)$/.test(child.name)) {

@@ -29,6 +29,8 @@ const MODE_IMAGE_URLS = [
 // prefab stays as its child and receives the normalization scale here, rather
 // than accepting arbitrary runtime scale values per object type.
 const OBJECT_ART_TEMPLATE_SPECS = [
+  { property: 'commercialSkyscraperATemplate', name: 'CommercialSkyscraperATemplate', url: 'db://assets/art/world/city/commercial-skyscraper-a.glb', scale: [1.65, 1.65, 1.65] },
+  { property: 'commercialSkyscraperBTemplate', name: 'CommercialSkyscraperBTemplate', url: 'db://assets/art/world/city/commercial-skyscraper-b.glb', scale: [1.65, 1.65, 1.65] },
   { property: 'commercialBuildingFTemplate', name: 'CommercialBuildingFTemplate', url: 'db://assets/art/world/city/commercial-building-f.glb', scale: [1.65, 1.65, 1.65] },
   { property: 'commercialBuildingGTemplate', name: 'CommercialBuildingGTemplate', url: 'db://assets/art/world/city/commercial-building-g.glb', scale: [1.65, 1.65, 1.65] },
   { property: 'commercialBuildingHTemplate', name: 'CommercialBuildingHTemplate', url: 'db://assets/art/world/city/commercial-building-h.glb', scale: [1.65, 1.65, 1.65] },
@@ -1054,18 +1056,30 @@ exports.methods = {
     revivePage.pageId = 4;
     const reviveDim = createRoundedPanel('DimOverlay', revive, 720, 1280, new Color(5, 13, 31, 208), 0);
     place(reviveDim, 0, 0, 720, 1280);
-    const reviveCard = createRoundedPanel('ReviveCard', revive, 620, 680, new Color(250, 248, 255, 255), 42);
-    place(reviveCard, 0, 16, 620, 680);
-    const reviveRibbon = createRoundedPanel('ReviveRibbon', revive, 420, 92, new Color(105, 70, 190, 255), 24);
-    place(reviveRibbon, 0, 268, 420, 92);
-    caption(revive, 'Title', '黑洞被吞噬', 46, 0, 268, 400, 68, new Color(255, 255, 255, 255));
-    caption(revive, 'LossValue', '掉落了部分质量', 22, 0, 174, 500, 44, new Color(74, 56, 99, 255));
+    const reviveCard = createRoundedPanel('ReviveCard', revive, 620, 790, new Color(250, 248, 255, 255), 42);
+    place(reviveCard, 0, -5, 620, 790);
+    // Three saved, non-interactive accent strokes give the revive branch the
+    // same urgent colour hierarchy as the approved V2 direction.  The two
+    // real buttons remain the only actionable controls on this page.
+    const reviveAccentPurple = createRoundedPanel('ReviveAccentPurple', revive, 470, 38, new Color(166, 74, 225, 255), 18);
+    place(reviveAccentPurple, 0, 299, 470, 38);
+    reviveAccentPurple.setRotationFromEuler(0, 0, 8);
+    const reviveAccentOrange = createRoundedPanel('ReviveAccentOrange', revive, 500, 38, new Color(255, 116, 22, 255), 18);
+    place(reviveAccentOrange, 0, 271, 500, 38);
+    reviveAccentOrange.setRotationFromEuler(0, 0, -7);
+    const reviveAccentBlue = createRoundedPanel('ReviveAccentBlue', revive, 460, 38, new Color(72, 163, 255, 255), 18);
+    place(reviveAccentBlue, 0, 243, 460, 38);
+    reviveAccentBlue.setRotationFromEuler(0, 0, 6);
+    const reviveRibbon = createRoundedPanel('ReviveRibbon', revive, 440, 102, new Color(105, 70, 190, 255), 26);
+    place(reviveRibbon, 0, 270, 440, 102);
+    caption(revive, 'Title', '复活继续', 50, 0, 270, 420, 72, new Color(255, 230, 102, 255));
+    caption(revive, 'LossValue', '黑洞被吞噬 · 掉落了部分质量', 22, 0, 164, 500, 44, new Color(74, 56, 99, 255));
     const countdownPanel = createRoundedPanel('CountdownPanel', revive, 218, 96, new Color(238, 231, 255, 255), 24);
     place(countdownPanel, 0, 96, 218, 96);
     caption(revive, 'CountdownValue', '2.5s', 38, 0, 96, 198, 70, new Color(105, 70, 190, 255));
     caption(revive, 'RankValue', '当前第 - / 8', 22, 0, 16, 420, 40, new Color(74, 56, 99, 255));
-    await createPrimaryActionButton('BtnRevive', revive, '立即复活', 0, -114, 392, 98, 32);
-    createGraphicButton('BtnGiveUp', revive, '结束本局', 0, -238, 340, 78, new Color(105, 70, 190, 255), new Color(255, 255, 255, 255), 26);
+    await createPrimaryActionButton('BtnRevive', revive, '立即复活', 0, -134, 392, 98, 32);
+    createGraphicButton('BtnGiveUp', revive, '结束本局', 0, -262, 340, 78, new Color(105, 70, 190, 255), new Color(255, 255, 255, 255), 26);
     revive.addComponent(getComponentClass('RevivePageController'));
     revive.active = false;
 
@@ -1095,12 +1109,12 @@ exports.methods = {
     settlementPage.pageId = 5;
     const settlementDim = createRoundedPanel('DimOverlay', settlement, 720, 1280, new Color(5, 14, 29, 210), 0);
     place(settlementDim, 0, 0, 720, 1280);
-    const settlementCard = createRoundedPanel('SettlementCard', settlement, 660, 940, new Color(255, 253, 247, 255), 42);
-    place(settlementCard, 0, 18, 660, 940);
-    const settlementRibbon = createRoundedPanel('SettlementRibbon', settlement, 444, 92, new Color(105, 70, 190, 255), 24);
-    place(settlementRibbon, 0, 382, 444, 92);
-    caption(settlement, 'Title', '本局结算', 50, 0, 382, 420, 74, new Color(255, 255, 255, 255));
-    caption(settlement, 'Subtitle', '无尽吞噬 · 本局数据', 24, 0, 308, 420, 46, new Color(73, 55, 99, 255));
+    const settlementCard = createRoundedPanel('SettlementCard', settlement, 660, 1020, new Color(255, 253, 247, 255), 42);
+    place(settlementCard, 0, 0, 660, 1020);
+    const settlementRibbon = createRoundedPanel('SettlementRibbon', settlement, 492, 112, new Color(105, 70, 190, 255), 28);
+    place(settlementRibbon, 0, 412, 492, 112);
+    caption(settlement, 'Title', '本局结算', 56, 0, 412, 470, 78, new Color(255, 222, 86, 255));
+    caption(settlement, 'Subtitle', '无尽吞噬 · 本局数据', 24, 0, 330, 420, 46, new Color(73, 55, 99, 255));
     const rowColor = new Color(74, 56, 40, 255);
     for (const y of [223, 143, 63, -17, -97]) {
       const row = createRoundedPanel(`StatRow_${y}`, settlement, 530, 62, new Color(243, 237, 255, 255), 18);
@@ -1116,9 +1130,9 @@ exports.methods = {
     caption(settlement, 'LevelValue', 'LV.1', 32, 164, -17, 180, 48, new Color(68, 129, 209, 255));
     caption(settlement, 'RegionCaption', '探索区域', 26, -166, -97, 220, 44, rowColor);
     caption(settlement, 'RegionValue', '1', 32, 164, -97, 180, 48, new Color(62, 154, 95, 255));
-    const arenaLeaderboard = createRoundedPanel('ArenaLeaderboardPanel', settlement, 570, 492, new Color(242, 237, 255, 255), 26);
-    place(arenaLeaderboard, 0, 38, 570, 492);
-    caption(settlement, 'ArenaResult', '第 - / 8 名 · 0 kg', 24, 0, 264, 510, 40, new Color(77, 54, 109, 255));
+    const arenaLeaderboard = createRoundedPanel('ArenaLeaderboardPanel', settlement, 570, 590, new Color(242, 237, 255, 255), 26);
+    place(arenaLeaderboard, 0, 18, 570, 590);
+    caption(settlement, 'ArenaResult', '第 - / 8 名 · 0 kg', 24, 0, 288, 510, 40, new Color(77, 54, 109, 255));
     const arenaRankColors = [
       new Color(255, 207, 66, 255),
       new Color(183, 210, 240, 255),
@@ -1128,7 +1142,7 @@ exports.methods = {
     ];
     for (let index = 0; index < 5; index += 1) {
       const rank = index + 1;
-      const y = 185 - index * 82;
+      const y = 210 - index * 82;
       const row = createRoundedPanel(`ArenaRankRow_${rank}`, settlement, 522, 66, new Color(255, 255, 255, 230), 18);
       place(row, 0, y, 522, 66);
       const badge = createRoundedPanel(`ArenaRankBadgePanel_${rank}`, settlement, 50, 50, arenaRankColors[index], 16);
@@ -1137,6 +1151,13 @@ exports.methods = {
       caption(settlement, `ArenaRankName_${rank}`, `选手 ${rank}`, 23, -110, y, 152, 42, new Color(56, 42, 82, 255));
       caption(settlement, `ArenaRankScore_${rank}`, '0 kg · 0 淘汰', 18, 118, y, 210, 38, new Color(101, 82, 125, 255));
     }
+    const arenaPlayerRow = createRoundedPanel('ArenaPlayerRow', settlement, 522, 70, new Color(221, 248, 205, 255), 18);
+    place(arenaPlayerRow, 0, -204, 522, 70);
+    const arenaPlayerBadge = createRoundedPanel('ArenaPlayerBadgePanel', settlement, 50, 50, new Color(104, 193, 89, 255), 16);
+    place(arenaPlayerBadge, -212, -204, 50, 50);
+    caption(settlement, 'ArenaPlayerBadge', '-', 24, -212, -204, 46, 42, new Color(25, 82, 32, 255));
+    caption(settlement, 'ArenaPlayerName', '我', 26, -110, -204, 152, 42, new Color(29, 118, 37, 255));
+    caption(settlement, 'ArenaPlayerScore', '0 kg · 0 淘汰', 18, 118, -204, 210, 38, new Color(42, 122, 53, 255));
     arenaLeaderboard.active = false;
     settlement.getChildByName('ArenaResult').active = false;
     for (let rank = 1; rank <= 5; rank += 1) {
@@ -1146,8 +1167,11 @@ exports.methods = {
       settlement.getChildByName(`ArenaRankName_${rank}`).active = false;
       settlement.getChildByName(`ArenaRankScore_${rank}`).active = false;
     }
-    await createPrimaryActionButton('BtnRestart', settlement, '再来一局', -142, -296, 270, 94, 28);
-    createGraphicButton('BtnHome', settlement, '返回首页', 142, -296, 270, 94, new Color(105, 70, 190, 255), new Color(255, 255, 255, 255), 28);
+    for (const name of ['ArenaPlayerRow', 'ArenaPlayerBadgePanel', 'ArenaPlayerBadge', 'ArenaPlayerName', 'ArenaPlayerScore']) {
+      settlement.getChildByName(name).active = false;
+    }
+    await createPrimaryActionButton('BtnRestart', settlement, '再来一局', -142, -356, 270, 94, 28);
+    createGraphicButton('BtnHome', settlement, '返回首页', 142, -356, 270, 94, new Color(105, 70, 190, 255), new Color(255, 255, 255, 255), 28);
     settlement.addComponent(getComponentClass('SettlementPageController'));
     settlement.active = false;
 

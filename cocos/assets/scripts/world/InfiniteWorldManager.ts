@@ -247,9 +247,14 @@ class InfiniteWorldCell {
       // Keep the CC0 commercial kit landmarks in the portrait play camera's
       // field, framing the arena instead of leaving a large vacant lawn.
       // They are decorative scene art, not collision or resource objects.
-      this.spawn('commercialBuildingF', -7.3, -2.8, V3(2.0, 2.0, 2.0), 90, 'NeighbourhoodMarket');
-      this.spawn('commercialBuildingG', 7.3, -2.8, V3(2.0, 2.0, 2.0), -90, 'NeighbourhoodClinic');
-      this.spawn('commercialBuildingH', 0, -14.4, V3(1.7, 1.7, 1.7), 0, 'NeighbourhoodService');
+      this.spawn('commercialBuildingF', -7.6, -9.2, V3(1.75, 1.75, 1.75), 90, 'NeighbourhoodMarket');
+      this.spawn('commercialBuildingG', 7.6, -9.2, V3(1.75, 1.75, 1.75), -90, 'NeighbourhoodClinic');
+      this.spawn('commercialBuildingH', 0, -16.8, V3(1.55, 1.55, 1.55), 0, 'NeighbourhoodService');
+      // Tall city silhouettes make the opening arena read as a real urban
+      // block instead of an isolated lawn. They remain background art and
+      // do not participate in resource collisions or bot navigation.
+      this.spawn('commercialSkyscraperA', -11.6, -18.2, V3(1.9, 1.9, 1.9), 90, 'ArenaSkylineWest');
+      this.spawn('commercialSkyscraperB', 11.6, -18.2, V3(1.9, 1.9, 1.9), -90, 'ArenaSkylineEast');
     };
     const trees = (): void => {
       this.spawn('treeLarge', -9.8, 1.0, V3(3.6, 3.6, 3.6), 0, 'DistrictTreeLarge');
@@ -260,7 +265,7 @@ class InfiniteWorldCell {
         homes(); trees(); lights();
         this.spawn('pathStones', -7.3, -14.5, V3(3.2, 1, 4.6), 90, 'ResidentialWalkway');
         this.spawn('fence', 7.3, -15.5, V3(3.2, 1.5, 3.8), 90, 'ResidentialFence');
-        this.spawn('sedan', 3.1, -8.5, V3(1.2, 1.2, 1.2), -90, 'ResidentialParkedSedan');
+        this.spawn('sedan', 3.1, -8.5, V3(0.78, 0.78, 0.78), -90, 'ResidentialParkedSedan');
         break;
       case 'PARK':
         lights();
