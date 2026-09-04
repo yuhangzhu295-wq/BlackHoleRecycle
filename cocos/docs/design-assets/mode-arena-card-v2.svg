@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="610" height="278" viewBox="0 0 610 278">
+  <defs>
+    <linearGradient id="lawn" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#c5ef6c"/><stop offset="1" stop-color="#52af47"/></linearGradient>
+    <linearGradient id="road" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#52626b"/><stop offset="1" stop-color="#263844"/></linearGradient>
+    <radialGradient id="hole"><stop offset="0" stop-color="#03010c"/><stop offset=".34" stop-color="#160c43"/><stop offset=".65" stop-color="#5329b9"/><stop offset=".83" stop-color="#ad8bff"/><stop offset="1" stop-color="#4e2bb4"/></radialGradient>
+    <filter id="s" x="-30%" y="-30%" width="160%" height="170%"><feDropShadow dx="0" dy="7" stdDeviation="5" flood-color="#183b31" flood-opacity=".5"/></filter>
+  </defs>
+  <rect width="610" height="278" rx="18" fill="url(#lawn)"/>
+  <path d="M358-30L668 138 560 209 248 35Z" fill="url(#road)" stroke="#314550" stroke-width="8"/><path d="M327 2L646 173" stroke="#fffbe3" stroke-width="9" stroke-dasharray="22 15" opacity=".95"/>
+  <g fill="#6dc94f"><circle cx="412" cy="33" r="22"/><circle cx="525" cy="53" r="27"/><circle cx="576" cy="233" r="30"/><circle cx="257" cy="242" r="27"/><circle cx="339" cy="94" r="19"/></g>
+  <g filter="url(#s)"><ellipse cx="454" cy="148" rx="111" ry="82" fill="#4524a9"/><ellipse cx="454" cy="142" rx="103" ry="76" fill="url(#hole)"/><ellipse cx="454" cy="141" rx="79" ry="54" fill="none" stroke="#f0e8ff" stroke-width="7" opacity=".88"/><ellipse cx="454" cy="142" rx="43" ry="30" fill="#04010c"/><path d="M386 145c29-40 109-44 144-9M386 168c33 29 103 36 141 3" fill="none" stroke="#d6c8ff" stroke-width="5" opacity=".75"/></g>
+  <g transform="translate(505 48)" filter="url(#s)"><path d="M-43 11l24-45 25 27 28-25 18 48-17 24h-59z" fill="#ffd553" stroke="#a65e13" stroke-width="6"/><circle cx="-10" cy="-1" r="6" fill="#ff7b54"/><circle cx="18" cy="-4" r="6" fill="#fff0a2"/></g>
+  <g filter="url(#s)"><rect x="28" y="34" width="268" height="140" rx="20" fill="#162e30" opacity=".52"/><text x="46" y="81" font-family="Arial, sans-serif" font-size="51" font-weight="900" fill="#fff" stroke="#17313d" stroke-width="10" paint-order="stroke">竞技吞噬</text><text x="48" y="119" font-family="Arial, sans-serif" font-size="25" font-weight="900" fill="#fff">多人竞技</text><text x="48" y="149" font-family="Arial, sans-serif" font-size="20" font-weight="900" fill="#ffe85c" stroke="#674214" stroke-width="3" paint-order="stroke">实时对战，吞噬最强对手！</text></g>
+  <g transform="translate(42 197)" filter="url(#s)"><rect width="152" height="45" rx="12" fill="#237cc8" stroke="#e3f9ff" stroke-width="4"/><circle cx="24" cy="20" r="9" fill="#e6f8ff"/><circle cx="38" cy="25" r="8" fill="#e6f8ff"/><text x="55" y="30" font-family="Arial, sans-serif" font-size="20" font-weight="900" fill="#fff">1v7 对战</text></g>
+</svg>

@@ -531,6 +531,9 @@ async function verifyArenaFlow(cdp, page, canvasRect, modeSnapshot) {
     `FAIL_ARENA_WARMUP_NOT_STARTED: ${JSON.stringify(initial.arena)}`);
   assert(initial.ui?.arenaHUD?.joystick?.active,
     `FAIL_ARENA_VISIBLE_JOYSTICK: ${JSON.stringify(initial.ui?.arenaHUD)}`);
+  const localNameplate = initial.ui?.arenaHUD?.nameplates?.find((entry) => entry.id === 'local-player');
+  assert(localNameplate?.active && localNameplate.label === '我',
+    `FAIL_ARENA_LOCAL_NAMEPLATE: ${JSON.stringify(initial.ui?.arenaHUD?.nameplates)}`);
   await page.screenshot({ path: path.join(evidenceDirectory, 'portrait-390x844-arena.png') });
 
   // Give real bots time to navigate toward and physically absorb world items.
@@ -846,6 +849,11 @@ async function driveJoystickToLogicalPoint(cdp, page, joystick, target, label, a
     finalSnapshot = await readRuntimeSnapshot(page);
   }
   const finalPosition = getLogicalPlayerPosition(finalSnapshot);
+  // A physical drag can cross the pickup radius between two diagnostic
+  // samples and then coast slightly beyond it before the next sample.  The
+  // route genuinely reached the target in that case; the next assertion
+  // still requires the live Cocos compression system to absorb the item.
+  if (bestDistance <= arrivalRadius) return finalSnapshot;
   throw new Error(`FAIL_VERTICAL_SLICE_ROUTE_${label}: target=${JSON.stringify(target)} final=${JSON.stringify(finalPosition)} bestDistance=${bestDistance}`);
 }
 
@@ -955,6 +963,10 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
         `FAIL_MACHINE_VISUAL_MATERIALS: ${JSON.stringify(activeVisualMaterials)}`);
       report.machineMaterialDiagnostics = activeVisualMaterials;
       report.infiniteWorld.initial = validateInfiniteWorldSnapshot(gameplaySnapshot);
+      const constructionLandmark = gameplaySnapshot.world?.streaming?.constructionLandmark;
+      assert(constructionLandmark?.loadState === 'READY' && constructionLandmark.visible === true,
+        `FAIL_CC0_CONSTRUCTION_LANDMARK: ${JSON.stringify(constructionLandmark)}`);
+      report.constructionLandmark = constructionLandmark;
       const openingWorldVisuals = gameplaySnapshot.world?.streaming?.visualDiagnostics || [];
       const grassVisuals = openingWorldVisuals.filter((row) => row.name === 'DistrictGround');
       assert(grassVisuals.length === 4 && grassVisuals.every((row) => row.active
@@ -1193,6 +1205,7 @@ const report = {
   infiniteWorld: { initial: null, cardinal500m: [] },
   dynamicVehicles: null,
   machineMaterialDiagnostics: null,
+  constructionLandmark: null,
   openingWorldVisuals: null,
   verticalSlice: null,
   runtimePages: null,

@@ -6,6 +6,7 @@ import { BlackHoleMachine } from '../machine/BlackHoleMachine';
 import { InfiniteWorldManager } from '../world/InfiniteWorldManager';
 import { CompressibleObject } from './CompressibleObject';
 import { HUDView } from '../ui/HUDView';
+import { ArenaHUDController } from '../ui/ArenaHUDController';
 import { RuntimePageInputRouter } from '../ui/RuntimePageInputRouter';
 import { CompressionSystem } from './CompressionSystem';
 import { PlayerController } from './PlayerController';
@@ -695,6 +696,7 @@ export class GameManager extends Component {
         pauseButton: describe(arenaHud?.getChildByName('BtnPause') || null),
         joystick: describe(arenaHud?.getChildByName('Joystick') || null),
         timer: describe(arenaHud?.getChildByName('TimerValue') || null),
+        nameplates: arenaHud?.getComponent(ArenaHUDController)?.getNameplateDiagnostics() || [],
       },
       formalPages: {
         pause: describe(pausePage),

@@ -3,7 +3,7 @@
  * WorldChunkManager, this owns a real two-dimensional X/Z grid around the
  * player and keeps logical world coordinates separate from rendered ones.
  */
-import { _decorator, Color, Component, director, MeshRenderer, Node, Vec3 } from 'cc';
+import { _decorator, Color, Component, director, instantiate, MeshRenderer, Node, Prefab, resources, Vec3 } from 'cc';
 import { IObjectTemplate, IRegionThemeConfig, OBJECT_TEMPLATES, ObjectTier, REGION_THEMES } from '../data/GameConfig';
 import { ObjectPool } from '../core/ObjectPool';
 import { eventBus } from '../core/EventBus';
@@ -43,6 +43,8 @@ class InfiniteWorldCell {
   public readonly objects: CompressibleObject[] = [];
   public readonly dynamicVehicles: DynamicVehicle[] = [];
   public readonly district: DistrictTemplate;
+  /** One Creator-imported CC0 landmark; never a gameplay or collision node. */
+  private constructionLandmark: Node | null = null;
 
   public constructor(
     public readonly coord: WorldCellCoord,
@@ -93,6 +95,30 @@ class InfiniteWorldCell {
   public applyWorldRebase(shift: Readonly<Vec3>): void {
     this.objects.forEach((object) => object.applyWorldRebase(shift));
     this.dynamicVehicles.forEach((vehicle) => vehicle.applyWorldRebase(shift));
+  }
+
+  /**
+   * Attach the artist-authored construction-site prefab only in the opening
+   * city cell. The imported prefab is a background landmark: it carries no
+   * CompressibleObject, Physics, collider, reward, or input components.
+   */
+  public addConstructionLandmark(prefab: Prefab): boolean {
+    if (this.coord.x !== 0 || this.coord.z !== 0 || this.constructionLandmark || !this.node.isValid) return false;
+    const landmark = instantiate(prefab);
+    landmark.name = 'MajadroidConstructionLandmark';
+    landmark.setPosition(0, 0.02, -26.5);
+    landmark.setRotationFromEuler(0, 180, 0);
+    // The source site spans a whole construction block. Scale it as a
+    // distant skyline district so it enriches the portrait city without
+    // obscuring the actual pickup and competitor lanes at the origin.
+    landmark.setScale(0.145, 0.145, 0.145);
+    this.node.addChild(landmark);
+    this.constructionLandmark = landmark;
+    return true;
+  }
+
+  public hasConstructionLandmark(): boolean {
+    return Boolean(this.constructionLandmark?.isValid && this.constructionLandmark.activeInHierarchy);
   }
 
   /**
@@ -437,6 +463,9 @@ export class InfiniteWorldManager extends Component {
   private objectRoot: Node | null = null;
   private artLibrary: WorldArtLibrary | null = null;
   private initialized: boolean = false;
+  /** The only remote-derived art added by this manager, imported by Creator. */
+  private constructionSitePrefab: Prefab | null = null;
+  private constructionSiteLoadState: 'IDLE' | 'LOADING' | 'READY' | 'FAILED' = 'IDLE';
 
   public init(objectFactory: () => CompressibleObject): void {
     if (this.initialized) return;
@@ -458,6 +487,7 @@ export class InfiniteWorldManager extends Component {
     );
     this.initialized = true;
     this.updateCells(Vec3.ZERO);
+    this.loadConstructionLandmark();
   }
 
   /**
@@ -474,6 +504,7 @@ export class InfiniteWorldManager extends Component {
     this.currentCell.set(0, 0, 0);
     this.rebaseCount = 0;
     this.updateCells(renderPlayerPosition);
+    this.installConstructionLandmarkInOpeningCell();
   }
 
   /**
@@ -640,6 +671,10 @@ export class InfiniteWorldManager extends Component {
         district: cell.district.kind,
       })),
       dynamicVehicles: Array.from(this.activeCells.values(), (cell) => cell.dynamicVehicles.map((vehicle) => vehicle.getSnapshot())).flat(),
+      constructionLandmark: {
+        loadState: this.constructionSiteLoadState,
+        visible: this.activeCells.get(cellKey({ x: 0, z: 0 }))?.hasConstructionLandmark() || false,
+      },
       visualDiagnostics: this.activeCells.get(cellKey({ x: this.currentCell.x, z: this.currentCell.z }))?.getVisualDiagnostics() || [],
     };
   }
@@ -664,6 +699,36 @@ export class InfiniteWorldManager extends Component {
       this.logicalOrigin,
     );
     this.activeCells.set(cellKey(coord), cell);
+    if (coord.x === 0 && coord.z === 0) this.installConstructionLandmarkInOpeningCell();
+  }
+
+  /**
+   * `majadroid-construction-site.fbx` is imported by Creator into the
+   * resources bundle. Loading its generated Prefab keeps the model's mesh and
+   * material declarations entirely engine-owned; no prefab UUID or model
+   * serialization is authored by code.
+   */
+  private loadConstructionLandmark(): void {
+    if (this.constructionSiteLoadState !== 'IDLE') return;
+    this.constructionSiteLoadState = 'LOADING';
+    // Creator exposes the FBX's generated prefab as a subasset. The resource
+    // key is read from the Creator-produced resources bundle, rather than
+    // inferred from the source FBX filename.
+    resources.load('art/construction/majadroid-construction-site/majadroid-construction-site', Prefab, (error, prefab) => {
+      if (error || !prefab) {
+        this.constructionSiteLoadState = 'FAILED';
+        console.warn('[InfiniteWorldManager] CC0 construction landmark could not load.', error || 'missing Prefab');
+        return;
+      }
+      this.constructionSitePrefab = prefab;
+      this.constructionSiteLoadState = 'READY';
+      this.installConstructionLandmarkInOpeningCell();
+    });
+  }
+
+  private installConstructionLandmarkInOpeningCell(): void {
+    if (!this.constructionSitePrefab) return;
+    this.activeCells.get(cellKey({ x: 0, z: 0 }))?.addConstructionLandmark(this.constructionSitePrefab);
   }
 
   private updateCurrentTheme(coord: WorldCellCoord): void {

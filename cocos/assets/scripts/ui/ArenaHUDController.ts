@@ -1,5 +1,5 @@
 /** Editor-saved arena HUD bindings. All values originate from ArenaMatchManager. */
-import { _decorator, Button, Camera, Component, director, Label, Vec3, view } from 'cc';
+import { _decorator, Button, Camera, Color, Component, director, instantiate, Label, LabelOutline, Node, UITransform, Vec3, view } from 'cc';
 import { eventBus } from '../core/EventBus';
 import { ArenaMatchSnapshot } from '../gameplay/ArenaMatchManager';
 
@@ -14,6 +14,12 @@ const formatClock = (seconds: number): string => {
 export class ArenaHUDController extends Component {
   private bindings: Array<[Button, () => void]> = [];
   private readonly projectedBotPosition: Vec3 = new Vec3();
+  /**
+   * Live world-to-HUD nameplates. These never own competitor state: each
+   * string and screen position is refreshed from ArenaMatchSnapshot so the
+   * portrait arena remains legible without static or invented opponent data.
+   */
+  private readonly competitorNameplates = new Map<string, Node>();
 
   onEnable(): void {
     this.bind('BtnPause', () => eventBus.emit('UI_TRIGGER_PAUSE'));
@@ -22,6 +28,8 @@ export class ArenaHUDController extends Component {
   onDisable(): void {
     for (const [button, handler] of this.bindings) button.node.off(Button.EventType.CLICK, handler, this);
     this.bindings.length = 0;
+    for (const nameplate of this.competitorNameplates.values()) nameplate.destroy();
+    this.competitorNameplates.clear();
   }
 
   public updateMatch(snapshot: ArenaMatchSnapshot): void {
@@ -41,6 +49,101 @@ export class ArenaHUDController extends Component {
       this.setLabel(`Top${index + 1}`, `${index + 1}. ${prefix}  ${entry.mass}kg${life}`);
     });
     this.updateOffscreenBotArrows(snapshot);
+    this.updateCompetitorNameplates(snapshot);
+  }
+
+  /**
+   * Keep the real local player and every living arena opponent visually tied
+   * to their gameplay authority. This is intentionally UI-only: the labels
+   * cannot change movement, pickup, mass, collision, combat, or ranking.
+   */
+  private updateCompetitorNameplates(snapshot: ArenaMatchSnapshot): void {
+    const camera = director.getScene()?.getComponentInChildren(Camera) || null;
+    const viewport = view.getViewportRect();
+    const hudTransform = this.node.getComponent(UITransform) || null;
+    if (!camera || !hudTransform || viewport.width <= 0 || viewport.height <= 0) return;
+
+    const activeIds = new Set<string>();
+    for (const competitor of snapshot.leaderboard) {
+      const nameplate = this.getOrCreateNameplate(competitor.id);
+      activeIds.add(competitor.id);
+      if (!competitor.alive) {
+        nameplate.active = false;
+        continue;
+      }
+
+      const screen = camera.worldToScreen(
+        new Vec3(competitor.position.x, 1.35, competitor.position.z),
+        this.projectedBotPosition,
+      );
+      const normalizedX = (screen.x - viewport.x) / viewport.width;
+      const normalizedY = (screen.y - viewport.y) / viewport.height;
+      // Reserve the actual 184-design-unit nameplate width so a moving
+      // competitor never leaves a clipped half-name at a portrait edge.
+      // Off-screen opponents retain the existing direction arrows instead.
+      const inside = normalizedX >= 0.15 && normalizedX <= 0.85 && normalizedY >= 0.04 && normalizedY <= 0.94;
+      nameplate.active = inside;
+      if (!inside) continue;
+
+      const label = nameplate.getComponent(Label);
+      if (label) {
+        label.string = competitor.isLocal ? '我' : competitor.name;
+        label.color = competitor.isLocal ? new Color(104, 238, 104, 255) : new Color(255, 255, 255, 255);
+        label.fontSize = competitor.isLocal ? 34 : 24;
+        label.lineHeight = competitor.isLocal ? 38 : 28;
+      }
+      // Camera screen coordinates are expressed in the current viewport;
+      // ArenaHUD is a fixed 720×1280 canvas. Normalize before mapping so the
+      // labels remain aligned at all verified portrait aspect ratios.
+      nameplate.setPosition(
+        (normalizedX - 0.5) * hudTransform.width,
+        (normalizedY - 0.5) * hudTransform.height + 36,
+        0,
+      );
+    }
+
+    for (const [id, nameplate] of this.competitorNameplates) {
+      if (!activeIds.has(id)) nameplate.active = false;
+    }
+  }
+
+  private getOrCreateNameplate(id: string): Node {
+    const existing = this.competitorNameplates.get(id);
+    if (existing?.isValid) return existing;
+
+    // New `Label` components can be active yet have no glyph material in the
+    // minified Web Mobile package. Clone an editor-saved, already rendered
+    // ArenaHUD label instead, retaining its Creator-owned font and glyph
+    // configuration while the content and position remain live gameplay data.
+    const template = this.node.getChildByName('Top1');
+    if (!template) throw new Error('[ArenaHUDController] Missing serialized Top1 label template.');
+    const nameplate = instantiate(template);
+    nameplate.name = `ArenaCompetitorNameplate_${id}`;
+    this.node.addChild(nameplate);
+    const transform = nameplate.getComponent(UITransform);
+    transform?.setContentSize(184, 34);
+    const label = nameplate.getComponent(Label);
+    if (!label) throw new Error('[ArenaHUDController] Top1 template has no serialized Label.');
+    label.fontSize = 24;
+    label.lineHeight = 28;
+    label.enableWrapText = false;
+    label.horizontalAlign = Label.HorizontalAlign.CENTER;
+    const outline = nameplate.getComponent(LabelOutline) || nameplate.addComponent(LabelOutline);
+    outline.width = 3;
+    outline.color = new Color(10, 16, 28, 255);
+    this.competitorNameplates.set(id, nameplate);
+    return nameplate;
+  }
+
+  /** Read-only Web Mobile evidence for the live entity labels. */
+  public getNameplateDiagnostics(): ReadonlyArray<Record<string, unknown>> {
+    return Array.from(this.competitorNameplates, ([id, node]) => ({
+      id,
+      active: node.isValid && node.activeInHierarchy,
+      label: node.getComponent(Label)?.string || '',
+      x: node.position.x,
+      y: node.position.y,
+    }));
   }
 
   /**
