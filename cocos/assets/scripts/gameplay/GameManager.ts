@@ -48,7 +48,7 @@ export class GameManager extends Component {
 
   // Portrait isometric framing: the centre ray deliberately lands ahead of the
   // machine so the player remains in the lower interaction band.
-  private cameraOffset: Vec3 = new Vec3(0, 17.0, 17.0);
+  private cameraOffset: Vec3 = new Vec3(0, 21.0, 20.5);
   private cameraTarget: Vec3 = new Vec3();
   private readonly portraitWidth = 720;
   private readonly portraitHeight = 1280;

@@ -98,11 +98,11 @@ export class BlackHoleMachine extends Component {
     this.coreNode.addChild(this.outerSwirl);
     MeshFactory.attachMesh(this.outerSwirl, MeshFactory.getTorusMesh(0.70, 0.05), '#7654e8', 0.1, 0.5);
 
-    // 发光外环：等级增长时以真实吸附半径同步扩大。
+    // 发光外环是黑洞的视觉轮廓，不能被用作真实吸附半径的地图标尺。
     this.holeRim = new Node('HoleRing');
     this.holeRim.setPosition(0, 0.09, 0);
     this.coreNode.addChild(this.holeRim);
-    MeshFactory.attachMesh(this.holeRim, MeshFactory.getTorusMesh(1.0, 0.06), '#d0c2ff', 0.1, 0.5);
+    MeshFactory.attachMesh(this.holeRim, MeshFactory.getTorusMesh(0.92, 0.045), '#8f6cf2', 0.1, 0.5);
 
   }
 
@@ -227,9 +227,10 @@ export class BlackHoleMachine extends Component {
     const activeAssembly = this.levelVisuals[level - 1] || null;
     if (activeAssembly) this.getVisualLibrary().applyActiveLevelMaterials(activeAssembly, level);
 
-    // 缩放吸力外环
+    // 玩法吸附半径可快速增长；视觉外环仅作受控的等级提示，避免高等级
+    // 出现覆盖街区、看起来像碰撞范围的浅色大圆。
     if (this.holeRim) {
-      const ringScale = Math.max(1.0, this.currentConfig.suctionRadius / 2.4);
+      const ringScale = 1.0 + Math.min(0.38, Math.max(0, this.currentConfig.suctionRadius - 2.4) * 0.075);
       this.holeRim.setScale(new Vec3(ringScale, 1.0, ringScale));
     }
 

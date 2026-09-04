@@ -102,16 +102,15 @@ class InfiniteWorldCell {
    * valid material before judging the captured frame.
    */
   public getVisualDiagnostics(): ReadonlyArray<Record<string, unknown>> {
-    const relevant = new Set(['DistrictGround', 'FourWayRoad', 'DistrictRoad']);
     const rows: Array<Record<string, unknown>> = [];
     for (const child of this.node.children) {
-      if (!relevant.has(child.name)) continue;
       const renderers: Array<Record<string, unknown>> = [];
       const visit = (node: Node): void => {
         const renderer = node.getComponent(MeshRenderer);
         if (renderer) {
           const primitiveCount = renderer.mesh?.struct.primitives.length || 0;
           const slotCount = Math.max(1, renderer.sharedMaterials.length, primitiveCount);
+          const bounds = renderer.model?.worldBounds || null;
           const materials = Array.from({ length: slotCount }, (_, index) => {
             const material = renderer.getRenderMaterial(index);
             const rawColor = material?.getProperty('mainColor');
@@ -124,7 +123,16 @@ class InfiniteWorldCell {
               color,
             };
           });
-          renderers.push({ name: node.name, primitiveCount, materialCount: materials.length, materials });
+          renderers.push({
+            name: node.name,
+            primitiveCount,
+            materialCount: materials.length,
+            bounds: bounds ? {
+              center: { x: bounds.center.x, y: bounds.center.y, z: bounds.center.z },
+              halfExtents: { x: bounds.halfExtents.x, y: bounds.halfExtents.y, z: bounds.halfExtents.z },
+            } : null,
+            materials,
+          });
         }
         node.children.forEach(visit);
       };
@@ -132,6 +140,7 @@ class InfiniteWorldCell {
       rows.push({
         name: child.name,
         active: child.activeInHierarchy,
+        meshRendererCount: renderers.length,
         worldPosition: { x: child.worldPosition.x, y: child.worldPosition.y, z: child.worldPosition.z },
         renderers,
       });
@@ -227,12 +236,15 @@ class InfiniteWorldCell {
       }
     };
     const homes = (): void => {
-      this.spawn('buildingB', -8.7, -8.8, V3(2.35, 2.35, 2.35), 90, 'ResidentialHouseWest');
-      this.spawn('buildingC', 8.7, -11.2, V3(2.35, 2.35, 2.35), -90, 'ResidentialHouseEast');
+      // The 9:16 camera's visible street corridor is narrower than a whole
+      // 64m cell. Keep homes beside the opening road rather than at the far
+      // corners so the first playable frame reads as a neighbourhood.
+      this.spawn('buildingB', -5.6, -6.6, V3(2.35, 2.35, 2.35), 90, 'ResidentialHouseWest');
+      this.spawn('buildingC', 5.6, -6.6, V3(2.35, 2.35, 2.35), -90, 'ResidentialHouseEast');
     };
     const trees = (): void => {
-      this.spawn('treeLarge', -7.2, -3.3, V3(3.5, 3.5, 3.5), 0, 'DistrictTreeLarge');
-      this.spawn('treeSmall', 7.5, -5.0, V3(3.7, 3.7, 3.7), 0, 'DistrictTreeSmall');
+      this.spawn('treeLarge', -5.0, -1.8, V3(3.5, 3.5, 3.5), 0, 'DistrictTreeLarge');
+      this.spawn('treeSmall', 5.1, -2.4, V3(3.7, 3.7, 3.7), 0, 'DistrictTreeSmall');
     };
     switch (kind) {
       case 'RESIDENTIAL':

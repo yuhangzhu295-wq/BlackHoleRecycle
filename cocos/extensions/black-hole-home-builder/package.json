@@ -47,6 +47,11 @@
       },
       {
         "path": "i18n:menu.extension",
+        "label": "归一化 V2 世界美术尺寸（编辑器保存）",
+        "message": "normalize-world-art-units"
+      },
+      {
+        "path": "i18n:menu.extension",
         "label": "安装 V2 二维无限世界（编辑器保存）",
         "message": "install-infinite-world"
       },
@@ -109,6 +114,7 @@
       "verify-machine-chassis-template": { "methods": ["verifyMachineChassisTemplate"] },
       "install-object-art-registry": { "methods": ["installObjectArtRegistry"] },
       "verify-object-art-registry": { "methods": ["verifyObjectArtRegistry"] },
+      "normalize-world-art-units": { "methods": ["normalizeWorldArtUnits"] },
       "install-infinite-world": { "methods": ["installInfiniteWorld"] },
       "verify-infinite-world": { "methods": ["verifyInfiniteWorld"] },
       "add-joystick-overlay": { "methods": ["addJoystickOverlay"] },

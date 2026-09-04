@@ -1,8 +1,8 @@
 'use strict';
 
 module.exports = {
-  // Residue recovery is intentionally explicit through the extension menu.
-  // It must never rewrite Game.scene merely because an editor was opened.
+  // Scene-changing operations remain explicit extension menu actions.
+  // Opening Creator must never mutate Game.scene.
   load() {},
   methods: {
     async buildMachineVisuals() {
@@ -51,6 +51,13 @@ module.exports = {
       return Editor.Message.request('scene', 'execute-scene-script', {
         name: 'black-hole-home-builder',
         method: 'verifyObjectArtRegistry',
+        args: [],
+      });
+    },
+    async normalizeWorldArtUnits() {
+      return Editor.Message.request('scene', 'execute-scene-script', {
+        name: 'black-hole-home-builder',
+        method: 'normalizeWorldArtUnits',
         args: [],
       });
     },

@@ -60,6 +60,26 @@ const MACHINE_CHASSIS_TEMPLATE_SPEC = {
   scale: [0.09, 0.09, 0.09],
 };
 
+// The imported neighbourhood set is authored in a miniature asset unit.  The
+// following values are applied once to the Creator-saved template children,
+// not to the runtime world instances.  That preserves the authored district
+// layout while putting buildings, vegetation and lights in the same readable
+// world scale as the player and the roads.
+const WORLD_ART_UNIT_NORMALIZATION = [
+  // A full 3.5× conversion made tall roofs cross the portrait camera plane
+  // after world streaming. Two source units retain a readable city silhouette
+  // without obscuring a travelling player.
+  { property: 'buildingBTemplate', scale: [2.0, 2.0, 2.0] },
+  { property: 'buildingCTemplate', scale: [2.0, 2.0, 2.0] },
+  { property: 'treeSmallTemplate', scale: [4.0, 2.0, 4.0] },
+  { property: 'treeLargeTemplate', scale: [4.0, 2.0, 4.0] },
+  { property: 'commercialBuildingATemplate', scale: [1.8, 1.8, 1.8] },
+  { property: 'commercialBuildingDTemplate', scale: [1.8, 1.8, 1.8] },
+  { property: 'streetLightTemplate', scale: [4.0, 2.0, 4.0] },
+  { property: 'pathStonesTemplate', scale: [1.8, 1.0, 1.8] },
+  { property: 'fenceTemplate', scale: [1.8, 1.6, 1.8] },
+];
+
 // Every source below is an audited, Creator-imported glTF. Level assemblies
 // duplicate lower-level structural parts so every saved prefab owns a complete
 // silhouette, rather than treating LV1 as a runtime host for primitive add-ons.
@@ -447,6 +467,30 @@ async function createImageButton(name, parent, width, height, assetUrl, interact
   return node;
 }
 
+/**
+ * Runtime pages need neutral surfaces that do not inherit pixels from the
+ * Home HUD texture atlas. These Graphics nodes are created and then saved by
+ * Creator just like every other page node; they are not a runtime fallback.
+ */
+function createRoundedPanel(name, parent, width, height, color, radius = 28) {
+  const node = createNode(name, parent, width, height);
+  const panel = node.addComponent(getComponentClass('RoundedPanelGraphic'));
+  panel.fillColor = color;
+  panel.cornerRadius = radius;
+  return node;
+}
+
+function createGraphicButton(name, parent, text, x, y, width, height, fillColor, textColor, fontSize = 30) {
+  const { Button, UITransform } = require('cc');
+  const node = createRoundedPanel(name, parent, width, height, fillColor, Math.min(28, height * 0.28));
+  node.addComponent(Button);
+  place(node, x, y, width, height);
+  const label = createLabel(`${name}Label`, node, text, fontSize, textColor);
+  label.getComponent(UITransform).setContentSize(width - 24, height - 12);
+  label.setPosition(0, 0, 0);
+  return node;
+}
+
 function place(node, x, y, width, height) {
   const { UITransform } = require('cc');
   const transform = node.getComponent(UITransform);
@@ -627,6 +671,21 @@ exports.methods = {
       missing,
     };
   },
+  async normalizeWorldArtUnits() {
+    const library = getGameRootFromEditorScene()?.getChildByName('WorldArtLibrary')
+      ?.getComponent(getComponentClass('WorldArtLibrary')) || null;
+    if (!library) return { pending: true, reason: 'GameRoot/WorldArtLibrary is not loaded yet.' };
+
+    const normalized = [];
+    for (const spec of WORLD_ART_UNIT_NORMALIZATION) {
+      const template = library[spec.property];
+      normalizeExistingTemplate(template, spec.property, spec.scale);
+      normalized.push({ property: spec.property, scale: spec.scale });
+    }
+
+    await Editor.Message.request('scene', 'save-scene');
+    return { saved: true, normalized };
+  },
   async installInfiniteWorld() {
     const { director, Node } = require('cc');
     const scene = director.getScene();
@@ -803,7 +862,7 @@ exports.methods = {
     return { prefab: 'db://assets/prefabs/ui/HomePage.prefab', rootUuid: root.uuid };
   },
   async buildRuntimePages() {
-    const { director, Color, Graphics, UITransform, Sprite } = require('cc');
+    const { director, Color, UITransform, Sprite } = require('cc');
     const scene = director.getScene();
     const canvas = scene?.getChildByName('Canvas');
     if (!canvas) throw new Error('Game.scene does not contain Canvas');
@@ -820,13 +879,6 @@ exports.methods = {
       place(label, x, y, width, height);
       return label;
     };
-    const imageButton = async (name, parent, text, x, y, width, height, assetUrl, fontSize = 30) => {
-      const button = await createImageButton(name, parent, width, height, assetUrl);
-      place(button, x, y, width, height);
-      caption(button, `${name}Label`, text, fontSize, 0, 0, width, height);
-      return button;
-    };
-
     // Endless gameplay HUD. The labels are updated from live GameManager data.
     const endless = createNode('EndlessHUD', canvas, 720, 1280);
     const endlessPage = endless.addComponent(getComponentClass('UIPage'));
@@ -849,7 +901,7 @@ exports.methods = {
     caption(endless, 'LevelValue', 'LV.1 回收小车', 20, 106, 443, 238, 34);
     caption(endless, 'MassValue', '质量 0 kg', 18, 106, 409, 238, 30, new Color(219, 242, 255, 255));
     caption(endless, 'RegionValue', '卧室杂物区', 18, 0, 346, 240, 32, new Color(232, 245, 255, 255));
-    await imageButton('BtnPause', endless, '暂停', 240, 461, 82, 82, 'db://assets/textures/home/home_settings.png', 19);
+    createGraphicButton('BtnPause', endless, 'Ⅱ', 274, 474, 58, 58, new Color(42, 75, 111, 245), new Color(255, 255, 255, 255), 31);
     addJoystickOverlay(endless);
     endless.addComponent(getComponentClass('EndlessHUDController'));
     endless.active = false;
@@ -858,17 +910,17 @@ exports.methods = {
     const pause = createNode('PausePage', canvas, 720, 1280);
     const pausePage = pause.addComponent(getComponentClass('UIPage'));
     pausePage.pageId = 6;
-    const dim = await createSprite('DimOverlay', pause, 720, 1280, 'db://assets/textures/home/home_hud_panel.png');
-    dim.getComponent(Sprite).color = new Color(4, 12, 27, 226);
+    const dim = createRoundedPanel('DimOverlay', pause, 720, 1280, new Color(4, 12, 27, 218), 0);
     place(dim, 0, 0, 720, 1280);
-    const pauseCard = await createSprite('PauseCard', pause, 620, 640, 'db://assets/textures/home/home_hud_panel.png');
-    pauseCard.getComponent(Sprite).color = new Color(24, 47, 76, 255);
+    const pauseCard = createRoundedPanel('PauseCard', pause, 620, 640, new Color(247, 245, 255, 255), 40);
     place(pauseCard, 0, 10, 620, 640);
-    caption(pause, 'Title', '游戏暂停', 54, 0, 222, 520, 82, new Color(255, 222, 83, 255));
-    caption(pause, 'Subtitle', '当前进度已冻结', 24, 0, 146, 440, 46, new Color(222, 240, 255, 255));
-    await imageButton('BtnResume', pause, '继续游戏', 0, 54, 382, 104, 'db://assets/textures/home/home_start_button.png', 34);
-    await imageButton('BtnSettle', pause, '结束并结算', 0, -86, 320, 94, 'db://assets/textures/home/home_action_skin.png', 29);
-    await imageButton('BtnHome', pause, '返回首页', 0, -205, 320, 88, 'db://assets/textures/home/home_action_mode.png', 27);
+    const pauseRibbon = createRoundedPanel('PauseRibbon', pause, 440, 92, new Color(105, 70, 190, 255), 24);
+    place(pauseRibbon, 0, 250, 440, 92);
+    caption(pause, 'Title', '游戏暂停', 50, 0, 250, 420, 74, new Color(255, 255, 255, 255));
+    caption(pause, 'Subtitle', '当前进度已冻结', 24, 0, 156, 440, 46, new Color(74, 56, 99, 255));
+    createGraphicButton('BtnResume', pause, '继续游戏', 0, 44, 390, 104, new Color(255, 187, 31, 255), new Color(71, 48, 8, 255), 34);
+    createGraphicButton('BtnSettle', pause, '结束并结算', 0, -94, 340, 88, new Color(122, 87, 212, 255), new Color(255, 255, 255, 255), 28);
+    createGraphicButton('BtnHome', pause, '返回首页', 0, -208, 340, 78, new Color(69, 139, 218, 255), new Color(255, 255, 255, 255), 26);
     pause.addComponent(getComponentClass('PausePageController'));
     pause.active = false;
 
@@ -876,15 +928,19 @@ exports.methods = {
     const settlement = createNode('SettlementPage', canvas, 720, 1280);
     const settlementPage = settlement.addComponent(getComponentClass('UIPage'));
     settlementPage.pageId = 5;
-    const settlementDim = await createSprite('DimOverlay', settlement, 720, 1280, 'db://assets/textures/home/home_hud_panel.png');
-    settlementDim.getComponent(Sprite).color = new Color(5, 14, 29, 230);
+    const settlementDim = createRoundedPanel('DimOverlay', settlement, 720, 1280, new Color(5, 14, 29, 210), 0);
     place(settlementDim, 0, 0, 720, 1280);
-    const settlementCard = await createSprite('SettlementCard', settlement, 660, 940, 'db://assets/textures/home/home_hud_panel.png');
-    settlementCard.getComponent(Sprite).color = new Color(249, 243, 229, 255);
+    const settlementCard = createRoundedPanel('SettlementCard', settlement, 660, 940, new Color(255, 253, 247, 255), 42);
     place(settlementCard, 0, 18, 660, 940);
-    caption(settlement, 'Title', '本局结算', 56, 0, 382, 520, 86, new Color(115, 65, 196, 255));
-    caption(settlement, 'Subtitle', '无尽吞噬', 27, 0, 321, 420, 52, new Color(73, 55, 99, 255));
+    const settlementRibbon = createRoundedPanel('SettlementRibbon', settlement, 444, 92, new Color(105, 70, 190, 255), 24);
+    place(settlementRibbon, 0, 382, 444, 92);
+    caption(settlement, 'Title', '本局结算', 50, 0, 382, 420, 74, new Color(255, 255, 255, 255));
+    caption(settlement, 'Subtitle', '无尽吞噬 · 本局数据', 24, 0, 308, 420, 46, new Color(73, 55, 99, 255));
     const rowColor = new Color(74, 56, 40, 255);
+    for (const y of [223, 143, 63, -17, -97]) {
+      const row = createRoundedPanel(`StatRow_${y}`, settlement, 530, 62, new Color(243, 237, 255, 255), 18);
+      place(row, 0, y, 530, 62);
+    }
     caption(settlement, 'AbsorbedCaption', '吞噬物品', 26, -166, 223, 220, 44, rowColor);
     caption(settlement, 'AbsorbedValue', '0', 32, 164, 223, 180, 48, new Color(114, 63, 193, 255));
     caption(settlement, 'MassCaption', '最终质量', 26, -166, 143, 220, 44, rowColor);
@@ -895,8 +951,8 @@ exports.methods = {
     caption(settlement, 'LevelValue', 'LV.1', 32, 164, -17, 180, 48, new Color(68, 129, 209, 255));
     caption(settlement, 'RegionCaption', '探索区域', 26, -166, -97, 220, 44, rowColor);
     caption(settlement, 'RegionValue', '1', 32, 164, -97, 180, 48, new Color(62, 154, 95, 255));
-    await imageButton('BtnRestart', settlement, '再来一局', -128, -296, 258, 94, 'db://assets/textures/home/home_start_button.png', 28);
-    await imageButton('BtnHome', settlement, '返回首页', 128, -296, 258, 94, 'db://assets/textures/home/home_action_skin.png', 28);
+    createGraphicButton('BtnRestart', settlement, '再来一局', -142, -296, 270, 94, new Color(255, 187, 31, 255), new Color(71, 48, 8, 255), 28);
+    createGraphicButton('BtnHome', settlement, '返回首页', 142, -296, 270, 94, new Color(105, 70, 190, 255), new Color(255, 255, 255, 255), 28);
     settlement.addComponent(getComponentClass('SettlementPageController'));
     settlement.active = false;
 
