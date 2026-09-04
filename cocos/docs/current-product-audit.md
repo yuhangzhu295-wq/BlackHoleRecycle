@@ -16,11 +16,11 @@
 - `npm run test:cocos`: 6/6 logic regressions pass. This is source-level regression evidence only, not an engine-runtime pass.
 - `npm run acceptance:v2 -- --scope=full`: official Cocos Creator 3.8.3 Web Mobile build plus real Playwright/CDP touch. The latest full run passed with browser console errors `[]` and no acceptance failures.
 - `npm run build:all`: Web Mobile, WeChat Game, and ByteDance Mini Game packages built successfully with Creator 3.8.3. The ByteDance package still uses `testappId`, so it is buildable but not release-ready.
-- `arena-server/` has a separate Colyseus integration test that connects two actual SDK clients to one server-authoritative room and observes replicated motion. It is not yet connected to the Cocos production arena route.
+- `arena-server/` has a separate Colyseus integration test that connects two actual SDK clients to one server-authoritative room and observes replicated movement, pickup suction, LV2/T2 progression, defeat, dropped recyclable mass, and respawn. It is not yet connected to the Cocos production arena route.
 
 ## Deliberate boundaries / remaining work
 
-1. **Online arena is not product-complete.** The server currently owns multiplayer joining, input sequencing, stale-input timeout, position integration, and arena bounds only. Object ownership, suction, combat, revive, rewards, Cocos client SDK integration, and a public `wss://` endpoint still need to become server-authoritative before the game may advertise human matchmaking.
+1. **Online arena is not product-complete.** The server owns multiplayer joining, input sequencing, stale-input timeout, position integration, pickup suction, LV1-to-LV2 progression, combat, dropped fragments, and respawn. The Cocos client SDK integration, server-finalized reward persistence, match-end authority, and a public `wss://` endpoint remain required before the game may advertise human matchmaking.
 2. **Visual direction is structurally aligned, not pixel-identical.** The five current V2 pages use the required portrait hierarchy, real data, city/park context, card/ribbon/panel vocabulary, and real navigation. The reference art has substantially richer bespoke illustration, character art, and UI texture work than the audited open assets currently in the repository.
 3. **Release ownership is required.** A real ByteDance Mini Game AppID and a public TLS WebSocket deployment are account-owned configuration. They must be supplied by the project owner; the repository deliberately does not guess credentials or IDs.
 4. **Device evidence is still pending.** Browser Web Mobile runtime evidence is real, but it is not a substitute for a WeChat or ByteDance developer-tool/device session.
