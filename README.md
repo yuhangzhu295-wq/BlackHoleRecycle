@@ -38,6 +38,9 @@ npm run acceptance:v2 -- --scope=full
 
 # 仅用于快速页面视觉与交互检查
 npm run acceptance:v2 -- --scope=pages
+
+# 生产发布前置检查：会拒绝占位 AppID
+npm run preflight:release
 ```
 
 最近一次完整 Web Mobile 验收的报告与截图位于 `cocos/docs/evidence/v2/portrait/`（构建证据不纳入 Git）。
