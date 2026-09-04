@@ -93,6 +93,9 @@ interface ArenaCompetitor {
 }
 
 const BOT_NAMES = ['蓝莓', '矿石', '风暴', '火花', '雪球', '流光', '哨兵'];
+// Visual identity only. Every bot still runs the same real BlackHoleMachine
+// and ArenaMatchManager rules; no palette changes mass, speed or combat.
+const BOT_TINTS = ['#4e9af1', '#54c985', '#e7a545', '#b26ae8', '#4bbfd2', '#f07171', '#d7bd53'];
 const PLAYER_ID = 'local-player';
 const MATCH_DURATION_SECONDS = 180;
 const RESPAWN_SECONDS = 2.5;
@@ -188,6 +191,7 @@ export class ArenaMatchManager extends Component {
       const machine = node.addComponent(BlackHoleMachine);
       this.prepareMachine(machine, START_MASS);
       machine.setPresentation('BOT');
+      machine.setArenaBotTint(BOT_TINTS[slot - 1]);
       const spawn = this.spawnPosition(slot);
       node.setPosition(spawn);
       this.competitors.push({

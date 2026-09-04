@@ -57,6 +57,8 @@ export class BlackHoleMachine extends Component {
   private readonly movementDirection: Vec3 = new Vec3();
   private movementMagnitude: number = 0;
   private presentation: MachinePresentation = 'HYBRID';
+  /** Hex tint for this competitor's real imported crawler model only. */
+  private arenaBotTint: string = '#35a85e';
 
   onLoad(): void {
     this.buildVisibleGeometry();
@@ -311,6 +313,16 @@ export class BlackHoleMachine extends Component {
   }
 
   /**
+   * Gives an arena competitor a distinct visual identity without changing the
+   * shared glTF geometry, gameplay mass, collision radius or material of any
+   * other world vehicle. Each renderer receives a cloned native Material.
+   */
+  public setArenaBotTint(hex: string): void {
+    this.arenaBotTint = hex;
+    this.applyArenaBotTint();
+  }
+
+  /**
    * Arena bots use the same Creator-saved, audited bulldozer template that
    * decorates the real streamed world. This prevents a glTF sub-model from
    * falling back to magenta during the first Web Mobile frame while preserving
@@ -330,6 +342,14 @@ export class BlackHoleMachine extends Component {
       180,
       'ArenaBotBulldozer',
     );
+    this.applyArenaBotTint();
+  }
+
+  private applyArenaBotTint(): void {
+    if (!this.arenaBotVisual) return;
+    const library = director.getScene()?.getComponentInChildren(WorldArtLibrary) || null;
+    if (!library) throw new Error('[BlackHoleMachine] Missing editor-saved WorldArtLibrary for Arena bot material.');
+    library.applyTintedMaterial('bulldozer', this.arenaBotVisual, this.arenaBotTint);
   }
 
   public triggerMagnetStorm(duration: number = 6.0): void {

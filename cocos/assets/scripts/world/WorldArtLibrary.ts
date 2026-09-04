@@ -305,7 +305,21 @@ export class WorldArtLibrary extends Component {
    * prefab, so it is created with the native runtime API just before display.
    */
   private applyRuntimeMaterial(kind: WorldArtKind, visual: Node): void {
-    const material = this.getRuntimeMaterial(kind);
+    this.applyMaterial(kind, visual, this.getRuntimeMaterial(kind));
+  }
+
+  /**
+   * An arena competitor needs an isolated material so its livery cannot alter
+   * the shared cached material used by city props or another bot. Geometry and
+   * imported texture remain exactly the same Creator-owned source asset.
+   */
+  public applyTintedMaterial(kind: WorldArtKind, visual: Node, tintHex: string): void {
+    const tint = new Color();
+    Color.fromHEX(tint, tintHex);
+    this.applyMaterial(kind, visual, this.createRuntimeMaterial(kind, tint));
+  }
+
+  private applyMaterial(kind: WorldArtKind, visual: Node, material: Material): void {
     const applyToNode = (node: Node): void => {
       const renderer = node.getComponent(MeshRenderer);
       if (renderer) {
@@ -325,6 +339,12 @@ export class WorldArtLibrary extends Component {
     const cached = this.materialCache.get(kind);
     if (cached) return cached;
 
+    const material = this.createRuntimeMaterial(kind);
+    this.materialCache.set(kind, material);
+    return material;
+  }
+
+  private createRuntimeMaterial(kind: WorldArtKind, tintOverride: Color | null = null): Material {
     const material = new Material();
     const texture = this.getColorTexture(kind);
     // `builtin-unlit` defaults USE_TEXTURE to false even if a texture property
@@ -341,18 +361,17 @@ export class WorldArtLibrary extends Component {
       // palette as a mobile-readable tint. This prevents large white areas in
       // the atlas from flattening grass, buildings and vehicle silhouettes.
       material.setProperty('mainTexture', texture);
-      const color = new Color();
-      Color.fromHEX(color, WORLD_ART_COLORS[kind]);
+      const color = tintOverride || new Color();
+      if (!tintOverride) Color.fromHEX(color, WORLD_ART_COLORS[kind]);
       material.setProperty('mainColor', color);
     } else {
       // A deterministic colour is retained solely as a development-time
       // safeguard while assets are importing; production validation requires
       // all four external colour maps to be available.
-      const color = new Color();
-      Color.fromHEX(color, WORLD_ART_COLORS[kind]);
+      const color = tintOverride || new Color();
+      if (!tintOverride) Color.fromHEX(color, WORLD_ART_COLORS[kind]);
       material.setProperty('mainColor', color);
     }
-    this.materialCache.set(kind, material);
     return material;
   }
 
