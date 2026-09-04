@@ -3,9 +3,9 @@
  * 节点、Sprite、Label、Button 均由 Cocos Creator 保存到 HomePage.prefab；
  * 本组件只读取真实存档数据、绑定事件并驱动已存在的组件。
  */
-import { _decorator, Button, Component, Label, Node } from 'cc';
+import { _decorator, Button, Color, Component, Label, Node, Sprite } from 'cc';
 import { eventBus } from '../core/EventBus';
-import { MACHINE_EVOLUTION_CONFIG } from '../data/GameConfig';
+import { MACHINE_EVOLUTION_CONFIG, SKINS_CONFIG } from '../data/GameConfig';
 import { saveService } from '../data/SaveService';
 
 const { ccclass } = _decorator;
@@ -13,11 +13,13 @@ const { ccclass } = _decorator;
 @ccclass('HomePageController')
 export class HomePageController extends Component {
   private buttonBindings: Array<[Button, () => void]> = [];
+  private removeSkinChangedListener: (() => void) | null = null;
 
   onEnable(): void {
     this.refreshProfile();
-    this.setUnavailableActionsDisabled();
+    this.hideUnavailableActions();
     this.bindButtons();
+    this.removeSkinChangedListener = eventBus.on('HOME_SKIN_CHANGED', this.refreshProfile, this);
   }
 
   onDisable(): void {
@@ -25,6 +27,8 @@ export class HomePageController extends Component {
       button.node.off(Button.EventType.CLICK, handler, this);
     }
     this.buttonBindings.length = 0;
+    this.removeSkinChangedListener?.();
+    this.removeSkinChangedListener = null;
   }
 
   public refreshProfile(): void {
@@ -45,23 +49,35 @@ export class HomePageController extends Component {
     if (machineName) {
       machineName.string = machineConfig.title;
     }
+
+    const skin = SKINS_CONFIG.find((entry) => entry.id === saveService.data.currentSkinId) || SKINS_CONFIG[0];
+    const hero = this.findNode('HeroBlackHole')?.getComponent(Sprite) || null;
+    if (hero && skin) {
+      const tint = new Color();
+      Color.fromHEX(tint, skin.rimColor);
+      hero.color = tint;
+    }
   }
 
   private bindButtons(): void {
     this.bindButton('BtnStart', () => eventBus.emit('HOME_START_REQUESTED'));
     this.bindButton('BtnMode', () => eventBus.emit('HOME_MODE_REQUESTED'));
+    // BtnSkin is intentionally routed by RuntimePageInputRouter. That
+    // Canvas-level handler is the compatibility path for SHOW_ALL touch
+    // coordinates and is also invoked for an ordinary native Button touch.
+    // Registering a second Button CLICK handler here would cycle the two
+    // starter skins twice and leave the player with the original appearance.
   }
 
   /**
-   * 皮肤、机器和设置还没有对应的编辑器保存页面。保持它们可点击会形成假按钮，
-   * 因而在对应正式页面完成以前明确禁用，而不是吞掉用户输入或伪造反馈。
+   * “皮肤”已接到真实存档与材质切换。当前最新 Home 合同只要求
+   * “模式”和“皮肤”两个快捷入口；没有正式 Creator 页面支撑的机器、
+   * 设置入口不应作为灰色假按钮出现在玩家界面中。
    */
-  private setUnavailableActionsDisabled(): void {
-    for (const name of ['BtnSkin', 'BtnMachine', 'BtnSettings']) {
+  private hideUnavailableActions(): void {
+    for (const name of ['BtnMachine', 'BtnSettings']) {
       const node = this.findNode(name);
-      const button = node?.getComponent(Button);
-      if (button) button.interactable = false;
-
+      if (node) node.active = false;
     }
   }
 

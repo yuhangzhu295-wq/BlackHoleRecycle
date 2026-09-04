@@ -213,6 +213,51 @@ async function readRuntimeSnapshot(page) {
 }
 
 /**
+ * The Home skin card must cause a real, persisted selection change through
+ * the same visible CDP touch as a phone player. The QA bridge only reads the
+ * resulting save snapshot and input diagnostic.
+ */
+async function verifyHomeSkin(cdp, page, canvasRect) {
+  const before = await readRuntimeSnapshot(page);
+  const design = before.ui?.design;
+  const skin = before.ui?.skin;
+  assert(skin?.active && skin?.interactable === true,
+    `FAIL_HOME_SKIN_NOT_INTERACTABLE: ${JSON.stringify(skin)}`);
+  assert(design?.width > 0 && design?.height > 0,
+    `FAIL_HOME_SKIN_DESIGN: ${JSON.stringify(design)}`);
+  const point = {
+    x: canvasRect.left + canvasRect.width * ((skin.x + design.width * 0.5) / design.width),
+    y: canvasRect.top + canvasRect.height * ((design.height * 0.5 - skin.y) / design.height),
+  };
+  const previousSkinId = before.save?.skinId;
+  await dispatchTouchTap(cdp, point.x, point.y);
+  try {
+    await page.waitForFunction((previous) => {
+      const snapshot = window.__BHR_QA__.snapshot();
+      return snapshot.gameState === 'HOME'
+        && snapshot.save?.skinId !== previous;
+    }, previousSkinId, { timeout: 5000 });
+  } catch (error) {
+    const afterTimeout = await readRuntimeSnapshot(page);
+    throw new Error(`FAIL_HOME_SKIN_SELECTION: ${JSON.stringify({
+      point,
+      beforeSave: before.save,
+      afterSave: afterTimeout.save,
+      gameState: afterTimeout.gameState,
+      router: afterTimeout.ui?.runtimePageInput,
+      error: error instanceof Error ? error.message : String(error),
+    })}`);
+  }
+  const after = await readRuntimeSnapshot(page);
+  assert(after.save?.skinId !== previousSkinId,
+    `FAIL_HOME_SKIN_NOT_SAVED: ${JSON.stringify({ before: previousSkinId, after: after.save?.skinId })}`);
+  assert(after.ui?.machine?.active === false && after.ui?.settings?.active === false,
+    `FAIL_HOME_UNIMPLEMENTED_ACTION_VISIBLE: ${JSON.stringify({ machine: after.ui?.machine, settings: after.ui?.settings })}`);
+  await page.screenshot({ path: path.join(evidenceDirectory, 'portrait-390x844-home-skin.png') });
+  return { point, previousSkinId, selectedSkinId: after.save?.skinId };
+}
+
+/**
  * Verify the editor-saved formal runtime pages through real touch events.
  * The bridge remains read-only: all state transitions originate from the
  * same visible Buttons a player taps on a phone.
@@ -343,6 +388,8 @@ async function verifyArenaFlow(cdp, page, canvasRect, modeSnapshot) {
     `FAIL_ARENA_ROSTER_1_7: ${JSON.stringify(initial.arena)}`);
   assert(Object.keys(initial.arena?.botStates || {}).length === 7,
     `FAIL_ARENA_BOT_FILL: ${JSON.stringify(initial.arena?.botStates)}`);
+  assert((initial.arena?.combatWarmupRemainingSeconds || 0) > 12,
+    `FAIL_ARENA_WARMUP_NOT_STARTED: ${JSON.stringify(initial.arena)}`);
   assert(initial.ui?.arenaHUD?.joystick?.active,
     `FAIL_ARENA_VISIBLE_JOYSTICK: ${JSON.stringify(initial.ui?.arenaHUD)}`);
   await page.screenshot({ path: path.join(evidenceDirectory, 'portrait-390x844-arena.png') });
@@ -354,11 +401,17 @@ async function verifyArenaFlow(cdp, page, canvasRect, modeSnapshot) {
   let collected = initial;
   let hunter = null;
   let defeated = null;
+  let observedProtectedOpening = false;
   while (Date.now() < collectionDeadline) {
     // Poll quickly enough to capture the real 2.5-second revive phase rather
     // than allowing an autonomous respawn to erase its visible evidence.
     await page.waitForTimeout(120);
     collected = await readRuntimeSnapshot(page);
+    if ((collected.arena?.combatWarmupRemainingSeconds || 0) > 0) {
+      observedProtectedOpening = true;
+      assert(collected.arena?.eliminationCount === 0 && collected.arena?.localAlive === true,
+        `FAIL_ARENA_WARMUP_COMBAT: ${JSON.stringify(collected.arena)}`);
+    }
     const localMass = collected.arena?.localMass || 0;
     hunter = (collected.arena?.leaderboard || []).find((entry) => !entry.isLocal
       && entry.alive && entry.shieldSeconds <= 0
@@ -370,6 +423,7 @@ async function verifyArenaFlow(cdp, page, canvasRect, modeSnapshot) {
   }
   assert((collected.arena?.leaderboard || []).some((entry) => !entry.isLocal && entry.consumed > 0),
     `FAIL_ARENA_BOT_COLLECT: ${JSON.stringify(collected.arena)}`);
+  assert(observedProtectedOpening, `FAIL_ARENA_WARMUP_NOT_OBSERVED: ${JSON.stringify(collected.arena)}`);
   assert(hunter, `FAIL_ARENA_NO_STRONG_BOT_FOR_REAL_CONSUME: ${JSON.stringify(collected.arena)}`);
   assert(defeated, `FAIL_ARENA_CONSUME_PLAYER_TIMEOUT: ${JSON.stringify(collected.arena)}`);
   assert(defeated.gameState === 'REVIVING' && defeated.arena?.localAlive === false,
@@ -701,6 +755,7 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
         assert(runtimeErrors.length === 0, `Runtime console errors after timer expiry: ${runtimeErrors.join(' | ')}`);
         return;
       }
+      report.homeSkin = await verifyHomeSkin(cdp, page, canvasRect);
       const x = canvasRect.left + canvasRect.width * 0.5;
       const homeStartY = canvasRect.top + canvasRect.height * 0.773;
       await dispatchTouchTap(cdp, x, homeStartY);

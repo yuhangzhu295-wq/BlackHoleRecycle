@@ -255,6 +255,39 @@ class InfiniteWorldCell {
       // do not participate in resource collisions or bot navigation.
       this.spawn('commercialSkyscraperA', -4.6, -14.2, V3(1.18, 1.18, 1.18), 90, 'ArenaSkylineWest');
       this.spawn('commercialSkyscraperB', 4.6, -14.2, V3(1.18, 1.18, 1.18), -90, 'ArenaSkylineEast');
+
+      // Frame the first playable lawn with actual imported city props. The
+      // earlier opening contained correct road/building assets only at the
+      // far edge, leaving the portrait playfield as an empty green plane.
+      // These are decorative WorldArtLibrary instances, never generated
+      // primitives and never duplicate collectible collision objects.
+      this.spawn('treeSmall', -7.6, 4.6, V3(2.25, 2.25, 2.25), 0, 'OpeningGardenTreeWest');
+      this.spawn('treeLarge', 7.4, 5.2, V3(2.05, 2.05, 2.05), 0, 'OpeningGardenTreeEast');
+      this.spawn('pathStones', -8.0, 8.8, V3(2.7, 1, 3.6), 90, 'OpeningGardenWalkwayWest');
+      this.spawn('pathStones', 8.0, 8.8, V3(2.7, 1, 3.6), 90, 'OpeningGardenWalkwayEast');
+      this.spawn('recyclingBox', -4.9, 5.0, V3(0.9, 0.9, 0.9), 18, 'OpeningRecyclingBox');
+      this.spawn('tire', 4.9, 5.3, V3(1.15, 1.15, 1.15), 0, 'OpeningTire');
+      this.spawn('streetLight', -7.2, -0.8, V3(3.1, 3.1, 3.1), 0, 'OpeningStreetLightWest');
+      this.spawn('streetLight', 7.2, -0.8, V3(3.1, 3.1, 3.1), 0, 'OpeningStreetLightEast');
+
+      // Treat the first cell as a compact playable city park, not merely a
+      // grass test range. Every entry below is an instantiated, audited GLB
+      // template held by WorldArtLibrary; none is a plane/box stand-in and
+      // none participates in collectible collision or suction. The grouping
+      // leaves the centre lane clear for drag control while framing it with
+      // the park trees visible in the portrait gameplay reference.
+      const openingTrees: ReadonlyArray<readonly [number, number, number, string]> = [
+        [-8.6, 10.5, 1.7, 'OpeningParkTreeFarWest'],
+        [8.6, 10.5, 1.7, 'OpeningParkTreeFarEast'],
+        [-6.7, 2.1, 1.35, 'OpeningParkTreeWest'],
+        [6.7, 2.1, 1.35, 'OpeningParkTreeEast'],
+        [-8.6, -3.4, 1.35, 'OpeningParkTreeRoadWest'],
+        [8.6, -3.4, 1.35, 'OpeningParkTreeRoadEast'],
+      ];
+      openingTrees.forEach(([x, z, size, name], index) => {
+        this.spawn(index % 2 === 0 ? 'treeLarge' : 'treeSmall', x, z, V3(size, size, size), 0, name);
+      });
+
     };
     const trees = (): void => {
       this.spawn('treeLarge', -4.8, 0.8, V3(2.65, 2.65, 2.65), 0, 'DistrictTreeLarge');
@@ -379,14 +412,31 @@ export class InfiniteWorldManager extends Component {
   }
 
   /**
-   * Arena uses the same spawned T2 object as Endless, but places it beside
-   * the opening fight rather than directly in the black-hole camera line.
-   * The object remains a real locked/absorbable Book Stack with its original
-   * mass and FSM; only its idle render position changes for this mode.
+   * Arena reuses the same Creator-backed pool and real FSM objects as
+   * Endless, but remaps the tutorial's single stacked starter cluster into
+   * equal, reachable lanes around the first fight. Leaving all fifteen T1
+   * items at (0, 5) put the whole stack inside one bot's opening suction
+   * radius, so a single competitor gained an unfair mass lead before the
+   * local player had a chance to drag. Only still-IDLE object positions move;
+   * template, tier, mass and normal absorption behaviour stay unchanged.
    */
   public arrangeArenaOpening(): boolean {
+    const starterItems = this.getAllObjects()
+      .filter((object) => object.runtimeId.startsWith('starter_recycling_cluster_'));
+    let arrangedStarterCount = 0;
+    starterItems.forEach((object, index) => {
+      const angle = Math.PI * 0.5 + (Math.PI * 2 * index) / starterItems.length;
+      // Alternate two nearby rings. Each human/bot begins well inside the
+      // inner ring and must make a real directional choice to secure loot;
+      // the outer ring keeps a visible next objective after the first pass.
+      const radius = index % 2 === 0 ? 10.5 : 14.0;
+      if (object.relocateIdle(Math.cos(angle) * radius, Math.sin(angle) * radius, angle * 180 / Math.PI)) {
+        arrangedStarterCount++;
+      }
+    });
     const openingT2 = this.getAllObjects().find((object) => object.runtimeId === 't2_target_bed_box') || null;
-    return openingT2?.relocateIdle(5.8, 3.2, -24) || false;
+    const arrangedT2 = openingT2?.relocateIdle(0, -10.8, 0) || false;
+    return arrangedStarterCount > 0 || arrangedT2;
   }
 
   /** Streams the 3×3 active grid for both X and Z; returns a rebase when needed. */

@@ -29,9 +29,12 @@ export class ArenaHUDController extends Component {
     this.setLabel('RankValue', `第 ${snapshot.localRank || '-'} / ${snapshot.competitorCount}`);
     this.setLabel('MassValue', `${Math.round(snapshot.localMass)} kg`);
     this.setLabel('KillValue', `${snapshot.localKills}`);
-    this.setLabel('StatusValue', snapshot.localAlive
-      ? `吞噬 ${snapshot.localConsumed} · ${snapshot.localRespawnSeconds > 0 ? '重生中' : '战斗中'}`
-      : `重生 ${snapshot.localRespawnSeconds.toFixed(1)}s`);
+    const warmup = Math.max(0, snapshot.combatWarmupRemainingSeconds);
+    this.setLabel('StatusValue', warmup > 0
+      ? `安全准备 ${Math.ceil(warmup)}s`
+      : snapshot.localAlive
+        ? `吞噬 ${snapshot.localConsumed} · ${snapshot.localRespawnSeconds > 0 ? '重生中' : '战斗中'}`
+        : `重生 ${snapshot.localRespawnSeconds.toFixed(1)}s`);
     snapshot.leaderboard.slice(0, 5).forEach((entry, index) => {
       const prefix = entry.isLocal ? '你' : entry.name;
       const life = entry.alive ? '' : ' · 重生';

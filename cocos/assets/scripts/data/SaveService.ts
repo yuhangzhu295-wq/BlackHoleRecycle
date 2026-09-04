@@ -35,6 +35,8 @@ export interface ISaveData {
 }
 
 const SAVE_KEY = 'BLACK_HOLE_RECYCLE_SAVEDATA_COCOS_V1';
+/** Starter appearances are always selectable after save migration. */
+const STARTER_SKIN_IDS = ['skin_classic', 'skin_violet_vortex'] as const;
 
 export class SaveService {
   private static instance: SaveService;
@@ -60,7 +62,7 @@ export class SaveService {
       highestRegion: 0,
       machineLevel: 1,
       currentSkinId: 'skin_classic',
-      unlockedSkins: ['skin_classic'],
+      unlockedSkins: [...STARTER_SKIN_IDS],
       metaUpgrades: {
         suctionRadius: 0,
         moveSpeed: 0,
@@ -104,6 +106,13 @@ export class SaveService {
           settings: { ...this.getDefaultData().settings, ...(parsed.settings || {}) }
         };
       }
+      // Existing players may have a V1 save whose only unlocked skin was the
+      // original default. Migrate it in place so the Home skin control has a
+      // real, immediately selectable second appearance.
+      this.normalizeUnlockedSkins();
+      if (!this.data.unlockedSkins.includes(this.data.currentSkinId)) {
+        this.data.currentSkinId = STARTER_SKIN_IDS[0];
+      }
     } catch (e) {
       console.warn('[SaveService] Load failed, fallback to defaults', e);
       this.data = this.getDefaultData();
@@ -124,6 +133,18 @@ export class SaveService {
     }
   }
 
+  /**
+   * Older editor/browser saves can contain malformed values in unlockedSkins.
+   * Keep only persisted string ids, then restore the free starter set. Paid
+   * skin ids remain valid only when they are explicitly stored as strings.
+   */
+  private normalizeUnlockedSkins(): void {
+    const stored = Array.isArray(this.data.unlockedSkins)
+      ? this.data.unlockedSkins.filter((skinId): skinId is string => typeof skinId === 'string')
+      : [];
+    this.data.unlockedSkins = [...new Set([...STARTER_SKIN_IDS, ...stored])];
+  }
+
   public addCoins(amount: number): number {
     this.data.coins += Math.round(Math.max(0, amount));
     this.save();
@@ -140,6 +161,16 @@ export class SaveService {
   public spendCoins(amount: number): boolean {
     if (this.data.coins < amount) return false;
     this.data.coins -= amount;
+    this.save();
+    return true;
+  }
+
+  /** Selects only a skin that this save has genuinely unlocked. */
+  public selectSkin(skinId: string): boolean {
+    this.normalizeUnlockedSkins();
+    const isStarterSkin = (STARTER_SKIN_IDS as readonly string[]).includes(skinId);
+    if (!skinId || (!isStarterSkin && !this.data.unlockedSkins.includes(skinId))) return false;
+    this.data.currentSkinId = skinId;
     this.save();
     return true;
   }

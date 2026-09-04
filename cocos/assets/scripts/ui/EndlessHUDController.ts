@@ -12,6 +12,11 @@ export class EndlessHUDController extends Component {
   private bindings: Array<[Button, () => void]> = [];
 
   onEnable(): void {
+    // Individual live stat pills already provide all required information.
+    // Do not cover the upper fifth of the portrait city with the legacy full
+    // width shade; the gameplay reference keeps this space visible.
+    const topShade = this.node.getChildByName('TopShade');
+    if (topShade) topShade.active = false;
     this.bindPause();
   }
 

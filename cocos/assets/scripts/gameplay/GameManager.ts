@@ -1,7 +1,7 @@
 /**
  * 游戏主控制器与运行时生命周期驱动 (GameManager.ts)
  */
-import { _decorator, Component, Node, Camera, Vec3, math, director, DirectionalLight, Color, Canvas, MeshRenderer, Sprite, UITransform, view, ResolutionPolicy } from 'cc';
+import { _decorator, Button, Component, Node, Camera, Vec3, math, director, DirectionalLight, Color, Canvas, MeshRenderer, Sprite, UITransform, view, ResolutionPolicy } from 'cc';
 import { BlackHoleMachine } from '../machine/BlackHoleMachine';
 import { InfiniteWorldManager } from '../world/InfiniteWorldManager';
 import { CompressibleObject } from './CompressibleObject';
@@ -14,7 +14,7 @@ import { eventBus } from '../core/EventBus';
 import { saveService } from '../data/SaveService';
 import { analyticsService } from '../analytics/AnalyticsService';
 import { platformAdapter } from '../platform/EditorPlatformAdapter';
-import { MACHINE_EVOLUTION_CONFIG } from '../data/GameConfig';
+import { MACHINE_EVOLUTION_CONFIG, SKINS_CONFIG } from '../data/GameConfig';
 
 const { ccclass, property } = _decorator;
 
@@ -52,6 +52,8 @@ export class GameManager extends Component {
   public regionsVisitedCount: number = 1;
   private pausedGameplayState: 'PLAYING' | 'ARENA' = 'PLAYING';
   private lastSessionMode: 'ENDLESS' | 'ARENA' = 'ENDLESS';
+  /** Read-only QA evidence for real Home skin selection requests. */
+  private homeSkinSelectionCount: number = 0;
 
   // Portrait isometric framing: the centre ray deliberately lands ahead of the
   // machine so the player remains in the lower interaction band.
@@ -59,6 +61,10 @@ export class GameManager extends Component {
   // framing made the real black-hole core and surrounding authored props read
   // as tiny test objects instead of the dense, isometric city composition
   // established by the V2 visual contract.
+  // This framing keeps the home neighbourhood legible and the local player
+  // within the lower interaction band. Arena uses a presentation-specific
+  // core scale below, rather than moving the common endless camera so far
+  // back that its city landmarks become tiny tokens.
   private cameraOffset: Vec3 = new Vec3(0, 16.6, 16.2);
   private cameraTarget: Vec3 = new Vec3();
   private readonly portraitWidth = 720;
@@ -68,6 +74,7 @@ export class GameManager extends Component {
     platformAdapter.init();
     this.currentCoins = saveService.data.coins;
     this.autoBindDependencies();
+    this.applySavedCoreSkin();
     this.applyPortraitRuntimeContract();
     this.initLighting();
     this.bindEvents();
@@ -238,6 +245,10 @@ export class GameManager extends Component {
       this.openV2ModeSelect();
     });
 
+    eventBus.on('HOME_SKIN_REQUESTED', () => {
+      this.cycleHomeSkin();
+    });
+
     eventBus.on('MODE_BACK_REQUESTED', () => {
       this.returnToHome();
     });
@@ -265,6 +276,29 @@ export class GameManager extends Component {
   }
 
   private sessionStartCoins: number = 0;
+
+  private applySavedCoreSkin(): void {
+    const skin = SKINS_CONFIG.find((entry) => entry.id === saveService.data.currentSkinId) || SKINS_CONFIG[0];
+    if (!skin) return;
+    this.machine?.applyCoreSkin(skin.color, skin.rimColor);
+  }
+
+  /** The Home card cycles only genuinely unlocked skins and persists the result. */
+  private cycleHomeSkin(): void {
+    // Free configurations are always genuine starter choices, even when an
+    // old malformed local save needs normalization. Paid configurations still
+    // require their id to be present in the player's saved unlock list.
+    const selectable = SKINS_CONFIG.filter((skin) => skin.unlocked || saveService.data.unlockedSkins.includes(skin.id));
+    if (selectable.length === 0) return;
+    const currentIndex = Math.max(0, selectable.findIndex((skin) => skin.id === saveService.data.currentSkinId));
+    const next = selectable[(currentIndex + 1) % selectable.length];
+    if (!saveService.selectSkin(next.id)) return;
+    this.homeSkinSelectionCount++;
+    this.applySavedCoreSkin();
+    eventBus.emit('HOME_SKIN_CHANGED', next);
+    platformAdapter.vibrate('light');
+    platformAdapter.showToast(`已装备：${next.name}`, 'success');
+  }
 
   public startEndlessGame(): void {
     this.arenaMatchManager?.stopMatch();
@@ -523,8 +557,10 @@ export class GameManager extends Component {
       const transform = node.getComponent(UITransform);
       const worldPoint = transform?.convertToWorldSpaceAR(Vec3.ZERO, new Vec3()) || null;
       const screenPoint = worldPoint && uiCamera ? uiCamera.worldToScreen(worldPoint, new Vec3()) : null;
+      const button = node.getComponent(Button);
       return {
         active: node.activeInHierarchy,
+        interactable: button?.interactable ?? null,
         x: node.position.x,
         y: node.position.y,
         width: transform?.width || 0,
@@ -613,7 +649,8 @@ export class GameManager extends Component {
       start: describe(homeNode('BtnStart')),
       mode: describe(homeNode('BtnMode')),
       skin: describe(homeNode('BtnSkin')),
-      machine: describe(homeNode('BtnMachine'))
+      machine: describe(homeNode('BtnMachine')),
+      settings: describe(homeNode('BtnSettings'))
     };
   }
 
@@ -741,7 +778,10 @@ export class GameManager extends Component {
           save: {
             coins: saveService.data.coins,
             machineLevel: saveService.data.machineLevel,
-            bestMass: saveService.data.highScore
+            bestMass: saveService.data.highScore,
+            skinId: saveService.data.currentSkinId,
+            unlockedSkinIds: [...saveService.data.unlockedSkins],
+            homeSkinSelectionCount: this.homeSkinSelectionCount
           }
         };
       }

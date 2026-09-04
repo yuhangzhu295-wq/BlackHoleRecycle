@@ -36,6 +36,8 @@ export interface ArenaMatchSnapshot {
   readonly running: boolean;
   readonly elapsedSeconds: number;
   readonly remainingSeconds: number;
+  /** Real opening protection window; combat is disabled while positive. */
+  readonly combatWarmupRemainingSeconds: number;
   readonly durationSeconds: number;
   readonly competitorCount: number;
   readonly localRank: number;
@@ -100,6 +102,10 @@ const PLAYER_ID = 'local-player';
 const MATCH_DURATION_SECONDS = 180;
 const RESPAWN_SECONDS = 2.5;
 const SHIELD_SECONDS = 3;
+// Players need a real opening route to resources before a larger singularity
+// can pull them into combat. This is a rules-level preparation window, not a
+// visual invulnerability substitute: collection and movement remain live.
+const COMBAT_WARMUP_SECONDS = 15;
 const START_MASS = 240;
 const ARENA_RADIUS = 44;
 const GRAVITY_RANGE = 4.8;
@@ -285,6 +291,7 @@ export class ArenaMatchManager extends Component {
       running: this.running,
       elapsedSeconds: Math.max(0, this.elapsedSeconds),
       remainingSeconds: Math.max(0, this.durationSeconds - this.elapsedSeconds),
+      combatWarmupRemainingSeconds: Math.max(0, COMBAT_WARMUP_SECONDS - this.elapsedSeconds),
       durationSeconds: this.durationSeconds,
       competitorCount: this.competitors.length,
       localRank: localIndex >= 0 ? localIndex + 1 : 0,
@@ -381,6 +388,22 @@ export class ArenaMatchManager extends Component {
   private updateCompetitiveSuction(dt: number): void {
     if (!this.world) return;
     const active = this.competitors.filter((competitor) => competitor.alive);
+    // A bot previously claimed every nearby IDLE entity during the same
+    // frame, then pulled the complete cluster in parallel. Keep one physical
+    // item in flight per bot. The local player retains the normal machine
+    // suction behaviour, while every bot pickup still runs the exact same
+    // CompressibleObject FSM through ATTRACTED and SUCKING states.
+    const botClaims = new Set(
+      this.world.getAllObjects()
+        .filter((candidate) => {
+          const owner = candidate.getCaptureOwnerId();
+          const state = candidate.getState();
+          return owner?.startsWith('bot-')
+            && state !== 'ABSORBED'
+            && state !== 'RECYCLED';
+        })
+        .map((candidate) => candidate.getCaptureOwnerId() as string),
+    );
     for (const object of this.world.getAllObjects()) {
       const state = object.getState();
       if (state === 'ABSORBED' || state === 'RECYCLED') continue;
@@ -395,6 +418,8 @@ export class ArenaMatchManager extends Component {
           .sort((left, right) => distanceXZ(left.node.position, position) - distanceXZ(right.node.position, position))[0] || null;
       }
       if (!collector) continue;
+      if (collector.isBot && owner !== collector.id && botClaims.has(collector.id)) continue;
+      const wasIdleAndUnclaimed = state === 'IDLE' && !owner;
       owner = collector.id;
       const absorbed = object.updateMotion(
         dt,
@@ -404,6 +429,9 @@ export class ArenaMatchManager extends Component {
         collector.machine.isMagnetStormActive,
         owner,
       );
+      if (wasIdleAndUnclaimed && object.getCaptureOwnerId() === collector.id && collector.isBot) {
+        botClaims.add(collector.id);
+      }
       if (absorbed) this.consumeObject(collector, object);
     }
   }
@@ -422,6 +450,7 @@ export class ArenaMatchManager extends Component {
   }
 
   private updateCompetitorCombat(dt: number): void {
+    if (this.elapsedSeconds < COMBAT_WARMUP_SECONDS) return;
     for (let left = 0; left < this.competitors.length; left++) {
       const a = this.competitors[left];
       if (!a.alive || a.shieldSeconds > 0) continue;

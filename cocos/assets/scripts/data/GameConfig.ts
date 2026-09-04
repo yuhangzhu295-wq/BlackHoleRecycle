@@ -270,7 +270,10 @@ export const DAILY_TASKS_CONFIG: readonly IDailyTaskConfig[] = [
 ];
 
 export const SKINS_CONFIG: readonly ISkinConfig[] = [
-  { id: 'skin_classic', name: '蔚蓝风暴 (默认)', color: '#2b7fff', rimColor: '#00e5ff', price: 0, unlocked: true, description: '经典的清洁工业涂装' },
+  // Keep the starter singularity in the violet visual language of the V2
+  // references. These are real runtime material colours, not shop mock data.
+  { id: 'skin_classic', name: '紫晶奇点 (默认)', color: '#281660', rimColor: '#e0d5ff', price: 0, unlocked: true, description: '与主视觉一致的深紫引力核心' },
+  { id: 'skin_violet_vortex', name: '霓虹漩涡', color: '#4a1d8f', rimColor: '#ffb8ff', price: 0, unlocked: true, description: '免费可切换的明亮紫粉漩涡涂装' },
   { id: 'skin_orange_force', name: '橙色重力', color: '#ff9500', rimColor: '#ffd600', price: 1500, unlocked: false, description: '活力四射的高能回收涂装' },
   { id: 'skin_emerald_vortex', name: '翡翠漩涡', color: '#10b981', rimColor: '#34d399', price: 3000, unlocked: false, description: '生态环保的超能引力涂装' },
   { id: 'skin_crimson_singularity', name: '猩红奇点', color: '#ef4444', rimColor: '#f43f5e', price: 6000, unlocked: false, description: '撕裂空间的终极奇点涂装' }

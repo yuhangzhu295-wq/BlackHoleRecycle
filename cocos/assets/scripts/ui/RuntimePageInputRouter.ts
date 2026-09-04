@@ -13,7 +13,7 @@ export interface RuntimePageInputDiagnostic {
   targetName: string | null;
   touchX: number;
   touchY: number;
-  action: 'NONE' | 'HOME_START' | 'HOME_MODE' | 'MODE_BACK' | 'MODE_ARENA' | 'MODE_ENDLESS'
+  action: 'NONE' | 'HOME_START' | 'HOME_MODE' | 'HOME_SKIN' | 'MODE_BACK' | 'MODE_ARENA' | 'MODE_ENDLESS'
     | 'PAUSE' | 'RESUME' | 'SETTLE' | 'HOME' | 'RESTART' | 'REVIVE' | 'GIVE_UP';
 }
 
@@ -64,6 +64,12 @@ export class RuntimePageInputRouter extends Component {
       event.propagationStopped = true;
       this.lastInputDiagnostic.action = 'HOME_MODE';
       eventBus.emit('HOME_MODE_REQUESTED');
+      return;
+    }
+    if (this.hitVisibleButton('HomePage', 'BtnSkin', event)) {
+      event.propagationStopped = true;
+      this.lastInputDiagnostic.action = 'HOME_SKIN';
+      eventBus.emit('HOME_SKIN_REQUESTED');
       return;
     }
     if (this.hitVisibleButton('ModeSelectPage', 'BtnBack', event)) {

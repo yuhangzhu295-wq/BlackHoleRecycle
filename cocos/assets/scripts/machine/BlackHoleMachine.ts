@@ -280,7 +280,10 @@ export class BlackHoleMachine extends Component {
       // the full-size competitor vehicles.
       // Preserve a clear local-player silhouette after the portrait camera
       // widens enough to frame the surrounding city.
-      const coreScale = this.presentation === 'SINGULARITY' ? 2.52 : 1.32;
+      // Arena needs the local singularity to read as the player's focal
+      // point, but it must not hide the 1v7 city block, rivals and real
+      // pickup clusters behind a screen-filling disc.
+      const coreScale = this.presentation === 'SINGULARITY' ? 1.85 : 1.32;
       this.coreNode.setScale(coreScale, 1.0, coreScale);
     }
     if (this.presentation === 'BOT') this.ensureArenaBotVisual();
@@ -320,6 +323,25 @@ export class BlackHoleMachine extends Component {
   public setArenaBotTint(hex: string): void {
     this.arenaBotTint = hex;
     this.applyArenaBotTint();
+  }
+
+  /**
+   * Applies the selected player skin to the actual native MeshRenderers that
+   * make up the singularity. This has no bearing on suction radius, mass,
+   * collisions or bot materials.
+   */
+  public applyCoreSkin(bodyColor: string, rimColor: string): void {
+    if (this.presentation === 'BOT') return;
+    this.setCorePartMaterial('AbyssBase', bodyColor, 1.0, 0.0);
+    this.setCorePartMaterial('HoleInner', '#05040e', 1.0, 0.0);
+    this.setCorePartMaterial('InnerSwirl', rimColor, 0.1, 0.5);
+    this.setCorePartMaterial('OuterSwirl', bodyColor, 0.1, 0.5);
+    this.setCorePartMaterial('HoleRing', rimColor, 0.1, 0.5);
+  }
+
+  private setCorePartMaterial(name: string, hex: string, roughness: number, metallic: number): void {
+    const renderer = this.coreNode?.getChildByName(name)?.getComponent(MeshRenderer) || null;
+    renderer?.setMaterial(MeshFactory.getMaterial(hex, roughness, metallic), 0);
   }
 
   /**
