@@ -92,7 +92,7 @@ class InfiniteWorldCell {
 
   public applyWorldRebase(shift: Readonly<Vec3>): void {
     this.objects.forEach((object) => object.applyWorldRebase(shift));
-    this.dynamicVehicles.forEach((vehicle) => vehicle.applyWorldRebase(shift.x));
+    this.dynamicVehicles.forEach((vehicle) => vehicle.applyWorldRebase(shift));
   }
 
   /**
@@ -178,18 +178,25 @@ class InfiniteWorldCell {
 
     const centerX = this.coord.x * this.cellSize - logicalOrigin.x;
     const centerZ = this.coord.z * this.cellSize - logicalOrigin.z;
-    const startX = centerX - 12;
-    const routeZ = centerZ + (this.district.kind === 'CONSTRUCTION' ? 10 : -4);
+    const routeZ = centerZ + (this.district.kind === 'CONSTRUCTION' ? 10 : 0);
+    // Road kits are laid out around the cell centre. Keep traffic inside that
+    // authored street corridor: it now drives a four-corner loop instead of
+    // bouncing in a single X line, and each corner exposes a real TURN state.
+    const route = [
+      { x: centerX - 12, z: routeZ - 3 },
+      { x: centerX + 12, z: routeZ - 3 },
+      { x: centerX + 12, z: routeZ + 3 },
+      { x: centerX - 12, z: routeZ + 3 },
+    ];
+    const start = route[0];
     const object = objectPool.get();
-    object.spawn(template as IObjectTemplate, startX, routeZ, 0.35, `traffic_${this.coord.x}_${this.coord.z}_${visualKind}`);
-    object.setRoutePosition(startX, routeZ, 90);
+    object.spawn(template as IObjectTemplate, start.x, start.z, 0.35, `traffic_${this.coord.x}_${this.coord.z}_${visualKind}`);
     this.objects.push(object);
     this.dynamicVehicles.push(new DynamicVehicle(
       `traffic_${this.coord.x}_${this.coord.z}_${visualKind}`,
       visualKind,
       object,
-      centerX - 12,
-      centerX + 12,
+      route,
       visualKind === 'sedan' ? 4.0 : visualKind === 'delivery_van' ? 3.2 : 2.6,
     ));
   }

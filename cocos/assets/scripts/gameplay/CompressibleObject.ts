@@ -27,6 +27,10 @@ export class CompressibleObject extends Component {
   private lockIndicatorNode: Node | null = null;
   /** The actual machine currently pulling this entity into its black hole. */
   private captureOwnerId: string | null = null;
+  /** Optional physical spin for a real moving vehicle during the shared suction FSM. */
+  private suctionSpinDegreesPerSecond: number = 0;
+  private visualYawDegrees: number = 0;
+  private visualRollDegrees: number = 0;
 
   public getPosition(): Vec3 {
     return this.currentPos;
@@ -42,6 +46,15 @@ export class CompressibleObject extends Component {
   }
 
   /**
+   * DynamicVehicle configures this after spawning from an ordinary T5 vehicle
+   * template. No mass, tier or state is altered; it only makes the existing
+   * attraction/suction motion legible for a large vehicle.
+   */
+  public setSuctionSpin(degreesPerSecond: number): void {
+    this.suctionSpinDegreesPerSecond = Math.max(0, degreesPerSecond);
+  }
+
+  /**
    * Reposition an existing, still-idle world object without changing its
    * template, tier, mass or suction state. Dynamic traffic and arena setup
    * share this instead of manufacturing a cosmetic duplicate.
@@ -50,7 +63,9 @@ export class CompressibleObject extends Component {
     if (this.fsm.getState() !== 'IDLE') return false;
     this.currentPos.set(x, this.currentPos.y, z);
     this.node.setPosition(this.currentPos);
-    this.visualNode?.setRotationFromEuler(0, yawDegrees, 0);
+    this.visualYawDegrees = yawDegrees;
+    this.visualRollDegrees = 0;
+    this.visualNode?.setRotationFromEuler(0, this.visualYawDegrees, this.visualRollDegrees);
     return true;
   }
 
@@ -131,6 +146,9 @@ export class CompressibleObject extends Component {
     this.isLockAlertActive = false;
     this.lockTimer = 0;
     this.captureOwnerId = null;
+    this.suctionSpinDegreesPerSecond = 0;
+    this.visualYawDegrees = 0;
+    this.visualRollDegrees = 0;
 
     this.buildVisibleNode();
     this.applyTemplateArt();
@@ -223,6 +241,12 @@ export class CompressibleObject extends Component {
       this.currentPos.set(result.newPosition);
       this.node.setPosition(this.currentPos);
       this.node.setScale(result.newScale);
+      if (this.suctionSpinDegreesPerSecond > 0) {
+        const spinMultiplier = state === 'SUCKING' ? 2.5 : 1;
+        this.visualYawDegrees += this.suctionSpinDegreesPerSecond * spinMultiplier * dt;
+        this.visualRollDegrees += this.suctionSpinDegreesPerSecond * 0.35 * spinMultiplier * dt;
+        this.visualNode?.setRotationFromEuler(0, this.visualYawDegrees, this.visualRollDegrees);
+      }
       if (result.isAbsorbed) {
         this.fsm.setState('ABSORBED');
         return true;

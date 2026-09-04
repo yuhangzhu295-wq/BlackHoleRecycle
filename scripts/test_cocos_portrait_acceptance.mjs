@@ -879,6 +879,8 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
       const dynamicBefore = gameplaySnapshot.world?.streaming?.dynamicVehicles || [];
       assert(dynamicBefore.length > 0,
         `FAIL_DYNAMIC_VEHICLE_MISSING: ${JSON.stringify(gameplaySnapshot.world?.streaming)}`);
+      assert(dynamicBefore.every((vehicle) => vehicle.routeLength >= 4),
+        `FAIL_DYNAMIC_VEHICLE_ROUTE_MISSING: ${JSON.stringify(dynamicBefore)}`);
       await page.waitForTimeout(1000);
       const dynamicAfterSnapshot = await readRuntimeSnapshot(page);
       const dynamicAfter = dynamicAfterSnapshot.world?.streaming?.dynamicVehicles || [];
@@ -893,7 +895,23 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
       }).find((vehicle) => vehicle && vehicle.distance > 0.2);
       assert(movingVehicle,
         `FAIL_DYNAMIC_VEHICLE_NOT_MOVING: before=${JSON.stringify(dynamicBefore)} after=${JSON.stringify(dynamicAfter)}`);
-      report.dynamicVehicles = { before: dynamicBefore, after: dynamicAfter, movingVehicle };
+      // The fastest real sedan reaches its first road corner in six seconds.
+      // Observe the Cocos runtime rather than inferring a turn from source.
+      await page.waitForTimeout(6200);
+      const dynamicTurnSnapshot = await readRuntimeSnapshot(page);
+      const dynamicTurned = dynamicTurnSnapshot.world?.streaming?.dynamicVehicles || [];
+      const turningVehicle = dynamicTurned.map((afterVehicle) => {
+        const beforeVehicle = dynamicBefore.find((candidate) => candidate.id === afterVehicle.id);
+        return beforeVehicle ? {
+          id: afterVehicle.id,
+          kind: afterVehicle.kind,
+          turnCount: afterVehicle.turnCount,
+          initialTurnCount: beforeVehicle.turnCount,
+        } : null;
+      }).find((vehicle) => vehicle && vehicle.turnCount > vehicle.initialTurnCount);
+      assert(turningVehicle,
+        `FAIL_DYNAMIC_VEHICLE_ROUTE_TURN: before=${JSON.stringify(dynamicBefore)} after=${JSON.stringify(dynamicTurned)}`);
+      report.dynamicVehicles = { before: dynamicBefore, after: dynamicAfter, afterTurn: dynamicTurned, movingVehicle, turningVehicle };
       assert(gameplaySnapshot.machine.level === 1 && gameplaySnapshot.machine.maxTier === 1,
         `FAIL_VERTICAL_SLICE_INITIAL_LV1: ${JSON.stringify(gameplaySnapshot.machine)}`);
       assert(Math.abs(gameplaySnapshot.machine.suctionRadius - 2.4) < 0.01,
