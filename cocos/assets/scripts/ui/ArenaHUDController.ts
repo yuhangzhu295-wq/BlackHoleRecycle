@@ -1,5 +1,5 @@
 /** Editor-saved arena HUD bindings. All values originate from ArenaMatchManager. */
-import { _decorator, Button, Component, Label } from 'cc';
+import { _decorator, Button, Camera, Component, director, Label, Vec3, view } from 'cc';
 import { eventBus } from '../core/EventBus';
 import { ArenaMatchSnapshot } from '../gameplay/ArenaMatchManager';
 
@@ -13,6 +13,7 @@ const formatClock = (seconds: number): string => {
 @ccclass('ArenaHUDController')
 export class ArenaHUDController extends Component {
   private bindings: Array<[Button, () => void]> = [];
+  private readonly projectedBotPosition: Vec3 = new Vec3();
 
   onEnable(): void {
     this.bind('BtnPause', () => eventBus.emit('UI_TRIGGER_PAUSE'));
@@ -36,6 +37,43 @@ export class ArenaHUDController extends Component {
       const life = entry.alive ? '' : ' · 重生';
       this.setLabel(`Top${index + 1}`, `${index + 1}. ${prefix}  ${entry.mass}kg${life}`);
     });
+    this.updateOffscreenBotArrows(snapshot);
+  }
+
+  /**
+   * The four arrow Nodes are authored and saved by Creator with the HUD.
+   * This controller only decides whether each has a real off-screen opponent
+   * to point toward; it never creates visual substitutes or invents targets.
+   */
+  private updateOffscreenBotArrows(snapshot: ArenaMatchSnapshot): void {
+    const arrows = {
+      Left: false,
+      Right: false,
+      Top: false,
+      Bottom: false,
+    };
+    const camera = director.getScene()?.getComponentInChildren(Camera) || null;
+    const viewport = view.getViewportRect();
+    if (camera && viewport.width > 0 && viewport.height > 0) {
+      for (const competitor of snapshot.leaderboard) {
+        if (competitor.isLocal || !competitor.alive) continue;
+        const screen = camera.worldToScreen(
+          new Vec3(competitor.position.x, 0.65, competitor.position.z),
+          this.projectedBotPosition,
+        );
+        const inside = screen.x >= viewport.x && screen.x <= viewport.x + viewport.width
+          && screen.y >= viewport.y && screen.y <= viewport.y + viewport.height;
+        if (inside) continue;
+        const dx = screen.x - (viewport.x + viewport.width * 0.5);
+        const dy = screen.y - (viewport.y + viewport.height * 0.5);
+        if (Math.abs(dx) >= Math.abs(dy)) arrows[dx < 0 ? 'Left' : 'Right'] = true;
+        else arrows[dy < 0 ? 'Bottom' : 'Top'] = true;
+      }
+    }
+    for (const side of Object.keys(arrows) as Array<keyof typeof arrows>) {
+      const arrow = this.node.getChildByName(`BotArrow${side}`);
+      if (arrow) arrow.active = arrows[side];
+    }
   }
 
   private bind(name: string, handler: () => void): void {

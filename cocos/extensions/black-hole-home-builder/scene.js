@@ -1044,6 +1044,21 @@ exports.methods = {
     caption(arena, 'KillValue', '0', 20, 251, 380, 46, 26, new Color(255, 205, 77, 255));
     caption(arena, 'StatusValue', '等待开局', 17, 0, -518, 420, 34, new Color(245, 249, 255, 255));
     createGraphicButton('BtnPause', arena, 'Ⅱ', 294, 500, 58, 58, new Color(42, 75, 111, 245), new Color(255, 255, 255, 255), 31);
+    // The arrows are ordinary Creator-saved HUD nodes. ArenaHUDController
+    // activates them only when a live bot is actually outside the 3D camera
+    // viewport, so they do not pretend to be a minimap or a scripted marker.
+    const createBotArrow = (name, text, x, y) => {
+      const arrow = createRoundedPanel(name, arena, 58, 58, new Color(111, 73, 225, 230), 29);
+      place(arrow, x, y, 58, 58);
+      const label = createLabel(`${name}Label`, arrow, text, 30, new Color(255, 255, 255, 255));
+      label.getComponent(UITransform).setContentSize(50, 50);
+      label.setPosition(0, 0, 0);
+      arrow.active = false;
+    };
+    createBotArrow('BotArrowLeft', '←', -276, 26);
+    createBotArrow('BotArrowRight', '→', 276, 26);
+    createBotArrow('BotArrowTop', '↑', 0, 350);
+    createBotArrow('BotArrowBottom', '↓', 0, -344);
     addJoystickOverlay(arena);
     arena.addComponent(getComponentClass('ArenaHUDController'));
     arena.active = false;
