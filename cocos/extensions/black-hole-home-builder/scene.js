@@ -510,7 +510,7 @@ async function createSprite(name, parent, width, height, assetUrl) {
 }
 
 function createLabel(name, parent, text, fontSize, color) {
-  const { Node, UITransform, Label, Color, Layers, HorizontalTextAlignment, VerticalTextAlignment } = require('cc');
+  const { Node, UITransform, Label, LabelOutline, Color, Layers, HorizontalTextAlignment, VerticalTextAlignment } = require('cc');
   const node = new Node(name);
   node.layer = Layers.Enum.UI_2D;
   parent.addChild(node);
@@ -520,8 +520,19 @@ function createLabel(name, parent, text, fontSize, color) {
   label.fontSize = fontSize;
   label.lineHeight = fontSize + 12;
   label.color = color || new Color(255, 255, 255, 255);
+  label.isBold = true;
   label.horizontalAlign = HorizontalTextAlignment.CENTER;
   label.verticalAlign = VerticalTextAlignment.CENTER;
+  // The V2 reference relies on a chunky dark keyline for white and gold
+  // display type.  Save the native Cocos outline component with the label so
+  // this is a real Editor-authored visual treatment rather than a browser CSS
+  // substitute. Dark data captions deliberately stay clean for legibility.
+  const luminance = (label.color.r * 0.2126 + label.color.g * 0.7152 + label.color.b * 0.0722);
+  if (luminance >= 150) {
+    const outline = node.addComponent(LabelOutline);
+    outline.width = Math.max(2, Math.round(fontSize * 0.075));
+    outline.color = new Color(24, 29, 48, 235);
+  }
   return node;
 }
 
@@ -1229,30 +1240,35 @@ exports.methods = {
     revivePage.pageId = 4;
     const reviveDim = createDimSprite('DimOverlay', revive, 720, 1280, new Color(5, 13, 31, 208));
     place(reviveDim, 0, 0, 720, 1280);
-    const reviveCard = createRoundedPanel('ReviveCard', revive, 620, 790, new Color(250, 248, 255, 255), 42);
-    place(reviveCard, 0, -5, 620, 790);
+    const reviveCard = createRoundedPanel('ReviveCard', revive, 620, 900, new Color(255, 250, 238, 255), 42);
+    place(reviveCard, 0, -28, 620, 900);
+    // Reuse the existing Creator-imported, text-free singularity artwork as
+    // a visual focal point. It sits behind the urgent ribbon, while match
+    // facts and both real actions remain separate editor-saved controls.
+    const reviveHero = await createSprite('ReviveBlackHoleHero', revive, 246, 246, 'db://assets/textures/home/home_blackhole_hero.png');
+    place(reviveHero, 0, 164, 246, 246);
     // Three saved, non-interactive accent strokes give the revive branch the
     // same urgent colour hierarchy as the approved V2 direction.  The two
     // real buttons remain the only actionable controls on this page.
     const reviveAccentPurple = createRoundedPanel('ReviveAccentPurple', revive, 470, 38, new Color(166, 74, 225, 255), 18);
-    place(reviveAccentPurple, 0, 299, 470, 38);
+    place(reviveAccentPurple, 0, 292, 470, 38);
     reviveAccentPurple.setRotationFromEuler(0, 0, 8);
     const reviveAccentOrange = createRoundedPanel('ReviveAccentOrange', revive, 500, 38, new Color(255, 116, 22, 255), 18);
-    place(reviveAccentOrange, 0, 271, 500, 38);
+    place(reviveAccentOrange, 0, 264, 500, 38);
     reviveAccentOrange.setRotationFromEuler(0, 0, -7);
     const reviveAccentBlue = createRoundedPanel('ReviveAccentBlue', revive, 460, 38, new Color(72, 163, 255, 255), 18);
-    place(reviveAccentBlue, 0, 243, 460, 38);
+    place(reviveAccentBlue, 0, 236, 460, 38);
     reviveAccentBlue.setRotationFromEuler(0, 0, 6);
     const reviveRibbon = createTitleRibbon('ReviveRibbon', revive, 440, 102, new Color(105, 70, 190, 255));
-    place(reviveRibbon, 0, 270, 440, 102);
-    caption(revive, 'Title', '复活继续', 50, 0, 270, 420, 72, new Color(255, 230, 102, 255));
-    caption(revive, 'LossValue', '黑洞被吞噬 · 掉落了部分质量', 22, 0, 164, 500, 44, new Color(74, 56, 99, 255));
+    place(reviveRibbon, 0, 264, 440, 102);
+    caption(revive, 'Title', '复活继续', 52, 0, 264, 420, 74, new Color(255, 230, 102, 255));
+    caption(revive, 'LossValue', '黑洞被吞噬 · 掉落了部分质量', 23, 0, 36, 510, 46, new Color(74, 56, 99, 255));
     const countdownPanel = createRoundedPanel('CountdownPanel', revive, 218, 96, new Color(238, 231, 255, 255), 24);
-    place(countdownPanel, 0, 96, 218, 96);
-    caption(revive, 'CountdownValue', '2.5s', 38, 0, 96, 198, 70, new Color(105, 70, 190, 255));
-    caption(revive, 'RankValue', '当前第 - / 8', 22, 0, 16, 420, 40, new Color(74, 56, 99, 255));
-    await createPrimaryActionButton('BtnRevive', revive, '立即复活', 0, -134, 392, 98, 32);
-    createGraphicButton('BtnGiveUp', revive, '结束本局', 0, -262, 340, 78, new Color(105, 70, 190, 255), new Color(255, 255, 255, 255), 26);
+    place(countdownPanel, 0, -46, 218, 96);
+    caption(revive, 'CountdownValue', '2.5s', 40, 0, -46, 198, 72, new Color(105, 70, 190, 255));
+    caption(revive, 'RankValue', '当前第 - / 8', 23, 0, -128, 420, 42, new Color(74, 56, 99, 255));
+    await createPrimaryActionButton('BtnRevive', revive, '立即复活', 0, -250, 392, 98, 32);
+    createGraphicButton('BtnGiveUp', revive, '结束本局', 0, -378, 340, 78, new Color(105, 70, 190, 255), new Color(255, 255, 255, 255), 26);
     revive.addComponent(getComponentClass('RevivePageController'));
     revive.active = false;
 
@@ -1282,15 +1298,19 @@ exports.methods = {
     settlementPage.pageId = 5;
     const settlementDim = createDimSprite('DimOverlay', settlement, 720, 1280, new Color(5, 14, 29, 210));
     place(settlementDim, 0, 0, 720, 1280);
-    const settlementCard = createRoundedPanel('SettlementCard', settlement, 660, 1120, new Color(255, 253, 247, 255), 42);
+    const settlementCard = createRoundedPanel('SettlementCard', settlement, 660, 1120, new Color(255, 248, 230, 255), 42);
     place(settlementCard, 0, 0, 660, 1120);
     const settlementRibbon = createTitleRibbon('SettlementRibbon', settlement, 492, 112, new Color(105, 70, 190, 255));
     place(settlementRibbon, 0, 452, 492, 112);
+    const settlementCoinLeft = await createSprite('SettlementCoinLeft', settlement, 66, 66, 'db://assets/textures/home/home_coin.png');
+    place(settlementCoinLeft, -266, 452, 66, 66);
+    const settlementCoinRight = await createSprite('SettlementCoinRight', settlement, 66, 66, 'db://assets/textures/home/home_coin.png');
+    place(settlementCoinRight, 266, 452, 66, 66);
     caption(settlement, 'Title', '本局结算', 56, 0, 452, 470, 78, new Color(255, 222, 86, 255));
     caption(settlement, 'Subtitle', '无尽吞噬 · 本局数据', 24, 0, 370, 420, 46, new Color(73, 55, 99, 255));
     const rowColor = new Color(74, 56, 40, 255);
     for (const y of [223, 143, 63, -17, -97]) {
-      const row = createRoundedPanel(`StatRow_${y}`, settlement, 530, 62, new Color(243, 237, 255, 255), 18);
+      const row = createRoundedPanel(`StatRow_${y}`, settlement, 530, 66, new Color(249, 239, 255, 255), 18);
       place(row, 0, y, 530, 62);
     }
     caption(settlement, 'AbsorbedCaption', '吞噬物品', 26, -166, 223, 220, 44, rowColor);
