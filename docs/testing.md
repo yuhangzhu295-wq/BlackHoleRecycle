@@ -1,26 +1,17 @@
-# 《黑洞回收站》自动化测试与验收体系 (Testing & Quality Assurance)
+# 《黑洞回收站》测试与验收
 
-## 1. 自动化端到端测试 (Playwright E2E)
-项目内置全套自动化测试套件 `scripts/test_game.js`，运行命令：
 ```bash
-node scripts/test_game.js
+npm run typecheck:cocos
+npm run test:cocos
+npm run acceptance:v2 -- --scope=full
+npm run build:all
 ```
 
-### 验证覆盖的测试点：
-1. **启动页渲染**：验证 3D Logo、大黄色开始按钮与快捷入口。
-2. **功能弹窗验证**：验证每日任务弹窗、皮肤装扮弹窗、金币商店弹窗的展示与关闭。
-3. **模式选择流转**：验证无尽模式与挑战模式的选择。
-4. **新手引导**：验证 4 步教学蒙层（1/4 移动 ➔ 2/4 吸附 ➔ 3/4 进化 ➔ 4/4 压缩）的点击交互与完成状态写入。
-5. **3D 核心拖拽与吸附**：模拟 3D WebGL Canvas 上的多段拖拽轨迹，验证物体进入黑洞、质量累加与粒子触发。
-6. **技能释放**：验证 🧲 磁暴模式、⚡ 疾速推进、📦 即时压缩的按钮点击与对应状态机。
-7. **游戏内暂停与恢复**：验证 HUD 暂停按钮触发与继续游戏恢复。
+测试范围必须如实区分：
 
-## 2. 验收通过标准 (Checklist)
-- [x] 开源审计与依赖许可证检查完成 (`docs/reuse-audit.md`, `THIRD_PARTY_NOTICES.md`)
-- [x] 无尽 Chunk 流式加载与回收正常
-- [x] 机器 5 级真实外观进化与光效变化正常
-- [x] 15 页全套 UI 视图与弹窗完整无假按钮
-- [x] 广告系统具备 RemoteConfig 与防刷账本
-- [x] 24 项全生命周期数据埋点正常上报
-- [x] 微信/抖音/Web 三端打包构建 100% 成功
-- [x] Playwright E2E 全自动化回归测试全部通过
+1. `test:cocos` 是 6 项 Node 逻辑回归，只证明规则和资源契约；它不是 Cocos 运行时 PASS。
+2. `acceptance:v2` 使用 Cocos Creator 3.8.3 生成 Web Mobile 包，以 Playwright CDP 的真实触控事件验证竖屏运行时。
+3. `build:all` 校验 Creator 的 Web Mobile、微信小游戏与抖音小游戏输出；不等同于微信/抖音开发者工具或真机验收。
+4. `preflight:release` 要求两个小游戏的 AppID 为真实值；当前抖音 AppID 未配置，因此该门禁预期不通过。
+
+已覆盖的核心门禁为：启动页→模式页→拖拽移动→T1 吸收→质量增长→T2 锁定→LV2 涡轮与半径提升→T2 吸收，以及竞技、复活、结算和四向流式移动。

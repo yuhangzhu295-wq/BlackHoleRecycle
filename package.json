@@ -2,17 +2,14 @@
   "name": "minigame-wx-tt-crossplatform",
   "version": "1.0.0",
   "description": "Cross-platform WeChat and Douyin MiniGame Project",
-  "main": "src/main.js",
   "type": "module",
   "scripts": {
-    "dev": "vite",
     "build": "npm run build:all",
     "build:web": "node scripts/verify_cocos_minigame_builds.mjs --platform=web-mobile",
     "build:wx": "node scripts/verify_cocos_minigame_builds.mjs --platform=wechatgame",
     "build:tt": "node scripts/verify_cocos_minigame_builds.mjs --platform=bytedance-mini-game",
     "build:all": "node scripts/verify_cocos_minigame_builds.mjs --platform=all",
     "preflight:release": "node scripts/verify_cocos_minigame_builds.mjs --platform=wechatgame,bytedance-mini-game --require-release-ids",
-    "preview": "vite preview",
     "typecheck:cocos": "tsc --project cocos/tsconfig.json --noEmit",
     "test:cocos": "node scripts/test_cocos_vertical_slice.js",
     "acceptance:v2": "node scripts/test_cocos_portrait_acceptance.mjs"
@@ -26,13 +23,8 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "esbuild": "^0.28.2",
     "playwright": "^1.62.1",
-    "typescript": "^7.0.2",
-    "vite": "^8.2.2"
-  },
-  "dependencies": {
-    "three": "^0.185.1"
+    "typescript": "^7.0.2"
   },
   "creator": {
     "version": "3.8.3"

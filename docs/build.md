@@ -1,24 +1,19 @@
-# 《黑洞回收站》多端构建与打包指南 (Build & Packaging Guide)
+# 《黑洞回收站》官方构建与验证指南
 
-## 1. 构建命令一览
+正式工程是 `cocos/`，使用 Cocos Creator 3.8.3；根目录的 `legacy/threejs-prototype/` 仅保留为历史玩法参考，不能用于构建、验收或发布。
+
 ```bash
-# 构建全平台 (微信 + 抖音 + Web H5)
+npm run typecheck:cocos
+npm run test:cocos
+npm run acceptance:v2 -- --scope=full
 npm run build:all
-
-# 单独构建微信小游戏 (dist/wx)
-npm run build:wx
-
-# 单独构建抖音小游戏 (dist/tt)
-npm run build:tt
-
-# 单独构建 Web H5 预览版 (dist/web)
-npm run build:web
-
-# 本地 Vite 实时热重载开发预览
-npm run dev
+npm run preflight:release
 ```
 
-## 2. 产物目录结构说明
-- `dist/wx/`: 微信小游戏产物（包含 `game.js`, `game.json`, `project.config.json`）。
-- `dist/tt/`: 抖音小游戏产物（包含 `game.js`, `game.json`, `microapp.json`, `project.config.json`）。
-- `dist/web/`: 纯静态 H5 Web 产物，可直接通过任何 HTTP 静态服务器或 CDN 部署。
+Creator 输出目录为：
+
+- `cocos/build/web-mobile/`
+- `cocos/build/wechatgame/`
+- `cocos/build/bytedance-mini-game/`
+
+`test:cocos` 是逻辑回归，不能取代运行时验收。`preflight:release` 在抖音 AppID 仍为 `testappId` 时必须失败；这是发布前的真实配置门禁，不是构建故障。

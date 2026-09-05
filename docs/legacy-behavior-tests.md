@@ -1,4 +1,6 @@
-# Three.js 原型与 Cocos Creator 3.8.x 核心玩法行为基准对照 (Legacy Behavior Baseline)
+# 历史 Three.js 原型与 Cocos Creator 3.8.x 行为基准对照
+
+> 历史原型现位于 `legacy/threejs-prototype/`，本文件只记录迁移意图，不能作为当前 Cocos 运行时验收证据。
 
 ## 1. 核心体验指标基准 (Baseline Metrics)
 为确保向 Cocos Creator 3.8.x 迁移后核心玩法爽感不退化，确立以下可测量的行为基准：
