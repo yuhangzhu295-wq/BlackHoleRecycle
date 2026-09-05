@@ -96,6 +96,27 @@ async function installRuntimePagesFromExplicitEnvironment() {
   console.info(`[black-hole-home-builder] Explicit runtime-page save completed: ${JSON.stringify(verification)}`);
 }
 
+/** Explicit cosmetic-page authoring. Normal Creator launches remain read-only. */
+async function installSkinPageFromExplicitEnvironment() {
+  if (process.env.BHR_SKIN_PAGE_AUTOBUILD !== '1') return;
+  const run = (method) => Editor.Message.request('scene', 'execute-scene-script', {
+    name: 'black-hole-home-builder', method, args: [],
+  });
+  let ready = null;
+  for (let attempt = 0; attempt < 45; attempt += 1) {
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    ready = await run('isSkinPageReady');
+    if (ready?.ready) break;
+  }
+  if (!ready?.ready) throw new Error(`[black-hole-home-builder] Skin page was not ready: ${JSON.stringify(ready)}`);
+  const page = await run('buildSkinSelectionPage');
+  const verification = await run('verifySkinSelectionPage');
+  if (!page?.saved || !verification?.ok) {
+    throw new Error(`[black-hole-home-builder] Explicit skin page save failed: ${JSON.stringify({ page, verification })}`);
+  }
+  console.info(`[black-hole-home-builder] Explicit skin page save completed: ${JSON.stringify(verification)}`);
+}
+
 /**
  * Opt-in repair for assemblies temporarily inserted while Creator writes a
  * machine prefab. It deliberately calls the scene script and save-scene;
@@ -133,6 +154,9 @@ module.exports = {
     });
     installRuntimePagesFromExplicitEnvironment().catch((error) => {
       console.error('[black-hole-home-builder] Explicit runtime-page save failed:', error);
+    });
+    installSkinPageFromExplicitEnvironment().catch((error) => {
+      console.error('[black-hole-home-builder] Explicit skin-page save failed:', error);
     });
     cleanupMachineResidueFromExplicitEnvironment().catch((error) => {
       console.error('[black-hole-home-builder] Explicit machine cleanup failed:', error);
@@ -284,6 +308,16 @@ module.exports = {
         name: 'black-hole-home-builder',
         method: 'verifyRuntimePages',
         args: [],
+      });
+    },
+    async buildSkinSelectionPage() {
+      return Editor.Message.request('scene', 'execute-scene-script', {
+        name: 'black-hole-home-builder', method: 'buildSkinSelectionPage', args: [],
+      });
+    },
+    async verifySkinSelectionPage() {
+      return Editor.Message.request('scene', 'execute-scene-script', {
+        name: 'black-hole-home-builder', method: 'verifySkinSelectionPage', args: [],
       });
     },
   },

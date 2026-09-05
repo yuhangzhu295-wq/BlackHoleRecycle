@@ -33,6 +33,17 @@ const RUNTIME_UI_IMAGE_URLS = [
   'db://assets/textures/home/mode_card_shelf.png',
   'db://assets/textures/home/home_hud_panel.png',
 ];
+// The skin page owns five cards, one for each runtime configuration. Text,
+// ownership and prices are bound by SkinSelectionPageController from the
+// strongly typed game configuration; these entries only define Creator-saved
+// placement and colour accents for the formal page.
+const SKIN_PAGE_ACCENTS = [
+  [97, 67, 186, 255],
+  [173, 76, 207, 255],
+  [255, 149, 0, 255],
+  [16, 185, 129, 255],
+  [239, 68, 68, 255],
+];
 let runtimePanelFrame = null;
 let runtimeRibbonFrame = null;
 let runtimeDimFrame = null;
@@ -673,6 +684,18 @@ exports.methods = {
       gameRoot: !!gameRoot,
     };
   },
+  /** Readiness probe used before explicitly saving the cosmetic-selection page. */
+  async isSkinPageReady() {
+    const { director, js } = require('cc');
+    const scene = director.getScene();
+    return {
+      ready: !!scene?.getChildByName('Canvas')
+        && !!scene?.getChildByName('GameRoot')
+        && !!js.getClassByName('SkinSelectionPageController'),
+      scene: scene?.name || null,
+      skinControllerImported: !!js.getClassByName('SkinSelectionPageController'),
+    };
+  },
   async buildMachineVisuals() {
     const { Node } = require('cc');
     const gameRoot = getGameRootFromEditorScene();
@@ -1101,6 +1124,87 @@ exports.methods = {
     page.active = false;
     await Editor.Message.request('scene', 'save-scene');
     return { saved: true, path: 'Canvas/MachineInfoPage', rootUuid: page.uuid };
+  },
+  /**
+   * Saves the skin-selection page through the Creator scene process. Every
+   * card, Label and Button is a serialized node; runtime code only binds live
+   * save data and never fabricates an unlock UI.
+   */
+  async buildSkinSelectionPage() {
+    const { director, Color, Sprite } = require('cc');
+    const scene = director.getScene();
+    const canvas = scene?.getChildByName('Canvas');
+    if (!canvas) throw new Error('Game.scene does not contain Canvas');
+    await prepareRuntimeUISprites();
+
+    const oldPage = canvas.getChildByName('SkinSelectionPage');
+    if (oldPage) oldPage.destroy();
+    const page = createNode('SkinSelectionPage', canvas, 720, 1280);
+    const pageComponent = page.addComponent(getComponentClass('UIPage'));
+    pageComponent.pageId = 9;
+    const caption = (name, text, fontSize, x, y, width, height, color = new Color(255, 255, 255, 255)) => {
+      const label = createLabel(name, page, text, fontSize, color);
+      place(label, x, y, width, height);
+      return label;
+    };
+    const dim = createDimSprite('DimOverlay', page, 720, 1280, new Color(5, 15, 33, 222));
+    place(dim, 0, 0, 720, 1280);
+    const card = createRoundedPanel('SkinPageCard', page, 660, 1140, new Color(255, 253, 247, 255), 42);
+    place(card, 0, 0, 660, 1140);
+    const ribbon = createTitleRibbon('SkinRibbon', page, 506, 104, new Color(103, 71, 192, 255));
+    place(ribbon, 0, 470, 506, 104);
+    caption('Title', '引力核心皮肤', 50, 0, 470, 476, 72, new Color(255, 239, 161, 255));
+    const coinPanel = createRoundedPanel('CoinPanel', page, 228, 56, new Color(34, 62, 106, 245), 18);
+    place(coinPanel, 188, 392, 228, 56);
+    caption('CoinCaption', '金币', 18, 128, 392, 82, 32, new Color(233, 244, 255, 255));
+    caption('CoinValue', '0', 22, 206, 392, 92, 36, new Color(255, 222, 83, 255));
+    const previewPanel = createRoundedPanel('PreviewPanel', page, 568, 148, new Color(238, 232, 255, 255), 24);
+    place(previewPanel, 0, 325, 568, 148);
+    const preview = await createSprite('PreviewBlackHole', page, 118, 118, 'db://assets/textures/home/home_blackhole_hero.png');
+    preview.getComponent(Sprite).color = new Color(224, 213, 255, 255);
+    place(preview, -206, 325, 118, 118);
+    caption('PreviewNameValue', '紫晶奇点', 25, 48, 350, 310, 36, new Color(83, 58, 126, 255));
+    caption('PreviewDescriptionValue', '当前装备的引力核心', 16, 48, 303, 342, 44, new Color(93, 82, 115, 255));
+
+    const rowY = [190, 82, -26, -134, -242];
+    for (let index = 0; index < SKIN_PAGE_ACCENTS.length; index += 1) {
+      const cardIndex = index + 1;
+      const y = rowY[index];
+      const row = createRoundedPanel(`SkinCard_${cardIndex}`, page, 568, 88, new Color(246, 242, 235, 255), 18);
+      place(row, 0, y, 568, 88);
+      const accent = createRoundedPanel(`SkinAccent_${cardIndex}`, page, 46, 46, new Color(...SKIN_PAGE_ACCENTS[index]), 16);
+      place(accent, -240, y, 46, 46);
+      caption(`SkinName_${cardIndex}`, `皮肤 ${cardIndex}`, 21, -86, y + 17, 320, 32, new Color(70, 53, 98, 255));
+      // The selected skin's full description is deliberately displayed in
+      // PreviewDescriptionValue above. Reserving this row's second line for
+      // ownership avoids a narrow-phone text collision with the action.
+      caption(`SkinDescription_${cardIndex}`, '', 1, -86, y - 17, 1, 1, new Color(104, 91, 122, 0));
+      caption(`SkinState_${cardIndex}`, '点击使用', 15, -86, y - 17, 320, 28, new Color(95, 110, 95, 255));
+      createGraphicButton(`BtnSkin_${cardIndex}`, page, '选择', 210, y, 112, 56, new Color(...SKIN_PAGE_ACCENTS[index]), new Color(255, 255, 255, 255), 18);
+    }
+    caption('StatusValue', '选择免费皮肤，或使用局内获得的金币解锁', 17, 0, -360, 560, 38, new Color(99, 80, 127, 255));
+    createGraphicButton('BtnBack', page, '返回首页', 0, -488, 390, 84, new Color(105, 70, 190, 255), new Color(255, 255, 255, 255), 28);
+    page.addComponent(getComponentClass('SkinSelectionPageController'));
+    page.active = false;
+    await Editor.Message.request('scene', 'save-scene');
+    return { saved: true, path: 'Canvas/SkinSelectionPage', rootUuid: page.uuid, cards: SKIN_PAGE_ACCENTS.length };
+  },
+  async verifySkinSelectionPage() {
+    const { director, Button } = require('cc');
+    const page = director.getScene()?.getChildByName('Canvas')?.getChildByName('SkinSelectionPage') || null;
+    const buttonNames = ['BtnBack', ...SKIN_PAGE_ACCENTS.map((_entry, index) => `BtnSkin_${index + 1}`)];
+    const labelNames = ['CoinValue', 'PreviewNameValue', 'PreviewDescriptionValue', 'StatusValue', ...SKIN_PAGE_ACCENTS.flatMap((_entry, index) => [
+      `SkinName_${index + 1}`, `SkinDescription_${index + 1}`, `SkinState_${index + 1}`,
+    ])];
+    const missingButtons = buttonNames.filter((name) => !page?.getChildByName(name)?.getComponent(Button));
+    const missingLabels = labelNames.filter((name) => !page?.getChildByName(name));
+    return {
+      ok: !!page && !!page.getComponent(getComponentClass('SkinSelectionPageController')) && missingButtons.length === 0 && missingLabels.length === 0,
+      rootUuid: page?.uuid || null,
+      cardCount: SKIN_PAGE_ACCENTS.filter((_entry, index) => !!page?.getChildByName(`SkinCard_${index + 1}`)).length,
+      missingButtons,
+      missingLabels,
+    };
   },
   /**
    * Attach arena authority through Cocos Creator itself. The component is

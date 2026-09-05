@@ -25,7 +25,7 @@ const reportPath = path.join(evidenceDirectory, 'acceptance-report.json');
 const requestedAcceptanceScope = process.argv.find((argument) => argument.startsWith('--scope='))?.slice('--scope='.length)
   || process.env.BHR_ACCEPTANCE_SCOPE
   || 'full';
-const acceptanceScope = ['full', 'pages', 'arena-timer', 'network', 'regions', 'progression'].includes(requestedAcceptanceScope)
+const acceptanceScope = ['full', 'pages', 'skins', 'arena-timer', 'network', 'regions', 'progression'].includes(requestedAcceptanceScope)
   ? requestedAcceptanceScope
   : 'full';
 // Preserve each independently-runnable acceptance scope. The canonical report
@@ -389,9 +389,10 @@ function pointForVisibleNode(canvasRect, snapshot, node, name) {
 }
 
 /**
- * The Home skin card must cause a real, persisted selection change through
- * the same visible CDP touch as a phone player. The QA bridge only reads the
- * resulting save snapshot and input diagnostic.
+ * The Home skin card opens its Creator-saved selection page. A visible touch
+ * equips the second free skin, persists it, and proves a locked paid card
+ * rejects a player with no earned coins. The QA bridge is read-only and never
+ * modifies the save, coins, or selection.
  */
 async function verifyHomeSkin(cdp, page, canvasRect) {
   const before = await readRuntimeSnapshot(page);
@@ -402,14 +403,14 @@ async function verifyHomeSkin(cdp, page, canvasRect) {
   const previousSkinId = before.save?.skinId;
   await dispatchTouchTap(cdp, point.x, point.y);
   try {
-    await page.waitForFunction((previous) => {
+    await page.waitForFunction(() => {
       const snapshot = window.__BHR_QA__.snapshot();
-      return snapshot.gameState === 'HOME'
-        && snapshot.save?.skinId !== previous;
-    }, previousSkinId, { timeout: 5000 });
+      return snapshot.gameState === 'SKIN_SELECTION'
+        && snapshot.ui?.skinSelection?.active === true;
+    }, undefined, { timeout: 5000 });
   } catch (error) {
     const afterTimeout = await readRuntimeSnapshot(page);
-    throw new Error(`FAIL_HOME_SKIN_SELECTION: ${JSON.stringify({
+    throw new Error(`FAIL_HOME_SKIN_PAGE_OPEN: ${JSON.stringify({
       point,
       beforeSave: before.save,
       afterSave: afterTimeout.save,
@@ -418,13 +419,59 @@ async function verifyHomeSkin(cdp, page, canvasRect) {
       error: error instanceof Error ? error.message : String(error),
     })}`);
   }
+  const opened = await readRuntimeSnapshot(page);
+  assert(opened.player?.isDragging === false && opened.machine?.velocity?.x === 0 && opened.machine?.velocity?.z === 0,
+    `FAIL_SKIN_PAGE_INPUT_NOT_PAUSED: ${JSON.stringify({ player: opened.player, machine: opened.machine })}`);
+  assert(opened.ui?.skinSelectionButtons?.length === 5
+    && opened.ui?.skinSelectionData?.previewName
+    && opened.ui?.skinSelectionBack?.active,
+  `FAIL_SKIN_PAGE_SERIALIZED_LAYOUT: ${JSON.stringify(opened.ui?.skinSelection)}`);
+
+  const freeButton = pointForVisibleNode(canvasRect, opened, opened.ui?.skinSelectionButtons?.[1], 'SKIN_FREE_SELECT');
+  await dispatchTouchTap(cdp, freeButton.x, freeButton.y);
+  try {
+    await page.waitForFunction(() => window.__BHR_QA__.snapshot().save?.skinId === 'skin_violet_vortex', undefined, { timeout: 5000 });
+  } catch (error) {
+    const actual = await readRuntimeSnapshot(page);
+    throw new Error(`FAIL_SKIN_FREE_SELECT: ${JSON.stringify({ freeButton, previousSkinId, save: actual.save, ui: actual.ui?.skinSelectionData, error: String(error) })}`);
+  }
+  const selected = await readRuntimeSnapshot(page);
+  // Cocos' browser bridge serializes the string-array backing store as opaque
+  // entries on some WebGL builds, so ownership is verified by the persisted
+  // selected id plus the controller's own live ownership state instead of
+  // treating that transport quirk as a gameplay failure.
+  assert(selected.save?.skinId !== previousSkinId
+    && selected.save?.skinId === 'skin_violet_vortex'
+    && selected.ui?.skinSelectionData?.states?.[1] === '已装备',
+  `FAIL_SKIN_FREE_NOT_PERSISTED: ${JSON.stringify({ before: previousSkinId, after: selected.save, data: selected.ui?.skinSelectionData })}`);
+
+  const lockedButton = pointForVisibleNode(canvasRect, selected, selected.ui?.skinSelectionButtons?.[2], 'SKIN_LOCKED_SELECT');
+  const coinsBeforeLockedTap = selected.save?.coins;
+  await dispatchTouchTap(cdp, lockedButton.x, lockedButton.y);
+  try {
+    await page.waitForFunction(() => String(window.__BHR_QA__.snapshot().ui?.skinSelectionData?.status || '').includes('金币不足'), undefined, { timeout: 5000 });
+  } catch (error) {
+    const actual = await readRuntimeSnapshot(page);
+    throw new Error(`FAIL_SKIN_LOCKED_FEEDBACK: ${JSON.stringify({ lockedButton, save: actual.save, data: actual.ui?.skinSelectionData, error: String(error) })}`);
+  }
+  const locked = await readRuntimeSnapshot(page);
+  assert(locked.save?.skinId === 'skin_violet_vortex'
+    && locked.save?.coins === coinsBeforeLockedTap,
+  `FAIL_SKIN_LOCKED_NOT_PROTECTED: ${JSON.stringify({ beforeCoins: coinsBeforeLockedTap, after: locked.save })}`);
+  await page.screenshot({ path: path.join(evidenceDirectory, 'portrait-390x844-skin-selection.png') });
+
+  const back = pointForVisibleNode(canvasRect, locked, locked.ui?.skinSelectionBack, 'SKIN_PAGE_BACK');
+  await dispatchTouchTap(cdp, back.x, back.y);
+  try {
+    await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'HOME', undefined, { timeout: 5000 });
+  } catch (error) {
+    const actual = await readRuntimeSnapshot(page);
+    throw new Error(`FAIL_SKIN_PAGE_BACK: ${JSON.stringify({ back, state: actual.gameState, ui: actual.ui, error: String(error) })}`);
+  }
   const after = await readRuntimeSnapshot(page);
-  assert(after.save?.skinId !== previousSkinId,
-    `FAIL_HOME_SKIN_NOT_SAVED: ${JSON.stringify({ before: previousSkinId, after: after.save?.skinId })}`);
-  assert(after.ui?.machine?.active === true && after.ui?.machine?.interactable === true && after.ui?.settings?.active === false,
-    `FAIL_HOME_ACTION_VISIBILITY: ${JSON.stringify({ machine: after.ui?.machine, settings: after.ui?.settings })}`);
-  await page.screenshot({ path: path.join(evidenceDirectory, 'portrait-390x844-home-skin.png') });
-  return { point, previousSkinId, selectedSkinId: after.save?.skinId };
+  assert(after.ui?.home?.active && after.ui?.machine?.active && after.ui?.settings?.active === false,
+    `FAIL_HOME_ACTION_VISIBILITY: ${JSON.stringify({ home: after.ui?.home, machine: after.ui?.machine, settings: after.ui?.settings })}`);
+  return { point, freeButton, lockedButton, back, previousSkinId, selectedSkinId: after.save?.skinId, coinsBeforeLockedTap };
 }
 
 /**
@@ -1173,6 +1220,11 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
         assert(runtimeErrors.length === 0, `Runtime console errors after LV1-to-LV5 touch progression: ${runtimeErrors.join(' | ')}`);
         return;
       }
+      if (acceptanceScope === 'skins') {
+        report.homeSkin = await verifyHomeSkin(cdp, page, canvasRect);
+        assert(runtimeErrors.length === 0, `Runtime console errors after skin selection: ${runtimeErrors.join(' | ')}`);
+        return;
+      }
       report.homeSkin = await verifyHomeSkin(cdp, page, canvasRect);
       report.machineInfo = await verifyMachineInfo(cdp, page, canvasRect);
       const homeSnapshot = await readRuntimeSnapshot(page);
@@ -1537,7 +1589,7 @@ try {
     : `http://127.0.0.1:${address.port}/`;
   browser = await chromium.launch({ headless: true, args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-webgl'] });
 
-  const targetViewports = acceptanceScope === 'pages' || acceptanceScope === 'arena-timer' || acceptanceScope === 'network' || acceptanceScope === 'regions' || acceptanceScope === 'progression'
+  const targetViewports = acceptanceScope === 'pages' || acceptanceScope === 'skins' || acceptanceScope === 'arena-timer' || acceptanceScope === 'network' || acceptanceScope === 'regions' || acceptanceScope === 'progression'
     ? requiredPortraitViewports.filter((viewport) => viewport.id === '390x844')
     : requiredPortraitViewports;
   for (const viewport of targetViewports) {

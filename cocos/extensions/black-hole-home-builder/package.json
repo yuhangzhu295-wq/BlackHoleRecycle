@@ -82,6 +82,16 @@
       },
       {
         "path": "i18n:menu.extension",
+        "label": "创建 V2 皮肤选择页（编辑器保存）",
+        "message": "build-skin-selection-page"
+      },
+      {
+        "path": "i18n:menu.extension",
+        "label": "验证 V2 皮肤选择页",
+        "message": "verify-skin-selection-page"
+      },
+      {
+        "path": "i18n:menu.extension",
         "label": "导入 V2 模式选择资源",
         "message": "prepare-mode-sprites"
       },
@@ -131,6 +141,8 @@
       "prepare-home-sprites": { "methods": ["prepareHomeSprites"] },
       "build-home": { "methods": ["buildHome"] },
       "verify-home": { "methods": ["verifyHome"] },
+      "build-skin-selection-page": { "methods": ["buildSkinSelectionPage"] },
+      "verify-skin-selection-page": { "methods": ["verifySkinSelectionPage"] },
       "prepare-mode-sprites": { "methods": ["prepareModeSprites"] },
       "build-mode-select": { "methods": ["buildModeSelect"] },
       "verify-mode-select": { "methods": ["verifyModeSelect"] },

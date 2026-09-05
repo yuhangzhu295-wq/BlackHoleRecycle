@@ -11,7 +11,8 @@
 - The complete five-level machine path is live rather than configuration-only. A separate touch-only Web Mobile run reached LV2 in Bedroom, LV3 in Warehouse (compression chamber visible), LV4 in Supermarket (gravity wing visible), LV5 in Parking (singularity frame visible), then absorbed a Creator-rendered T5 city sedan. The run recorded a final mass of 591215 kg and T1–T5 absorption counts from the ordinary compression system.
 - Gameplay objects retain their actual `CompressibleObject` suction state machine. Their semantic visuals are resolved through `ObjectArtRegistry` to audited Creator-imported art; there is no chair-to-tire or sofa-to-van fallback.
 - The vertical slice is real at runtime: LV1 starts at T1/2.4m, visibly locks T2, absorbs T1 to evolve, reaches LV2/3.4m, then absorbs T2. Current full acceptance evidence recorded LV2, mass 1540, 30 T1 and 1 T2 absorbed.
-- `Game.scene` contains Creator-saved portrait Home, Mode Select, gameplay HUD, Arena HUD, Revive, Pause, Settlement, and Machine Info page nodes. Their actions drive live state and real save data rather than placeholder buttons.
+- `Game.scene` contains Creator-saved portrait Home, Mode Select, Skin Selection, gameplay HUD, Arena HUD, Revive, Pause, Settlement, and Machine Info page nodes. Their actions drive live state and real save data rather than placeholder buttons.
+- The Home skin action now opens the Creator-saved Skin Selection page instead of cycling a hidden list. Both starter cores can be equipped and persisted by touch; paid cores validate against `SKINS_CONFIG`, atomically deduct only earned coins, and leave the save unchanged with an explicit “金币不足” result when unaffordable.
 - Arena currently has one local player and seven active Cocos bots. Every row of its leaderboard, respawn, object claim, combat result, and settlement reward is derived from the local match state. The UI labels this truthfully as local 1v7. Separately, the Colyseus room now keeps an eight-competitor authoritative roster by filling vacant slots with server-owned bots; joining humans replace a bot in a stable slot and leaving humans are replaced by one.
 
 ## Runtime and build evidence
@@ -21,6 +22,7 @@
 - `npm run acceptance:v2 -- --scope=full`: official Cocos Creator 3.8.3 Web Mobile build plus real Playwright/CDP touch. The latest full run passed with browser console errors `[]` and no acceptance failures: full-height portrait canvas at three phone sizes, eight-direction joystick input, 500m north/south/west/east travel with origin rebasing, dynamic-road turns, T1 lock → LV2 → T2 intake, and local-arena revive/settlement.
 - `npm run acceptance:v2 -- --scope=regions`: a separate official Cocos Web Mobile build and one continuous 942m CDP-touch traversal. It visited Bedroom, Warehouse, Supermarket, Parking, Construction, and City, verified each live theme id plus the matching streamed district and Creator-imported landmark, captured six independent 390×844 screenshots, and completed with browser console errors `[]`.
 - `npm run acceptance:v2 -- --scope=progression`: an official Cocos Web Mobile build and real joystick-only LV1→LV5 progression. It records all high-level regional consumption, verifies active Creator-saved assembly parts at LV3–LV5, and requires a real T5 city object to transition through the shared absorption FSM.
+- `npm run acceptance:v2 -- --scope=skins`: an official Cocos Web Mobile build and visible touch flow through the Creator-saved skin page. It opens the page, equips the free violet core, verifies its persisted selection and live UI state, proves that an unaffordable paid core does not change coins or selection, then returns Home with browser console errors `[]`.
 - `npm run build:all`: Web Mobile, WeChat Game, and ByteDance Mini Game packages built successfully with Creator 3.8.3. The ByteDance package still uses `testappId`, so it is buildable but not release-ready.
 - `arena-server/` has a separate Colyseus integration test that connects two actual SDK clients to one server-authoritative room and observes replicated movement, pickup suction, LV2/T2 progression, defeat, dropped recyclable mass, and respawn. The Cocos Web client can make a real browser WebSocket connection to that room and forwards its actual visible joystick at 20Hz. The network acceptance route proves a real player session, server input-sequence advancement, and a server-replicated position change with browser console errors `[]`; it uses no state setter or mock room.
 
@@ -39,6 +41,7 @@
 - `CROSS_PLATFORM_BUILD_GATE`: PASS (release IDs excluded)
 - `SIX_REGION_TRAVERSAL_GATE`: PASS
 - `FULL_MACHINE_PROGRESSION_GATE`: PASS
+- `SKIN_SELECTION_GATE`: PASS
 - `ONLINE_HUMAN_ARENA_GATE`: IN PROGRESS
 - `VISUAL_DESIGN_MATCH`: PARTIAL — same product structure and interaction language, not bespoke-reference equivalence
 - `RELEASE_GATE`: BLOCKED BY OWNER-PROVIDED APPID / DEPLOYMENT

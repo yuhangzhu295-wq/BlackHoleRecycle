@@ -5,6 +5,7 @@
  */
 import { _decorator, Component, EventMouse, EventTouch, input, Input, Node, UITransform, Vec2, view } from 'cc';
 import { eventBus } from '../core/EventBus';
+import { SKINS_CONFIG } from '../data/GameConfig';
 
 const { ccclass } = _decorator;
 
@@ -15,7 +16,7 @@ export interface RuntimePageInputDiagnostic {
   uiTouchX: number;
   uiTouchY: number;
   action: 'NONE' | 'HOME_START' | 'HOME_MODE' | 'HOME_SKIN' | 'HOME_MACHINE' | 'MACHINE_BACK' | 'MODE_BACK' | 'MODE_ARENA' | 'MODE_ENDLESS'
-    | 'PAUSE' | 'RESUME' | 'SETTLE' | 'HOME' | 'RESTART' | 'REVIVE' | 'GIVE_UP';
+    | 'SKIN_BACK' | 'SKIN_SELECT' | 'PAUSE' | 'RESUME' | 'SETTLE' | 'HOME' | 'RESTART' | 'REVIVE' | 'GIVE_UP';
 }
 
 @ccclass('RuntimePageInputRouter')
@@ -104,6 +105,20 @@ export class RuntimePageInputRouter extends Component {
       this.lastInputDiagnostic.action = 'HOME_MACHINE';
       eventBus.emit('HOME_MACHINE_REQUESTED');
       return;
+    }
+    if (this.hitVisibleButton('SkinSelectionPage', 'BtnBack', location)) {
+      event.propagationStopped = true;
+      this.lastInputDiagnostic.action = 'SKIN_BACK';
+      eventBus.emit('SKIN_PAGE_BACK_REQUESTED');
+      return;
+    }
+    for (let index = 0; index < SKINS_CONFIG.length; index += 1) {
+      if (this.hitVisibleButton('SkinSelectionPage', `BtnSkin_${index + 1}`, location)) {
+        event.propagationStopped = true;
+        this.lastInputDiagnostic.action = 'SKIN_SELECT';
+        eventBus.emit('SKIN_PAGE_SELECT_REQUESTED', SKINS_CONFIG[index].id);
+        return;
+      }
     }
     if (this.hitVisibleButton('MachineInfoPage', 'BtnBack', location)) {
       event.propagationStopped = true;

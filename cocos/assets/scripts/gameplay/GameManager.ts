@@ -22,7 +22,7 @@ import { MACHINE_EVOLUTION_CONFIG, SKINS_CONFIG } from '../data/GameConfig';
 
 const { ccclass, property } = _decorator;
 
-export type GameSessionState = 'HOME' | 'MODE_SELECT' | 'MACHINE_INFO' | 'PLAYING' | 'ARENA' | 'NETWORK_ARENA' | 'REVIVING' | 'PAUSED' | 'SETTLEMENT';
+export type GameSessionState = 'HOME' | 'MODE_SELECT' | 'MACHINE_INFO' | 'SKIN_SELECTION' | 'PLAYING' | 'ARENA' | 'NETWORK_ARENA' | 'REVIVING' | 'PAUSED' | 'SETTLEMENT';
 
 @ccclass('GameManager')
 export class GameManager extends Component {
@@ -275,7 +275,15 @@ export class GameManager extends Component {
     });
 
     eventBus.on('HOME_SKIN_REQUESTED', () => {
-      this.cycleHomeSkin();
+      this.openSkinSelection();
+    });
+
+    eventBus.on('SKIN_PAGE_BACK_REQUESTED', () => {
+      this.returnToHome();
+    });
+
+    eventBus.on('SKIN_PAGE_SELECT_REQUESTED', (skinId: unknown) => {
+      this.selectSkinFromPage(skinId);
     });
 
     eventBus.on('HOME_MACHINE_REQUESTED', () => {
@@ -320,21 +328,55 @@ export class GameManager extends Component {
     this.machine?.applyCoreSkin(skin.color, skin.rimColor);
   }
 
-  /** The Home card cycles only genuinely unlocked skins and persists the result. */
-  private cycleHomeSkin(): void {
-    // Free configurations are always genuine starter choices, even when an
-    // old malformed local save needs normalization. Paid configurations still
-    // require their id to be present in the player's saved unlock list.
-    const selectable = SKINS_CONFIG.filter((skin) => skin.unlocked || saveService.data.unlockedSkins.includes(skin.id));
-    if (selectable.length === 0) return;
-    const currentIndex = Math.max(0, selectable.findIndex((skin) => skin.id === saveService.data.currentSkinId));
-    const next = selectable[(currentIndex + 1) % selectable.length];
-    if (!saveService.selectSkin(next.id)) return;
-    this.homeSkinSelectionCount++;
+  /** Opens the editor-saved selection page; no runtime substitute is created. */
+  private openSkinSelection(): void {
+    if (this.gameState !== 'HOME') return;
+    const canvas = director.getScene()?.getChildByName('Canvas');
+    const home = canvas?.getChildByName('HomePage') || null;
+    const mode = canvas?.getChildByName('ModeSelectPage') || null;
+    const machineInfo = canvas?.getChildByName('MachineInfoPage') || null;
+    const page = canvas?.getChildByName('SkinSelectionPage') || null;
+    if (!page) {
+      console.error('[GameManager] Missing editor-saved SkinSelectionPage. Skin action is unavailable.');
+      return;
+    }
+    if (home) home.active = false;
+    if (mode) mode.active = false;
+    if (machineInfo) machineInfo.active = false;
+    page.active = true;
+    this.setPlayerSimulationPaused(true);
+    this.hud?.hideAllScreens();
+    this.gameState = 'SKIN_SELECTION';
+  }
+
+  /** Applies a free skin or atomically unlocks a paid configured skin. */
+  private selectSkinFromPage(skinId: unknown): void {
+    if (this.gameState !== 'SKIN_SELECTION' || typeof skinId !== 'string') return;
+    const skin = SKINS_CONFIG.find((entry) => entry.id === skinId) || null;
+    if (!skin) {
+      eventBus.emit('SKIN_PAGE_STATUS', '未找到该皮肤配置');
+      return;
+    }
+    const alreadyOwned = skin.unlocked || saveService.data.unlockedSkins.includes(skin.id);
+    if (!alreadyOwned && !saveService.unlockSkin(skin.id)) {
+      const missing = Math.max(0, skin.price - saveService.data.coins);
+      const message = `金币不足，还差 ${missing.toLocaleString('en-US')} 金币`;
+      eventBus.emit('SKIN_PAGE_STATUS', message);
+      platformAdapter.showToast(message, 'none');
+      return;
+    }
+    const wasSelected = saveService.data.currentSkinId === skin.id;
+    if (!saveService.selectSkin(skin.id)) {
+      eventBus.emit('SKIN_PAGE_STATUS', '皮肤存档写入失败');
+      return;
+    }
+    if (!wasSelected) this.homeSkinSelectionCount++;
     this.applySavedCoreSkin();
-    eventBus.emit('HOME_SKIN_CHANGED', next);
+    eventBus.emit('HOME_SKIN_CHANGED', skin);
+    const message = alreadyOwned || skin.unlocked ? `已装备：${skin.name}` : `已解锁并装备：${skin.name}`;
+    eventBus.emit('SKIN_PAGE_STATUS', message);
     platformAdapter.vibrate('light');
-    platformAdapter.showToast(`已装备：${next.name}`, 'success');
+    platformAdapter.showToast(message, 'success');
   }
 
   public startEndlessGame(): void {
@@ -619,9 +661,11 @@ export class GameManager extends Component {
     const home = canvas?.getChildByName('HomePage');
     const mode = canvas?.getChildByName('ModeSelectPage');
     const machineInfo = canvas?.getChildByName('MachineInfoPage');
+    const skinSelection = canvas?.getChildByName('SkinSelectionPage');
     if (home) home.active = visible;
     if (mode) mode.active = false;
     if (machineInfo) machineInfo.active = false;
+    if (skinSelection) skinSelection.active = false;
   }
 
   /** 仅显示由 Cocos Creator 保存的 V2 模式选择页，不回退到旧运行时 HUD。 */
@@ -629,12 +673,14 @@ export class GameManager extends Component {
     const canvas = director.getScene()?.getChildByName('Canvas');
     const home = canvas?.getChildByName('HomePage');
     const mode = canvas?.getChildByName('ModeSelectPage');
+    const skinSelection = canvas?.getChildByName('SkinSelectionPage');
     if (!mode) {
       console.error('[GameManager] Missing editor-saved ModeSelectPage. Legacy HUD fallback is disabled.');
       return;
     }
 
     if (home) home.active = false;
+    if (skinSelection) skinSelection.active = false;
     mode.active = true;
     this.setPlayerSimulationPaused(true);
     this.hud?.hideAllScreens();
@@ -647,6 +693,7 @@ export class GameManager extends Component {
     const canvas = director.getScene()?.getChildByName('Canvas');
     const home = canvas?.getChildByName('HomePage') || null;
     const mode = canvas?.getChildByName('ModeSelectPage') || null;
+    const skinSelection = canvas?.getChildByName('SkinSelectionPage') || null;
     const page = canvas?.getChildByName('MachineInfoPage') || null;
     if (!page) {
       console.error('[GameManager] Missing editor-saved MachineInfoPage. Machine action is unavailable.');
@@ -654,6 +701,7 @@ export class GameManager extends Component {
     }
     if (home) home.active = false;
     if (mode) mode.active = false;
+    if (skinSelection) skinSelection.active = false;
     page.active = true;
     this.setPlayerSimulationPaused(true);
     this.hud?.hideAllScreens();
@@ -683,6 +731,7 @@ export class GameManager extends Component {
     const pausePage = canvas?.getChildByName('PausePage') || null;
     const settlementPage = canvas?.getChildByName('SettlementPage') || null;
     const machineInfoPage = canvas?.getChildByName('MachineInfoPage') || null;
+    const skinSelectionPage = canvas?.getChildByName('SkinSelectionPage') || null;
     const joystick = endlessHud?.getChildByName('Joystick') || null;
     const homeNode = (name: string): Node | null => home?.getChildByName(name) || home?.getChildByName('SafeAreaRoot')?.getChildByName(name) || null;
     const canvasComponent = canvas?.getComponent(Canvas) || null;
@@ -754,6 +803,16 @@ export class GameManager extends Component {
       // user performs a touch navigation, not merely the trigger button.
       modePage: describe(mode),
       machineInfo: describe(machineInfoPage),
+      skinSelection: describe(skinSelectionPage),
+      skinSelectionBack: describe(skinSelectionPage?.getChildByName('BtnBack') || null),
+      skinSelectionData: {
+        coin: labelText(skinSelectionPage?.getChildByName('CoinValue') || null),
+        previewName: labelText(skinSelectionPage?.getChildByName('PreviewNameValue') || null),
+        previewDescription: labelText(skinSelectionPage?.getChildByName('PreviewDescriptionValue') || null),
+        status: labelText(skinSelectionPage?.getChildByName('StatusValue') || null),
+        states: SKINS_CONFIG.map((_skin, index) => labelText(skinSelectionPage?.getChildByName(`SkinState_${index + 1}`) || null)),
+      },
+      skinSelectionButtons: SKINS_CONFIG.map((_skin, index) => describe(skinSelectionPage?.getChildByName(`BtnSkin_${index + 1}`) || null)),
       machineInfoBack: describe(machineInfoPage?.getChildByName('BtnBack') || null),
       machineInfoData: {
         currentName: labelText(machineInfoPage?.getChildByName('CurrentNameValue') || null),

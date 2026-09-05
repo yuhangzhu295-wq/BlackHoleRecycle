@@ -10,4 +10,6 @@ export enum UIPageId {
   Upgrade = 7,
   /** Read-only current-machine and progression reference opened from Home. */
   MachineInfo = 8,
+  /** Persisted cosmetic selection and coin-backed unlock page opened from Home. */
+  SkinSelection = 9,
 }

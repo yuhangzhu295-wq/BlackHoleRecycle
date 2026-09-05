@@ -2,6 +2,7 @@
  * 强类型持久化存档服务 (SaveService.ts)
  */
 import { sys } from 'cc';
+import { SKINS_CONFIG } from './GameConfig';
 
 export interface ISaveData {
   version: number;
@@ -171,6 +172,25 @@ export class SaveService {
     const isStarterSkin = (STARTER_SKIN_IDS as readonly string[]).includes(skinId);
     if (!skinId || (!isStarterSkin && !this.data.unlockedSkins.includes(skinId))) return false;
     this.data.currentSkinId = skinId;
+    this.save();
+    return true;
+  }
+
+  /**
+   * Unlock one configured paid appearance with coins earned by real sessions.
+   * Validation and the coin deduction live together so a UI click can never
+   * mark an unconfigured skin as owned or spend only part of the transaction.
+   */
+  public unlockSkin(skinId: string): boolean {
+    this.normalizeUnlockedSkins();
+    const skin = SKINS_CONFIG.find((entry) => entry.id === skinId) || null;
+    if (!skin) return false;
+    if (skin.unlocked || this.data.unlockedSkins.includes(skin.id)) return true;
+    if (!Number.isSafeInteger(skin.price) || skin.price <= 0 || this.data.coins < skin.price) return false;
+
+    this.data.coins -= skin.price;
+    this.data.unlockedSkins.push(skin.id);
+    this.normalizeUnlockedSkins();
     this.save();
     return true;
   }
