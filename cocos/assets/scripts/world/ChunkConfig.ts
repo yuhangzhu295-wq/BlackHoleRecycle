@@ -2,7 +2,7 @@
  * 地图分块生成配置 (ChunkConfig.ts)
  */
 import { IRegionThemeConfig, OBJECT_TEMPLATES, IObjectTemplate, ObjectTier } from '../data/GameConfig';
-import { getDistrictTemplateForCell } from './DistrictTemplates';
+import { DistrictTemplate, getDistrictTemplateForRegion } from './DistrictTemplates';
 
 export interface IChunkSpawnItem {
   readonly template: IObjectTemplate;
@@ -74,11 +74,16 @@ export class CellItemGenerator {
     cellZ: number,
     seed: number,
     cellSize: number,
+    suppliedDistrict?: DistrictTemplate,
   ): IChunkSpawnItem[] {
     const available = OBJECT_TEMPLATES.filter((template) => theme.availableTiers.includes(template.tier));
     const t1 = available.filter((template) => template.tier === ObjectTier.T1);
     const items: IChunkSpawnItem[] = [];
-    const district = getDistrictTemplateForCell(cellX, cellZ);
+    // The cell's clusters must use the same authored district that renders
+    // its roads and landmarks.  This prevents a warehouse-looking cell from
+    // spawning park semantics merely because the two systems hashed its
+    // coordinate independently.
+    const district = suppliedDistrict || getDistrictTemplateForRegion(theme.id, cellX, cellZ);
     let state = (seed >>> 0) || 1;
     const random = (): number => {
       state = (state * 1664525 + 1013904223) >>> 0;

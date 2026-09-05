@@ -105,6 +105,22 @@ const DISTRICT_ORDER: readonly DistrictKind[] = [
   'RESIDENTIAL', 'PARK', 'SUPERMARKET', 'WAREHOUSE', 'PARKING', 'CONSTRUCTION', 'DOWNTOWN',
 ];
 
+/**
+ * Endless progression is organised around the six named GameConfig regions.
+ * The art district, its semantic resource clusters, and the HUD therefore
+ * have to agree on the same region rather than each choosing a deterministic
+ * but unrelated cell pattern.  `PARK` remains available for authored home /
+ * arena dressing; it is deliberately not a progression-region substitute.
+ */
+const PROGRESSION_DISTRICT_BY_REGION: Readonly<Record<string, DistrictKind>> = {
+  bedroom: 'RESIDENTIAL',
+  warehouse: 'WAREHOUSE',
+  supermarket: 'SUPERMARKET',
+  parking: 'PARKING',
+  construction: 'CONSTRUCTION',
+  city: 'DOWNTOWN',
+};
+
 function positiveMod(value: number, divisor: number): number {
   const result = value % divisor;
   return result < 0 ? result + divisor : result;
@@ -114,4 +130,14 @@ function positiveMod(value: number, divisor: number): number {
 export function getDistrictTemplateForCell(cellX: number, cellZ: number): DistrictTemplate {
   const index = positiveMod(cellX * 31 + cellZ * 17, DISTRICT_ORDER.length);
   return DISTRICTS[DISTRICT_ORDER[index]];
+}
+
+/**
+ * Returns the single visual/resource district promised by a progression
+ * region.  Unknown ids retain the old deterministic city fallback so a
+ * malformed or future region cannot make a streamed cell empty.
+ */
+export function getDistrictTemplateForRegion(regionId: string, cellX: number, cellZ: number): DistrictTemplate {
+  const kind = PROGRESSION_DISTRICT_BY_REGION[regionId];
+  return kind ? DISTRICTS[kind] : getDistrictTemplateForCell(cellX, cellZ);
 }

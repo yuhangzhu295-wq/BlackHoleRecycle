@@ -597,8 +597,12 @@ export class GameManager extends Component {
 
   private updateHUD(): void {
     if (this.hud && this.machine) {
-      const regionName = this.infiniteWorldManager?.getCurrentDistrictName()
-        || this.infiniteWorldManager?.currentTheme.name
+      // Progression and presentation now share a region-to-district mapping.
+      // Keep the HUD truthful to the actual progression region rather than
+      // showing whichever decorative district a coordinate hash happened to
+      // pick for this streamed cell.
+      const regionName = this.infiniteWorldManager?.getCurrentRegionName()
+        || this.infiniteWorldManager?.getCurrentDistrictName()
         || '住宅街区';
       this.hud.updateStats(
         this.machine.currentMass,

@@ -25,9 +25,13 @@ const reportPath = path.join(evidenceDirectory, 'acceptance-report.json');
 const requestedAcceptanceScope = process.argv.find((argument) => argument.startsWith('--scope='))?.slice('--scope='.length)
   || process.env.BHR_ACCEPTANCE_SCOPE
   || 'full';
-const acceptanceScope = ['full', 'pages', 'arena-timer', 'network'].includes(requestedAcceptanceScope)
+const acceptanceScope = ['full', 'pages', 'arena-timer', 'network', 'regions'].includes(requestedAcceptanceScope)
   ? requestedAcceptanceScope
   : 'full';
+// Preserve each independently-runnable acceptance scope. The canonical report
+// remains the most recent run for quick inspection, while a scoped copy keeps
+// a six-region proof from being overwritten by the longer full regression.
+const scopedReportPath = path.join(evidenceDirectory, `acceptance-report-${acceptanceScope}.json`);
 const requiredPortraitViewports = [
   { id: '375x667', width: 375, height: 667 },
   { id: '390x844', width: 390, height: 844 },
@@ -902,6 +906,81 @@ async function driveJoystickToLogicalPoint(cdp, page, joystick, target, label, a
   throw new Error(`FAIL_VERTICAL_SLICE_ROUTE_${label}: target=${JSON.stringify(target)} final=${JSON.stringify(finalPosition)} bestDistance=${bestDistance}`);
 }
 
+/**
+ * A real touch traversal through every production progression region.  The
+ * checkpoints intentionally sit well inside the 3-cell-wide theme rings, so
+ * an origin-rebase boundary cannot be mistaken for a successful visit.  Each
+ * assertion joins the live theme id, its mapped visual district, and an
+ * imported landmark from the active Cocos cell; no test code changes a region
+ * or instantiates an environment node.
+ */
+async function verifyProgressionRegions(cdp, page, canvasRect) {
+  const route = [
+    { id: 'bedroom', name: '卧室杂物区', district: 'RESIDENTIAL', landmark: 'ResidentialHouseWest', distance: 0 },
+    { id: 'warehouse', name: '废弃仓库区', district: 'WAREHOUSE', landmark: 'WarehouseContainerWest', distance: 172 },
+    { id: 'supermarket', name: '生鲜超市区', district: 'SUPERMARKET', landmark: 'SupermarketBuilding', distance: 364 },
+    { id: 'parking', name: '露天停车场', district: 'PARKING', landmark: 'ParkingSedanWest', distance: 556 },
+    { id: 'construction', name: '施工工地', district: 'CONSTRUCTION', landmark: 'ConstructionBulldozer', distance: 748 },
+    { id: 'city', name: '未来都市区', district: 'DOWNTOWN', landmark: 'DowntownShopWest', distance: 940 },
+  ];
+  const captures = [];
+  const initial = await readRuntimeSnapshot(page);
+  const joystickCenter = pointForVisibleNode(canvasRect, initial, initial.ui?.runtimeHUD?.joystick, 'REGION_JOYSTICK');
+  const joystick = {
+    ...joystickCenter,
+    // The lower-right control can be close to the canvas edge in a tall phone
+    // frame. Derive the valid drag distance from its live screen position;
+    // never send an out-of-frame coordinate to CDP.
+    maxOffsetX: Math.min(120, canvasRect.width - (joystickCenter.x - canvasRect.left) - 3),
+    maxOffsetY: Math.min(120, canvasRect.top + canvasRect.height - joystickCenter.y - 3),
+  };
+  const start = getLogicalPlayerPosition(initial);
+  let latest = initial;
+
+  for (const checkpoint of route) {
+    const travelledBefore = -(getLogicalPlayerPosition(latest).z - start.z);
+    if (travelledBefore < checkpoint.distance) {
+      await beginTouchJoystick(cdp, joystick.x, joystick.y, joystick.x, joystick.y - joystick.maxOffsetY);
+      const deadline = Date.now() + 38_000;
+      let travelled = travelledBefore;
+      while (travelled < checkpoint.distance && Date.now() < deadline) {
+        await page.waitForTimeout(400);
+        latest = await readRuntimeSnapshot(page);
+        validateInfiniteWorldSnapshot(latest);
+        travelled = -(getLogicalPlayerPosition(latest).z - start.z);
+      }
+      await releaseTouchJoystick(cdp);
+      await page.waitForTimeout(500);
+      latest = await readRuntimeSnapshot(page);
+      const releasedDistance = -(getLogicalPlayerPosition(latest).z - start.z);
+      assert(releasedDistance >= checkpoint.distance,
+        `FAIL_REGION_TRAVEL_${checkpoint.id.toUpperCase()}: travelled ${releasedDistance.toFixed(2)}m, expected ${checkpoint.distance}m`);
+      assert(Math.hypot(latest.machine.velocity.x, latest.machine.velocity.z) < 0.06,
+        `FAIL_REGION_RELEASE_${checkpoint.id.toUpperCase()}: ${JSON.stringify(latest.machine.velocity)}`);
+    }
+
+    const streaming = validateInfiniteWorldSnapshot(latest);
+    assert(latest.world?.currentRegion === checkpoint.id && streaming.currentRegion === checkpoint.id,
+      `FAIL_REGION_THEME_${checkpoint.id.toUpperCase()}: ${JSON.stringify({ world: latest.world, streaming })}`);
+    assert(streaming.currentRegionName === checkpoint.name,
+      `FAIL_REGION_NAME_${checkpoint.id.toUpperCase()}: ${JSON.stringify(streaming)}`);
+    assert(streaming.currentDistrictKind === checkpoint.district,
+      `FAIL_REGION_DISTRICT_${checkpoint.id.toUpperCase()}: ${JSON.stringify(streaming)}`);
+    assert(Array.isArray(streaming.visualDiagnostics)
+      && streaming.visualDiagnostics.some((entry) => entry?.name === checkpoint.landmark),
+    `FAIL_REGION_LANDMARK_${checkpoint.id.toUpperCase()}: expected ${checkpoint.landmark}, actual=${JSON.stringify(streaming.visualDiagnostics)}`);
+    const directory = path.join(evidenceDirectory, 'regions');
+    mkdirSync(directory, { recursive: true });
+    const screenshot = path.join(directory, `region-${checkpoint.id}.png`);
+    await page.screenshot({ path: screenshot });
+    captures.push({ ...checkpoint, screenshot, travelled: -(getLogicalPlayerPosition(latest).z - start.z) });
+  }
+
+  assert(latest.world?.streaming?.rebaseCount > 0,
+    `FAIL_REGION_ROUTE_REBASE: ${JSON.stringify(latest.world?.streaming)}`);
+  return { captures, start, final: getLogicalPlayerPosition(latest), rebaseCount: latest.world.streaming.rebaseCount };
+}
+
 async function runPortraitCase(browser, baseUrl, viewport, report) {
   const context = await browser.newContext({ viewport: { width: viewport.width, height: viewport.height }, hasTouch: true, isMobile: true });
   const page = await context.newPage();
@@ -942,6 +1021,19 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
       if (acceptanceScope === 'arena-timer') {
         report.arenaTimer = await verifyArenaTimerExpiry(cdp, page, canvasRect);
         assert(runtimeErrors.length === 0, `Runtime console errors after timer expiry: ${runtimeErrors.join(' | ')}`);
+        return;
+      }
+      if (acceptanceScope === 'regions') {
+        const startButton = snapshot.ui?.start;
+        const start = pointForVisibleNode(canvasRect, snapshot, startButton, 'REGION_HOME_START');
+        await dispatchTouchTap(cdp, start.x, start.y);
+        await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'MODE_SELECT', undefined, { timeout: 5000 });
+        const mode = await readRuntimeSnapshot(page);
+        const endless = pointForVisibleNode(canvasRect, mode, mode.ui?.modeEndless, 'REGION_MODE_ENDLESS');
+        await dispatchTouchTap(cdp, endless.x, endless.y);
+        await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'PLAYING', undefined, { timeout: 5000 });
+        report.regions = await verifyProgressionRegions(cdp, page, canvasRect);
+        assert(runtimeErrors.length === 0, `Runtime console errors after six-region touch traversal: ${runtimeErrors.join(' | ')}`);
         return;
       }
       report.homeSkin = await verifyHomeSkin(cdp, page, canvasRect);
@@ -1283,6 +1375,7 @@ const report = {
   arena: null,
   arenaTimer: null,
   network: null,
+  regions: null,
   consoleErrors: [],
   failures: [],
 };
@@ -1306,7 +1399,7 @@ try {
     : `http://127.0.0.1:${address.port}/`;
   browser = await chromium.launch({ headless: true, args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-webgl'] });
 
-  const targetViewports = acceptanceScope === 'pages' || acceptanceScope === 'arena-timer' || acceptanceScope === 'network'
+  const targetViewports = acceptanceScope === 'pages' || acceptanceScope === 'arena-timer' || acceptanceScope === 'network' || acceptanceScope === 'regions'
     ? requiredPortraitViewports.filter((viewport) => viewport.id === '390x844')
     : requiredPortraitViewports;
   for (const viewport of targetViewports) {
@@ -1324,6 +1417,9 @@ try {
   if (browser) await browser.close();
   if (server) await new Promise((resolve) => server.close(resolve));
   await stopNetworkProbeServer(networkProbeServer);
-  writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
+  const serializedReport = `${JSON.stringify(report, null, 2)}\n`;
+  writeFileSync(reportPath, serializedReport, 'utf8');
+  writeFileSync(scopedReportPath, serializedReport, 'utf8');
   console.log(`[acceptance:v2] Report: ${reportPath}`);
+  console.log(`[acceptance:v2] Scoped report: ${scopedReportPath}`);
 }

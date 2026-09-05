@@ -9,7 +9,7 @@ import { ObjectPool } from '../core/ObjectPool';
 import { eventBus } from '../core/EventBus';
 import { CompressibleObject } from '../gameplay/CompressibleObject';
 import { CellItemGenerator, IChunkSpawnItem } from './ChunkConfig';
-import { DistrictKind, DistrictTemplate, getDistrictTemplateForCell } from './DistrictTemplates';
+import { DistrictKind, DistrictTemplate, getDistrictTemplateForRegion } from './DistrictTemplates';
 import { DynamicVehicle } from './DynamicVehicle';
 import { WorldArtKind, WorldArtLibrary } from './WorldArtLibrary';
 
@@ -50,10 +50,11 @@ class InfiniteWorldCell {
     public readonly coord: WorldCellCoord,
     public readonly node: Node,
     public readonly theme: IRegionThemeConfig,
+    district: DistrictTemplate,
     private readonly art: WorldArtLibrary,
     private readonly cellSize: number,
   ) {
-    this.district = getDistrictTemplateForCell(coord.x, coord.z);
+    this.district = district;
     this.buildEnvironment();
   }
 
@@ -189,6 +190,11 @@ class InfiniteWorldCell {
   private populateDynamicTraffic(objectPool: ObjectPool<CompressibleObject>, logicalOrigin: Readonly<Vec3>): void {
     const dynamicType: 'car' | 'delivery_van' | 'garbage_truck' | null = (() => {
       switch (this.district.kind) {
+        // The opening bedroom region is now deliberately mapped to the
+        // residential district.  Keep its visible road alive with a real
+        // sedan instead of accidentally removing all dynamic traffic when
+        // region and district semantics are kept consistent.
+        case 'RESIDENTIAL': return 'car';
         case 'SUPERMARKET': return 'delivery_van';
         case 'WAREHOUSE': return 'garbage_truck';
         case 'PARKING': return 'car';
@@ -708,14 +714,23 @@ export class InfiniteWorldManager extends Component {
       || this.currentTheme.name;
   }
 
+  /** The player-facing progression region, for example “废弃仓库区”. */
+  public getCurrentRegionName(): string {
+    return this.currentTheme.name;
+  }
+
   public getSnapshot(): Record<string, unknown> {
+    const currentCell = this.activeCells.get(cellKey({ x: this.currentCell.x, z: this.currentCell.z }));
     return {
       mode: '2D_GRID',
       cellSize: InfiniteWorldManager.CELL_SIZE,
       activeCellCount: this.activeCells.size,
       expectedActiveCellCount: InfiniteWorldManager.ACTIVE_CELL_COUNT,
       currentCell: { x: this.currentCell.x, z: this.currentCell.z },
+      currentRegion: this.currentTheme.id,
+      currentRegionName: this.getCurrentRegionName(),
       currentDistrict: this.getCurrentDistrictName(),
+      currentDistrictKind: currentCell?.district.kind || null,
       logicalOrigin: { x: this.logicalOrigin.x, z: this.logicalOrigin.z },
       rebaseCount: this.rebaseCount,
       // Do not spread Map.values(): Cocos' ES5 build transform emits a single
@@ -747,10 +762,11 @@ export class InfiniteWorldManager extends Component {
       logicalCenterZ - this.logicalOrigin.z,
     );
     const theme = this.themeFor(coord);
-    const cell = new InfiniteWorldCell(coord, cellNode, theme, this.artLibrary, InfiniteWorldManager.CELL_SIZE);
+    const district = getDistrictTemplateForRegion(theme.id, coord.x, coord.z);
+    const cell = new InfiniteWorldCell(coord, cellNode, theme, district, this.artLibrary, InfiniteWorldManager.CELL_SIZE);
     const stableIndex = positiveMod(coord.x * 73856093 ^ coord.z * 19349663, 2147483647);
     cell.populate(
-      CellItemGenerator.generateCellItems(theme, coord.x, coord.z, stableIndex, InfiniteWorldManager.CELL_SIZE),
+      CellItemGenerator.generateCellItems(theme, coord.x, coord.z, stableIndex, InfiniteWorldManager.CELL_SIZE, district),
       this.objectPool,
       this.logicalOrigin,
     );
