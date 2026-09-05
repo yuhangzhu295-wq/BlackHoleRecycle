@@ -31,11 +31,10 @@ function normalizedDisplayName(value) {
  * Genuine server authority for the reusable multiplayer arena core.
  *
  * The server alone owns sequenced player input, position, recyclable pickup
- * state, LV1-to-LV2 evolution, combat, dropped mass, respawn, and shields.
- * It is intentionally not wired into the production Cocos arena yet: the
- * current client must consume this schema for rendering and the reward ledger
- * must be persisted only after a server-finalized match before human matching
- * is advertised from the game UI.
+ * state, LV1-to-LV2 evolution, combat, dropped mass, respawn, shields, and
+ * final reward ledgers. The Cocos production route remains local by default;
+ * an explicit endpoint probe consumes this authority for rendering and
+ * settlement.
  */
 export class ArenaRoom extends Room {
   maxClients = MAX_CLIENTS;
@@ -47,12 +46,16 @@ export class ArenaRoom extends Room {
     this.setState(new ArenaState());
     this.state.durationMilliseconds = MATCH_DURATION_MILLISECONDS;
     this.state.phase = 'RUNNING';
+    this.state.finishReason = 'RUNNING';
     // Keep every public room readable and playable from the first player.
     // Human joins claim a concrete slot and replace only its server Bot; no
     // client ever fabricates roster entries or simulated bot mass locally.
     for (let slot = 0; slot < MAX_CLIENTS; slot += 1) this.spawnBot(slot);
     this.setSimulationInterval((deltaTime) => this.step(deltaTime), 50);
     this.onMessage('input', (client, payload) => this.acceptInput(client, payload));
+    this.onMessage('forfeit', (client) => {
+      if (this.state.players.has(client.sessionId)) this.finishMatch('FORFEIT');
+    });
   }
 
   onJoin(client, options) {
@@ -110,12 +113,7 @@ export class ArenaRoom extends Room {
     this.state.elapsedMilliseconds += deltaMilliseconds;
     if (this.state.elapsedMilliseconds >= this.state.durationMilliseconds) {
       this.state.elapsedMilliseconds = this.state.durationMilliseconds;
-      this.state.phase = 'FINISHED';
-      this.state.players.forEach((player) => {
-        player.inputX = 0;
-        player.inputY = 0;
-      });
-      this.broadcast('match_finished', { elapsedMilliseconds: this.state.elapsedMilliseconds });
+      this.finishMatch('TIME');
       return;
     }
     const deltaSeconds = deltaMilliseconds / 1000;
@@ -145,6 +143,34 @@ export class ArenaRoom extends Room {
     });
     this.updatePickupSuction(deltaSeconds);
     this.updateCombat();
+  }
+
+  finishMatch(reason = 'TIME') {
+    if (this.state.phase === 'FINISHED') return false;
+    this.state.phase = 'FINISHED';
+    this.state.finishReason = reason === 'FORFEIT' ? 'FORFEIT' : 'TIME';
+    const ordered = [...this.state.players.entries()]
+      .sort((left, right) => right[1].mass - left[1].mass || right[1].kills - left[1].kills || left[0].localeCompare(right[0]));
+    ordered.forEach(([_, player], index) => {
+      player.inputX = 0;
+      player.inputY = 0;
+      const massCoins = Math.floor(player.mass / 100);
+      const collectedCoins = player.collected * 2;
+      const eliminationCoins = player.kills * 20;
+      const survivalCoins = player.alive ? 10 : 0;
+      const placementCoins = Math.max(0, MAX_CLIENTS - index) * 3;
+      player.settlementMassCoins = massCoins;
+      player.settlementCollectedCoins = collectedCoins;
+      player.settlementEliminationCoins = eliminationCoins;
+      player.settlementSurvivalCoins = survivalCoins;
+      player.settlementPlacementCoins = placementCoins;
+      player.settlementCoins = massCoins + collectedCoins + eliminationCoins + survivalCoins + placementCoins;
+    });
+    this.broadcast('match_finished', {
+      elapsedMilliseconds: this.state.elapsedMilliseconds,
+      reason: this.state.finishReason,
+    });
+    return true;
   }
 
   spawnOpeningCluster() {

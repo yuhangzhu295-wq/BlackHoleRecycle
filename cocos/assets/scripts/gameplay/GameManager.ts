@@ -67,6 +67,8 @@ export class GameManager extends Component {
   /** Exists only after the explicit endpoint probe enters its visible arena route. */
   private networkArenaReplica: NetworkArenaReplica | null = null;
   private networkArenaProbeRequested: boolean = false;
+  /** Prevents duplicate account settlement when the final server snapshot is redelivered. */
+  private networkSettlementShown: boolean = false;
   /** Send the exact normalized joystick intent to a joined authoritative room at 20Hz. */
   private networkInputAccumulator: number = 0;
 
@@ -493,6 +495,7 @@ export class GameManager extends Component {
     this.setV2HomeVisible(false);
     this.gameState = 'NETWORK_ARENA';
     this.isPaused = false;
+    this.networkSettlementShown = false;
     this.totalAbsorbedCount = 0;
     this.absorbedTierCounts = {};
     this.score = 0;
@@ -540,7 +543,11 @@ export class GameManager extends Component {
   }
 
   public returnToHome(): void {
+    if (this.networkArenaClient.status === 'CONNECTED' || this.networkArenaClient.status === 'CONNECTING') {
+      void this.networkArenaClient.leave();
+    }
     this.arenaMatchManager?.stopMatch();
+    this.networkSettlementShown = false;
     this.clearNetworkArenaReplica();
     this.infiniteWorldManager?.setGameplayObjectsVisible(true);
     this.isPaused = false;
@@ -559,10 +566,17 @@ export class GameManager extends Component {
       this.gameState === 'NETWORK_ARENA'
       || (this.gameState === 'PAUSED' && this.pausedGameplayState === 'NETWORK_ARENA')
     )) {
-      // A server-finished reward ledger is not implemented yet, so this
-      // button truthfully leaves the opt-in network probe instead of creating
-      // a local settlement or granting a client-side reward.
-      this.returnToHome();
+      const snapshot = this.networkArenaClient.snapshot;
+      if (snapshot?.phase === 'FINISHED') {
+        this.showNetworkArenaSettlement(this.toNetworkArenaSnapshot(snapshot));
+      } else if (this.networkArenaClient.requestForfeit()) {
+        this.isPaused = false;
+        this.gameState = 'NETWORK_ARENA';
+        this.setPlayerSimulationPaused(false);
+        this.hud?.showScreen('Arena');
+      } else {
+        this.returnToHome();
+      }
       return;
     }
     if (this.lastSessionMode === 'ARENA' && (
@@ -621,6 +635,20 @@ export class GameManager extends Component {
     // Saving here makes the visible result a genuine account change, while its
     // single-claim guard prevents duplicate coins if the page is reopened.
     const reward = this.arenaMatchManager?.claimSettlementReward() || snapshot.settlementReward;
+    if (reward.coins > 0) this.currentCoins = saveService.addCoins(reward.coins);
+    this.hud?.updateArenaSettlement(snapshot, reward);
+    this.hud?.showScreen('Settlement');
+  }
+
+  private showNetworkArenaSettlement(snapshot: ArenaMatchSnapshot): void {
+    const canSettle = this.gameState === 'NETWORK_ARENA'
+      || (this.gameState === 'PAUSED' && this.pausedGameplayState === 'NETWORK_ARENA');
+    if (this.networkSettlementShown || !canSettle) return;
+    this.networkSettlementShown = true;
+    this.gameState = 'SETTLEMENT';
+    this.isPaused = true;
+    this.setPlayerSimulationPaused(true);
+    const reward = snapshot.settlementReward;
     if (reward.coins > 0) this.currentCoins = saveService.addCoins(reward.coins);
     this.hud?.updateArenaSettlement(snapshot, reward);
     this.hud?.showScreen('Settlement');
@@ -977,7 +1005,8 @@ export class GameManager extends Component {
             visibleObjectCount: this.infiniteWorldManager?.getVisibleObjectCount() || 0,
             streaming: this.infiniteWorldManager?.getSnapshot() || null,
           },
-          arena: this.gameState === 'NETWORK_ARENA' && this.networkArenaClient.snapshot
+          arena: this.networkArenaClient.snapshot
+            && (this.gameState === 'NETWORK_ARENA' || this.networkSettlementShown)
             ? this.toNetworkArenaSnapshot(this.networkArenaClient.snapshot)
             : this.arenaMatchManager?.getSnapshot() || null,
           // This is copied from the actual Colyseus room callback. QA receives
@@ -1085,14 +1114,16 @@ export class GameManager extends Component {
       })),
       botStates: {},
       eliminationCount: ordered.reduce((total, player) => total + player.kills, 0),
-      reason: snapshot.phase === 'FINISHED' ? 'TIME' : 'RUNNING',
+      reason: snapshot.phase === 'FINISHED'
+        ? snapshot.finishReason === 'FORFEIT' ? 'FORFEIT' : 'TIME'
+        : 'RUNNING',
       settlementReward: {
-        coins: 0,
-        massCoins: 0,
-        collectedCoins: 0,
-        eliminationCoins: 0,
-        survivalCoins: 0,
-        placementCoins: 0,
+        coins: local?.settlementCoins || 0,
+        massCoins: local?.settlementMassCoins || 0,
+        collectedCoins: local?.settlementCollectedCoins || 0,
+        eliminationCoins: local?.settlementEliminationCoins || 0,
+        survivalCoins: local?.settlementSurvivalCoins || 0,
+        placementCoins: local?.settlementPlacementCoins || 0,
       },
     };
   }
@@ -1175,7 +1206,11 @@ export class GameManager extends Component {
           // arena simulation. The server snapshot is the only source of
           // movement, intake, evolution, combat, respawn and leaderboard.
           const snapshot = this.networkArenaClient.snapshot;
-          if (snapshot) this.hud?.updateArena(this.toNetworkArenaSnapshot(snapshot));
+          if (snapshot) {
+            const arenaSnapshot = this.toNetworkArenaSnapshot(snapshot);
+            if (snapshot.phase === 'FINISHED') this.showNetworkArenaSettlement(arenaSnapshot);
+            else this.hud?.updateArena(arenaSnapshot);
+          }
         } else {
           // ArenaMatchManager performs the same suction FSM with an explicit
           // owner per object, then resolves bots, gravity pull and respawn.

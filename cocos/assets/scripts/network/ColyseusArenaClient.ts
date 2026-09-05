@@ -28,6 +28,12 @@ export interface AuthoritativeArenaPlayer {
   readonly alive: boolean;
   readonly respawnMilliseconds: number;
   readonly shieldMilliseconds: number;
+  readonly settlementCoins: number;
+  readonly settlementMassCoins: number;
+  readonly settlementCollectedCoins: number;
+  readonly settlementEliminationCoins: number;
+  readonly settlementSurvivalCoins: number;
+  readonly settlementPlacementCoins: number;
 }
 
 export interface AuthoritativeArenaPickup {
@@ -42,6 +48,7 @@ export interface AuthoritativeArenaPickup {
 
 export interface AuthoritativeArenaSnapshot {
   readonly phase: string;
+  readonly finishReason: string;
   readonly elapsedMilliseconds: number;
   /** Server-declared match duration; the client may display it but cannot alter it. */
   readonly durationMilliseconds: number;
@@ -63,6 +70,7 @@ type ArenaStateMap = {
 
 type ArenaStateLike = {
   phase?: unknown;
+  finishReason?: unknown;
   elapsedMilliseconds?: unknown;
   durationMilliseconds?: unknown;
   players?: ArenaStateMap;
@@ -84,6 +92,12 @@ type ArenaPlayerLike = {
   alive?: unknown;
   respawnMilliseconds?: unknown;
   shieldMilliseconds?: unknown;
+  settlementCoins?: unknown;
+  settlementMassCoins?: unknown;
+  settlementCollectedCoins?: unknown;
+  settlementEliminationCoins?: unknown;
+  settlementSurvivalCoins?: unknown;
+  settlementPlacementCoins?: unknown;
 };
 
 type ArenaPickupLike = {
@@ -194,6 +208,13 @@ export class ColyseusArenaClient {
     return message;
   }
 
+  /** Requests a server-authoritative early finish from the visible settle action. */
+  public requestForfeit(): boolean {
+    if (this.status !== 'CONNECTED' || !this.room) return false;
+    this.room.send('forfeit');
+    return true;
+  }
+
   public async leave(): Promise<void> {
     const room = this.room;
     this.room = null;
@@ -229,6 +250,12 @@ export class ColyseusArenaClient {
         alive: bool(player.alive, `players.${id}.alive`),
         respawnMilliseconds: finite(player.respawnMilliseconds, `players.${id}.respawnMilliseconds`),
         shieldMilliseconds: finite(player.shieldMilliseconds, `players.${id}.shieldMilliseconds`),
+        settlementCoins: finite(player.settlementCoins, `players.${id}.settlementCoins`),
+        settlementMassCoins: finite(player.settlementMassCoins, `players.${id}.settlementMassCoins`),
+        settlementCollectedCoins: finite(player.settlementCollectedCoins, `players.${id}.settlementCollectedCoins`),
+        settlementEliminationCoins: finite(player.settlementEliminationCoins, `players.${id}.settlementEliminationCoins`),
+        settlementSurvivalCoins: finite(player.settlementSurvivalCoins, `players.${id}.settlementSurvivalCoins`),
+        settlementPlacementCoins: finite(player.settlementPlacementCoins, `players.${id}.settlementPlacementCoins`),
       } as const;
     });
     const pickups = entries(state.pickups, 'pickups').map(([id, rawPickup]) => {
@@ -245,6 +272,7 @@ export class ColyseusArenaClient {
     });
     return {
       phase: text(state.phase, 'phase'),
+      finishReason: text(state.finishReason, 'finishReason'),
       elapsedMilliseconds: finite(state.elapsedMilliseconds, 'elapsedMilliseconds'),
       durationMilliseconds: finite(state.durationMilliseconds, 'durationMilliseconds'),
       localSessionId,

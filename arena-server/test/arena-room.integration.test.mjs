@@ -48,6 +48,7 @@ test('two Colyseus clients receive authoritative movement, LV2 evolution and T2 
   const server = startServer();
   let firstRoom = null;
   let secondRoom = null;
+  let finishEvent = null;
   try {
     await waitForHealth();
     const firstClient = new Client(baseUrl);
@@ -61,6 +62,8 @@ test('two Colyseus clients receive authoritative movement, LV2 evolution and T2 
     secondRoom.onMessage('pickup_absorbed', () => {});
     firstRoom.onMessage('player_defeated', () => {});
     secondRoom.onMessage('player_defeated', () => {});
+    firstRoom.onMessage('match_finished', (message) => { finishEvent = message; });
+    secondRoom.onMessage('match_finished', () => {});
 
     await sleep(160);
     assert.equal(firstRoom.state.players.size, 8);
@@ -139,6 +142,23 @@ test('two Colyseus clients receive authoritative movement, LV2 evolution and T2 
     const respawnedVictim = secondRoom.state.players.get(secondRoom.sessionId);
     assert.equal(respawnedVictim.alive, true);
     assert.ok(respawnedVictim.shieldMilliseconds > 0, 'Expected a real respawn protection interval.');
+
+    // The visible settle action requests an authoritative early finish. The
+    // room computes and replicates the complete reward ledger; the client does
+    // not derive or mutate any of these values locally.
+    firstRoom.send('forfeit');
+    await sleep(120);
+    assert.equal(secondRoom.state.phase, 'FINISHED');
+    assert.equal(secondRoom.state.finishReason, 'FORFEIT');
+    assert.deepEqual(finishEvent, { elapsedMilliseconds: secondRoom.state.elapsedMilliseconds, reason: 'FORFEIT' });
+    const settled = secondRoom.state.players.get(firstRoom.sessionId);
+    assert.ok(settled.settlementCoins > 0, 'Expected a server-finalized reward ledger.');
+    assert.equal(settled.settlementCoins,
+      settled.settlementMassCoins
+      + settled.settlementCollectedCoins
+      + settled.settlementEliminationCoins
+      + settled.settlementSurvivalCoins
+      + settled.settlementPlacementCoins);
     assert.match(server.readOutput(), /listening/);
   } finally {
     await Promise.allSettled([firstRoom?.leave(), secondRoom?.leave()]);

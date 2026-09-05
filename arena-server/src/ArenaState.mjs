@@ -20,6 +20,12 @@ export const ArenaPlayerState = schema({
   alive: t.boolean().default(true),
   respawnMilliseconds: t.uint16().default(0),
   shieldMilliseconds: t.uint16().default(3000),
+  settlementCoins: t.uint32().default(0),
+  settlementMassCoins: t.uint32().default(0),
+  settlementCollectedCoins: t.uint32().default(0),
+  settlementEliminationCoins: t.uint32().default(0),
+  settlementSurvivalCoins: t.uint32().default(0),
+  settlementPlacementCoins: t.uint32().default(0),
 }, 'ArenaPlayerState');
 
 /** A server-owned recyclable; clients never grant mass or change this state. */
@@ -37,6 +43,7 @@ export const ArenaState = schema({
   elapsedMilliseconds: t.uint32().default(0),
   /** The server is the only owner of this clock and match-completion boundary. */
   durationMilliseconds: t.uint32().default(180000),
+  finishReason: t.string().default('RUNNING'),
   players: t.map(ArenaPlayerState),
   pickups: t.map(ArenaPickupState),
 }, 'ArenaState');

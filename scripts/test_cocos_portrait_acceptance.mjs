@@ -363,7 +363,52 @@ async function verifyNetworkProbe(cdp, page, canvasRect) {
   }, undefined, { timeout: 5_000 });
   const after = await readRuntimeSnapshot(page);
   const localAfter = after.network.snapshot.players.find((player) => player.id === after.network.snapshot.localSessionId);
-  return { ...after.network, inputForwarding: { before: localBefore, after: localAfter } };
+
+  // Finish through the same visible pause/settle controls used by a player.
+  // The first tap sends a real `forfeit` message; the next server snapshot
+  // drives GameManager's one-shot settlement and persists only its ledger.
+  const pause = pointForVisibleNode(canvasRect, after, after.ui?.arenaHUD?.pauseButton, 'NETWORK_ARENA_PAUSE');
+  await dispatchTouchTap(cdp, pause.x, pause.y);
+  await page.waitForFunction(() => {
+    const actual = window.__BHR_QA__.snapshot();
+    return actual.gameState === 'PAUSED' && actual.ui?.formalPages?.pause?.active === true;
+  }, undefined, { timeout: 5_000 });
+  const paused = await readRuntimeSnapshot(page);
+  const settle = pointForVisibleNode(canvasRect, paused, paused.ui?.formalPages?.pauseSettle, 'NETWORK_ARENA_SETTLE');
+  await dispatchTouchTap(cdp, settle.x, settle.y);
+  try {
+    await page.waitForFunction(() => {
+      const actual = window.__BHR_QA__.snapshot();
+      return actual.gameState === 'SETTLEMENT'
+        && actual.uiScreen === 'Settlement'
+        && actual.network?.snapshot?.phase === 'FINISHED'
+        && actual.network?.snapshot?.finishReason === 'FORFEIT';
+    }, undefined, { timeout: 8_000 });
+  } catch (error) {
+    const actual = await readRuntimeSnapshot(page);
+    throw new Error(`FAIL_COCOS_COLYSEUS_SETTLEMENT: ${JSON.stringify({
+      pause,
+      settle,
+      gameState: actual.gameState,
+      uiScreen: actual.uiScreen,
+      network: actual.network,
+      arena: actual.arena,
+      error: String(error),
+    })}`);
+  }
+  const settled = await readRuntimeSnapshot(page);
+  assert(settled.arena?.reason === 'FORFEIT',
+    `FAIL_COCOS_COLYSEUS_SETTLEMENT_REASON: ${JSON.stringify(settled.arena)}`);
+  assert((settled.arena?.settlementReward?.coins || 0) > 0,
+    `FAIL_COCOS_COLYSEUS_SETTLEMENT_REWARD: ${JSON.stringify(settled.arena?.settlementReward)}`);
+  await page.screenshot({ path: path.join(evidenceDirectory, 'portrait-390x844-network-settlement.png') });
+  return {
+    ...settled.network,
+    inputForwarding: { before: localBefore, after: localAfter },
+    settlement: settled.arena,
+    pause,
+    settle,
+  };
 }
 
 /**
