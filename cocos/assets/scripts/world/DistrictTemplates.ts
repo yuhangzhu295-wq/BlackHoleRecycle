@@ -54,9 +54,9 @@ const DISTRICTS: Readonly<Record<DistrictKind, DistrictTemplate>> = {
     label: '生鲜超市',
     resourceClusters: [
       { id: 'delivery-boxes', label: '卸货纸箱堆', center: [-13, -13], preferredTypes: ['cardboard_box', 'cardboard_box', 'paint_bucket'] },
-      { id: 'cart-return-litter', label: '入口散落物', center: [13, -12], preferredTypes: ['water_bottle', 'soda_can', 'book_stack'] },
-      { id: 'produce-discard', label: '生鲜遗留物', center: [-13, 13], preferredTypes: ['apple', 'apple', 'trash_bag'] },
-      { id: 'parking-recycling', label: '停车区回收物', center: [14, 14], preferredTypes: ['battery', 'water_bottle', 'cardboard_box'] },
+      { id: 'cart-return-litter', label: '入口散落物', center: [13, -12], preferredTypes: ['water_bottle', 'soda_can', 'book_stack', 'chair'] },
+      { id: 'produce-discard', label: '生鲜遗留物', center: [-13, 13], preferredTypes: ['apple', 'apple', 'trash_bag', 'monitor'] },
+      { id: 'parking-recycling', label: '停车区回收物', center: [14, 14], preferredTypes: ['battery', 'water_bottle', 'cardboard_box', 'small_table'] },
     ],
   },
   WAREHOUSE: {
@@ -65,7 +65,7 @@ const DISTRICTS: Readonly<Record<DistrictKind, DistrictTemplate>> = {
     resourceClusters: [
       { id: 'pallet-boxes', label: '货运箱堆', center: [-14, -13], preferredTypes: ['cardboard_box', 'cardboard_box', 'crate'] },
       { id: 'loading-bay', label: '装卸区杂物', center: [13, -12], preferredTypes: ['paint_bucket', 'trash_bag', 'battery'] },
-      { id: 'shelf-spill', label: '货架旁散落物', center: [-13, 13], preferredTypes: ['book_stack', 'cardboard_box', 'tire'] },
+      { id: 'shelf-spill', label: '货架旁散落物', center: [-13, 13], preferredTypes: ['book_stack', 'cardboard_box', 'tire', 'chair', 'small_table', 'monitor'] },
       { id: 'container-yard', label: '集装箱场回收物', center: [14, 14], preferredTypes: ['crate', 'trash_bag', 'paint_bucket'] },
     ],
   },
@@ -73,30 +73,30 @@ const DISTRICTS: Readonly<Record<DistrictKind, DistrictTemplate>> = {
     kind: 'PARKING',
     label: '露天停车场',
     resourceClusters: [
-      { id: 'car-side-litter', label: '车侧散落物', center: [-13, -12], preferredTypes: ['water_bottle', 'soda_can', 'tire'] },
-      { id: 'charging-bay', label: '充电位杂物', center: [13, -13], preferredTypes: ['battery', 'battery', 'trash_bag'] },
-      { id: 'parking-corner', label: '停车场角落', center: [-13, 13], preferredTypes: ['cardboard_box', 'paint_bucket', 'tire'] },
-      { id: 'exit-recycling', label: '出口回收物', center: [13, 14], preferredTypes: ['soda_can', 'water_bottle', 'trash_bag'] },
+      { id: 'car-side-litter', label: '车侧散落物', center: [-13, -12], preferredTypes: ['water_bottle', 'soda_can', 'tire', 'shelf'] },
+      { id: 'charging-bay', label: '充电位杂物', center: [13, -13], preferredTypes: ['battery', 'battery', 'trash_bag', 'sofa'] },
+      { id: 'parking-corner', label: '停车场角落', center: [-13, 13], preferredTypes: ['cardboard_box', 'paint_bucket', 'tire', 'crate'] },
+      { id: 'exit-recycling', label: '出口回收物', center: [13, 14], preferredTypes: ['soda_can', 'water_bottle', 'trash_bag', 'shelf'] },
     ],
   },
   CONSTRUCTION: {
     kind: 'CONSTRUCTION',
     label: '施工工地',
     resourceClusters: [
-      { id: 'material-pile', label: '施工材料堆', center: [-13, -13], preferredTypes: ['crate', 'paint_bucket', 'cardboard_box'] },
+      { id: 'material-pile', label: '施工材料堆', center: [-13, -13], preferredTypes: ['crate', 'paint_bucket', 'cardboard_box', 'container'] },
       { id: 'barrier-side', label: '围挡旁杂物', center: [14, -12], preferredTypes: ['cone', 'trash_bag', 'battery'] },
       { id: 'tool-discard', label: '工具遗留物', center: [-13, 13], preferredTypes: ['tire', 'paint_bucket', 'battery'] },
-      { id: 'site-exit', label: '工地出口回收物', center: [13, 14], preferredTypes: ['cardboard_box', 'cone', 'trash_bag'] },
+      { id: 'site-exit', label: '工地出口回收物', center: [13, 14], preferredTypes: ['cardboard_box', 'cone', 'trash_bag', 'garbage_truck'] },
     ],
   },
   DOWNTOWN: {
     kind: 'DOWNTOWN',
     label: '商业都市区',
     resourceClusters: [
-      { id: 'storefront-recycling', label: '店前回收物', center: [-13, -13], preferredTypes: ['soda_can', 'water_bottle', 'book_stack'] },
-      { id: 'sidewalk-litter', label: '人行道散落物', center: [13, -12], preferredTypes: ['paper_ball', 'battery', 'trash_bag'] },
-      { id: 'alley-boxes', label: '后巷纸箱堆', center: [-13, 13], preferredTypes: ['cardboard_box', 'crate', 'paint_bucket'] },
-      { id: 'taxi-stand', label: '路边回收物', center: [13, 14], preferredTypes: ['soda_can', 'water_bottle', 'tire'] },
+      { id: 'storefront-recycling', label: '店前回收物', center: [-13, -13], preferredTypes: ['soda_can', 'water_bottle', 'book_stack', 'delivery_van'] },
+      { id: 'sidewalk-litter', label: '人行道散落物', center: [13, -12], preferredTypes: ['paper_ball', 'battery', 'trash_bag', 'car'] },
+      { id: 'alley-boxes', label: '后巷纸箱堆', center: [-13, 13], preferredTypes: ['cardboard_box', 'crate', 'paint_bucket', 'container'] },
+      { id: 'taxi-stand', label: '路边回收物', center: [13, 14], preferredTypes: ['soda_can', 'water_bottle', 'tire', 'car'] },
     ],
   },
 };

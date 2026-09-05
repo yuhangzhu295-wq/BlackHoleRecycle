@@ -25,7 +25,7 @@ const reportPath = path.join(evidenceDirectory, 'acceptance-report.json');
 const requestedAcceptanceScope = process.argv.find((argument) => argument.startsWith('--scope='))?.slice('--scope='.length)
   || process.env.BHR_ACCEPTANCE_SCOPE
   || 'full';
-const acceptanceScope = ['full', 'pages', 'arena-timer', 'network', 'regions'].includes(requestedAcceptanceScope)
+const acceptanceScope = ['full', 'pages', 'arena-timer', 'network', 'regions', 'progression'].includes(requestedAcceptanceScope)
   ? requestedAcceptanceScope
   : 'full';
 // Preserve each independently-runnable acceptance scope. The canonical report
@@ -853,8 +853,8 @@ async function verifyCardinalLongTravel(cdp, page, joystick, direction) {
  * joystick. The QA bridge is read-only: it supplies the live camera basis and
  * position so CDP can issue the same camera-relative touch a player would.
  */
-async function driveJoystickToLogicalPoint(cdp, page, joystick, target, label, arrivalRadius = 1.6) {
-  const deadline = Date.now() + 30000;
+async function driveJoystickToLogicalPoint(cdp, page, joystick, target, label, arrivalRadius = 1.6, timeoutMs = 30_000) {
+  const deadline = Date.now() + timeoutMs;
   let bestDistance = Number.POSITIVE_INFINITY;
   let finalSnapshot = await readRuntimeSnapshot(page);
   while (Date.now() < deadline) {
@@ -981,6 +981,121 @@ async function verifyProgressionRegions(cdp, page, canvasRect) {
   return { captures, start, final: getLogicalPlayerPosition(latest), rebaseCount: latest.world.streaming.rebaseCount };
 }
 
+/**
+ * Drives only the visible portrait joystick through the full five-level
+ * production progression. Each consumed item is a streamed, Creator-rendered
+ * `CompressibleObject`; the helper has no setter for level, mass, object
+ * state, region, or position. The interior checkpoints keep all 3×3 active
+ * cells in the intended district, so the record proves the progression
+ * resource semantics instead of merely crossing a themed border.
+ */
+async function verifyFiveLevelProgression(cdp, page, joystick) {
+  const stages = [
+    { level: 3, region: 'warehouse', district: 'WAREHOUSE', point: { x: 0, z: -235 }, part: 'CompressionChamber' },
+    { level: 4, region: 'supermarket', district: 'SUPERMARKET', point: { x: 0, z: -427 }, part: 'GravityWingLeft' },
+    { level: 5, region: 'parking', district: 'PARKING', point: { x: 0, z: -619 }, part: 'SingularityFrame' },
+  ];
+  const record = { levels: [], finalTier5Absorption: null };
+
+  const collectUntil = async (stage) => {
+    const deadline = Date.now() + 150_000;
+    const absorbed = [];
+    let latest = await readRuntimeSnapshot(page);
+    while (latest.machine.level < stage.level && Date.now() < deadline) {
+      const streaming = validateInfiniteWorldSnapshot(latest);
+      const prefix = `cluster_${stage.district}_`;
+      const origin = streaming.logicalOrigin;
+      const player = getLogicalPlayerPosition(latest);
+      const candidates = latest.objects
+        .filter((object) => object.state === 'IDLE'
+          && object.tier <= latest.machine.maxTier
+          && String(object.runtimeId || '').startsWith(prefix))
+        .map((object) => ({
+          ...object,
+          logicalX: object.x + origin.x,
+          logicalZ: object.z + origin.z,
+        }))
+        .sort((a, b) => Math.hypot(a.logicalX - player.x, a.logicalZ - player.z)
+          - Math.hypot(b.logicalX - player.x, b.logicalZ - player.z));
+      assert(candidates.length > 0,
+        `FAIL_FULL_PROGRESSION_NO_ELIGIBLE_${stage.region.toUpperCase()}: ${JSON.stringify({ machine: latest.machine, player, streaming, objects: latest.objects })}`);
+      const target = candidates[0];
+      const massBefore = latest.machine.mass;
+      await driveJoystickToLogicalPoint(cdp, page, joystick, { x: target.logicalX, z: target.logicalZ }, `LV${stage.level}_${target.type}`, Math.max(1.0, latest.machine.suctionRadius * 0.62));
+      await page.waitForTimeout(900);
+      latest = await readRuntimeSnapshot(page);
+      const disappeared = !latest.objects.some((object) => object.runtimeId === target.runtimeId && object.state === 'IDLE');
+      assert(disappeared || latest.machine.mass > massBefore,
+        `FAIL_FULL_PROGRESSION_NO_ABSORPTION_${stage.region.toUpperCase()}: ${JSON.stringify({ target, massBefore, latest: latest.machine })}`);
+      absorbed.push({ runtimeId: target.runtimeId, type: target.type, tier: target.tier, massBefore, massAfter: latest.machine.mass });
+    }
+    assert(latest.machine.level >= stage.level,
+      `FAIL_FULL_PROGRESSION_LEVEL_${stage.level}: ${JSON.stringify({ stage, machine: latest.machine, absorbed })}`);
+    const activeParts = latest.machine.visualMaterials
+      .filter((renderer) => renderer.active && String(renderer.path).includes(`MachineVisual_LV${stage.level}/`));
+    assert(activeParts.some((renderer) => String(renderer.path).includes(stage.part)
+      && renderer.slots?.every((slot) => slot.valid && slot.effect)),
+    `FAIL_FULL_PROGRESSION_VISUAL_LV${stage.level}: ${JSON.stringify(activeParts)}`);
+    record.levels.push({
+      ...stage,
+      mass: latest.machine.mass,
+      maxTier: latest.machine.maxTier,
+      absorbed,
+      activePart: stage.part,
+    });
+    return latest;
+  };
+
+  // The public opening tutorial supplies real T1 and T2 object clusters.
+  // Reuse it rather than injecting a test-only mass grant.
+  let latest = await driveJoystickToLogicalPoint(cdp, page, joystick, { x: 0, z: 5.2 }, 'FULL_PROGRESSION_T1', 1.6);
+  await page.waitForTimeout(3600);
+  latest = await readRuntimeSnapshot(page);
+  assert(latest.machine.level >= 2 && latest.machine.maxTier >= 2,
+    `FAIL_FULL_PROGRESSION_LV2: ${JSON.stringify(latest.machine)}`);
+  latest = await driveJoystickToLogicalPoint(cdp, page, joystick, { x: 0, z: -8 }, 'FULL_PROGRESSION_T2', 2.3);
+  await page.waitForTimeout(1400);
+  latest = await readRuntimeSnapshot(page);
+  assert((latest.session.absorbedTiers?.[2] || 0) > 0,
+    `FAIL_FULL_PROGRESSION_T2: ${JSON.stringify(latest.session?.absorbedTiers)}`);
+  record.levels.push({ level: 2, region: 'bedroom', district: 'RESIDENTIAL', mass: latest.machine.mass, maxTier: latest.machine.maxTier, absorbed: [], activePart: 'MagneticTurbineLeft' });
+
+  for (const stage of stages) {
+    latest = await driveJoystickToLogicalPoint(cdp, page, joystick, stage.point, `FULL_PROGRESSION_${stage.region.toUpperCase()}`, 3.2, 70_000);
+    await page.waitForTimeout(500);
+    latest = await readRuntimeSnapshot(page);
+    const streaming = validateInfiniteWorldSnapshot(latest);
+    assert(latest.world?.currentRegion === stage.region && streaming.currentDistrictKind === stage.district,
+      `FAIL_FULL_PROGRESSION_REGION_${stage.region.toUpperCase()}: ${JSON.stringify({ world: latest.world, streaming })}`);
+    latest = await collectUntil(stage);
+  }
+
+  // LV5 must consume an actual T5 city asset; a visual-only parked car or a
+  // synthetic mass total is not accepted as terminal progression evidence.
+  latest = await driveJoystickToLogicalPoint(cdp, page, joystick, { x: 0, z: -1003 }, 'FULL_PROGRESSION_CITY', 3.2, 70_000);
+  await page.waitForTimeout(500);
+  latest = await readRuntimeSnapshot(page);
+  const cityStream = validateInfiniteWorldSnapshot(latest);
+  assert(latest.world?.currentRegion === 'city' && cityStream.currentDistrictKind === 'DOWNTOWN',
+    `FAIL_FULL_PROGRESSION_CITY_REGION: ${JSON.stringify({ world: latest.world, cityStream })}`);
+  const tier5Before = latest.session.absorbedTiers?.[5] || 0;
+  const cityOrigin = cityStream.logicalOrigin;
+  const cityPlayer = getLogicalPlayerPosition(latest);
+  const tier5 = latest.objects
+    .filter((object) => object.state === 'IDLE' && object.tier === 5 && String(object.runtimeId || '').startsWith('cluster_DOWNTOWN_'))
+    .map((object) => ({ ...object, logicalX: object.x + cityOrigin.x, logicalZ: object.z + cityOrigin.z }))
+    .sort((a, b) => Math.hypot(a.logicalX - cityPlayer.x, a.logicalZ - cityPlayer.z)
+      - Math.hypot(b.logicalX - cityPlayer.x, b.logicalZ - cityPlayer.z))[0];
+  assert(tier5, `FAIL_FULL_PROGRESSION_CITY_T5_MISSING: ${JSON.stringify(latest.objects)}`);
+  await driveJoystickToLogicalPoint(cdp, page, joystick, { x: tier5.logicalX, z: tier5.logicalZ }, `FULL_PROGRESSION_T5_${tier5.type}`, Math.max(1.5, latest.machine.suctionRadius * 0.62));
+  await page.waitForTimeout(1500);
+  latest = await readRuntimeSnapshot(page);
+  assert((latest.session.absorbedTiers?.[5] || 0) > tier5Before,
+    `FAIL_FULL_PROGRESSION_T5_ABSORPTION: ${JSON.stringify({ tier5, before: tier5Before, after: latest.session?.absorbedTiers, machine: latest.machine })}`);
+  record.finalTier5Absorption = { runtimeId: tier5.runtimeId, type: tier5.type, mass: latest.machine.mass, absorbedTiers: latest.session.absorbedTiers };
+  return record;
+}
+
 async function runPortraitCase(browser, baseUrl, viewport, report) {
   const context = await browser.newContext({ viewport: { width: viewport.width, height: viewport.height }, hasTouch: true, isMobile: true });
   const page = await context.newPage();
@@ -1034,6 +1149,28 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
         await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'PLAYING', undefined, { timeout: 5000 });
         report.regions = await verifyProgressionRegions(cdp, page, canvasRect);
         assert(runtimeErrors.length === 0, `Runtime console errors after six-region touch traversal: ${runtimeErrors.join(' | ')}`);
+        return;
+      }
+      if (acceptanceScope === 'progression') {
+        const startButton = snapshot.ui?.start;
+        const start = pointForVisibleNode(canvasRect, snapshot, startButton, 'FULL_PROGRESSION_HOME_START');
+        await dispatchTouchTap(cdp, start.x, start.y);
+        await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'MODE_SELECT', undefined, { timeout: 5000 });
+        const mode = await readRuntimeSnapshot(page);
+        const endless = pointForVisibleNode(canvasRect, mode, mode.ui?.modeEndless, 'FULL_PROGRESSION_MODE_ENDLESS');
+        await dispatchTouchTap(cdp, endless.x, endless.y);
+        await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'PLAYING', undefined, { timeout: 5000 });
+        const gameplay = await readRuntimeSnapshot(page);
+        const joystickCenter = pointForVisibleNode(canvasRect, gameplay, gameplay.ui?.runtimeHUD?.joystick, 'FULL_PROGRESSION_JOYSTICK');
+        const joystick = {
+          x: joystickCenter.x,
+          y: joystickCenter.y,
+          maxOffsetX: Math.min(120, canvasRect.width - (joystickCenter.x - canvasRect.left) - 3),
+          maxOffsetY: Math.min(120, canvasRect.top + canvasRect.height - joystickCenter.y - 3),
+        };
+        report.fullProgression = await verifyFiveLevelProgression(cdp, page, joystick);
+        await page.screenshot({ path: path.join(evidenceDirectory, 'portrait-390x844-lv5-city.png') });
+        assert(runtimeErrors.length === 0, `Runtime console errors after LV1-to-LV5 touch progression: ${runtimeErrors.join(' | ')}`);
         return;
       }
       report.homeSkin = await verifyHomeSkin(cdp, page, canvasRect);
@@ -1376,6 +1513,7 @@ const report = {
   arenaTimer: null,
   network: null,
   regions: null,
+  fullProgression: null,
   consoleErrors: [],
   failures: [],
 };
@@ -1399,7 +1537,7 @@ try {
     : `http://127.0.0.1:${address.port}/`;
   browser = await chromium.launch({ headless: true, args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-webgl'] });
 
-  const targetViewports = acceptanceScope === 'pages' || acceptanceScope === 'arena-timer' || acceptanceScope === 'network' || acceptanceScope === 'regions'
+  const targetViewports = acceptanceScope === 'pages' || acceptanceScope === 'arena-timer' || acceptanceScope === 'network' || acceptanceScope === 'regions' || acceptanceScope === 'progression'
     ? requiredPortraitViewports.filter((viewport) => viewport.id === '390x844')
     : requiredPortraitViewports;
   for (const viewport of targetViewports) {
