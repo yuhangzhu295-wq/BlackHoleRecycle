@@ -979,9 +979,14 @@ exports.methods = {
 
     await createSprite('Background', root, 720, 1280, 'db://assets/textures/home/mode_background.png');
     const back = await createImageButton('BtnBack', root, 104, 104, 'db://assets/textures/home/mode_back.png');
-    place(back, -286, 540, 104, 104);
-    const header = await createSprite('Header', root, 500, 116, 'db://assets/textures/home/mode_header.png');
-    place(header, 0, 530, 500, 116);
+    // Keep the back control fully inside the portrait safe area. The former
+    // x=-286 placed 22px of the 104px button outside the 720px design frame,
+    // which became a visibly clipped corner on 390px phones.
+    place(back, -238, 486, 104, 104);
+    const header = await createSprite('Header', root, 430, 100, 'db://assets/textures/home/mode_header.png');
+    // Leave a small top breathing room so the title artwork is not cropped by
+    // the fixed-width portrait viewport.
+    place(header, 24, 478, 430, 100);
 
     // The V2 mode contract deliberately presents only two real routes.  Do
     // not place locked legacy cards below them: that would imply unavailable
