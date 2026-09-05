@@ -68,6 +68,8 @@ test('two Colyseus clients receive authoritative movement, LV2 evolution and T2 
     await sleep(160);
     assert.equal(firstRoom.state.players.size, 8);
     assert.equal(secondRoom.state.players.size, 8);
+    assert.match(firstRoom.state.matchId, /^[0-9a-f-]{36}$/);
+    assert.equal(secondRoom.state.matchId, firstRoom.state.matchId);
     const connectedCompetitors = [...firstRoom.state.players.values()].filter((player) => player.connected);
     const botCompetitors = [...firstRoom.state.players.values()].filter((player) => player.isBot);
     assert.equal(connectedCompetitors.length, 2, 'Expected two actual SDK clients in the roster.');
@@ -150,7 +152,11 @@ test('two Colyseus clients receive authoritative movement, LV2 evolution and T2 
     await sleep(120);
     assert.equal(secondRoom.state.phase, 'FINISHED');
     assert.equal(secondRoom.state.finishReason, 'FORFEIT');
-    assert.deepEqual(finishEvent, { elapsedMilliseconds: secondRoom.state.elapsedMilliseconds, reason: 'FORFEIT' });
+    assert.deepEqual(finishEvent, {
+      elapsedMilliseconds: secondRoom.state.elapsedMilliseconds,
+      reason: 'FORFEIT',
+      matchId: secondRoom.state.matchId,
+    });
     const settled = secondRoom.state.players.get(firstRoom.sessionId);
     assert.ok(settled.settlementCoins > 0, 'Expected a server-finalized reward ledger.');
     assert.equal(settled.settlementCoins,

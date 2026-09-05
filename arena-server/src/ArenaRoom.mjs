@@ -1,5 +1,6 @@
 import { Room } from 'colyseus';
 import { ArenaPickupState, ArenaPlayerState, ArenaState } from './ArenaState.mjs';
+import { randomUUID } from 'node:crypto';
 
 const MAX_CLIENTS = 8;
 const ARENA_RADIUS_METERS = 44;
@@ -44,6 +45,7 @@ export class ArenaRoom extends Room {
 
   onCreate() {
     this.setState(new ArenaState());
+    this.state.matchId = randomUUID();
     this.state.durationMilliseconds = MATCH_DURATION_MILLISECONDS;
     this.state.phase = 'RUNNING';
     this.state.finishReason = 'RUNNING';
@@ -169,6 +171,7 @@ export class ArenaRoom extends Room {
     this.broadcast('match_finished', {
       elapsedMilliseconds: this.state.elapsedMilliseconds,
       reason: this.state.finishReason,
+      matchId: this.state.matchId,
     });
     return true;
   }

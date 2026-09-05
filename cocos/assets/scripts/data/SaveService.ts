@@ -12,6 +12,8 @@ export interface ISaveData {
   machineLevel: number;
   currentSkinId: string;
   unlockedSkins: string[];
+  /** Locally persisted idempotency keys for server-finalized arena rewards. */
+  claimedArenaSettlementIds: string[];
   metaUpgrades: {
     suctionRadius: number;
     moveSpeed: number;
@@ -64,6 +66,7 @@ export class SaveService {
       machineLevel: 1,
       currentSkinId: 'skin_classic',
       unlockedSkins: [...STARTER_SKIN_IDS],
+      claimedArenaSettlementIds: [],
       metaUpgrades: {
         suctionRadius: 0,
         moveSpeed: 0,
@@ -102,6 +105,9 @@ export class SaveService {
         this.data = {
           ...this.getDefaultData(),
           ...parsed,
+          claimedArenaSettlementIds: Array.isArray(parsed.claimedArenaSettlementIds)
+            ? parsed.claimedArenaSettlementIds
+            : [],
           metaUpgrades: { ...this.getDefaultData().metaUpgrades, ...(parsed.metaUpgrades || {}) },
           tasks: { ...this.getDefaultData().tasks, ...(parsed.tasks || {}) },
           settings: { ...this.getDefaultData().settings, ...(parsed.settings || {}) }
@@ -159,6 +165,24 @@ export class SaveService {
     this.data.coins += Math.round(Math.max(0, amount));
     this.save();
     return this.data.coins;
+  }
+
+  /**
+   * Applies one server-finalized arena reward exactly once per match id.
+   * This local idempotency boundary survives a page reload; production account
+   * storage must still mirror the same key before public matchmaking ships.
+   */
+  public claimArenaSettlement(matchId: string, amount: number): boolean {
+    if (!matchId || !Number.isSafeInteger(amount) || amount <= 0) return false;
+    const stored = Array.isArray(this.data.claimedArenaSettlementIds)
+      ? this.data.claimedArenaSettlementIds
+      : [];
+    if (stored.indexOf(matchId) >= 0) return false;
+    this.data.claimedArenaSettlementIds = stored.filter((id): id is string => typeof id === 'string');
+    this.data.claimedArenaSettlementIds.push(matchId);
+    this.data.coins += amount;
+    this.save();
+    return true;
   }
 
   public setMachineLevel(level: number): void {

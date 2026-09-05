@@ -69,6 +69,8 @@ export class GameManager extends Component {
   private networkArenaProbeRequested: boolean = false;
   /** Prevents duplicate account settlement when the final server snapshot is redelivered. */
   private networkSettlementShown: boolean = false;
+  /** Match id copied from the authoritative room for persistent idempotency. */
+  private networkArenaMatchId: string | null = null;
   /** Send the exact normalized joystick intent to a joined authoritative room at 20Hz. */
   private networkInputAccumulator: number = 0;
 
@@ -492,6 +494,7 @@ export class GameManager extends Component {
     this.arenaMatchManager.stopMatch();
     this.clearNetworkArenaReplica();
     this.lastSessionMode = 'ARENA';
+    this.networkArenaMatchId = initialSnapshot.matchId;
     this.setV2HomeVisible(false);
     this.gameState = 'NETWORK_ARENA';
     this.isPaused = false;
@@ -548,6 +551,7 @@ export class GameManager extends Component {
     }
     this.arenaMatchManager?.stopMatch();
     this.networkSettlementShown = false;
+    this.networkArenaMatchId = null;
     this.clearNetworkArenaReplica();
     this.infiniteWorldManager?.setGameplayObjectsVisible(true);
     this.isPaused = false;
@@ -649,7 +653,10 @@ export class GameManager extends Component {
     this.isPaused = true;
     this.setPlayerSimulationPaused(true);
     const reward = snapshot.settlementReward;
-    if (reward.coins > 0) this.currentCoins = saveService.addCoins(reward.coins);
+    if (reward.coins > 0 && this.networkArenaMatchId) {
+      saveService.claimArenaSettlement(this.networkArenaMatchId, reward.coins);
+      this.currentCoins = saveService.data.coins;
+    }
     this.hud?.updateArenaSettlement(snapshot, reward);
     this.hud?.showScreen('Settlement');
   }

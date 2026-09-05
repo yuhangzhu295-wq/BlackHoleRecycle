@@ -401,6 +401,8 @@ async function verifyNetworkProbe(cdp, page, canvasRect) {
     `FAIL_COCOS_COLYSEUS_SETTLEMENT_REASON: ${JSON.stringify(settled.arena)}`);
   assert((settled.arena?.settlementReward?.coins || 0) > 0,
     `FAIL_COCOS_COLYSEUS_SETTLEMENT_REWARD: ${JSON.stringify(settled.arena?.settlementReward)}`);
+  assert(settled.save?.coins === (after.save?.coins || 0) + settled.arena.settlementReward.coins,
+    `FAIL_COCOS_COLYSEUS_SETTLEMENT_NOT_SAVED: ${JSON.stringify({ before: after.save, after: settled.save, reward: settled.arena.settlementReward })}`);
   await page.screenshot({ path: path.join(evidenceDirectory, 'portrait-390x844-network-settlement.png') });
   return {
     ...settled.network,
