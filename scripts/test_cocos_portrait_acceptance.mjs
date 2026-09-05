@@ -273,21 +273,61 @@ async function verifyNetworkProbe(cdp, page, canvasRect) {
   assert(network.snapshot.pickups.length >= 16,
     `FAIL_COCOS_COLYSEUS_OPENING_PICKUPS: ${JSON.stringify(network.snapshot)}`);
 
-  // Begin the normal visible Endless route through the actual saved controls;
-  // this gives PlayerController a real joystick surface. The game root then
-  // forwards only its normalized input to the authoritative room.
+  // Enter the visible Arena route through the actual saved controls. In probe
+  // mode this must create the Cocos renderer-only replica rather than falling
+  // back to the local 1v7 authority or forwarding input while showing Endless.
   const home = await readRuntimeSnapshot(page);
   const start = pointForVisibleNode(canvasRect, home, home.ui?.start, 'NETWORK_HOME_START');
   await dispatchTouchTap(cdp, start.x, start.y);
   await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'MODE_SELECT', undefined, { timeout: 5_000 });
   const mode = await readRuntimeSnapshot(page);
-  const endless = pointForVisibleNode(canvasRect, mode, mode.ui?.modeEndless, 'NETWORK_MODE_ENDLESS');
-  await dispatchTouchTap(cdp, endless.x, endless.y);
-  await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'PLAYING', undefined, { timeout: 5_000 });
+  const arena = pointForVisibleNode(canvasRect, mode, mode.ui?.modeArena, 'NETWORK_MODE_ARENA');
+  await dispatchTouchTap(cdp, arena.x, arena.y);
+  try {
+    await page.waitForFunction(() => {
+      const actual = window.__BHR_QA__.snapshot();
+      return actual.gameState === 'NETWORK_ARENA'
+        && actual.ui?.arenaHUD?.root?.active === true
+        && actual.network?.replica?.visiblePlayers === actual.network?.snapshot?.players?.length;
+    }, undefined, { timeout: 8_000 });
+  } catch (error) {
+    const actual = await readRuntimeSnapshot(page);
+    throw new Error(`FAIL_COCOS_COLYSEUS_RENDERER_ENTER: ${JSON.stringify({
+      gameState: actual.gameState,
+      network: actual.network,
+      arena: actual.arena,
+      error: String(error),
+    })}`);
+  }
   const playing = await readRuntimeSnapshot(page);
   const localBefore = playing.network?.snapshot?.players?.find((player) => player.id === playing.network?.snapshot?.localSessionId);
   assert(localBefore, `FAIL_COCOS_COLYSEUS_MISSING_LOCAL_BEFORE_INPUT: ${JSON.stringify(playing.network)}`);
-  const joystick = pointForVisibleNode(canvasRect, playing, playing.ui?.runtimeHUD?.joystick, 'NETWORK_ENDLESS_JOYSTICK');
+  try {
+    await page.waitForFunction(() => {
+      const actual = window.__BHR_QA__.snapshot();
+      const local = actual.network?.snapshot?.players?.find((player) => player.id === actual.network?.snapshot?.localSessionId);
+      return local?.level === 2 && actual.machine?.level === 2 && actual.machine?.maxTier === 2;
+    }, undefined, { timeout: 5_000 });
+  } catch (error) {
+    const actual = await readRuntimeSnapshot(page);
+    throw new Error(`FAIL_COCOS_COLYSEUS_SERVER_EVOLUTION_REPLICA: ${JSON.stringify({
+      machine: actual.machine,
+      network: actual.network,
+      error: String(error),
+    })}`);
+  }
+  const evolved = await readRuntimeSnapshot(page);
+  const evolvedLocal = evolved.network?.snapshot?.players?.find((player) => player.id === evolved.network?.snapshot?.localSessionId);
+  assert(evolvedLocal?.mass >= 900 && evolvedLocal.suctionRadius >= 3.4,
+    `FAIL_COCOS_COLYSEUS_SERVER_LV2_RULES: ${JSON.stringify({ evolvedLocal, network: evolved.network })}`);
+  assert(playing.network?.replica?.visiblePickups > 0,
+    `FAIL_COCOS_COLYSEUS_PICKUP_REPLICA: ${JSON.stringify(playing.network)}`);
+  assert(Math.hypot(
+    playing.player.x - localBefore.x,
+    playing.player.z - localBefore.z,
+  ) < 0.08, `FAIL_COCOS_COLYSEUS_LOCAL_RENDER_POSITION: ${JSON.stringify({ player: playing.player, localBefore, network: playing.network })}`);
+  await page.screenshot({ path: path.join(evidenceDirectory, 'portrait-390x844-network-arena.png') });
+  const joystick = pointForVisibleNode(canvasRect, playing, playing.ui?.arenaHUD?.joystick, 'NETWORK_ARENA_JOYSTICK');
   await beginTouchJoystick(cdp, joystick.x, joystick.y, joystick.x + 38, joystick.y - 18);
   try {
     await page.waitForFunction((before) => {
@@ -312,6 +352,11 @@ async function verifyNetworkProbe(cdp, page, canvasRect) {
   } finally {
     await releaseTouchJoystick(cdp);
   }
+  await page.waitForFunction(() => {
+    const actual = window.__BHR_QA__.snapshot();
+    const local = actual.network?.snapshot?.players?.find((player) => player.id === actual.network?.snapshot?.localSessionId);
+    return !!local && Math.hypot(actual.player.x - local.x, actual.player.z - local.z) < 0.12;
+  }, undefined, { timeout: 5_000 });
   const after = await readRuntimeSnapshot(page);
   const localAfter = after.network.snapshot.players.find((player) => player.id === after.network.snapshot.localSessionId);
   return { ...after.network, inputForwarding: { before: localBefore, after: localAfter } };

@@ -11,7 +11,9 @@ import { RuntimePageInputRouter } from '../ui/RuntimePageInputRouter';
 import { CompressionSystem } from './CompressionSystem';
 import { PlayerController } from './PlayerController';
 import { ArenaMatchManager, ArenaMatchSnapshot } from './ArenaMatchManager';
-import { ColyseusArenaClient } from '../network/ColyseusArenaClient';
+import { AuthoritativeArenaSnapshot, ColyseusArenaClient } from '../network/ColyseusArenaClient';
+import { NetworkArenaReplica } from '../network/NetworkArenaReplica';
+import { WorldArtLibrary } from '../world/WorldArtLibrary';
 import { eventBus } from '../core/EventBus';
 import { saveService } from '../data/SaveService';
 import { analyticsService } from '../analytics/AnalyticsService';
@@ -20,7 +22,7 @@ import { MACHINE_EVOLUTION_CONFIG, SKINS_CONFIG } from '../data/GameConfig';
 
 const { ccclass, property } = _decorator;
 
-export type GameSessionState = 'HOME' | 'MODE_SELECT' | 'MACHINE_INFO' | 'PLAYING' | 'ARENA' | 'REVIVING' | 'PAUSED' | 'SETTLEMENT';
+export type GameSessionState = 'HOME' | 'MODE_SELECT' | 'MACHINE_INFO' | 'PLAYING' | 'ARENA' | 'NETWORK_ARENA' | 'REVIVING' | 'PAUSED' | 'SETTLEMENT';
 
 @ccclass('GameManager')
 export class GameManager extends Component {
@@ -52,7 +54,7 @@ export class GameManager extends Component {
   public isPaused: boolean = false;
   public gameState: GameSessionState = 'HOME';
   public regionsVisitedCount: number = 1;
-  private pausedGameplayState: 'PLAYING' | 'ARENA' = 'PLAYING';
+  private pausedGameplayState: 'PLAYING' | 'ARENA' | 'NETWORK_ARENA' = 'PLAYING';
   private lastSessionMode: 'ENDLESS' | 'ARENA' = 'ENDLESS';
   /** Read-only QA evidence for real Home skin selection requests. */
   private homeSkinSelectionCount: number = 0;
@@ -62,6 +64,9 @@ export class GameManager extends Component {
    * until its replicated snapshots drive the arena renderer.
    */
   private readonly networkArenaClient: ColyseusArenaClient = new ColyseusArenaClient();
+  /** Exists only after the explicit endpoint probe enters its visible arena route. */
+  private networkArenaReplica: NetworkArenaReplica | null = null;
+  private networkArenaProbeRequested: boolean = false;
   /** Send the exact normalized joystick intent to a joined authoritative room at 20Hz. */
   private networkInputAccumulator: number = 0;
 
@@ -101,6 +106,7 @@ export class GameManager extends Component {
     // A future server-backed arena can outlive a scene transition. Always
     // release the real Colyseus room instead of leaving a live socket behind.
     void this.networkArenaClient.leave();
+    this.clearNetworkArenaReplica();
   }
 
   /**
@@ -328,6 +334,8 @@ export class GameManager extends Component {
 
   public startEndlessGame(): void {
     this.arenaMatchManager?.stopMatch();
+    this.clearNetworkArenaReplica();
+    this.infiniteWorldManager?.setGameplayObjectsVisible(true);
     this.lastSessionMode = 'ENDLESS';
     this.setV2HomeVisible(false);
     this.gameState = 'PLAYING';
@@ -365,11 +373,17 @@ export class GameManager extends Component {
 
   /** Starts the actual offline arena roster: local player plus seven real bots. */
   public startArenaGame(): void {
+    if (this.networkArenaProbeRequested && this.networkArenaClient.snapshot) {
+      this.startNetworkArenaGame(this.networkArenaClient.snapshot);
+      return;
+    }
     if (!this.machine || !this.infiniteWorldManager || !this.arenaMatchManager) {
       console.error('[GameManager] Arena cannot start without the Creator-saved machine, world and match manager.');
       return;
     }
     this.lastSessionMode = 'ARENA';
+    this.clearNetworkArenaReplica();
+    this.infiniteWorldManager.setGameplayObjectsVisible(true);
     this.setV2HomeVisible(false);
     this.gameState = 'ARENA';
     this.isPaused = false;
@@ -399,11 +413,58 @@ export class GameManager extends Component {
     analyticsService.track('arena_start', { roster: 8, bots: 7, mode: 'local-offline' });
   }
 
+  /**
+   * Enters the same visible arena page, but leaves every gameplay value to the
+   * joined Colyseus room. This is intentionally available only to the explicit
+   * endpoint probe until deployment/matchmaking and server-side reward storage
+   * are production-ready.
+   */
+  private startNetworkArenaGame(initialSnapshot: AuthoritativeArenaSnapshot): void {
+    if (!this.machine || !this.infiniteWorldManager || !this.arenaMatchManager) {
+      console.error('[GameManager] Network arena cannot start without the Creator-saved machine, world and match manager.');
+      return;
+    }
+    const artLibrary = director.getScene()?.getComponentInChildren(WorldArtLibrary) || null;
+    if (!artLibrary) {
+      console.error('[GameManager] Network arena cannot render without the Creator-saved WorldArtLibrary.');
+      return;
+    }
+
+    this.arenaMatchManager.stopMatch();
+    this.clearNetworkArenaReplica();
+    this.lastSessionMode = 'ARENA';
+    this.setV2HomeVisible(false);
+    this.gameState = 'NETWORK_ARENA';
+    this.isPaused = false;
+    this.totalAbsorbedCount = 0;
+    this.absorbedTierCounts = {};
+    this.score = 0;
+    this.sessionStartCoins = this.currentCoins;
+    this.machine.node.active = true;
+    this.machine.resetMovement();
+    this.infiniteWorldManager.resetSession(Vec3.ZERO);
+    // The pooled Endless/offline arena objects exist only for those local
+    // authorities. A connected screen shows replicated objects exclusively.
+    this.infiniteWorldManager.setGameplayObjectsVisible(false);
+    this.setPlayerSimulationPaused(false);
+    this.networkArenaReplica = new NetworkArenaReplica(this.node, this.machine, artLibrary);
+    this.networkArenaReplica.sync(initialSnapshot);
+    this.hud?.showScreen('Arena');
+    this.hud?.updateArena(this.toNetworkArenaSnapshot(initialSnapshot));
+    analyticsService.track('arena_start', {
+      roster: initialSnapshot.players.length,
+      bots: initialSnapshot.players.filter((player) => player.isBot).length,
+      mode: 'colyseus-authoritative-probe',
+    });
+  }
+
   public togglePause(): void {
-    if (this.gameState !== 'PLAYING' && this.gameState !== 'ARENA' && this.gameState !== 'PAUSED') return;
+    if (this.gameState !== 'PLAYING' && this.gameState !== 'ARENA' && this.gameState !== 'NETWORK_ARENA' && this.gameState !== 'PAUSED') return;
 
     if (!this.isPaused) {
-      this.pausedGameplayState = this.gameState === 'ARENA' ? 'ARENA' : 'PLAYING';
+      this.pausedGameplayState = this.gameState === 'ARENA' || this.gameState === 'NETWORK_ARENA'
+        ? this.gameState
+        : 'PLAYING';
       this.isPaused = true;
       this.gameState = 'PAUSED';
     } else {
@@ -417,12 +478,14 @@ export class GameManager extends Component {
     if (this.pausedGameplayState === 'ARENA') this.arenaMatchManager?.setMatchPaused(this.isPaused);
 
     if (this.hud) {
-      this.hud.showScreen(this.isPaused ? 'Pause' : this.pausedGameplayState === 'ARENA' ? 'Arena' : 'Gameplay');
+      this.hud.showScreen(this.isPaused ? 'Pause' : this.pausedGameplayState === 'PLAYING' ? 'Gameplay' : 'Arena');
     }
   }
 
   public returnToHome(): void {
     this.arenaMatchManager?.stopMatch();
+    this.clearNetworkArenaReplica();
+    this.infiniteWorldManager?.setGameplayObjectsVisible(true);
     this.isPaused = false;
     this.gameState = 'HOME';
     // A home/menu page has no joystick.  Pausing the real machine prevents a
@@ -435,6 +498,16 @@ export class GameManager extends Component {
   }
 
   public triggerSettlement(): void {
+    if (this.lastSessionMode === 'ARENA' && (
+      this.gameState === 'NETWORK_ARENA'
+      || (this.gameState === 'PAUSED' && this.pausedGameplayState === 'NETWORK_ARENA')
+    )) {
+      // A server-finished reward ledger is not implemented yet, so this
+      // button truthfully leaves the opt-in network probe instead of creating
+      // a local settlement or granting a client-side reward.
+      this.returnToHome();
+      return;
+    }
     if (this.lastSessionMode === 'ARENA' && (
       this.gameState === 'ARENA'
       || this.gameState === 'REVIVING'
@@ -826,13 +899,16 @@ export class GameManager extends Component {
             visibleObjectCount: this.infiniteWorldManager?.getVisibleObjectCount() || 0,
             streaming: this.infiniteWorldManager?.getSnapshot() || null,
           },
-          arena: this.arenaMatchManager?.getSnapshot() || null,
+          arena: this.gameState === 'NETWORK_ARENA' && this.networkArenaClient.snapshot
+            ? this.toNetworkArenaSnapshot(this.networkArenaClient.snapshot)
+            : this.arenaMatchManager?.getSnapshot() || null,
           // This is copied from the actual Colyseus room callback. QA receives
           // no setters and cannot manufacture an arena snapshot locally.
           network: {
             status: this.networkArenaClient.status,
             lastError: this.networkArenaClient.lastError,
             snapshot: this.networkArenaClient.snapshot,
+            replica: this.networkArenaReplica?.getDiagnostics() || null,
           },
           sceneVisuals: this.getActiveVisualDiagnostics(),
           objects: sampledObjs,
@@ -875,11 +951,72 @@ export class GameManager extends Component {
     if (typeof runtimeLocation?.search !== 'string') return;
     const endpoint = new URLSearchParams(runtimeLocation.search).get('arenaProbe')?.trim() || '';
     if (!endpoint) return;
+    this.networkArenaProbeRequested = true;
     void this.networkArenaClient.join(endpoint, 'Cocos Runtime Probe').catch((error: unknown) => {
       // Preserve the real handshake failure for browser console/QA evidence;
       // do not synthesize an offline room if the endpoint is unavailable.
       console.error('[GameManager] Colyseus runtime probe failed.', error);
     });
+  }
+
+  /** Destroy renderer-only nodes before returning to a local game authority. */
+  private clearNetworkArenaReplica(): void {
+    this.networkArenaReplica?.clear();
+    this.networkArenaReplica = null;
+  }
+
+  /**
+   * Adapts an authoritative schema snapshot into the existing HUD-only view
+   * model. No field here feeds gameplay; it merely gives the already saved
+   * arena page clocks, rank, nameplates and status from the real room.
+   */
+  private toNetworkArenaSnapshot(snapshot: AuthoritativeArenaSnapshot): ArenaMatchSnapshot {
+    const localId = snapshot.localSessionId;
+    const ordered = [...snapshot.players]
+      .sort((left, right) => right.mass - left.mass || right.kills - left.kills || left.id.localeCompare(right.id));
+    const local = ordered.find((player) => player.id === localId) || null;
+    const localRank = local ? ordered.findIndex((player) => player.id === local.id) + 1 : 0;
+    const elapsedSeconds = snapshot.elapsedMilliseconds / 1000;
+    const durationSeconds = snapshot.durationMilliseconds / 1000;
+    return {
+      running: snapshot.phase === 'RUNNING',
+      elapsedSeconds,
+      remainingSeconds: Math.max(0, durationSeconds - elapsedSeconds),
+      // The dedicated server shields newcomers itself, so this HUD field is
+      // inferred only for the local replica and is never used as a rule.
+      combatWarmupRemainingSeconds: (local?.shieldMilliseconds || 0) / 1000,
+      durationSeconds,
+      competitorCount: ordered.length,
+      localRank,
+      localAlive: local?.alive || false,
+      localRespawnSeconds: (local?.respawnMilliseconds || 0) / 1000,
+      localKills: local?.kills || 0,
+      localConsumed: local?.collected || 0,
+      localMass: local?.mass || 0,
+      leaderboard: ordered.map((player) => ({
+        id: player.id,
+        name: player.displayName,
+        isLocal: player.id === localId,
+        mass: player.mass,
+        kills: player.kills,
+        consumed: player.collected,
+        alive: player.alive,
+        shieldSeconds: player.shieldMilliseconds / 1000,
+        behavior: player.id === localId ? 'LOCAL' : 'ROAM',
+        position: { x: player.x, z: player.z },
+      })),
+      botStates: {},
+      eliminationCount: ordered.reduce((total, player) => total + player.kills, 0),
+      reason: snapshot.phase === 'FINISHED' ? 'TIME' : 'RUNNING',
+      settlementReward: {
+        coins: 0,
+        massCoins: 0,
+        collectedCoins: 0,
+        eliminationCoins: 0,
+        survivalCoins: 0,
+        placementCoins: 0,
+      },
+    };
   }
 
   /** Read-only scan used only to identify real Web Mobile visual fallbacks. */
@@ -923,10 +1060,15 @@ export class GameManager extends Component {
     if (this.isPaused) return;
     if (!this.machine || !this.mainCamera) return;
 
+    if (this.gameState === 'NETWORK_ARENA' && this.networkArenaClient.snapshot && this.networkArenaReplica) {
+      // Snapshot replication is deliberately the first authority step each
+      // frame, before streaming/camera work reads the local position.
+      this.networkArenaReplica.sync(this.networkArenaClient.snapshot);
+    }
     let mPos = this.machine.node.position.clone();
 
     // 2. Drive streaming plus the active gameplay authority.
-    if (this.gameState === 'PLAYING' || this.gameState === 'ARENA' || this.gameState === 'REVIVING') {
+    if (this.gameState === 'PLAYING' || this.gameState === 'ARENA' || this.gameState === 'NETWORK_ARENA' || this.gameState === 'REVIVING') {
       if (this.infiniteWorldManager) {
         // Production 2D grid streaming and origin rebasing. The machine remains
         // in compact render coordinates while the manager retains logical X/Z.
@@ -950,6 +1092,12 @@ export class GameManager extends Component {
             this.machine.isMagnetStormActive,
             (obj) => this.onObjectAbsorbed(obj)
           );
+        } else if (this.gameState === 'NETWORK_ARENA') {
+          // Unlike the local fallback, this branch never invokes the Cocos
+          // arena simulation. The server snapshot is the only source of
+          // movement, intake, evolution, combat, respawn and leaderboard.
+          const snapshot = this.networkArenaClient.snapshot;
+          if (snapshot) this.hud?.updateArena(this.toNetworkArenaSnapshot(snapshot));
         } else {
           // ArenaMatchManager performs the same suction FSM with an explicit
           // owner per object, then resolves bots, gravity pull and respawn.
@@ -978,7 +1126,7 @@ export class GameManager extends Component {
     // as an empty lawn; -50° exposes the actual road, park furnishing and
     // nearby competitors without altering input, world coordinates, suction
     // ranges, or the general portrait camera follow.
-    const isArenaView = this.gameState === 'ARENA' || this.gameState === 'REVIVING';
+    const isArenaView = this.gameState === 'ARENA' || this.gameState === 'NETWORK_ARENA' || this.gameState === 'REVIVING';
     this.mainCamera.node.setRotationFromEuler(isArenaView ? -50 : -42, 0, 0);
   }
 
@@ -994,7 +1142,7 @@ export class GameManager extends Component {
     if (this.networkInputAccumulator < 0.05) return;
     this.networkInputAccumulator = 0;
     const input = this.playerController?.moveInput;
-    const active = this.gameState === 'PLAYING' && !this.isPaused && !!input && input.lengthSqr() > 0.01;
+    const active = this.gameState === 'NETWORK_ARENA' && !this.isPaused && !!input && input.lengthSqr() > 0.01;
     this.networkArenaClient.sendMovement(
       active ? input!.x : 0,
       active ? input!.y : 0,

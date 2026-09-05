@@ -12,6 +12,7 @@ const PICKUP_SPEED_METERS_PER_SECOND = 8;
 const PICKUP_CAPTURE_DISTANCE = 0.32;
 const RESPAWN_MILLISECONDS = 2_500;
 const SHIELD_MILLISECONDS = 3_000;
+const MATCH_DURATION_MILLISECONDS = 180_000;
 const CONSUME_RATIO = 1.32;
 const CONSUME_DISTANCE = 1.28;
 const BOT_NAMES = ['蓝莓', '矿石', '风暴', '火花', '雪球', '流光', '哨兵', '哨兵·零'];
@@ -44,12 +45,12 @@ export class ArenaRoom extends Room {
 
   onCreate() {
     this.setState(new ArenaState());
+    this.state.durationMilliseconds = MATCH_DURATION_MILLISECONDS;
     this.state.phase = 'RUNNING';
     // Keep every public room readable and playable from the first player.
     // Human joins claim a concrete slot and replace only its server Bot; no
     // client ever fabricates roster entries or simulated bot mass locally.
     for (let slot = 0; slot < MAX_CLIENTS; slot += 1) this.spawnBot(slot);
-    this.spawnOpeningCluster();
     this.setSimulationInterval((deltaTime) => this.step(deltaTime), 50);
     this.onMessage('input', (client, payload) => this.acceptInput(client, payload));
   }
@@ -67,6 +68,11 @@ export class ArenaRoom extends Room {
     this.state.players.set(client.sessionId, player);
     this.humanSlots.set(client.sessionId, slot);
     this.lastInputAtMilliseconds.set(client.sessionId, this.state.elapsedMilliseconds);
+    // The cluster belongs to the first real entrant's opening route. Creating
+    // it only after that entrant replaces bot-0 prevents an interval tick
+    // from allowing a placeholder bot to consume all starter mass before any
+    // connected player can ever see or contest it.
+    if (this.state.pickups.size === 0) this.spawnOpeningCluster();
     this.state.phase = 'RUNNING';
   }
 
@@ -100,7 +106,18 @@ export class ArenaRoom extends Room {
 
   step(deltaTime) {
     const deltaMilliseconds = Math.max(0, Math.min(250, Math.floor(deltaTime)));
+    if (this.state.phase === 'FINISHED') return;
     this.state.elapsedMilliseconds += deltaMilliseconds;
+    if (this.state.elapsedMilliseconds >= this.state.durationMilliseconds) {
+      this.state.elapsedMilliseconds = this.state.durationMilliseconds;
+      this.state.phase = 'FINISHED';
+      this.state.players.forEach((player) => {
+        player.inputX = 0;
+        player.inputY = 0;
+      });
+      this.broadcast('match_finished', { elapsedMilliseconds: this.state.elapsedMilliseconds });
+      return;
+    }
     const deltaSeconds = deltaMilliseconds / 1000;
 
     this.state.players.forEach((player, sessionId) => {
@@ -137,11 +154,11 @@ export class ArenaRoom extends Room {
     for (let index = 0; index < 16; index++) {
       const angle = (Math.PI * 2 * index) / 16;
       const radius = 0.55 + (index % 4) * 0.22;
-      this.spawnPickup(8 + Math.cos(angle) * radius, Math.sin(angle) * radius, 1, 50, `opening-t1-${index}`);
+      this.spawnPickup(Math.cos(angle) * radius, Math.sin(angle) * radius, 1, 50, `opening-t1-${index}`);
     }
     // It is intentionally beyond the LV1 radius but within the LV2 loop
     // after the player travels towards it using an ordinary input message.
-    this.spawnPickup(8, -4.4, 2, 180, 'opening-t2');
+    this.spawnPickup(0, -4.4, 2, 180, 'opening-t2');
   }
 
   /** Every bot occupies a stable compass slot so replacing it never teleports a human roster. */
@@ -155,6 +172,14 @@ export class ArenaRoom extends Room {
   }
 
   placeAtSlot(player, slot) {
+    // Slot zero is the visible, central local-player start. The other seven
+    // slots stay on the outer ring, giving the portrait Cocos arena the same
+    // readable centre/competitor composition as its offline route.
+    if (slot === 0) {
+      player.x = 0;
+      player.z = 0;
+      return;
+    }
     const angle = (Math.PI * 2 * slot) / MAX_CLIENTS;
     player.x = Math.cos(angle) * 8;
     player.z = Math.sin(angle) * 8;

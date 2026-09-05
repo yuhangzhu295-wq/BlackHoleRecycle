@@ -266,6 +266,7 @@ class InfiniteWorldCell {
 
   /** Each branch uses only audited semantic glTF templates, never primitives. */
   private buildDistrictLandmarks(kind: DistrictKind): void {
+    const isOpeningCell = this.coord.x === 0 && this.coord.z === 0;
     const lights = (): void => {
       for (const [x, z] of [[-5.3, -5.5], [5.3, -7.5], [-5.3, -15.5], [5.3, -17.5]]) {
         this.spawn('streetLight', x, z, V3(3.8, 3.8, 3.8), 0, 'DistrictStreetLight');
@@ -285,7 +286,11 @@ class InfiniteWorldCell {
       // They are decorative scene art, not collision or resource objects.
       this.spawn('commercialBuildingF', -3.9, -13.5, V3(1.25, 1.25, 1.25), 90, 'NeighbourhoodMarket');
       this.spawn('commercialBuildingG', 3.9, -13.5, V3(1.25, 1.25, 1.25), -90, 'NeighbourhoodClinic');
-      this.spawn('commercialBuildingH', 0, -16.2, V3(1.2, 1.2, 1.2), 0, 'NeighbourhoodService');
+      // Keep the centre of the road clear in the portrait view. A third tall
+      // storefront at x=0 previously projected straight through the player
+      // marker, so the first playable frame lost the clean city-park focal
+      // space used by the V2 reference.
+      if (!isOpeningCell) this.spawn('commercialBuildingH', 0, -16.2, V3(1.2, 1.2, 1.2), 0, 'NeighbourhoodService');
       // Tall city silhouettes make the opening arena read as a real urban
       // block instead of an isolated lawn. They remain background art and
       // do not participate in resource collisions or bot navigation.
@@ -326,12 +331,12 @@ class InfiniteWorldCell {
       this.spawn('parkBench', 5.4, 1.8, V3(0.82, 0.82, 0.82), -82, 'OpeningPlayBenchEast', 0.07);
       this.spawn('parkHedgeLong', -7.2, 0.5, V3(1.0, 1.0, 1.0), 90, 'OpeningPlayHedgeWest', 0.07);
       this.spawn('parkHedgeLong', 7.2, 0.5, V3(1.0, 1.0, 1.0), 90, 'OpeningPlayHedgeEast', 0.07);
-      this.spawn('parkBush', -4.2, -0.8, V3(0.92, 0.92, 0.92), 0, 'OpeningPlayBushWest', 0.07);
-      this.spawn('parkBush', 4.2, -0.8, V3(0.92, 0.92, 0.92), 0, 'OpeningPlayBushEast', 0.07);
+      this.spawn('parkBush', -6.6, 1.4, V3(0.68, 0.68, 0.68), 0, 'OpeningPlayBushWest', 0.07);
+      this.spawn('parkBush', 6.6, 1.4, V3(0.68, 0.68, 0.68), 0, 'OpeningPlayBushEast', 0.07);
       this.spawn('parkFlowerA', -3.4, 3.5, V3(1.05, 1.05, 1.05), 0, 'OpeningPlayFlowerWest', 0.07);
       this.spawn('parkFlowerB', 3.4, 3.5, V3(1.05, 1.05, 1.05), 0, 'OpeningPlayFlowerEast', 0.07);
-      this.spawn('parkTree', -8.3, 1.2, V3(0.7, 0.7, 0.7), 0, 'OpeningPlayTreeWest', 0.07);
-      this.spawn('parkTreeLarge', 8.3, 1.2, V3(0.7, 0.7, 0.7), 0, 'OpeningPlayTreeEast', 0.07);
+      this.spawn('parkTree', -10.2, 2.2, V3(0.52, 0.52, 0.52), 0, 'OpeningPlayTreeWest', 0.07);
+      this.spawn('parkTreeLarge', 10.2, 2.2, V3(0.52, 0.52, 0.52), 0, 'OpeningPlayTreeEast', 0.07);
 
       // Frame the first playable lawn with actual imported city props. The
       // earlier opening contained correct road/building assets only at the
@@ -356,8 +361,8 @@ class InfiniteWorldCell {
       const openingTrees: ReadonlyArray<readonly [number, number, number, string]> = [
         [-8.6, 10.5, 0.9, 'OpeningParkTreeFarWest'],
         [8.6, 10.5, 0.9, 'OpeningParkTreeFarEast'],
-        [-6.7, 2.1, 0.8, 'OpeningParkTreeWest'],
-        [6.7, 2.1, 0.8, 'OpeningParkTreeEast'],
+        [-10.4, 4.6, 0.56, 'OpeningParkTreeWest'],
+        [10.4, 4.6, 0.56, 'OpeningParkTreeEast'],
         [-8.6, -3.4, 0.75, 'OpeningParkTreeRoadWest'],
         [8.6, -3.4, 0.75, 'OpeningParkTreeRoadEast'],
       ];
@@ -373,11 +378,11 @@ class InfiniteWorldCell {
       // of these are visual landmarks outside the centre route: real pooled
       // recycling objects, bots, movement and suction retain full authority.
       if (this.coord.x === 0 && this.coord.z === 0) {
-        this.spawn('commercialBuildingF', -8.2, 4.8, V3(1.38, 1.38, 1.38), 90, 'OpeningParkMarketSouthWest');
-        this.spawn('commercialBuildingG', 8.2, 4.8, V3(1.38, 1.38, 1.38), -90, 'OpeningParkClinicSouthEast');
-        this.spawn('parkFountain', -5.7, 7.3, V3(0.82, 0.82, 0.82), 0, 'OpeningParkFountainSouthWest', 0.07);
-        this.spawn('parkBench', -3.8, 3.4, V3(0.82, 0.82, 0.82), 78, 'OpeningParkBenchSouthWest', 0.07);
-        this.spawn('parkBench', 3.8, 3.4, V3(0.82, 0.82, 0.82), -78, 'OpeningParkBenchSouthEast', 0.07);
+        this.spawn('commercialBuildingF', -11.5, 7.4, V3(0.86, 0.86, 0.86), 90, 'OpeningParkMarketSouthWest');
+        this.spawn('commercialBuildingG', 11.5, 7.4, V3(0.86, 0.86, 0.86), -90, 'OpeningParkClinicSouthEast');
+        this.spawn('parkFountain', -8.1, 7.8, V3(0.58, 0.58, 0.58), 0, 'OpeningParkFountainSouthWest', 0.07);
+        this.spawn('parkBench', -6.5, 4.8, V3(0.60, 0.60, 0.60), 78, 'OpeningParkBenchSouthWest', 0.07);
+        this.spawn('parkBench', 6.5, 4.8, V3(0.60, 0.60, 0.60), -78, 'OpeningParkBenchSouthEast', 0.07);
         this.spawn('parkTrashcan', -5.9, 5.7, V3(0.9, 0.9, 0.9), 0, 'OpeningParkTrashcanSouthWest', 0.07);
         this.spawn('parkTrashcan', 5.9, 5.7, V3(0.9, 0.9, 0.9), 0, 'OpeningParkTrashcanSouthEast', 0.07);
         this.spawn('parkFlowerA', -3.8, 6.6, V3(1.05, 1.05, 1.05), 0, 'OpeningParkFlowerSouthWest', 0.07);
@@ -386,6 +391,14 @@ class InfiniteWorldCell {
 
     };
     const trees = (): void => {
+      if (isOpeningCell) {
+        // Source trees are deliberately tall assets. Put the two opening
+        // specimens at the garden edges, not around the local origin, so
+        // they frame rather than occlude the black-hole play target.
+        this.spawn('treeLarge', -11.5, 5.2, V3(1.18, 1.18, 1.18), 0, 'DistrictTreeLarge');
+        this.spawn('treeSmall', 11.5, 5.2, V3(1.18, 1.18, 1.18), 0, 'DistrictTreeSmall');
+        return;
+      }
       this.spawn('treeLarge', -4.8, 0.8, V3(2.65, 2.65, 2.65), 0, 'DistrictTreeLarge');
       this.spawn('treeSmall', 4.8, 0.8, V3(2.8, 2.8, 2.8), 0, 'DistrictTreeSmall');
     };
@@ -524,6 +537,16 @@ export class InfiniteWorldManager extends Component {
     this.rebaseCount = 0;
     this.updateCells(renderPlayerPosition);
     this.installConstructionLandmarkInOpeningCell();
+  }
+
+  /**
+   * A network arena renders only the recyclable nodes replicated by its
+   * Colyseus room. The local endless/arena pool remains allocated so returning
+   * to an offline session is immediate, but its gameplay entities cannot be
+   * mistaken for server-authoritative pickups while this flag is false.
+   */
+  public setGameplayObjectsVisible(visible: boolean): void {
+    if (this.objectRoot) this.objectRoot.active = visible;
   }
 
   /**

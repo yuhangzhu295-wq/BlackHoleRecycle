@@ -35,6 +35,8 @@ export const ArenaPickupState = schema({
 export const ArenaState = schema({
   phase: t.string().default('LOBBY'),
   elapsedMilliseconds: t.uint32().default(0),
+  /** The server is the only owner of this clock and match-completion boundary. */
+  durationMilliseconds: t.uint32().default(180000),
   players: t.map(ArenaPlayerState),
   pickups: t.map(ArenaPickupState),
 }, 'ArenaState');

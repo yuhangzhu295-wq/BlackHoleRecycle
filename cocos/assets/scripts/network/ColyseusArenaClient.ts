@@ -42,6 +42,8 @@ export interface AuthoritativeArenaPickup {
 export interface AuthoritativeArenaSnapshot {
   readonly phase: string;
   readonly elapsedMilliseconds: number;
+  /** Server-declared match duration; the client may display it but cannot alter it. */
+  readonly durationMilliseconds: number;
   readonly localSessionId: string | null;
   readonly players: readonly AuthoritativeArenaPlayer[];
   readonly pickups: readonly AuthoritativeArenaPickup[];
@@ -61,6 +63,7 @@ type ArenaStateMap = {
 type ArenaStateLike = {
   phase?: unknown;
   elapsedMilliseconds?: unknown;
+  durationMilliseconds?: unknown;
   players?: ArenaStateMap;
   pickups?: ArenaStateMap;
 };
@@ -242,6 +245,7 @@ export class ColyseusArenaClient {
     return {
       phase: text(state.phase, 'phase'),
       elapsedMilliseconds: finite(state.elapsedMilliseconds, 'elapsedMilliseconds'),
+      durationMilliseconds: finite(state.durationMilliseconds, 'durationMilliseconds'),
       localSessionId,
       players,
       pickups,
