@@ -44,7 +44,9 @@ export class BlackHoleMachine extends Component {
   private arenaBotVisual: Node | null = null;
   private holeRim: Node | null = null;
   private innerSwirl: Node | null = null;
+  private midSwirl: Node | null = null;
   private outerSwirl: Node | null = null;
+  private shimmerSwirl: Node | null = null;
   private readonly levelVisuals: Node[] = [];
   private visualElapsed: number = 0;
   /**
@@ -114,17 +116,39 @@ export class BlackHoleMachine extends Component {
     this.coreNode.addChild(holeInner);
     MeshFactory.attachMesh(holeInner, MeshFactory.getCylinderMesh(0.56, 0.56, 0.075, 64), '#05040e', 1.0, 0.0);
 
-    // 三层紫色涡流环：它们是黑洞特效的实体表现，随时间反向转动以传达吞噬感。
+    // 多层紫色涡流环：它们是黑洞特效的实体表现，随时间反向转动以传达吞噬感。
+    // Keep these as a visual-only native effect. They do not stand in for a
+    // game object and never define the real suction radius or collision area.
     this.innerSwirl = new Node('InnerSwirl');
     this.innerSwirl.setPosition(0, 0.105, 0);
     this.coreNode.addChild(this.innerSwirl);
     MeshFactory.attachMesh(this.innerSwirl, MeshFactory.getTorusMesh(0.38, 0.035), '#e0d5ff', 0.1, 0.5);
+
+    // A narrow asymmetric-looking orbit between the core and exterior ring
+    // makes the singularity read as a layered vortex at phone scale rather
+    // than as one flat purple disc. The animation phase below prevents this
+    // visible layer from coinciding with the inner track.
+    this.midSwirl = new Node('MidSwirl');
+    this.midSwirl.setPosition(0, 0.110, 0);
+    this.midSwirl.setRotationFromEuler(0, 0, -20);
+    this.coreNode.addChild(this.midSwirl);
+    MeshFactory.attachMesh(this.midSwirl, MeshFactory.getTorusMesh(0.55, 0.026), '#bca5ff', 0.1, 0.5);
 
     this.outerSwirl = new Node('OuterSwirl');
     this.outerSwirl.setPosition(0, 0.115, 0);
     this.outerSwirl.setRotationFromEuler(0, 0, 16);
     this.coreNode.addChild(this.outerSwirl);
     MeshFactory.attachMesh(this.outerSwirl, MeshFactory.getTorusMesh(0.72, 0.045), '#8b62f4', 0.1, 0.5);
+
+    // The fine outer highlight is intentionally separated from HoleRing: it
+    // gives the violet rim the moving white-violet glint used by the V2
+    // portrait references without turning the perimeter into a gameplay
+    // range indicator.
+    this.shimmerSwirl = new Node('ShimmerSwirl');
+    this.shimmerSwirl.setPosition(0, 0.120, 0);
+    this.shimmerSwirl.setRotationFromEuler(0, 0, 34);
+    this.coreNode.addChild(this.shimmerSwirl);
+    MeshFactory.attachMesh(this.shimmerSwirl, MeshFactory.getTorusMesh(0.87, 0.018), '#f2ebff', 0.08, 0.55);
 
     // 发光外环是黑洞的视觉轮廓，不能被用作真实吸附半径的地图标尺。
     this.holeRim = new Node('HoleRing');
@@ -203,7 +227,13 @@ export class BlackHoleMachine extends Component {
     if (this.isPaused || dt <= 0) return;
     this.visualElapsed += dt;
     if (this.innerSwirl) this.innerSwirl.setRotationFromEuler(0, this.visualElapsed * 90, 10);
+    if (this.midSwirl) this.midSwirl.setRotationFromEuler(0, -this.visualElapsed * 72, -20);
     if (this.outerSwirl) this.outerSwirl.setRotationFromEuler(0, -this.visualElapsed * 55, 16);
+    if (this.shimmerSwirl) {
+      this.shimmerSwirl.setRotationFromEuler(0, this.visualElapsed * 38, 34);
+      const pulse = 1 + Math.sin(this.visualElapsed * 2.4) * 0.035;
+      this.shimmerSwirl.setScale(pulse, 1, pulse);
+    }
     if (this.holeRim) this.holeRim.setRotationFromEuler(0, this.visualElapsed * 18, 0);
     // 1. Continuous velocity integration. Boundaries belong to arena/world systems,
     // never to this reusable machine component.
@@ -345,7 +375,9 @@ export class BlackHoleMachine extends Component {
     this.setCorePartMaterial('AbyssBase', bodyColor, 1.0, 0.0);
     this.setCorePartMaterial('HoleInner', '#05040e', 1.0, 0.0);
     this.setCorePartMaterial('InnerSwirl', rimColor, 0.1, 0.5);
+    this.setCorePartMaterial('MidSwirl', rimColor, 0.1, 0.5);
     this.setCorePartMaterial('OuterSwirl', bodyColor, 0.1, 0.5);
+    this.setCorePartMaterial('ShimmerSwirl', '#f2ebff', 0.08, 0.55);
     this.setCorePartMaterial('HoleRing', rimColor, 0.1, 0.5);
   }
 
