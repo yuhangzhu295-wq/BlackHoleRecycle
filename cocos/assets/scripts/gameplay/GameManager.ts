@@ -972,9 +972,14 @@ export class GameManager extends Component {
       math.lerp(cPos.y, this.cameraTarget.y, dt * 5.0),
       math.lerp(cPos.z, this.cameraTarget.z, dt * 5.0)
     );
-    // A 42° pitch keeps the local singularity in the lower interaction zone
-    // and reserves the upper half for the city block and approaching rivals.
-    this.mainCamera.node.setRotationFromEuler(-42, 0, 0);
+    // Endless exploration keeps a shallow three-quarter view, while the
+    // competitive park benefits from a slightly steeper tactical angle. At
+    // -42° tall background props eclipsed rivals and left the arena reading
+    // as an empty lawn; -50° exposes the actual road, park furnishing and
+    // nearby competitors without altering input, world coordinates, suction
+    // ranges, or the general portrait camera follow.
+    const isArenaView = this.gameState === 'ARENA' || this.gameState === 'REVIVING';
+    this.mainCamera.node.setRotationFromEuler(isArenaView ? -50 : -42, 0, 0);
   }
 
   /**

@@ -1125,10 +1125,11 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
       assert(lockedT2,
         `FAIL_VERTICAL_SLICE_T2_LOCK: ${JSON.stringify(lockedT2Snapshot.objects.filter((object) => object.tier === 2))}`);
 
-      // One metre is still well inside LV1's real 2.4m suction radius while
-      // leaving room for a physical drag's sampled coasting distance. The
-      // following assertions require actual T1 absorption and LV2 evolution.
-      await driveJoystickToLogicalPoint(cdp, page, joystick, { x: 0, z: 5.2 }, 'T1_CLUSTER', 1.0);
+      // 1.6m is still safely inside the LV1 2.4m suction radius. It gives
+      // touch samples enough room to settle without treating a physics-free
+      // target coordinate as a gameplay condition. The following assertions
+      // still require actual T1 absorption, feedback, and LV2 evolution.
+      await driveJoystickToLogicalPoint(cdp, page, joystick, { x: 0, z: 5.2 }, 'T1_CLUSTER', 1.6);
       // The cluster can complete its real attraction animation while the
       // physical drag is still held. Capture immediately after release; a
       // later 1.6s wait is deliberately long enough for short feedback to

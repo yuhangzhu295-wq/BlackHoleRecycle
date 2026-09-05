@@ -365,6 +365,25 @@ class InfiniteWorldCell {
         this.spawn(index % 2 === 0 ? 'parkTreeLarge' : 'parkTree', x, z, V3(size, size, size), 0, name, 0.07);
       });
 
+      // The portrait arena's lower third is the approach corridor behind the
+      // local singularity.  It used to be almost uninterrupted grass even
+      // though the north edge already had a complete street, making the
+      // opening match read as a prototype lawn.  Frame that corridor with
+      // the same audited commercial/park kit used by the city itself.  All
+      // of these are visual landmarks outside the centre route: real pooled
+      // recycling objects, bots, movement and suction retain full authority.
+      if (this.coord.x === 0 && this.coord.z === 0) {
+        this.spawn('commercialBuildingF', -8.2, 4.8, V3(1.38, 1.38, 1.38), 90, 'OpeningParkMarketSouthWest');
+        this.spawn('commercialBuildingG', 8.2, 4.8, V3(1.38, 1.38, 1.38), -90, 'OpeningParkClinicSouthEast');
+        this.spawn('parkFountain', -5.7, 7.3, V3(0.82, 0.82, 0.82), 0, 'OpeningParkFountainSouthWest', 0.07);
+        this.spawn('parkBench', -3.8, 3.4, V3(0.82, 0.82, 0.82), 78, 'OpeningParkBenchSouthWest', 0.07);
+        this.spawn('parkBench', 3.8, 3.4, V3(0.82, 0.82, 0.82), -78, 'OpeningParkBenchSouthEast', 0.07);
+        this.spawn('parkTrashcan', -5.9, 5.7, V3(0.9, 0.9, 0.9), 0, 'OpeningParkTrashcanSouthWest', 0.07);
+        this.spawn('parkTrashcan', 5.9, 5.7, V3(0.9, 0.9, 0.9), 0, 'OpeningParkTrashcanSouthEast', 0.07);
+        this.spawn('parkFlowerA', -3.8, 6.6, V3(1.05, 1.05, 1.05), 0, 'OpeningParkFlowerSouthWest', 0.07);
+        this.spawn('parkFlowerB', 3.8, 6.6, V3(1.05, 1.05, 1.05), 0, 'OpeningParkFlowerSouthEast', 0.07);
+      }
+
     };
     const trees = (): void => {
       this.spawn('treeLarge', -4.8, 0.8, V3(2.65, 2.65, 2.65), 0, 'DistrictTreeLarge');
