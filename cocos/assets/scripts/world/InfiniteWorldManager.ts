@@ -387,6 +387,20 @@ class InfiniteWorldCell {
         this.spawn('parkTrashcan', 5.9, 5.7, V3(0.9, 0.9, 0.9), 0, 'OpeningParkTrashcanSouthEast', 0.07);
         this.spawn('parkFlowerA', -3.8, 6.6, V3(1.05, 1.05, 1.05), 0, 'OpeningParkFlowerSouthWest', 0.07);
         this.spawn('parkFlowerB', 3.8, 6.6, V3(1.05, 1.05, 1.05), 0, 'OpeningParkFlowerSouthEast', 0.07);
+
+        // Populate the lower portrait third with the same imported city/park
+        // kit. The earlier north-only skyline left that portion as a broad
+        // blank lawn once the camera tracked the local singularity. These
+        // side landmarks match the reference composition (shops and a garden
+        // framing the arena) while leaving x=0/z=0 and the joystick sightline
+        // visually clear for real touch control.
+        this.spawn('commercialBuildingF', -7.6, 8.8, V3(0.66, 0.66, 0.66), 90, 'OpeningSouthMarket');
+        this.spawn('commercialBuildingG', 7.6, 8.8, V3(0.66, 0.66, 0.66), -90, 'OpeningSouthClinic');
+        this.spawn('parkFountain', 0, 8.4, V3(0.48, 0.48, 0.48), 0, 'OpeningSouthFountain', 0.07);
+        this.spawn('parkTree', -5.8, 5.8, V3(0.46, 0.46, 0.46), 0, 'OpeningSouthTreeWest', 0.07);
+        this.spawn('parkTreeLarge', 5.8, 5.8, V3(0.46, 0.46, 0.46), 0, 'OpeningSouthTreeEast', 0.07);
+        this.spawn('parkBench', -3.8, 7.2, V3(0.48, 0.48, 0.48), 78, 'OpeningSouthBenchWest', 0.07);
+        this.spawn('parkBench', 3.8, 7.2, V3(0.48, 0.48, 0.48), -78, 'OpeningSouthBenchEast', 0.07);
       }
 
     };
