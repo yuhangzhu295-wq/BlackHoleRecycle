@@ -3,9 +3,10 @@
  *
  * It intentionally contains no client-side mass, pickup, evolution, combat or
  * respawn simulation. Those values are copied only from the replicated
- * Colyseus room state. The local 1v7 Cocos route remains in use until a scene
- * renderer consumes this snapshot; this class is the real transport boundary
- * required for that next step, not a fake online-mode switch.
+ * Colyseus room state. The shipped local 1v7 route remains the default, while
+ * the explicit endpoint probe feeds NetworkArenaReplica for server-snapshot
+ * rendering; this class is the real transport boundary, not a fake online-mode
+ * switch.
  */
 import { Client, Room } from '@colyseus/sdk';
 
