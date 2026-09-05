@@ -25,7 +25,7 @@ const reportPath = path.join(evidenceDirectory, 'acceptance-report.json');
 const requestedAcceptanceScope = process.argv.find((argument) => argument.startsWith('--scope='))?.slice('--scope='.length)
   || process.env.BHR_ACCEPTANCE_SCOPE
   || 'full';
-const acceptanceScope = ['full', 'pages', 'skins', 'arena-timer', 'network', 'regions', 'progression'].includes(requestedAcceptanceScope)
+const acceptanceScope = ['full', 'pages', 'skins', 'skin-unlock', 'arena-timer', 'network', 'regions', 'progression'].includes(requestedAcceptanceScope)
   ? requestedAcceptanceScope
   : 'full';
 // Preserve each independently-runnable acceptance scope. The canonical report
@@ -475,6 +475,67 @@ async function verifyHomeSkin(cdp, page, canvasRect) {
 }
 
 /**
+ * Positive paid-skin proof: first earn coins only by the public five-level
+ * gameplay route, leave through the visible pause/Home controls, then unlock
+ * the orange core with an actual page tap. No QA setter, local-storage write,
+ * or test-only reward is involved.
+ */
+async function verifyPaidSkinUnlock(cdp, page, canvasRect) {
+  const playing = await readRuntimeSnapshot(page);
+  assert(playing.gameState === 'PLAYING' && (playing.save?.coins || 0) >= 1500,
+    `FAIL_SKIN_UNLOCK_NO_EARNED_COINS: ${JSON.stringify({ state: playing.gameState, coins: playing.save?.coins, session: playing.session })}`);
+  const pause = pointForVisibleNode(canvasRect, playing, playing.ui?.runtimeHUD?.pauseButton, 'SKIN_UNLOCK_PAUSE');
+  await dispatchTouchTap(cdp, pause.x, pause.y);
+  try {
+    await page.waitForFunction(() => {
+      const snapshot = window.__BHR_QA__.snapshot();
+      return snapshot.gameState === 'PAUSED' && snapshot.ui?.formalPages?.pause?.active === true;
+    }, undefined, { timeout: 5000 });
+  } catch (error) {
+    const actual = await readRuntimeSnapshot(page);
+    throw new Error(`FAIL_SKIN_UNLOCK_PAUSE: ${JSON.stringify({ pause, state: actual.gameState, ui: actual.ui, error: String(error) })}`);
+  }
+  const paused = await readRuntimeSnapshot(page);
+  const pauseHome = pointForVisibleNode(canvasRect, paused, paused.ui?.formalPages?.pauseHome, 'SKIN_UNLOCK_PAUSE_HOME');
+  await dispatchTouchTap(cdp, pauseHome.x, pauseHome.y);
+  try {
+    await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'HOME', undefined, { timeout: 5000 });
+  } catch (error) {
+    const actual = await readRuntimeSnapshot(page);
+    throw new Error(`FAIL_SKIN_UNLOCK_PAUSE_HOME: ${JSON.stringify({ pauseHome, state: actual.gameState, ui: actual.ui, error: String(error) })}`);
+  }
+  const home = await readRuntimeSnapshot(page);
+  const coinsBefore = home.save?.coins;
+  assert(Number.isFinite(coinsBefore) && coinsBefore >= 1500,
+    `FAIL_SKIN_UNLOCK_COINS_LOST_ON_HOME: ${JSON.stringify(home.save)}`);
+
+  const skin = pointForVisibleNode(canvasRect, home, home.ui?.skin, 'SKIN_UNLOCK_HOME_CARD');
+  await dispatchTouchTap(cdp, skin.x, skin.y);
+  try {
+    await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'SKIN_SELECTION', undefined, { timeout: 5000 });
+  } catch (error) {
+    const actual = await readRuntimeSnapshot(page);
+    throw new Error(`FAIL_SKIN_UNLOCK_OPEN_PAGE: ${JSON.stringify({ skin, state: actual.gameState, ui: actual.ui, error: String(error) })}`);
+  }
+  const selection = await readRuntimeSnapshot(page);
+  const orange = pointForVisibleNode(canvasRect, selection, selection.ui?.skinSelectionButtons?.[2], 'SKIN_UNLOCK_ORANGE');
+  await dispatchTouchTap(cdp, orange.x, orange.y);
+  try {
+    await page.waitForFunction(() => window.__BHR_QA__.snapshot().save?.skinId === 'skin_orange_force', undefined, { timeout: 5000 });
+  } catch (error) {
+    const actual = await readRuntimeSnapshot(page);
+    throw new Error(`FAIL_SKIN_UNLOCK_ORANGE: ${JSON.stringify({ orange, state: actual.gameState, save: actual.save, data: actual.ui?.skinSelectionData, error: String(error) })}`);
+  }
+  const unlocked = await readRuntimeSnapshot(page);
+  assert(unlocked.save?.coins === coinsBefore - 1500
+    && unlocked.ui?.skinSelectionData?.states?.[2] === '已装备'
+    && String(unlocked.ui?.skinSelectionData?.status || '').includes('已解锁并装备'),
+  `FAIL_SKIN_UNLOCK_TRANSACTION: ${JSON.stringify({ before: coinsBefore, after: unlocked.save, data: unlocked.ui?.skinSelectionData })}`);
+  await page.screenshot({ path: path.join(evidenceDirectory, 'portrait-390x844-skin-unlocked-orange.png') });
+  return { pause, pauseHome, skin, orange, coinsBefore, coinsAfter: unlocked.save?.coins, skinId: unlocked.save?.skinId };
+}
+
+/**
  * The green Home machine card must lead to a real, Creator-saved status page.
  * This is driven by ordinary touch and confirms values originate from the
  * active BlackHoleMachine/configuration, rather than a decorative mock page.
@@ -915,10 +976,17 @@ async function driveJoystickToLogicalPoint(cdp, page, joystick, target, label, a
     const cameraForward = finalSnapshot.camera.forward;
     const inputX = (delta.x * cameraRight.x + delta.z * cameraRight.z) / distance;
     const inputY = (delta.x * cameraForward.x + delta.z * cameraForward.z) / distance;
-    const endX = joystick.x + Math.max(-1, Math.min(1, inputX)) * joystick.maxOffsetX * 0.9;
+    // Long corridor travel needs a decisive stick, while a target inside the
+    // final 24m needs proportionally smaller corrections. A fixed 90% stick
+    // can cross a narrow district checkpoint entirely between QA samples and
+    // makes an otherwise valid physical route nondeterministic.
+    const targetStickMagnitude = distance <= 8
+      ? Math.max(0.30, Math.min(0.62, (distance / 8) * 0.62))
+      : 0.9;
+    const endX = joystick.x + Math.max(-1, Math.min(1, inputX)) * joystick.maxOffsetX * targetStickMagnitude;
     // Browser Y grows downward while Cocos joystick EventTouch coordinates
     // grow upward, hence the sign inversion for the forward component.
-    const endY = joystick.y - Math.max(-1, Math.min(1, inputY)) * joystick.maxOffsetY * 0.9;
+    const endY = joystick.y - Math.max(-1, Math.min(1, inputY)) * joystick.maxOffsetY * targetStickMagnitude;
     await beginTouchJoystick(cdp, joystick.x, joystick.y, endX, endY);
     // Use the actual visible-stick distance to choose a short final press.
     // A fixed 850ms press is natural for long travel but necessarily overshoots
@@ -926,7 +994,8 @@ async function driveJoystickToLogicalPoint(cdp, page, joystick, target, label, a
     const stickDistance = Math.min(92, Math.hypot(endX - joystick.x, endY - joystick.y));
     const stickMagnitude = Math.max(0, (stickDistance / 92 - 0.1) / 0.9);
     const estimatedSpeed = Math.max(0.5, 7.5 * stickMagnitude);
-    const holdMs = Math.max(120, Math.min(850,
+    const maximumHoldMs = distance <= 8 ? 220 : 850;
+    const holdMs = Math.max(120, Math.min(maximumHoldMs,
       Math.round(Math.max(0, distance - arrivalRadius * 0.45) / estimatedSpeed * 1000)));
     await page.waitForTimeout(holdMs);
     const engaged = await readRuntimeSnapshot(page);
@@ -1045,7 +1114,11 @@ async function verifyFiveLevelProgression(cdp, page, joystick) {
   const record = { levels: [], finalTier5Absorption: null };
 
   const collectUntil = async (stage) => {
-    const deadline = Date.now() + 150_000;
+    // High-tier regions intentionally require several ordinary T1/T2
+    // compressions before the next machine level. Keep this a generous wall
+    // clock for real WebGL + touch input, rather than failing just after the
+    // machine reaches 95% of the threshold while a final target is in flight.
+    const deadline = Date.now() + 240_000;
     const absorbed = [];
     let latest = await readRuntimeSnapshot(page);
     while (latest.machine.level < stage.level && Date.now() < deadline) {
@@ -1218,6 +1291,38 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
         report.fullProgression = await verifyFiveLevelProgression(cdp, page, joystick);
         await page.screenshot({ path: path.join(evidenceDirectory, 'portrait-390x844-lv5-city.png') });
         assert(runtimeErrors.length === 0, `Runtime console errors after LV1-to-LV5 touch progression: ${runtimeErrors.join(' | ')}`);
+        return;
+      }
+      if (acceptanceScope === 'skin-unlock') {
+        const startButton = snapshot.ui?.start;
+        const start = pointForVisibleNode(canvasRect, snapshot, startButton, 'SKIN_UNLOCK_HOME_START');
+        await dispatchTouchTap(cdp, start.x, start.y);
+        try {
+          await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'MODE_SELECT', undefined, { timeout: 5000 });
+        } catch (error) {
+          const actual = await readRuntimeSnapshot(page);
+          throw new Error(`FAIL_SKIN_UNLOCK_HOME_START: ${JSON.stringify({ startButton, tap: start, state: actual.gameState, ui: actual.ui, error: String(error) })}`);
+        }
+        const mode = await readRuntimeSnapshot(page);
+        const endless = pointForVisibleNode(canvasRect, mode, mode.ui?.modeEndless, 'SKIN_UNLOCK_MODE_ENDLESS');
+        await dispatchTouchTap(cdp, endless.x, endless.y);
+        try {
+          await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'PLAYING', undefined, { timeout: 5000 });
+        } catch (error) {
+          const actual = await readRuntimeSnapshot(page);
+          throw new Error(`FAIL_SKIN_UNLOCK_MODE_ENDLESS: ${JSON.stringify({ endless, state: actual.gameState, ui: actual.ui, error: String(error) })}`);
+        }
+        const gameplay = await readRuntimeSnapshot(page);
+        const joystickCenter = pointForVisibleNode(canvasRect, gameplay, gameplay.ui?.runtimeHUD?.joystick, 'SKIN_UNLOCK_JOYSTICK');
+        const joystick = {
+          x: joystickCenter.x,
+          y: joystickCenter.y,
+          maxOffsetX: Math.min(120, canvasRect.width - (joystickCenter.x - canvasRect.left) - 3),
+          maxOffsetY: Math.min(120, canvasRect.top + canvasRect.height - joystickCenter.y - 3),
+        };
+        report.fullProgression = await verifyFiveLevelProgression(cdp, page, joystick);
+        report.paidSkinUnlock = await verifyPaidSkinUnlock(cdp, page, canvasRect);
+        assert(runtimeErrors.length === 0, `Runtime console errors after paid skin unlock: ${runtimeErrors.join(' | ')}`);
         return;
       }
       if (acceptanceScope === 'skins') {
@@ -1566,6 +1671,7 @@ const report = {
   network: null,
   regions: null,
   fullProgression: null,
+  paidSkinUnlock: null,
   consoleErrors: [],
   failures: [],
 };
@@ -1589,7 +1695,7 @@ try {
     : `http://127.0.0.1:${address.port}/`;
   browser = await chromium.launch({ headless: true, args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-webgl'] });
 
-  const targetViewports = acceptanceScope === 'pages' || acceptanceScope === 'skins' || acceptanceScope === 'arena-timer' || acceptanceScope === 'network' || acceptanceScope === 'regions' || acceptanceScope === 'progression'
+  const targetViewports = acceptanceScope === 'pages' || acceptanceScope === 'skins' || acceptanceScope === 'skin-unlock' || acceptanceScope === 'arena-timer' || acceptanceScope === 'network' || acceptanceScope === 'regions' || acceptanceScope === 'progression'
     ? requiredPortraitViewports.filter((viewport) => viewport.id === '390x844')
     : requiredPortraitViewports;
   for (const viewport of targetViewports) {

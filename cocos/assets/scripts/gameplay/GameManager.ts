@@ -366,7 +366,17 @@ export class GameManager extends Component {
       return;
     }
     const wasSelected = saveService.data.currentSkinId === skin.id;
-    if (!saveService.selectSkin(skin.id)) {
+    const selected = saveService.selectSkin(skin.id);
+    // A native Button and the capture router can both observe the same
+    // pointer release on some mobile WebGL builds. If the first observation
+    // already completed the persisted unlock-and-equip transaction, a second
+    // observation is idempotent even when the storage bridge briefly returns
+    // a malformed ownership array. Accept only the concrete persisted
+    // current id as the duplicate-success proof; never manufacture ownership.
+    const duplicateTransaction = !selected
+      && saveService.data.currentSkinId === skin.id
+      && saveService.data.unlockedSkins.includes(skin.id);
+    if (!selected && !duplicateTransaction) {
       eventBus.emit('SKIN_PAGE_STATUS', '皮肤存档写入失败');
       return;
     }

@@ -143,7 +143,16 @@ export class SaveService {
     const stored = Array.isArray(this.data.unlockedSkins)
       ? this.data.unlockedSkins.filter((skinId): skinId is string => typeof skinId === 'string')
       : [];
-    this.data.unlockedSkins = [...new Set([...STARTER_SKIN_IDS, ...stored])];
+    // Avoid Set spread here. Cocos' loose Babel transform lowers
+    // `[...new Set(...)]` to `[].concat(Set)`, which serializes as `[{}]` in
+    // WebGL and breaks ownership checks after a paid unlock. Explicit
+    // indexOf de-duplication stays correct in Creator's generated bundle.
+    const unique: string[] = [];
+    const merged: string[] = (STARTER_SKIN_IDS as readonly string[]).concat(stored);
+    for (const skinId of merged) {
+      if (unique.indexOf(skinId) < 0) unique.push(skinId);
+    }
+    this.data.unlockedSkins = unique;
   }
 
   public addCoins(amount: number): number {
@@ -190,6 +199,11 @@ export class SaveService {
 
     this.data.coins -= skin.price;
     this.data.unlockedSkins.push(skin.id);
+    // A paid-card tap is an unlock-and-equip transaction in the V2 flow.
+    // Persist the selected id in the same write as the coin deduction so a
+    // storage hiccup can never leave the player charged while the card still
+    // reports a locked appearance.
+    this.data.currentSkinId = skin.id;
     this.normalizeUnlockedSkins();
     this.save();
     return true;
