@@ -402,6 +402,14 @@ class InfiniteWorldCell {
         // visually clear for real touch control.
         this.spawn('commercialBuildingF', -7.6, 8.8, V3(0.66, 0.66, 0.66), 90, 'OpeningSouthMarket');
         this.spawn('commercialBuildingG', 7.6, 8.8, V3(0.66, 0.66, 0.66), -90, 'OpeningSouthClinic');
+        // Keep a pair of readable storefront silhouettes in the foreground
+        // band as well.  The 390×844 reference composition shows city blocks
+        // both ahead of and behind the singularity; placing these imported
+        // landmarks at z=3.8 makes that lower framing survive the steeper
+        // tactical camera used by Arena without touching the centre suction
+        // lane or any gameplay object.
+        this.spawn('commercialBuildingA', -8.4, 3.8, V3(1.55, 1.55, 1.55), 90, 'OpeningForegroundStoreWest');
+        this.spawn('commercialBuildingD', 8.4, 3.8, V3(1.55, 1.55, 1.55), -90, 'OpeningForegroundStoreEast');
         this.spawn('parkFountain', 0, 8.4, V3(0.48, 0.48, 0.48), 0, 'OpeningSouthFountain', 0.07);
         this.spawn('parkTree', -5.8, 5.8, V3(0.46, 0.46, 0.46), 0, 'OpeningSouthTreeWest', 0.07);
         this.spawn('parkTreeLarge', 5.8, 5.8, V3(0.46, 0.46, 0.46), 0, 'OpeningSouthTreeEast', 0.07);

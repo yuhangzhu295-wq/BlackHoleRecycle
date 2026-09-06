@@ -1,7 +1,7 @@
 /**
  * 游戏主控制器与运行时生命周期驱动 (GameManager.ts)
  */
-import { _decorator, Button, Component, Node, Camera, Vec3, math, director, DirectionalLight, Color, Canvas, Label, MeshRenderer, Sprite, UITransform, view, ResolutionPolicy } from 'cc';
+import { _decorator, Button, Component, Node, Camera, Vec3, math, director, DirectionalLight, Color, Canvas, Label, MeshRenderer, Sprite, UITransform, Rect, view, ResolutionPolicy } from 'cc';
 import { BlackHoleMachine } from '../machine/BlackHoleMachine';
 import { InfiniteWorldManager } from '../world/InfiniteWorldManager';
 import { CompressibleObject } from './CompressibleObject';
@@ -87,12 +87,12 @@ export class GameManager extends Component {
   // buildings and park models at the playable edges.  This wider, still
   // touch-readable 48° composition keeps the local target in the lower
   // interaction band while putting actual street landmarks in frame.
-  // Arena screenshots showed the current 21m follow height cropping the
-  // lower city kit into a large featureless lawn. A slightly wider 27m
-  // portrait framing retains a roughly 27% screen-width singularity while
-  // bringing surrounding competitors, shops, fountain and road into the
-  // same readable park-city composition as the approved reference.
-  private cameraOffset: Vec3 = new Vec3(0, 27.0, 25.1);
+  // Keep the local singularity in the reference's readable 18–23% width band.
+  // The previous 27m/25.1m follow offset reduced the real player to ~13% of a
+  // 390px viewport, making the gameplay read like a distant icon.  This closer
+  // 20m/18.5m framing still leaves the city lane in view while restoring a
+  // clearly playable machine silhouette on phones.
+  private cameraOffset: Vec3 = new Vec3(0, 20.0, 18.5);
   private cameraTarget: Vec3 = new Vec3();
   private readonly portraitWidth = 720;
   private readonly portraitHeight = 1280;
@@ -141,8 +141,24 @@ export class GameManager extends Component {
       this.mainCamera.fovAxis = 0;
       // Vertical FOV remains deliberately modest for mobile readability; the
       // wider city composition comes from the authored follow offset above,
-      // never from a gameplay-space scale or collision change.
-      this.mainCamera.fov = 48;
+      // never from a gameplay-space scale or collision change. 44° keeps the
+      // closer framing readable without turning the portrait world into a
+      // fisheye view.
+      this.mainCamera.fov = 44;
+      // A desktop Browser Preview can be substantially wider than the
+      // portrait game canvas. Restrict the 3D camera to the same centred
+      // portrait viewport used by the UI; otherwise the world leaks into the
+      // grey side bars and appears stretched even though the Canvas is
+      // correctly portrait. On real portrait devices the camera remains
+      // full-frame, preserving the authored phone composition.
+      const frame = view.getFrameSize();
+      const frameRatio = frame.height > 0 ? frame.width / frame.height : this.portraitWidth / this.portraitHeight;
+      if (frameRatio > this.portraitWidth / this.portraitHeight) {
+        const viewportWidth = (this.portraitWidth / this.portraitHeight) / frameRatio;
+        this.mainCamera.camera.viewport = new Rect((1 - viewportWidth) * 0.5, 0, viewportWidth, 1);
+      } else {
+        this.mainCamera.camera.viewport = new Rect(0, 0, 1, 1);
+      }
     }
 
   }
