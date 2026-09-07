@@ -1,0 +1,57 @@
+{
+  "contractVersion": 1,
+  "name": "Golden City Cell — 390×844 Portrait Composition",
+  "scope": "One reusable 64m × 64m city cell; it must be evaluated in actual gameplay camera view, not a static editor-only approximation.",
+  "world": {
+    "cellMeters": { "x": 64, "z": 64 },
+    "artUnit": "1 Cocos unit approximately equals 1 metre",
+    "cameraPreset": "PortraitGameplayCameraPreset",
+    "screen": { "width": 390, "height": 844 }
+  },
+  "mandatoryComposition": {
+    "buildingsMin": 4,
+    "treesMin": 10,
+    "roadSegmentsMin": 3,
+    "poiMin": 3,
+    "vehiclesMin": 3,
+    "competitorsMin": 4,
+    "collectiblesMin": 20,
+    "resourceClustersMin": 2,
+    "largeEmptyGroundMaxPercent": 25
+  },
+  "requiredSemantics": [
+    "road and visible junction",
+    "shop",
+    "hospital",
+    "park",
+    "fountain",
+    "trees and flowerbeds",
+    "streetlights",
+    "benches",
+    "bins",
+    "cars",
+    "collectible resource clusters",
+    "AI competitors"
+  ],
+  "cameraComposition": {
+    "playerWidthRatioMin": 0.22,
+    "playerWidthRatioMax": 0.3,
+    "playerScreenYRatioMin": 0.5,
+    "playerScreenYRatioMax": 0.67
+  },
+  "evidence": {
+    "required": [
+      "Creator viewport screenshot with named-cell overlay",
+      "390x844 runtime screenshot without profiler",
+      "bounds/count report",
+      "current camera-preset values",
+      "real player navigation and a moving-vehicle observation"
+    ],
+    "forbiddenProof": [
+      "single overall visual score",
+      "static screenshot without counts",
+      "pixel matching dynamic tree placement"
+    ]
+  },
+  "status": "PENDING_EVIDENCE"
+}

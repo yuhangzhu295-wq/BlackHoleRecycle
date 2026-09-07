@@ -3,11 +3,12 @@
  * WorldChunkManager, this owns a real two-dimensional X/Z grid around the
  * player and keeps logical world coordinates separate from rendered ones.
  */
-import { _decorator, Color, Component, director, instantiate, MeshRenderer, Node, Prefab, resources, Vec3 } from 'cc';
+import { _decorator, Camera, Color, Component, director, instantiate, MeshRenderer, Node, Prefab, resources, Vec3, view } from 'cc';
 import { IObjectTemplate, IRegionThemeConfig, OBJECT_TEMPLATES, ObjectTier, REGION_THEMES } from '../data/GameConfig';
 import { ObjectPool } from '../core/ObjectPool';
 import { eventBus } from '../core/EventBus';
 import { CompressibleObject } from '../gameplay/CompressibleObject';
+import type { CompositionCompetitor } from '../gameplay/ArenaMatchManager';
 import { CellItemGenerator, IChunkSpawnItem } from './ChunkConfig';
 import { DistrictKind, DistrictTemplate, getDistrictTemplateForRegion } from './DistrictTemplates';
 import { DynamicVehicle } from './DynamicVehicle';
@@ -16,6 +17,81 @@ import { WorldArtKind, WorldArtLibrary } from './WorldArtLibrary';
 const { ccclass } = _decorator;
 const V3 = (x: number, y: number, z: number): Vec3 => new Vec3(x, y, z);
 const ONE = new Vec3(1, 1, 1);
+
+type GoldenCityCategory = 'BUILDING' | 'TREE' | 'ROAD' | 'POI' | 'VEHICLE' | 'COMPETITOR' | 'COLLECTIBLE' | 'RESOURCE_CLUSTER' | 'GROUND';
+
+interface GoldenCityWorldBounds {
+  readonly min: Readonly<{ x: number; y: number; z: number }>;
+  readonly max: Readonly<{ x: number; y: number; z: number }>;
+}
+
+interface GoldenCityScreenBounds {
+  readonly left: number;
+  readonly top: number;
+  readonly right: number;
+  readonly bottom: number;
+  readonly width: number;
+  readonly height: number;
+}
+
+/** Internal live-AABB representation. It is never exposed to browser QA. */
+interface GoldenCityLiveBounds {
+  readonly min: Vec3;
+  readonly max: Vec3;
+}
+
+interface GoldenCityProjection {
+  readonly screenBounds: GoldenCityScreenBounds;
+  readonly visible: boolean;
+  readonly clipped: boolean;
+  readonly behindCamera: boolean;
+}
+
+interface GoldenCityEntry {
+  readonly name: string;
+  readonly category: GoldenCityCategory;
+  readonly classificationRule: string;
+  readonly worldBounds: GoldenCityWorldBounds | null;
+  readonly screenBounds: GoldenCityScreenBounds | null;
+  readonly visible: boolean;
+  readonly clipped: boolean;
+  readonly behindCamera: boolean;
+  readonly logicalUnits: number;
+  readonly countReason: string;
+}
+
+export interface GoldenCityCompositionDiagnostics {
+  readonly status: 'MEASURED' | 'UNAVAILABLE';
+  readonly targetCell: Readonly<{ key: '0:0'; nodeName: string }>;
+  readonly viewport: Readonly<{ x: number; y: number; width: number; height: number }>;
+  readonly camera: Readonly<{
+    preset: 'PortraitGameplayCameraPreset';
+    position: Readonly<{ x: number; y: number; z: number }>;
+    forward: Readonly<{ x: number; y: number; z: number }>;
+    fov: number;
+    fovAxis: number;
+  }>;
+  readonly entries: readonly GoldenCityEntry[];
+  readonly counts: Readonly<Record<GoldenCityCategory, number>>;
+  readonly player: Readonly<{
+    worldBounds: GoldenCityWorldBounds | null;
+    screenBounds: GoldenCityScreenBounds | null;
+    visible: boolean;
+    widthRatio: number | null;
+    screenYRatio: number | null;
+  }>;
+  readonly emptyGround: Readonly<{
+    method: 'screen-space grid estimate';
+    hudExclusion: Readonly<{ topRatio: number; bottomRatio: number }>;
+    grid: Readonly<{ columns: number; rows: number }>;
+    totalSamples: number;
+    groundSamples: number;
+    occupiedSamples: number;
+    emptyGroundSamples: number;
+    coverageByCategory: Readonly<Partial<Record<GoldenCityCategory, number>>>;
+    largeEmptyGroundRatio: number | null;
+  }>;
+}
 
 export interface WorldCellCoord {
   readonly x: number;
@@ -210,15 +286,17 @@ class InfiniteWorldCell {
 
     const centerX = this.coord.x * this.cellSize - logicalOrigin.x;
     const centerZ = this.coord.z * this.cellSize - logicalOrigin.z;
-    const routeZ = centerZ + (this.district.kind === 'CONSTRUCTION' ? 10 : 0);
+    const isOpeningCell = this.coord.x === 0 && this.coord.z === 0;
+    const routeZ = centerZ + this.roadCenterZ;
+    const routeHalfWidth = isOpeningCell ? 4 : 12;
     // Road kits are laid out around the cell centre. Keep traffic inside that
     // authored street corridor: it now drives a four-corner loop instead of
     // bouncing in a single X line, and each corner exposes a real TURN state.
     const route = [
-      { x: centerX - 12, z: routeZ - 3 },
-      { x: centerX + 12, z: routeZ - 3 },
-      { x: centerX + 12, z: routeZ + 3 },
-      { x: centerX - 12, z: routeZ + 3 },
+      { x: centerX - routeHalfWidth, z: routeZ - 3 },
+      { x: centerX + routeHalfWidth, z: routeZ - 3 },
+      { x: centerX + routeHalfWidth, z: routeZ + 3 },
+      { x: centerX - routeHalfWidth, z: routeZ + 3 },
     ];
     const start = route[0];
     const object = objectPool.get();
@@ -256,8 +334,7 @@ class InfiniteWorldCell {
     // previous 12x crossroad occupied the whole portrait view and hid the
     // district landmarks, so it read as an empty asphalt test pad rather
     // than a navigable city neighbourhood.
-    const isOpeningCell = this.coord.x === 0 && this.coord.z === 0;
-    const roadZ = isOpeningCell ? -11 : 0;
+    const roadZ = this.roadCenterZ;
     if (this.district.kind === 'RESIDENTIAL' || this.district.kind === 'PARK' || this.district.kind === 'DOWNTOWN') {
       // `road-crossroad-path` is authored as a 1 m kit piece. Scale it to a
       // true road junction so it spans the widened portrait city view rather
@@ -268,6 +345,11 @@ class InfiniteWorldCell {
     }
 
     this.buildDistrictLandmarks(this.district.kind);
+  }
+
+  /** Street rendering and traffic must share the same local origin. */
+  private get roadCenterZ(): number {
+    return this.coord.x === 0 && this.coord.z === 0 ? -11 : 0;
   }
 
   /** Each branch uses only audited semantic glTF templates, never primitives. */
@@ -712,6 +794,187 @@ export class InfiniteWorldManager extends Component {
     }).length;
   }
 
+  /**
+   * Real-engine evidence for the first reusable city cell.  This deliberately
+   * measures only the active `0:0` cell: adding the eight streamed neighbours
+   * would turn a sparse opening screen into a misleading aggregate pass.
+   *
+   * Every spatial result comes from live MeshRenderer.model.worldBounds and
+   * Camera.worldToScreen.  Node scale, authored placement comments and static
+   * scene guesses are intentionally not used as proof.
+   */
+  public getGoldenCityCompositionDiagnostics(
+    camera: Camera | null,
+    playerNode: Node | null,
+    competitors: readonly CompositionCompetitor[],
+  ): GoldenCityCompositionDiagnostics {
+    const viewport = view.getViewportRect();
+    const targetCell = this.activeCells.get('0:0') || null;
+    const emptyCounts: Record<GoldenCityCategory, number> = {
+      BUILDING: 0,
+      TREE: 0,
+      ROAD: 0,
+      POI: 0,
+      VEHICLE: 0,
+      COMPETITOR: 0,
+      COLLECTIBLE: 0,
+      RESOURCE_CLUSTER: 0,
+      GROUND: 0,
+    };
+    const unavailable = (): GoldenCityCompositionDiagnostics => ({
+      status: 'UNAVAILABLE',
+      targetCell: { key: '0:0', nodeName: targetCell?.node.name || 'WorldCell_0_0_UNAVAILABLE' },
+      viewport: { x: viewport.x, y: viewport.y, width: viewport.width, height: viewport.height },
+      camera: this.serializeGoldenCityCamera(camera),
+      entries: [],
+      counts: emptyCounts,
+      player: {
+        worldBounds: null,
+        screenBounds: null,
+        visible: false,
+        widthRatio: null,
+        screenYRatio: null,
+      },
+      emptyGround: {
+        method: 'screen-space grid estimate',
+        hudExclusion: { topRatio: 0.16, bottomRatio: 0.18 },
+        grid: { columns: 40, rows: 64 },
+        totalSamples: 0,
+        groundSamples: 0,
+        occupiedSamples: 0,
+        emptyGroundSamples: 0,
+        coverageByCategory: {},
+        largeEmptyGroundRatio: null,
+      },
+    });
+
+    if (!targetCell || !camera || !camera.node?.isValid || viewport.width <= 0 || viewport.height <= 0) {
+      return unavailable();
+    }
+
+    const entries: GoldenCityEntry[] = [];
+    for (const root of targetCell.node.children) {
+      const classification = this.classifyGoldenCityEnvironmentNode(root.name);
+      if (!classification) continue;
+      entries.push(this.createGoldenCityEntry(
+        root.name,
+        classification.category,
+        classification.rule,
+        [root],
+        camera,
+        viewport,
+        classification.logicalUnits,
+        classification.reason,
+      ));
+    }
+
+    // Dynamic vehicles are their real pooled CompressibleObject nodes.  They
+    // are not re-counted as collectibles below because their runtime ids start
+    // with `traffic_`.
+    for (const vehicle of targetCell.dynamicVehicles) {
+      entries.push(this.createGoldenCityEntry(
+        vehicle.id,
+        'VEHICLE',
+        'target-cell DynamicVehicle.getCompositionNode()',
+        [vehicle.getCompositionNode()],
+        camera,
+        viewport,
+        1,
+        'One active route-driven traffic vehicle in WorldCell_0_0.',
+      ));
+    }
+
+    const collectibleStates = new Set(['IDLE', 'ATTRACTED', 'SUCKING']);
+    const validCollectibles = targetCell.objects.filter((object) => collectibleStates.has(object.getState())
+      && !object.runtimeId.startsWith('traffic_')
+      && object.node?.isValid
+      && object.node.activeInHierarchy);
+    for (const object of validCollectibles) {
+      entries.push(this.createGoldenCityEntry(
+        object.runtimeId,
+        'COLLECTIBLE',
+        'WorldCell_0_0 CompressibleObject in IDLE, ATTRACTED, or SUCKING state (traffic excluded)',
+        [object.node],
+        camera,
+        viewport,
+        1,
+        `Live ${object.template.name} (${object.getState()}) from the target cell object pool.`,
+      ));
+    }
+
+    const clusters = new Map<string, CompressibleObject[]>();
+    for (const object of validCollectibles) {
+      const clusterId = this.getGoldenCityClusterId(object.runtimeId);
+      if (!clusterId) continue;
+      const group = clusters.get(clusterId) || [];
+      group.push(object);
+      clusters.set(clusterId, group);
+    }
+    for (const [clusterId, group] of clusters) {
+      entries.push(this.createGoldenCityEntry(
+        clusterId,
+        'RESOURCE_CLUSTER',
+        'Grouped actual cluster_* or starter_recycling_cluster_* collectible ids',
+        group.map((object) => object.node),
+        camera,
+        viewport,
+        1,
+        `${group.length} live recyclable object(s) sharing the authoritative cluster id ${clusterId}.`,
+      ));
+    }
+
+    // CompositionCompetitor is a read-only engine-side bridge.  The browser
+    // receives only the final JSON rows and cannot obtain or mutate a Node.
+    for (const competitor of competitors) {
+      if (competitor.isLocal || !competitor.isBot || !competitor.alive || !competitor.node?.isValid
+        || !competitor.node.activeInHierarchy) continue;
+      entries.push(this.createGoldenCityEntry(
+        competitor.id,
+        'COMPETITOR',
+        'ArenaMatchManager.getCompositionCompetitors(): alive non-local bot',
+        [competitor.node],
+        camera,
+        viewport,
+        1,
+        'One alive AI competitor using the real ArenaMatchManager entity node.',
+      ));
+    }
+
+    // Contract counts are counts in the real camera composition, rather than
+    // total nodes in a 64m cell which could be wholly off-screen or behind the
+    // portrait gameplay camera.
+    for (const entry of entries) {
+      if (entry.visible) emptyCounts[entry.category] += entry.logicalUnits;
+    }
+
+    const playerWorldBounds = playerNode?.isValid && playerNode.activeInHierarchy
+      ? this.collectMergedWorldBounds([playerNode])
+      : null;
+    const playerProjection = playerWorldBounds ? this.projectGoldenCityBounds(camera, viewport, playerWorldBounds) : null;
+    const player = {
+      worldBounds: this.serializeGoldenCityWorldBounds(playerWorldBounds),
+      screenBounds: playerProjection?.screenBounds || null,
+      visible: playerProjection?.visible || false,
+      widthRatio: playerProjection?.screenBounds
+        ? playerProjection.screenBounds.width / viewport.width
+        : null,
+      screenYRatio: playerProjection?.screenBounds
+        ? ((playerProjection.screenBounds.top + playerProjection.screenBounds.bottom) * 0.5 - viewport.y) / viewport.height
+        : null,
+    };
+
+    return {
+      status: 'MEASURED',
+      targetCell: { key: '0:0', nodeName: targetCell.node.name },
+      viewport: { x: viewport.x, y: viewport.y, width: viewport.width, height: viewport.height },
+      camera: this.serializeGoldenCityCamera(camera),
+      entries,
+      counts: emptyCounts,
+      player,
+      emptyGround: this.estimateGoldenCityEmptyGround(entries, viewport),
+    };
+  }
+
   public getRegionIndex(): number {
     return this.currentRegionIndex;
   }
@@ -755,6 +1018,260 @@ export class InfiniteWorldManager extends Component {
         visible: this.activeCells.get(cellKey({ x: 0, z: 0 }))?.hasConstructionLandmark() || false,
       },
       visualDiagnostics: this.activeCells.get(cellKey({ x: this.currentCell.x, z: this.currentCell.z }))?.getVisualDiagnostics() || [],
+    };
+  }
+
+  private serializeGoldenCityCamera(camera: Camera | null): GoldenCityCompositionDiagnostics['camera'] {
+    const position = camera?.node?.worldPosition || Vec3.ZERO;
+    const forward = camera?.node?.forward || Vec3.FORWARD;
+    return {
+      preset: 'PortraitGameplayCameraPreset',
+      position: { x: position.x, y: position.y, z: position.z },
+      forward: { x: forward.x, y: forward.y, z: forward.z },
+      fov: camera?.fov || 0,
+      fovAxis: camera?.fovAxis || 0,
+    };
+  }
+
+  private classifyGoldenCityEnvironmentNode(name: string): Readonly<{
+    category: GoldenCityCategory;
+    rule: string;
+    logicalUnits: number;
+    reason: string;
+  }> | null {
+    if (name === 'DistrictGround') {
+      return {
+        category: 'GROUND',
+        rule: 'Opening-cell actual DistrictGround terrain tile',
+        logicalUnits: 1,
+        reason: 'One actual streamed terrain tile, used only for the transparent empty-ground estimate.',
+      };
+    }
+    if (name === 'FourWayRoad') {
+      return {
+        category: 'ROAD',
+        rule: 'Opening-cell FourWayRoad; a visible junction has four road arms',
+        logicalUnits: 4,
+        reason: 'The single imported crossroad root is a four-arm junction.',
+      };
+    }
+    if (name === 'DistrictRoad') {
+      return {
+        category: 'ROAD',
+        rule: 'Opening-cell imported road root',
+        logicalUnits: 1,
+        reason: 'One authored road segment root.',
+      };
+    }
+    if (/ResidentialHouse|Neighbourhood|ArenaSkyline|Market|Clinic|Store|Building|Tower|Skyline/.test(name)) {
+      return {
+        category: 'BUILDING',
+        rule: 'Opening-cell named building, shop, clinic, house, or skyline root',
+        logicalUnits: 1,
+        reason: 'One semantically named imported building landmark.',
+      };
+    }
+    if (name.includes('Tree')) {
+      return {
+        category: 'TREE',
+        rule: 'Opening-cell name contains Tree; grass and ground cover are excluded',
+        logicalUnits: 1,
+        reason: 'One imported tree root.',
+      };
+    }
+    if (/Sedan|Van|Truck|Bulldozer|Vehicle|Car/.test(name)) {
+      return {
+        category: 'VEHICLE',
+        rule: 'Opening-cell named static vehicle root',
+        logicalUnits: 1,
+        reason: 'One semantically named imported parked vehicle.',
+      };
+    }
+    if (/Fountain|Bench|Trashcan|Bin|StreetLight|Lantern|Flower|Path|Walkway|Hedge|Bush|Fence|GrassTile|Cobble|RecyclingBox|Tire/.test(name)) {
+      return {
+        category: 'POI',
+        rule: 'Opening-cell named park, street furnishing, planting, path, or readable prop root',
+        logicalUnits: 1,
+        reason: 'One imported point-of-interest or environmental furnishing.',
+      };
+    }
+    return null;
+  }
+
+  private getGoldenCityClusterId(runtimeId: string): string | null {
+    if (runtimeId.startsWith('starter_recycling_cluster_')) return 'starter_recycling_cluster';
+    const match = /^cluster_(.+)_\d+$/.exec(runtimeId);
+    return match ? `cluster_${match[1]}` : null;
+  }
+
+  private createGoldenCityEntry(
+    name: string,
+    category: GoldenCityCategory,
+    classificationRule: string,
+    roots: readonly Node[],
+    camera: Camera,
+    viewport: Readonly<{ x: number; y: number; width: number; height: number }>,
+    logicalUnits: number,
+    countReason: string,
+  ): GoldenCityEntry {
+    const bounds = this.collectMergedWorldBounds(roots);
+    const projection = bounds ? this.projectGoldenCityBounds(camera, viewport, bounds) : null;
+    return {
+      name,
+      category,
+      classificationRule,
+      worldBounds: this.serializeGoldenCityWorldBounds(bounds),
+      screenBounds: projection?.screenBounds || null,
+      visible: projection?.visible || false,
+      clipped: projection?.clipped || false,
+      behindCamera: projection?.behindCamera || false,
+      logicalUnits,
+      countReason,
+    };
+  }
+
+  /** Recursively merge every genuine renderer AABB under the supplied roots. */
+  private collectMergedWorldBounds(roots: readonly Node[]): GoldenCityLiveBounds | null {
+    let min: Vec3 | null = null;
+    let max: Vec3 | null = null;
+    const append = (candidateMin: Readonly<Vec3>, candidateMax: Readonly<Vec3>): void => {
+      if (!min || !max) {
+        min = candidateMin.clone();
+        max = candidateMax.clone();
+        return;
+      }
+      min.set(
+        Math.min(min.x, candidateMin.x),
+        Math.min(min.y, candidateMin.y),
+        Math.min(min.z, candidateMin.z),
+      );
+      max.set(
+        Math.max(max.x, candidateMax.x),
+        Math.max(max.y, candidateMax.y),
+        Math.max(max.z, candidateMax.z),
+      );
+    };
+    const visit = (node: Node): void => {
+      if (!node.activeInHierarchy) return;
+      const renderer = node.getComponent(MeshRenderer);
+      const bounds = renderer?.model?.worldBounds || null;
+      if (bounds) {
+        append(
+          new Vec3(
+            bounds.center.x - bounds.halfExtents.x,
+            bounds.center.y - bounds.halfExtents.y,
+            bounds.center.z - bounds.halfExtents.z,
+          ),
+          new Vec3(
+            bounds.center.x + bounds.halfExtents.x,
+            bounds.center.y + bounds.halfExtents.y,
+            bounds.center.z + bounds.halfExtents.z,
+          ),
+        );
+      }
+      node.children.forEach(visit);
+    };
+    roots.forEach(visit);
+    return min && max ? { min, max } : null;
+  }
+
+  private serializeGoldenCityWorldBounds(bounds: GoldenCityLiveBounds | null): GoldenCityWorldBounds | null {
+    return bounds ? {
+      min: { x: bounds.min.x, y: bounds.min.y, z: bounds.min.z },
+      max: { x: bounds.max.x, y: bounds.max.y, z: bounds.max.z },
+    } : null;
+  }
+
+  /** Project the live world AABB's eight corners and its centre into page-top screen space. */
+  private projectGoldenCityBounds(
+    camera: Camera,
+    viewport: Readonly<{ x: number; y: number; width: number; height: number }>,
+    bounds: GoldenCityLiveBounds,
+  ): GoldenCityProjection {
+    const center = new Vec3(
+      (bounds.min.x + bounds.max.x) * 0.5,
+      (bounds.min.y + bounds.max.y) * 0.5,
+      (bounds.min.z + bounds.max.z) * 0.5,
+    );
+    const behindCamera = camera.node.forward.dot(Vec3.subtract(new Vec3(), center, camera.node.worldPosition)) <= 0;
+    const corners: Vec3[] = [];
+    for (const x of [bounds.min.x, bounds.max.x]) {
+      for (const y of [bounds.min.y, bounds.max.y]) {
+        for (const z of [bounds.min.z, bounds.max.z]) corners.push(new Vec3(x, y, z));
+      }
+    }
+    corners.push(center);
+    const projected = corners.map((point) => camera.worldToScreen(point, new Vec3()));
+    const left = Math.min(...projected.map((point) => point.x));
+    const right = Math.max(...projected.map((point) => point.x));
+    const rawBottom = Math.min(...projected.map((point) => point.y));
+    const rawTop = Math.max(...projected.map((point) => point.y));
+    const top = viewport.y + viewport.height - rawTop;
+    const bottom = viewport.y + viewport.height - rawBottom;
+    const screenBounds = { left, top, right, bottom, width: Math.max(0, right - left), height: Math.max(0, bottom - top) };
+    const intersects = right >= viewport.x && left <= viewport.x + viewport.width
+      && bottom >= viewport.y && top <= viewport.y + viewport.height;
+    const visible = !behindCamera && intersects;
+    const clipped = visible && (left < viewport.x || right > viewport.x + viewport.width
+      || top < viewport.y || bottom > viewport.y + viewport.height);
+    return { screenBounds, visible, clipped, behindCamera };
+  }
+
+  /**
+   * Deterministic screen-space estimate, intentionally not a pixel claim.
+   * We sample only live ground-AABB coverage after excluding HUD bands, then
+   * check whether any visible, physically-rendered composition entry covers
+   * each point. RESOURCE_CLUSTER deliberately does not participate here: it
+   * is a logical aggregation of many COLLECTIBLE bounds for the separate
+   * cluster-count contract, so its union AABB can span most of the viewport
+   * without representing one rendered occluding object.
+   */
+  private estimateGoldenCityEmptyGround(
+    entries: readonly GoldenCityEntry[],
+    viewport: Readonly<{ x: number; y: number; width: number; height: number }>,
+  ): GoldenCityCompositionDiagnostics['emptyGround'] {
+    const hudExclusion = { topRatio: 0.16, bottomRatio: 0.18 };
+    const grid = { columns: 40, rows: 64 };
+    const ground = entries.filter((entry) => entry.category === 'GROUND' && entry.visible && entry.screenBounds);
+    const occupants = entries.filter((entry) => entry.category !== 'GROUND'
+      && entry.category !== 'RESOURCE_CLUSTER'
+      && entry.visible
+      && entry.screenBounds);
+    const coverageByCategory: Partial<Record<GoldenCityCategory, number>> = {};
+    let totalSamples = 0;
+    let groundSamples = 0;
+    let occupiedSamples = 0;
+    let emptyGroundSamples = 0;
+    const contentTop = viewport.y + viewport.height * hudExclusion.topRatio;
+    const contentBottom = viewport.y + viewport.height * (1 - hudExclusion.bottomRatio);
+    const contains = (bounds: GoldenCityScreenBounds, x: number, y: number): boolean => x >= bounds.left && x <= bounds.right && y >= bounds.top && y <= bounds.bottom;
+    for (let row = 0; row < grid.rows; row++) {
+      const y = contentTop + ((row + 0.5) / grid.rows) * (contentBottom - contentTop);
+      for (let column = 0; column < grid.columns; column++) {
+        const x = viewport.x + ((column + 0.5) / grid.columns) * viewport.width;
+        totalSamples++;
+        if (!ground.some((entry) => contains(entry.screenBounds!, x, y))) continue;
+        groundSamples++;
+        const covering = occupants.filter((entry) => contains(entry.screenBounds!, x, y));
+        if (covering.length === 0) {
+          emptyGroundSamples++;
+          continue;
+        }
+        occupiedSamples++;
+        const categories = new Set(covering.map((entry) => entry.category));
+        categories.forEach((category) => { coverageByCategory[category] = (coverageByCategory[category] || 0) + 1; });
+      }
+    }
+    return {
+      method: 'screen-space grid estimate',
+      hudExclusion,
+      grid,
+      totalSamples,
+      groundSamples,
+      occupiedSamples,
+      emptyGroundSamples,
+      coverageByCategory,
+      largeEmptyGroundRatio: groundSamples > 0 ? emptyGroundSamples / groundSamples : null,
     };
   }
 

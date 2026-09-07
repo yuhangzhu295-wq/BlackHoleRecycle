@@ -1,0 +1,102 @@
+{
+  "$schema": "https://blackholerecycle.local/schemas/design-lock-v2.json",
+  "version": 1,
+  "designSpace": {
+    "width": 720,
+    "height": 1280,
+    "origin": "center",
+    "referenceCoordinateSystem": "top-left"
+  },
+  "policy": {
+    "editorOnlyReferenceAssets": true,
+    "forbidSceneMutationFromOverlay": true,
+    "requiredEvidence": [
+      "reference_blueprint",
+      "creator_actual_bounds",
+      "overlay_or_diff_report",
+      "runtime_screenshot",
+      "independent_subgate_results"
+    ],
+    "subgates": [
+      "layout",
+      "style",
+      "typography",
+      "color",
+      "asset",
+      "elements"
+    ],
+    "lockRule": "Only all-PASS subgates with current evidence may set status to LOCKED."
+  },
+  "pages": {
+    "home": {
+      "reference": "docs/design-reference/v2-01-home.png",
+      "blueprint": "docs/design-contracts/home.json",
+      "status": "PENDING_EVIDENCE",
+      "subgates": {
+        "layout": "PENDING_EVIDENCE",
+        "style": "PENDING_EVIDENCE",
+        "typography": "PENDING_EVIDENCE",
+        "color": "PENDING_EVIDENCE",
+        "asset": "PENDING_EVIDENCE",
+        "elements": "PENDING_EVIDENCE"
+      },
+      "evidence": []
+    },
+    "mode_select": {
+      "reference": "docs/design-reference/v2-02-mode-select.png",
+      "blueprint": "docs/design-contracts/mode-select.json",
+      "status": "PENDING_EVIDENCE",
+      "subgates": {
+        "layout": "PENDING_EVIDENCE",
+        "style": "PENDING_EVIDENCE",
+        "typography": "PENDING_EVIDENCE",
+        "color": "PENDING_EVIDENCE",
+        "asset": "PENDING_EVIDENCE",
+        "elements": "PENDING_EVIDENCE"
+      },
+      "evidence": []
+    },
+    "arena_hud": {
+      "reference": "docs/design-reference/v2-03-arena-hud.png",
+      "blueprint": "docs/design-contracts/gameplay-arena.json",
+      "status": "PENDING_EVIDENCE",
+      "subgates": {
+        "layout": "PENDING_EVIDENCE",
+        "style": "PENDING_EVIDENCE",
+        "typography": "PENDING_EVIDENCE",
+        "color": "PENDING_EVIDENCE",
+        "asset": "PENDING_EVIDENCE",
+        "elements": "PENDING_EVIDENCE"
+      },
+      "evidence": []
+    },
+    "revive": {
+      "reference": "docs/design-reference/v2-04-revive.png",
+      "blueprint": "docs/design-contracts/revive.json",
+      "status": "PENDING_EVIDENCE",
+      "subgates": {
+        "layout": "PENDING_EVIDENCE",
+        "style": "PENDING_EVIDENCE",
+        "typography": "PENDING_EVIDENCE",
+        "color": "PENDING_EVIDENCE",
+        "asset": "PENDING_EVIDENCE",
+        "elements": "PENDING_EVIDENCE"
+      },
+      "evidence": []
+    },
+    "settlement": {
+      "reference": "docs/design-reference/v2-05-settlement.png",
+      "blueprint": "docs/design-contracts/settlement.json",
+      "status": "PENDING_EVIDENCE",
+      "subgates": {
+        "layout": "PENDING_EVIDENCE",
+        "style": "PENDING_EVIDENCE",
+        "typography": "PENDING_EVIDENCE",
+        "color": "PENDING_EVIDENCE",
+        "asset": "PENDING_EVIDENCE",
+        "elements": "PENDING_EVIDENCE"
+      },
+      "evidence": []
+    }
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "contractVersion": 1,
+  "name": "Machine LV1 Golden Contract",
+  "designSpace": "Actual 3D gameplay at 390×844 using PortraitGameplayCameraPreset",
+  "lv1": {
+    "required": [
+      "cartoon low-poly recycling-machine silhouette",
+      "yellow mechanical body",
+      "visible black-hole core",
+      "tracked or wheeled chassis",
+      "visible compression structure",
+      "clear forward direction and ground contact",
+      "same visual language as arena competitors"
+    ],
+    "forbidden": [
+      "generic unmodified vehicle as machine",
+      "black hole without recycling-machine body",
+      "scale-only progression",
+      "semantic substitute model"
+    ]
+  },
+  "lv2Regression": {
+    "mustDifferFromLv1": [
+      "paired magnetic turbines or pipes",
+      "visibly larger active suction radius",
+      "structural attachment instead of recolour or torus-only decoration"
+    ],
+    "gameplayProof": [
+      "LV1 blocks T2",
+      "real T1 absorption reaches LV2",
+      "LV2 then absorbs T2 via normal suction flow"
+    ]
+  },
+  "prefabRules": {
+    "creatorSaved": true,
+    "artUnit": "1 Cocos unit approximately equals 1 metre",
+    "normalizedPivotForwardAndGroundOffset": true,
+    "noSpawnTimeArbitraryScaleCompensation": true
+  },
+  "evidence": {
+    "required": [
+      "Creator prefab hierarchy/component inspection",
+      "LV1 390x844 runtime screenshot",
+      "LV2 390x844 runtime screenshot",
+      "actual-bounds/composition report",
+      "real-input LV1-to-LV2-to-T2 business-flow record"
+    ]
+  },
+  "status": "PENDING_EVIDENCE"
+}

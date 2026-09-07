@@ -1,0 +1,30 @@
+{
+  "package_version": 2,
+  "name": "black-hole-design-overlay",
+  "version": "1.0.0",
+  "description": "Read-only V2 reference overlay and deterministic Creator scene bounds audit.",
+  "author": "BlackHoleRecycle",
+  "editor": ">=3.8.3",
+  "main": "./main.js",
+  "contributions": {
+    "scene": { "script": "./scene.js" },
+    "menu": [
+      {
+        "path": "i18n:menu.extension",
+        "label": "打开 V2 设计 Overlay（只读审计）",
+        "message": "open-panel"
+      }
+    ],
+    "messages": {
+      "open-panel": { "methods": ["openPanel"] }
+    }
+  },
+  "panels": {
+    "default": {
+      "title": "BlackHole V2 Design Overlay",
+      "type": "dockable",
+      "main": "panels/default",
+      "size": { "min-width": 520, "min-height": 420, "width": 760, "height": 720 }
+    }
+  }
+}

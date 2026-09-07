@@ -1,7 +1,7 @@
 /**
  * 游戏主控制器与运行时生命周期驱动 (GameManager.ts)
  */
-import { _decorator, Button, Component, Node, Camera, Vec3, math, director, DirectionalLight, Color, Canvas, Label, MeshRenderer, Sprite, UITransform, Rect, view, ResolutionPolicy } from 'cc';
+import { _decorator, Button, Component, Node, Camera, Vec3, math, director, DirectionalLight, Color, Canvas, Label, LabelOutline, MeshRenderer, Sprite, UITransform, Rect, view, ResolutionPolicy, instantiate } from 'cc';
 import { BlackHoleMachine } from '../machine/BlackHoleMachine';
 import { InfiniteWorldManager } from '../world/InfiniteWorldManager';
 import { CompressibleObject } from './CompressibleObject';
@@ -87,20 +87,38 @@ export class GameManager extends Component {
   // buildings and park models at the playable edges.  This wider, still
   // touch-readable 48° composition keeps the local target in the lower
   // interaction band while putting actual street landmarks in frame.
-  // Keep the local singularity in the reference's readable 18–23% width band.
-  // The previous 27m/25.1m follow offset reduced the real player to ~13% of a
-  // 390px viewport, making the gameplay read like a distant icon.  This closer
-  // 20m/18.5m framing still leaves the city lane in view while restoring a
-  // clearly playable machine silhouette on phones.
+  // Endless retains its existing close follow framing. Arena uses an isolated
+  // preset below so a competitive composition correction cannot silently
+  // regress the vertical-slice exploration view.
   private cameraOffset: Vec3 = new Vec3(0, 20.0, 18.5);
+  /**
+   * Calibrated as one isolated camera experiment from the measured Arena
+   * baseline: at 390×844, 20/18.5 m put the player at width 0.547 and Y 0.326
+   * (contract: 0.22–0.30 and 0.50–0.67). With the existing 44° vertical FOV
+   * and -55° pitch, the first candidate (44/23 m) measured width 0.267 but
+   * Y 0.692. Holding height/FOV/pitch fixed, this second candidate moves only
+   * the camera landing point forward to 27 m; its predicted Y is 0.60–0.66
+   * with width still inside contract. The acceptance runner, not this
+   * calculation, determines whether the preset is retained.
+   */
+  private readonly arenaCameraOffset: Vec3 = new Vec3(0, 44.0, 27.0);
   private cameraTarget: Vec3 = new Vec3();
   private readonly portraitWidth = 720;
   private readonly portraitHeight = 1280;
+  /**
+   * A compact, native in-game identifier required by the Mini Game filing
+   * screenshots. It deliberately reuses a Creator-saved HUD Label template
+   * rather than placing text into captured images or introducing a separate
+   * font/material path. The Home page already has the large game logo.
+   */
+  private registrationBranding: Node | null = null;
+  private registrationBrandingVisible: boolean | null = null;
 
   onLoad(): void {
     platformAdapter.init();
     this.currentCoins = saveService.data.coins;
     this.autoBindDependencies();
+    this.createRegistrationBranding();
     this.applySavedCoreSkin();
     this.applyPortraitRuntimeContract();
     this.initLighting();
@@ -228,6 +246,60 @@ export class GameManager extends Component {
         this.hud = runtimeHudNode.addComponent(HUDView);
       }
     }
+  }
+
+  /**
+   * Adds a non-interactive in-game title to the Canvas for all non-Home
+   * screens. The template originates from the Creator-saved Endless HUD, so
+   * Web Mobile uses the same serialized Label configuration as the authored
+   * production UI. This is a runtime presentation node only; it owns no
+   * gameplay state and does not alter scene/prefab serialization.
+   */
+  private createRegistrationBranding(): void {
+    const canvas = director.getScene()?.getChildByName('Canvas') || null;
+    const template = canvas?.getChildByName('EndlessHUD')?.getChildByName('LevelValue') || null;
+    if (!canvas || !template) {
+      console.error('[GameManager] Cannot create registration branding: serialized Canvas/LevelValue template is missing.');
+      return;
+    }
+
+    const branding = instantiate(template);
+    branding.name = 'RegistrationBranding';
+    canvas.addChild(branding);
+    const transform = branding.getComponent(UITransform);
+    transform?.setContentSize(280, 48);
+    branding.setPosition(0, 580, 0);
+
+    const label = branding.getComponent(Label);
+    if (!label) {
+      branding.destroy();
+      console.error('[GameManager] Cannot create registration branding: serialized LevelValue template has no Label.');
+      return;
+    }
+    label.string = '黑洞回收站';
+    label.fontSize = 30;
+    label.lineHeight = 38;
+    label.horizontalAlign = Label.HorizontalAlign.CENTER;
+    label.verticalAlign = Label.VerticalAlign.CENTER;
+    label.color = new Color(255, 245, 184, 255);
+    const outline = branding.getComponent(LabelOutline) || branding.addComponent(LabelOutline);
+    outline.width = 3;
+    outline.color = new Color(13, 30, 52, 255);
+
+    this.registrationBranding = branding;
+    this.registrationBrandingVisible = null;
+    this.syncRegistrationBranding();
+  }
+
+  private syncRegistrationBranding(): void {
+    if (!this.registrationBranding?.isValid) return;
+    // Home already presents the full-size, artwork-backed "黑洞回收站" logo.
+    // Every other player-visible page and gameplay state must retain the
+    // concise title identifier required by the filing screenshot rules.
+    const visible = this.gameState !== 'HOME';
+    if (visible === this.registrationBrandingVisible) return;
+    this.registrationBranding.active = visible;
+    this.registrationBrandingVisible = visible;
   }
 
   private initWorld(): void {
@@ -915,6 +987,8 @@ export class GameManager extends Component {
         reviveGiveUp: describe(revivePage?.getChildByName('BtnGiveUp') || null),
       },
       runtimePageInput: runtimePageInput?.lastInputDiagnostic || null,
+      registrationBranding: describe(canvas?.getChildByName('RegistrationBranding') || null),
+      registrationBrandingText: labelText(canvas?.getChildByName('RegistrationBranding') || null),
       logo: describe(homeNode('Logo')),
       hero: describe(homeNode('HeroBlackHole')),
       start: describe(homeNode('BtnStart')),
@@ -931,22 +1005,21 @@ export class GameManager extends Component {
       snapshot: () => {
         const mPos = this.machine?.node.position;
         const viewport = view.getViewportRect();
-        const playerVisualCenter = mPos ? new Vec3(mPos.x, mPos.y + 0.16, mPos.z) : null;
-        const playerScreen = playerVisualCenter && this.mainCamera
-          ? this.mainCamera.worldToScreen(playerVisualCenter, new Vec3())
-          : null;
-        const playerScreenLeft = playerVisualCenter && this.mainCamera
-          ? this.mainCamera.worldToScreen(new Vec3(playerVisualCenter.x - 1.0 * (this.machine?.node.scale.x || 1), playerVisualCenter.y, playerVisualCenter.z), new Vec3())
-          : null;
-        const playerScreenRight = playerVisualCenter && this.mainCamera
-          ? this.mainCamera.worldToScreen(new Vec3(playerVisualCenter.x + 1.0 * (this.machine?.node.scale.x || 1), playerVisualCenter.y, playerVisualCenter.z), new Vec3())
-          : null;
-        const playerViewport = playerScreen && viewport.width > 0 && viewport.height > 0 ? {
-          x: (playerScreen.x - viewport.x) / viewport.width,
-          y: 1 - (playerScreen.y - viewport.y) / viewport.height,
-          width: playerScreenLeft && playerScreenRight
-            ? Math.abs(playerScreenRight.x - playerScreenLeft.x) / viewport.width
-            : 0,
+        // Player composition is measured from actual recursively merged
+        // MeshRenderer world bounds in InfiniteWorldManager.  Do not infer a
+        // made-up width from Node.scale: imported machine meshes do not share
+        // one stable source-unit size.
+        const goldenCityComposition = this.infiniteWorldManager?.getGoldenCityCompositionDiagnostics(
+          this.mainCamera,
+          this.machine?.node || null,
+          this.arenaMatchManager?.getCompositionCompetitors() || [],
+        ) || null;
+        const goldenPlayer = goldenCityComposition?.player || null;
+        const playerViewport = goldenPlayer?.screenBounds && viewport.width > 0 && viewport.height > 0 ? {
+          x: ((goldenPlayer.screenBounds.left + goldenPlayer.screenBounds.right) * 0.5 - viewport.x) / viewport.width,
+          y: goldenPlayer.screenYRatio,
+          width: goldenPlayer.widthRatio,
+          measured: true,
         } : null;
         const allObjs = this.infiniteWorldManager?.getAllObjects() || [];
         const sampledObjs = allObjs.map(o => {
@@ -982,7 +1055,10 @@ export class GameManager extends Component {
         camera: {
           fov: this.mainCamera?.fov ?? null,
           fovAxis: this.mainCamera?.fovAxis ?? null,
-          offset: { x: this.cameraOffset.x, y: this.cameraOffset.y, z: this.cameraOffset.z },
+          offset: (() => {
+            const activeCameraOffset = this.getActiveCameraOffset();
+            return { x: activeCameraOffset.x, y: activeCameraOffset.y, z: activeCameraOffset.z };
+          })(),
           playerViewport,
           position: {
             x: this.mainCamera?.node.position.x ?? 0,
@@ -1026,7 +1102,12 @@ export class GameManager extends Component {
             regionIndex: this.infiniteWorldManager?.getRegionIndex() || 0,
             activeCellCount: this.infiniteWorldManager?.activeCells.size || 0,
             visibleObjectCount: this.infiniteWorldManager?.getVisibleObjectCount() || 0,
-            streaming: this.infiniteWorldManager?.getSnapshot() || null,
+            streaming: this.infiniteWorldManager ? {
+              ...this.infiniteWorldManager.getSnapshot(),
+              // JSON-only diagnostic evidence. Cocos nodes, components and
+              // mutable methods never cross the browser QA bridge.
+              goldenCityComposition,
+            } : null,
           },
           arena: this.networkArenaClient.snapshot
             && (this.gameState === 'NETWORK_ARENA' || this.networkSettlementShown)
@@ -1187,6 +1268,7 @@ export class GameManager extends Component {
   }
 
   update(dt: number): void {
+    this.syncRegistrationBranding();
     this.forwardNetworkArenaInput(dt);
     // 1. 暂停短路保护
     if (this.isPaused) return;
@@ -1249,7 +1331,8 @@ export class GameManager extends Component {
     }
 
     // 3. 相机平滑跟随 (垂直 FOV 锁定的 9:16 俯视视角)
-    Vec3.add(this.cameraTarget, mPos, this.cameraOffset);
+    const isArenaView = this.gameState === 'ARENA' || this.gameState === 'NETWORK_ARENA' || this.gameState === 'REVIVING';
+    Vec3.add(this.cameraTarget, mPos, this.getActiveCameraOffset());
     const cPos = this.mainCamera.node.position;
     this.mainCamera.node.setPosition(
       math.lerp(cPos.x, this.cameraTarget.x, dt * 5.0),
@@ -1262,8 +1345,14 @@ export class GameManager extends Component {
     // as an empty lawn; -50° exposes the actual road, park furnishing and
     // nearby competitors without altering input, world coordinates, suction
     // ranges, or the general portrait camera follow.
-    const isArenaView = this.gameState === 'ARENA' || this.gameState === 'NETWORK_ARENA' || this.gameState === 'REVIVING';
     this.mainCamera.node.setRotationFromEuler(isArenaView ? -55 : -42, 0, 0);
+  }
+
+  /** Returns an explicit, mode-owned preset rather than mutating shared follow state. */
+  private getActiveCameraOffset(): Readonly<Vec3> {
+    return this.gameState === 'ARENA' || this.gameState === 'NETWORK_ARENA' || this.gameState === 'REVIVING'
+      ? this.arenaCameraOffset
+      : this.cameraOffset;
   }
 
   /**

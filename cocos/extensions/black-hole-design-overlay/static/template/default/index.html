@@ -1,0 +1,28 @@
+<div id="app">
+  <div class="toolbar">
+    <label>页面
+      <select id="page">
+        <option value="mode-select">Mode Select</option>
+        <option value="arena_hud" selected>Arena HUD</option>
+        <option value="revive">Revive</option>
+        <option value="settlement">Settlement</option>
+        <option value="home">Home</option>
+      </select>
+    </label>
+    <label>Opacity <input id="opacity" type="range" min="25" max="100" step="25" value="50"></label>
+    <span id="opacity-value">50%</span>
+    <label><input id="toggle" type="checkbox" checked>Reference</label>
+    <label>实际运行截图 <input id="actual-file" type="file" accept="image/png,image/jpeg"></label>
+    <button id="refresh">Refresh Audit</button>
+    <button id="export">Export Audit Report</button>
+  </div>
+  <p class="notice">READ ONLY：只读取当前 Creator 场景与 Blueprint；不会创建、删除、挂载、修改节点，也不会调用 save-scene。</p>
+  <p id="image-status">尚未载入实际截图；参考图不能作为游戏运行证据。</p>
+  <div class="comparison-scroll">
+    <div id="comparison">
+      <img id="actual" alt="Actual runtime screenshot" hidden>
+      <img id="reference" alt="Locked design reference" hidden>
+    </div>
+  </div>
+  <pre id="result">Waiting for Creator scene…</pre>
+</div>

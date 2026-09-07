@@ -1,1 +1,15 @@
-{"reference":"../design-reference/v2-03-arena-hud.png","viewportRatio":"9:16","safeArea":{"top":0.04,"bottom":0.04},"backgroundType":"isometric city gameplay >=80%","mainObjectPosition":"center-lower","mainObjectOccupancy":"16%-24% viewport height","panelBounds":{"leaderboard":"2%-32% x / 15%-28% y","timer":"40%-60% x / 4%-10% y","joystick":"66%-98% x / 78%-98% y"},"fontSizeRange":[15,28],"fontStroke":"white fill / black outline","primaryColors":["#ffffff","#1d1d1d","#74e345"],"secondaryColors":["#ffca19","#b34cff","#47b7ff"],"shadowStyle":"semi-transparent black glass with white edge","requiredElements":["top5 leaderboard","timer","kills","pause","joystick","world-space arrows"],"forbiddenElements":["shop","task panel","full-screen lobby UI"]}
+{
+  "version": 2,
+  "page": "arena_hud",
+  "status": "REFERENCE_BLUEPRINT_DRAFT",
+  "reference": "../design-reference/v2-03-arena-hud.png",
+  "designSpace": { "width": 720, "height": 1280, "origin": "top-left" },
+  "elements": [
+    { "id": "leaderboard", "nodeName": "LeaderboardPanel", "role": "top5_leaderboard", "referenceBounds": { "x": 14, "y": 190, "width": 218, "height": 166 }, "expectedComponents": ["cc.Sprite"], "required": true, "tolerance": { "x": 8, "y": 8, "width": 10, "height": 10 } },
+    { "id": "timer", "nodeName": "TimerPanel", "role": "timer", "referenceBounds": { "x": 280, "y": 50, "width": 160, "height": 62 }, "expectedComponents": ["cc.Sprite"], "required": true, "tolerance": { "x": 8, "y": 8, "width": 10, "height": 10 } },
+    { "id": "status", "nodeName": "StatusPanel", "role": "player_status", "referenceBounds": { "x": 390, "y": 220, "width": 220, "height": 82 }, "expectedComponents": ["cc.Sprite"], "required": true, "tolerance": { "x": 8, "y": 8, "width": 10, "height": 10 } },
+    { "id": "pause", "nodeName": "BtnPause", "role": "pause", "referenceBounds": { "x": 614, "y": 38, "width": 58, "height": 58 }, "expectedComponents": ["cc.Sprite", "cc.Button"], "required": true, "tolerance": { "x": 8, "y": 8, "width": 10, "height": 10 } },
+    { "id": "joystick", "nodeName": "Joystick", "role": "input", "referenceBounds": { "x": 476, "y": 998, "width": 196, "height": 196 }, "expectedComponents": ["cc.UITransform"], "required": true, "tolerance": { "x": 10, "y": 10, "width": 12, "height": 12 } }
+  ],
+  "forbiddenElements": ["shop", "task panel", "full-screen lobby UI"]
+}

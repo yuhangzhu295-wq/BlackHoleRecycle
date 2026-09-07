@@ -23,22 +23,6 @@
       ],
       "subMetas": {}
     },
-    "2b33f": {
-      "importer": "gltf-embeded-image",
-      "uuid": "4d0b5a25-f16d-42e8-8a30-9e7c5e50e033@2b33f",
-      "displayName": "",
-      "id": "2b33f",
-      "name": "colormap.image",
-      "userData": {
-        "gltfIndex": 0
-      },
-      "ver": "1.0.3",
-      "imported": true,
-      "files": [
-        ".json"
-      ],
-      "subMetas": {}
-    },
     "96c50": {
       "importer": "texture",
       "uuid": "4d0b5a25-f16d-42e8-8a30-9e7c5e50e033@96c50",
@@ -52,8 +36,8 @@
         "magfilter": "linear",
         "mipfilter": "linear",
         "anisotropy": 0,
-        "isUuid": true,
-        "imageUuidOrDatabaseUri": "4d0b5a25-f16d-42e8-8a30-9e7c5e50e033@2b33f"
+        "isUuid": false,
+        "imageUuidOrDatabaseUri": "db://assets/art/props/Textures/colormap.png"
       },
       "ver": "1.0.22",
       "imported": true,
@@ -99,7 +83,7 @@
     "imageMetas": [
       {
         "name": "colormap",
-        "uri": "4d0b5a25-f16d-42e8-8a30-9e7c5e50e033@2b33f"
+        "uri": "db://assets/art/props/Textures/colormap.png"
       }
     ],
     "lods": {

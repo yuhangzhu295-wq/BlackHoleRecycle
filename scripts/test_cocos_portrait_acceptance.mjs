@@ -25,7 +25,7 @@ const reportPath = path.join(evidenceDirectory, 'acceptance-report.json');
 const requestedAcceptanceScope = process.argv.find((argument) => argument.startsWith('--scope='))?.slice('--scope='.length)
   || process.env.BHR_ACCEPTANCE_SCOPE
   || 'full';
-const acceptanceScope = ['full', 'pages', 'skins', 'skin-unlock', 'arena-timer', 'network', 'regions', 'progression'].includes(requestedAcceptanceScope)
+const acceptanceScope = ['full', 'pages', 'skins', 'skin-unlock', 'arena-timer', 'network', 'regions', 'progression', 'golden-city'].includes(requestedAcceptanceScope)
   ? requestedAcceptanceScope
   : 'full';
 // Preserve each independently-runnable acceptance scope. The canonical report
@@ -855,6 +855,68 @@ async function verifyArenaFlow(cdp, page, canvasRect, modeSnapshot) {
 }
 
 /**
+ * Baseline-only Golden City probe. It starts a genuine 1-human + 7-bot arena
+ * by CDP touch, reads JSON evidence from the live Cocos engine, and observes
+ * a route-driven vehicle move. It does not grant mass, teleport entities, or
+ * convert missing metrics into a pass.
+ */
+async function collectGoldenCityBaseline(cdp, page, canvasRect, homeSnapshot) {
+  const start = pointForVisibleNode(canvasRect, homeSnapshot, homeSnapshot.ui?.start, 'GOLDEN_CITY_HOME_START');
+  await dispatchTouchTap(cdp, start.x, start.y);
+  await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'MODE_SELECT', undefined, { timeout: 5000 });
+  const mode = await readRuntimeSnapshot(page);
+  const arena = pointForVisibleNode(canvasRect, mode, mode.ui?.modeArena, 'GOLDEN_CITY_MODE_ARENA');
+  await dispatchTouchTap(cdp, arena.x, arena.y);
+  await page.waitForFunction(() => {
+    const snapshot = window.__BHR_QA__.snapshot();
+    return snapshot.gameState === 'ARENA' && snapshot.ui?.arenaHUD?.root?.active === true;
+  }, undefined, { timeout: 7000 });
+
+  const before = await readRuntimeSnapshot(page);
+  const composition = before.world?.streaming?.goldenCityComposition;
+  assert(before.arena?.competitorCount === 8,
+    `FAIL_GOLDEN_CITY_COMPETITOR_ROSTER: ${JSON.stringify(before.arena)}`);
+  assert(composition?.status === 'MEASURED',
+    `FAIL_GOLDEN_CITY_UNMEASURED: ${JSON.stringify(composition)}`);
+  await page.screenshot({ path: path.join(evidenceDirectory, 'portrait-390x844-golden-city-before.png') });
+  writeFileSync(path.join(evidenceDirectory, 'golden-city-composition-before.json'), `${JSON.stringify(composition, null, 2)}\n`, 'utf8');
+
+  const dynamicBefore = before.world?.streaming?.dynamicVehicles || [];
+  assert(dynamicBefore.length > 0,
+    `FAIL_GOLDEN_CITY_DYNAMIC_VEHICLE_MISSING: ${JSON.stringify(before.world?.streaming)}`);
+  const roadsideTrees = composition.entries.filter((entry) => entry.name.startsWith('OpeningParkTreeRoad'));
+  assert(roadsideTrees.length === 2 && roadsideTrees.every((entry) => entry.category === 'TREE'),
+    `FAIL_GOLDEN_CITY_ROADSIDE_TREE_CLASSIFICATION: ${JSON.stringify(roadsideTrees)}`);
+  const openingRoad = composition.entries.find((entry) => entry.name === 'FourWayRoad')?.worldBounds;
+  const openingTraffic = dynamicBefore.filter((vehicle) => vehicle.id.startsWith('traffic_0_0_'));
+  const isInsideOpeningRoad = (vehicle) => openingRoad
+    && vehicle.x >= openingRoad.min.x && vehicle.x <= openingRoad.max.x
+    && vehicle.z >= openingRoad.min.z && vehicle.z <= openingRoad.max.z;
+  assert(openingTraffic.length > 0 && openingTraffic.every(isInsideOpeningRoad),
+    `FAIL_GOLDEN_CITY_TRAFFIC_OFF_ROAD: ${JSON.stringify({ openingRoad, openingTraffic })}`);
+  await page.waitForTimeout(1200);
+  const after = await readRuntimeSnapshot(page);
+  const dynamicAfter = after.world?.streaming?.dynamicVehicles || [];
+  assert(openingTraffic.every((vehicle) => {
+    const moved = dynamicAfter.find((candidate) => candidate.id === vehicle.id);
+    return moved && isInsideOpeningRoad(moved);
+  }), `FAIL_GOLDEN_CITY_TRAFFIC_LEFT_ROAD: ${JSON.stringify({ openingRoad, dynamicAfter })}`);
+  const movingVehicle = dynamicBefore.map((vehicle) => {
+    const moved = dynamicAfter.find((candidate) => candidate.id === vehicle.id);
+    return moved ? {
+      id: vehicle.id,
+      kind: vehicle.kind,
+      distance: Math.hypot(moved.x - vehicle.x, moved.z - vehicle.z),
+      before: { x: vehicle.x, z: vehicle.z },
+      after: { x: moved.x, z: moved.z },
+    } : null;
+  }).find((vehicle) => vehicle && vehicle.distance > 0.2);
+  assert(movingVehicle,
+    `FAIL_GOLDEN_CITY_DYNAMIC_VEHICLE_NOT_MOVING: ${JSON.stringify({ dynamicBefore, dynamicAfter })}`);
+  return { start, arena, composition, dynamicBefore, dynamicAfter, movingVehicle };
+}
+
+/**
  * Proves the other legitimate arena end condition without granting time,
  * calling a manager method or changing its duration. The real 180-second
  * timer runs under the rendered page until ArenaMatchManager ends the match.
@@ -1295,6 +1357,14 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
     if (viewport.id === '390x844') {
       const cdp = await context.newCDPSession(page);
       report.camera = snapshot.camera;
+      if (acceptanceScope === 'golden-city') {
+        report.goldenCity = await collectGoldenCityBaseline(cdp, page, canvasRect, snapshot);
+        // A baseline can expose contract failures; that is the intended next
+        // input to a targeted fix, not permission to label Golden City PASS.
+        assert(runtimeErrors.length === 0,
+          `Runtime console errors during Golden City baseline: ${runtimeErrors.join(' | ')}`);
+        return;
+      }
       if (acceptanceScope === 'network') {
         report.network = await verifyNetworkProbe(cdp, page, canvasRect);
         assert(runtimeErrors.length === 0, `Runtime console errors after Colyseus connection: ${runtimeErrors.join(' | ')}`);
@@ -1719,6 +1789,7 @@ const report = {
   regions: null,
   fullProgression: null,
   paidSkinUnlock: null,
+  goldenCity: null,
   consoleErrors: [],
   failures: [],
 };
@@ -1742,15 +1813,17 @@ try {
     : `http://127.0.0.1:${address.port}/`;
   browser = await chromium.launch({ headless: true, args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-webgl'] });
 
-  const targetViewports = acceptanceScope === 'pages' || acceptanceScope === 'skins' || acceptanceScope === 'skin-unlock' || acceptanceScope === 'arena-timer' || acceptanceScope === 'network' || acceptanceScope === 'regions' || acceptanceScope === 'progression'
+  const targetViewports = acceptanceScope === 'pages' || acceptanceScope === 'skins' || acceptanceScope === 'skin-unlock' || acceptanceScope === 'arena-timer' || acceptanceScope === 'network' || acceptanceScope === 'regions' || acceptanceScope === 'progression' || acceptanceScope === 'golden-city'
     ? requiredPortraitViewports.filter((viewport) => viewport.id === '390x844')
     : requiredPortraitViewports;
   for (const viewport of targetViewports) {
     console.log(`[acceptance:v2] Verifying ${viewport.id}...`);
     await runPortraitCase(browser, baseUrl, viewport, report);
   }
-  report.status = 'PASS';
-  console.log('[acceptance:v2] PASS: real portrait Cocos runtime and CDP touch verified.');
+  report.status = acceptanceScope === 'golden-city' ? 'BASELINE_COLLECTED' : 'PASS';
+  console.log(acceptanceScope === 'golden-city'
+    ? '[acceptance:v2] BASELINE_COLLECTED: real Golden City measurement and CDP touch verified.'
+    : '[acceptance:v2] PASS: real portrait Cocos runtime and CDP touch verified.');
 } catch (error) {
   report.status = 'FAIL';
   report.failures.push(error instanceof Error ? error.message : String(error));

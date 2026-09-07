@@ -1,1 +1,15 @@
-{"reference":"../design-reference/v2-04-revive.png","viewportRatio":"9:16","backgroundType":"live gameplay darkened by overlay","titleBounds":{"x":"20%-80%","y":"34%-49%"},"buttonBounds":{"endRun":"8%-47% x / 77%-84% y","rewarded":"53%-92% x / 77%-84% y"},"fontSizeRange":[20,48],"fontStroke":"white fill / dark outline","primaryColors":["#ffcf1b","#993fe9","#e94de8"],"secondaryColors":["#112227","#ffffff"],"shadowStyle":"high contrast thick raised buttons","requiredElements":["countdown","end run","conditional rewarded revive"],"forbiddenElements":["rewarded revive when no real ad unit"]}
+{
+  "version": 2,
+  "page": "revive",
+  "status": "REFERENCE_BLUEPRINT_DRAFT",
+  "reference": "../design-reference/v2-04-revive.png",
+  "designSpace": { "width": 720, "height": 1280, "origin": "top-left" },
+  "elements": [
+    { "id": "dim_overlay", "nodeName": "DimOverlay", "role": "modal_overlay", "referenceBounds": { "x": 0, "y": 0, "width": 720, "height": 1280 }, "expectedComponents": ["cc.Sprite"], "required": true, "tolerance": { "x": 0, "y": 0, "width": 2, "height": 2 } },
+    { "id": "revive_card", "nodeName": "ReviveCard", "role": "modal_card", "referenceBounds": { "x": 50, "y": 250, "width": 620, "height": 900 }, "expectedComponents": ["cc.Sprite"], "required": true, "tolerance": { "x": 10, "y": 10, "width": 12, "height": 12 } },
+    { "id": "countdown", "nodeName": "CountdownPanel", "role": "countdown", "referenceBounds": { "x": 251, "y": 686, "width": 218, "height": 96 }, "expectedComponents": ["cc.Sprite"], "required": true, "tolerance": { "x": 8, "y": 8, "width": 10, "height": 10 } },
+    { "id": "revive_action", "nodeName": "BtnRevive", "role": "conditional_rewarded_action", "referenceBounds": { "x": 164, "y": 890, "width": 392, "height": 98 }, "expectedComponents": ["cc.Sprite", "cc.Button"], "required": true, "tolerance": { "x": 8, "y": 8, "width": 10, "height": 10 } },
+    { "id": "end_action", "nodeName": "BtnGiveUp", "role": "end_run", "referenceBounds": { "x": 190, "y": 1018, "width": 340, "height": 78 }, "expectedComponents": ["cc.Sprite", "cc.Button"], "required": true, "tolerance": { "x": 8, "y": 8, "width": 10, "height": 10 } }
+  ],
+  "forbiddenElements": ["rewarded revive when no real ad unit"]
+}

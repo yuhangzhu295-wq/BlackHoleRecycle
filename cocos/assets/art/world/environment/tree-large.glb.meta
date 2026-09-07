@@ -39,22 +39,6 @@
       ],
       "subMetas": {}
     },
-    "2b33f": {
-      "importer": "gltf-embeded-image",
-      "uuid": "625fe482-b1b9-4410-9de9-f93733254ee5@2b33f",
-      "displayName": "",
-      "id": "2b33f",
-      "name": "colormap.image",
-      "userData": {
-        "gltfIndex": 0
-      },
-      "ver": "1.0.3",
-      "imported": true,
-      "files": [
-        ".json"
-      ],
-      "subMetas": {}
-    },
     "96c50": {
       "importer": "texture",
       "uuid": "625fe482-b1b9-4410-9de9-f93733254ee5@96c50",
@@ -68,8 +52,8 @@
         "magfilter": "nearest",
         "mipfilter": "nearest",
         "anisotropy": 0,
-        "isUuid": true,
-        "imageUuidOrDatabaseUri": "625fe482-b1b9-4410-9de9-f93733254ee5@2b33f"
+        "isUuid": false,
+        "imageUuidOrDatabaseUri": "db://assets/art/world/environment/Textures/colormap.png"
       },
       "ver": "1.0.22",
       "imported": true,
@@ -99,7 +83,7 @@
     "imageMetas": [
       {
         "name": "colormap",
-        "uri": "625fe482-b1b9-4410-9de9-f93733254ee5@2b33f"
+        "uri": "db://assets/art/world/environment/Textures/colormap.png"
       }
     ],
     "lods": {

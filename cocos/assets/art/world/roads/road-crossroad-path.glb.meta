@@ -23,22 +23,6 @@
       ],
       "subMetas": {}
     },
-    "2b33f": {
-      "importer": "gltf-embeded-image",
-      "uuid": "0c38d099-6cd3-474d-9cf1-4d6e61222896@2b33f",
-      "displayName": "",
-      "id": "2b33f",
-      "name": "colormap.image",
-      "userData": {
-        "gltfIndex": 0
-      },
-      "ver": "1.0.3",
-      "imported": true,
-      "files": [
-        ".json"
-      ],
-      "subMetas": {}
-    },
     "96c50": {
       "importer": "texture",
       "uuid": "0c38d099-6cd3-474d-9cf1-4d6e61222896@96c50",
@@ -52,8 +36,8 @@
         "magfilter": "nearest",
         "mipfilter": "nearest",
         "anisotropy": 0,
-        "isUuid": true,
-        "imageUuidOrDatabaseUri": "0c38d099-6cd3-474d-9cf1-4d6e61222896@2b33f"
+        "isUuid": false,
+        "imageUuidOrDatabaseUri": "db://assets/art/world/roads/Textures/colormap.png"
       },
       "ver": "1.0.22",
       "imported": true,
@@ -99,7 +83,7 @@
     "imageMetas": [
       {
         "name": "colormap",
-        "uri": "0c38d099-6cd3-474d-9cf1-4d6e61222896@2b33f"
+        "uri": "db://assets/art/world/roads/Textures/colormap.png"
       }
     ],
     "lods": {

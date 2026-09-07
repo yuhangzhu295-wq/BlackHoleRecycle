@@ -1,1 +1,18 @@
-{"reference":"../design-reference/v2-01-home.png","viewportRatio":"9:16","safeArea":{"top":0.05,"bottom":0.08},"backgroundType":"bright isometric city-park gameplay","mainObjectPosition":"center-lower","mainObjectOccupancy":"20%-28% viewport height","titleBounds":{"x":"16%-84%","y":"17%-34%"},"buttonBounds":{"x":"27%-73%","y":"70%-78%"},"fontSizeRange":[18,48],"fontStroke":"white inner / dark outer","primaryColors":["#ffbf19","#4c8df8","#5540be"],"secondaryColors":["#75c93d","#ffffff"],"shadowStyle":"soft dark offset plus raised button lip","requiredElements":["coins","machine","black-hole hero","start swallow","mode","skin"],"forbiddenElements":["friends","mail","first recharge","titles","daily reward","lucky wheel"]}
+{
+  "version": 2,
+  "page": "home",
+  "status": "REFERENCE_BLUEPRINT_DRAFT",
+  "reference": "../design-reference/v2-01-home.png",
+  "designSpace": { "width": 720, "height": 1280, "origin": "top-left" },
+  "elements": [
+    { "id": "coin_panel", "nodeName": "CoinPanel", "role": "runtime_currency", "referenceBounds": { "x": 26, "y": 44, "width": 220, "height": 64 }, "expectedComponents": ["cc.Sprite"], "required": true, "tolerance": { "x": 8, "y": 8, "width": 10, "height": 10 } },
+    { "id": "machine_panel", "nodeName": "MachineStatus", "role": "runtime_progress", "referenceBounds": { "x": 474, "y": 44, "width": 220, "height": 64 }, "expectedComponents": ["cc.Sprite"], "required": true, "tolerance": { "x": 8, "y": 8, "width": 10, "height": 10 } },
+    { "id": "logo", "nodeName": "Logo", "role": "title", "referenceBounds": { "x": 60, "y": 180, "width": 600, "height": 180 }, "expectedComponents": ["cc.Sprite"], "required": true, "tolerance": { "x": 10, "y": 10, "width": 12, "height": 12 } },
+    { "id": "hero_blackhole", "nodeName": "HeroBlackHole", "role": "hero", "referenceBounds": { "x": 180, "y": 430, "width": 360, "height": 360 }, "expectedComponents": ["cc.Sprite"], "required": true, "tolerance": { "x": 10, "y": 10, "width": 12, "height": 12 } },
+    { "id": "primary_action", "nodeName": "BtnStart", "role": "primary_action", "referenceBounds": { "x": 180, "y": 900, "width": 360, "height": 104 }, "expectedComponents": ["cc.Sprite", "cc.Button", "cc.Label"], "required": true, "tolerance": { "x": 8, "y": 8, "width": 10, "height": 10 } },
+    { "id": "mode_action", "nodeName": "BtnMode", "role": "secondary_action", "referenceBounds": { "x": 72, "y": 1052, "width": 160, "height": 112 }, "expectedComponents": ["cc.Sprite", "cc.Button"], "required": true, "tolerance": { "x": 8, "y": 8, "width": 10, "height": 10 } },
+    { "id": "skin_action", "nodeName": "BtnSkin", "role": "secondary_action", "referenceBounds": { "x": 280, "y": 1052, "width": 160, "height": 112 }, "expectedComponents": ["cc.Sprite", "cc.Button"], "required": true, "tolerance": { "x": 8, "y": 8, "width": 10, "height": 10 } },
+    { "id": "machine_action", "nodeName": "BtnMachine", "role": "secondary_action", "referenceBounds": { "x": 488, "y": 1052, "width": 160, "height": 112 }, "expectedComponents": ["cc.Sprite", "cc.Button"], "required": true, "tolerance": { "x": 8, "y": 8, "width": 10, "height": 10 } }
+  ],
+  "forbiddenElements": ["friends", "mail", "first_recharge", "daily_reward", "lucky_wheel"]
+}

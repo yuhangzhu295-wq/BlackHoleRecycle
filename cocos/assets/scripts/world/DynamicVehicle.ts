@@ -1,4 +1,4 @@
-import { Vec3 } from 'cc';
+import { Node, Vec3 } from 'cc';
 import { CompressibleObject, ObjectMotionState } from '../gameplay/CompressibleObject';
 
 export type DynamicVehicleState = 'DRIVE' | 'TURN' | 'ATTRACTED' | 'SUCKING' | 'ABSORBED';
@@ -108,6 +108,11 @@ export class DynamicVehicle {
       headingDegrees: this.headingDegrees,
       turnCount: this.turnCount,
     };
+  }
+
+  /** Real pooled object node, exposed only to engine-side composition QA. */
+  public getCompositionNode(): Node {
+    return this.object.node;
   }
 
   private closestRoutePoint(position: Readonly<Vec3>): number {

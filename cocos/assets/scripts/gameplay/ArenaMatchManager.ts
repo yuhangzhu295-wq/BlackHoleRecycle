@@ -55,6 +55,20 @@ export interface ArenaMatchSnapshot {
 }
 
 /**
+ * Engine-internal read-only geometry handle used by the Golden City
+ * composition measurement. This is intentionally never serialized through
+ * the browser QA bridge: a Cocos Node is useful for native bounds collection,
+ * but not a valid JSON evidence value.
+ */
+export interface CompositionCompetitor {
+  readonly id: string;
+  readonly isLocal: boolean;
+  readonly isBot: boolean;
+  readonly alive: boolean;
+  readonly node: Node;
+}
+
+/**
  * The arena's reward ledger.  Each field is derived from a completed local
  * match, so the result page can explain the earned amount without presenting
  * a synthetic prize or a separately hard-coded rank reward.
@@ -306,6 +320,20 @@ export class ArenaMatchManager extends Component {
       reason: this.endReason,
       settlementReward: this.settlementReward,
     };
+  }
+
+  /**
+   * Supplies the real runtime competitor nodes to an engine-side diagnostic.
+   * It neither exposes a gameplay mutation nor affects arena authority.
+   */
+  public getCompositionCompetitors(): readonly CompositionCompetitor[] {
+    return this.competitors.map((competitor) => ({
+      id: competitor.id,
+      isLocal: competitor.isLocal,
+      isBot: competitor.isBot,
+      alive: competitor.alive,
+      node: competitor.node,
+    }));
   }
 
   private prepareMachine(machine: BlackHoleMachine, mass: number): void {
