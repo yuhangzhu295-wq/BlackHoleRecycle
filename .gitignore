@@ -15,6 +15,10 @@ bin/
 artifacts/
 
 # Cocos Creator Cache & Temp
+/library/
+/temp/
+/profiles/
+/settings/
 cocos/library/
 cocos/temp/
 cocos/local/
