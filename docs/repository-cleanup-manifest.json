@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "baseline": "ce30274afde88d3617bc221e6ad38f2bfe59d766",
+  "generatedFor": "architecture-convergence",
+  "rules": {
+    "deleteOnlyWhen": [
+      "no code import",
+      "no scene reference",
+      "no prefab reference",
+      "no meta UUID reference",
+      "no build dependency",
+      "no acceptance dependency",
+      "no filing dependency"
+    ],
+    "temporaryRuntimeOutput": "artifacts/",
+    "trackedFinalEvidence": "cocos/docs/evidence/final/"
+  },
+  "entries": [
+    {
+      "path": "cocos/assets/prefabs/machine/PolyGoogleBulldozerChassis.prefab",
+      "status": "PROTECTED_REFERENCED",
+      "evidence": "Game.scene contains an editor-saved instance named PolyGoogleBulldozerChassis; do not infer duplication from filenames."
+    },
+    {
+      "path": "cocos/assets/prefabs/machine/PolyGoogleBulldozerChassis-001.prefab",
+      "status": "PROTECTED_REFERENCED",
+      "evidence": "Game.scene contains an editor-saved instance named PolyGoogleBulldozerChassis-001; do not infer duplication from filenames."
+    },
+    {
+      "path": "cocos/assets/prefabs/chunks/BedroomChunk.prefab",
+      "status": "CANDIDATE_PENDING_RUNTIME_AUDIT",
+      "evidence": "No production code import or scene-name match found in the initial text audit. Its prefab/meta UUID and generated build references still require a Creator Asset Database audit before removal."
+    },
+    {
+      "path": "cocos/assets/scripts/world/WorldChunkManager.ts",
+      "status": "CANDIDATE_PENDING_RUNTIME_AUDIT",
+      "evidence": "GameManager documents this as legacy and no production import was found. Confirm no scene script UUID, acceptance dependency, or build dependency before deletion."
+    },
+    {
+      "path": "scripts/build_official_game_scene.js",
+      "status": "CANDIDATE_PENDING_WORKFLOW_AUDIT",
+      "evidence": "Not exposed by package scripts. It must be retained until its one-off scene mutation history and any filing/acceptance dependency are checked."
+    },
+    {
+      "path": "scripts/format_official_prefabs.js",
+      "status": "CANDIDATE_PENDING_WORKFLOW_AUDIT",
+      "evidence": "Not exposed by package scripts. It contains direct prefab serialization tooling and must not remain in an approved production authoring workflow."
+    },
+    {
+      "path": "scripts/backup_before_repair.js",
+      "status": "CANDIDATE_PENDING_WORKFLOW_AUDIT",
+      "evidence": "Not exposed by package scripts. Retain until backup provenance and filing requirements are conclusively audited."
+    },
+    {
+      "path": "legacy/threejs-prototype",
+      "status": "CANDIDATE_PENDING_FILING_AUDIT",
+      "evidence": "It is not a current Cocos production import, but deletion is deferred until release, filing, and acceptance references are conclusively absent."
+    },
+    {
+      "path": "cocos/docs/evidence/v2",
+      "status": "MIGRATE_AFTER_FINAL_EVIDENCE_SELECTION",
+      "evidence": "61 tracked historical evidence files exist. New runtime output is now routed to artifacts/; select final evidence before pruning historical files."
+    },
+    {
+      "path": "outputs/微信小游戏备案材料",
+      "status": "PROTECTED_CURRENT_FILING_OUTPUT",
+      "evidence": "Current filing material remains protected. Superseded revisions may move to ignored artifacts only after a filing review."
+    }
+  ]
+}

@@ -10,6 +10,10 @@ dist/
 build/
 bin/
 
+# Local QA artifacts (runtime screenshots, traces, reports and performance data).
+# Product-ready evidence is curated explicitly under cocos/docs/evidence/final/.
+artifacts/
+
 # Cocos Creator Cache & Temp
 cocos/library/
 cocos/temp/

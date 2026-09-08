@@ -186,7 +186,7 @@ try {
   assert(existsSync(path.join(buildDirectory, 'index.html')), 'Official Cocos Web Mobile build output is missing.');
   mkdirSync(outputDirectory, { recursive: true });
   server = await serveStatic(buildDirectory);
-  const baseUrl = `http://127.0.0.1:${server.address().port}/`;
+  const baseUrl = `http://127.0.0.1:${server.address().port}/?qa=1`;
 
   // Screenshot 1: player-facing choice between the two actual game modes.
   ({ browser, context, page: globalThis.filingPage, errors: globalThis.filingErrors } = await openFreshRuntime());

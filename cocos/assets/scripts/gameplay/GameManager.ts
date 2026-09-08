@@ -1,13 +1,14 @@
 /**
  * 游戏主控制器与运行时生命周期驱动 (GameManager.ts)
  */
-import { _decorator, Button, Component, Node, Camera, Vec3, math, director, DirectionalLight, Color, Canvas, Label, LabelOutline, MeshRenderer, Sprite, UITransform, Rect, view, ResolutionPolicy, instantiate } from 'cc';
+import { _decorator, Component, Node, Camera, Vec3, director, DirectionalLight, Color, Label, LabelOutline, UITransform, instantiate } from 'cc';
 import { BlackHoleMachine } from '../machine/BlackHoleMachine';
 import { InfiniteWorldManager } from '../world/InfiniteWorldManager';
 import { CompressibleObject } from './CompressibleObject';
+import { PortraitGameplayCameraController } from '../camera/PortraitGameplayCameraController';
+import { GameSessionCoordinator, GameSessionState } from './session/GameSessionCoordinator';
+import { QABridge } from '../dev/qa/QABridge';
 import { HUDView } from '../ui/HUDView';
-import { ArenaHUDController } from '../ui/ArenaHUDController';
-import { RuntimePageInputRouter } from '../ui/RuntimePageInputRouter';
 import { CompressionSystem } from './CompressionSystem';
 import { PlayerController } from './PlayerController';
 import { ArenaMatchManager, ArenaMatchSnapshot } from './ArenaMatchManager';
@@ -18,11 +19,9 @@ import { eventBus } from '../core/EventBus';
 import { saveService } from '../data/SaveService';
 import { analyticsService } from '../analytics/AnalyticsService';
 import { platformAdapter } from '../platform/EditorPlatformAdapter';
-import { MACHINE_EVOLUTION_CONFIG, SKINS_CONFIG } from '../data/GameConfig';
+import { SKINS_CONFIG } from '../data/GameConfig';
 
 const { ccclass, property } = _decorator;
-
-export type GameSessionState = 'HOME' | 'MODE_SELECT' | 'MACHINE_INFO' | 'SKIN_SELECTION' | 'PLAYING' | 'ARENA' | 'NETWORK_ARENA' | 'REVIVING' | 'PAUSED' | 'SETTLEMENT';
 
 @ccclass('GameManager')
 export class GameManager extends Component {
@@ -51,11 +50,11 @@ export class GameManager extends Component {
   /** Real per-tier intake ledger; read-only QA exposes what gameplay actually absorbed. */
   private absorbedTierCounts: Record<number, number> = {};
   public currentCoins: number = 0;
-  public isPaused: boolean = false;
-  public gameState: GameSessionState = 'HOME';
   public regionsVisitedCount: number = 1;
-  private pausedGameplayState: 'PLAYING' | 'ARENA' | 'NETWORK_ARENA' = 'PLAYING';
-  private lastSessionMode: 'ENDLESS' | 'ARENA' = 'ENDLESS';
+  private readonly session = new GameSessionCoordinator();
+  private portraitCameraController: PortraitGameplayCameraController | null = null;
+  /** Installed only for an explicit browser acceptance session (`?qa=1`). */
+  private qaBridge: QABridge | null = null;
   /** Read-only QA evidence for real Home skin selection requests. */
   private homeSkinSelectionCount: number = 0;
   /**
@@ -74,37 +73,6 @@ export class GameManager extends Component {
   /** Send the exact normalized joystick intent to a joined authoritative room at 20Hz. */
   private networkInputAccumulator: number = 0;
 
-  // Portrait isometric framing: the centre ray deliberately lands ahead of the
-  // machine so the player remains in the lower interaction band.
-  // Pull the portrait camera closer to the playable district. The previous
-  // framing made the real black-hole core and surrounding authored props read
-  // as tiny test objects instead of the dense, isometric city composition
-  // established by the V2 visual contract.
-  // This framing keeps the home neighbourhood legible and the local player
-  // The portrait arena needs to frame a playable city block, not a close-up
-  // lawn.  At the former 16.6 m elevation the horizontal phone frustum was
-  // only wide enough for the singularity and hid the editor-saved roads,
-  // buildings and park models at the playable edges.  This wider, still
-  // touch-readable 48° composition keeps the local target in the lower
-  // interaction band while putting actual street landmarks in frame.
-  // Endless retains its existing close follow framing. Arena uses an isolated
-  // preset below so a competitive composition correction cannot silently
-  // regress the vertical-slice exploration view.
-  private cameraOffset: Vec3 = new Vec3(0, 20.0, 18.5);
-  /**
-   * Calibrated as one isolated camera experiment from the measured Arena
-   * baseline: at 390×844, 20/18.5 m put the player at width 0.547 and Y 0.326
-   * (contract: 0.22–0.30 and 0.50–0.67). With the existing 44° vertical FOV
-   * and -55° pitch, the first candidate (44/23 m) measured width 0.267 but
-   * Y 0.692. Holding height/FOV/pitch fixed, this second candidate moves only
-   * the camera landing point forward to 27 m; its predicted Y is 0.60–0.66
-   * with width still inside contract. The acceptance runner, not this
-   * calculation, determines whether the preset is retained.
-   */
-  private readonly arenaCameraOffset: Vec3 = new Vec3(0, 44.0, 27.0);
-  private cameraTarget: Vec3 = new Vec3();
-  private readonly portraitWidth = 720;
-  private readonly portraitHeight = 1280;
   /**
    * A compact, native in-game identifier required by the Mini Game filing
    * screenshots. It deliberately reuses a Creator-saved HUD Label template
@@ -114,71 +82,57 @@ export class GameManager extends Component {
   private registrationBranding: Node | null = null;
   private registrationBrandingVisible: boolean | null = null;
 
+  /** Compatibility read model for QA and existing gameplay comparisons. */
+  public get gameState(): GameSessionState {
+    return this.session.state;
+  }
+
+  /** Pause belongs to the session coordinator, never to a duplicate flag. */
+  public get isPaused(): boolean {
+    return this.session.isPaused;
+  }
+
+  private get pausedGameplayState(): 'PLAYING' | 'ARENA' | 'NETWORK_ARENA' {
+    return this.session.pausedGameplayState;
+  }
+
+  private get lastSessionMode(): 'ENDLESS' | 'ARENA' {
+    return this.session.lastSessionMode;
+  }
+
   onLoad(): void {
     platformAdapter.init();
     this.currentCoins = saveService.data.coins;
     this.autoBindDependencies();
     this.createRegistrationBranding();
     this.applySavedCoreSkin();
-    this.applyPortraitRuntimeContract();
+    this.initPortraitCameraController();
     this.initLighting();
     this.bindEvents();
     this.initWorld();
-    this.setupQABridge();
+    this.installQABridgeIfRequested();
     this.startNetworkProbeIfRequested();
   }
 
   onDestroy(): void {
-    view.off('canvas-resize', this.applyPortraitRuntimeContract, this);
+    this.qaBridge?.dispose();
+    this.qaBridge = null;
+    this.portraitCameraController?.dispose();
+    this.portraitCameraController = null;
     // A future server-backed arena can outlive a scene transition. Always
     // release the real Colyseus room instead of leaving a live socket behind.
     void this.networkArenaClient.leave();
     this.clearNetworkArenaReplica();
   }
 
-  /**
-   * Fill a real portrait device without turning its extra height into browser
-   * letterbox.  FIXED_WIDTH keeps the authored 720-unit horizontal gameplay
-   * span and reveals additional vertical city/UI room on 19.5:9 phones.
-   * That is the same composition rule used by the reference screens: portrait
-   * is mandatory, but the app owns the whole physical screen.
-   */
-  private applyPortraitRuntimeContract(): void {
-    view.setDesignResolutionSize(
-      this.portraitWidth,
-      this.portraitHeight,
-      ResolutionPolicy.FIXED_WIDTH
-    );
-    view.off('canvas-resize', this.applyPortraitRuntimeContract, this);
-    view.on('canvas-resize', this.applyPortraitRuntimeContract, this);
-
-    if (this.mainCamera) {
-      // CameraFOVAxis.VERTICAL is value 0 in the Cocos Creator 3.8.3 engine.
-      // The generated project declarations do not re-export that enum, while
-      // Camera.fovAxis remains the native engine property being configured.
-      this.mainCamera.fovAxis = 0;
-      // Vertical FOV remains deliberately modest for mobile readability; the
-      // wider city composition comes from the authored follow offset above,
-      // never from a gameplay-space scale or collision change. 44° keeps the
-      // closer framing readable without turning the portrait world into a
-      // fisheye view.
-      this.mainCamera.fov = 44;
-      // A desktop Browser Preview can be substantially wider than the
-      // portrait game canvas. Restrict the 3D camera to the same centred
-      // portrait viewport used by the UI; otherwise the world leaks into the
-      // grey side bars and appears stretched even though the Canvas is
-      // correctly portrait. On real portrait devices the camera remains
-      // full-frame, preserving the authored phone composition.
-      const frame = view.getFrameSize();
-      const frameRatio = frame.height > 0 ? frame.width / frame.height : this.portraitWidth / this.portraitHeight;
-      if (frameRatio > this.portraitWidth / this.portraitHeight) {
-        const viewportWidth = (this.portraitWidth / this.portraitHeight) / frameRatio;
-        this.mainCamera.camera.viewport = new Rect((1 - viewportWidth) * 0.5, 0, viewportWidth, 1);
-      } else {
-        this.mainCamera.camera.viewport = new Rect(0, 0, 1, 1);
-      }
+  /** The saved gameplay camera receives its portrait contract through a focused service. */
+  private initPortraitCameraController(): void {
+    if (!this.mainCamera) {
+      console.error('[GameManager] Missing editor-saved gameplay Camera. Portrait presentation cannot start.');
+      return;
     }
-
+    this.portraitCameraController = new PortraitGameplayCameraController(this.mainCamera);
+    this.portraitCameraController.activate();
   }
 
   private autoBindDependencies(): void {
@@ -438,7 +392,7 @@ export class GameManager extends Component {
     page.active = true;
     this.setPlayerSimulationPaused(true);
     this.hud?.hideAllScreens();
-    this.gameState = 'SKIN_SELECTION';
+    this.session.openSkinSelection();
   }
 
   /** Applies a free skin or atomically unlocks a paid configured skin. */
@@ -485,10 +439,8 @@ export class GameManager extends Component {
     this.arenaMatchManager?.stopMatch();
     this.clearNetworkArenaReplica();
     this.infiniteWorldManager?.setGameplayObjectsVisible(true);
-    this.lastSessionMode = 'ENDLESS';
     this.setV2HomeVisible(false);
-    this.gameState = 'PLAYING';
-    this.isPaused = false;
+    this.session.beginEndless();
     this.setPlayerSimulationPaused(false);
     
     this.totalAbsorbedCount = 0;
@@ -530,12 +482,10 @@ export class GameManager extends Component {
       console.error('[GameManager] Arena cannot start without the Creator-saved machine, world and match manager.');
       return;
     }
-    this.lastSessionMode = 'ARENA';
     this.clearNetworkArenaReplica();
     this.infiniteWorldManager.setGameplayObjectsVisible(true);
     this.setV2HomeVisible(false);
-    this.gameState = 'ARENA';
-    this.isPaused = false;
+    this.session.beginArena(false);
     this.totalAbsorbedCount = 0;
     this.absorbedTierCounts = {};
     this.score = 0;
@@ -581,11 +531,9 @@ export class GameManager extends Component {
 
     this.arenaMatchManager.stopMatch();
     this.clearNetworkArenaReplica();
-    this.lastSessionMode = 'ARENA';
     this.networkArenaMatchId = initialSnapshot.matchId;
     this.setV2HomeVisible(false);
-    this.gameState = 'NETWORK_ARENA';
-    this.isPaused = false;
+    this.session.beginArena(true);
     this.networkSettlementShown = false;
     this.totalAbsorbedCount = 0;
     this.absorbedTierCounts = {};
@@ -612,16 +560,8 @@ export class GameManager extends Component {
   public togglePause(): void {
     if (this.gameState !== 'PLAYING' && this.gameState !== 'ARENA' && this.gameState !== 'NETWORK_ARENA' && this.gameState !== 'PAUSED') return;
 
-    if (!this.isPaused) {
-      this.pausedGameplayState = this.gameState === 'ARENA' || this.gameState === 'NETWORK_ARENA'
-        ? this.gameState
-        : 'PLAYING';
-      this.isPaused = true;
-      this.gameState = 'PAUSED';
-    } else {
-      this.isPaused = false;
-      this.gameState = this.pausedGameplayState;
-    }
+    if (!this.isPaused) this.session.pause();
+    else this.session.resume();
 
     if (this.playerController) this.playerController.isPaused = this.isPaused;
     if (this.compressionSystem) this.compressionSystem.isPaused = this.isPaused;
@@ -642,8 +582,7 @@ export class GameManager extends Component {
     this.networkArenaMatchId = null;
     this.clearNetworkArenaReplica();
     this.infiniteWorldManager?.setGameplayObjectsVisible(true);
-    this.isPaused = false;
-    this.gameState = 'HOME';
+    this.session.returnHome();
     // A home/menu page has no joystick.  Pausing the real machine prevents a
     // lower-screen drag from becoming an invisible gameplay input.
     this.setPlayerSimulationPaused(true);
@@ -662,8 +601,7 @@ export class GameManager extends Component {
       if (snapshot?.phase === 'FINISHED') {
         this.showNetworkArenaSettlement(this.toNetworkArenaSnapshot(snapshot));
       } else if (this.networkArenaClient.requestForfeit()) {
-        this.isPaused = false;
-        this.gameState = 'NETWORK_ARENA';
+        if (this.gameState === 'PAUSED') this.session.resume();
         this.setPlayerSimulationPaused(false);
         this.hud?.showScreen('Arena');
       } else {
@@ -679,8 +617,7 @@ export class GameManager extends Component {
       this.arenaMatchManager?.forfeitLocal();
       return;
     }
-    this.gameState = 'SETTLEMENT';
-    this.isPaused = true;
+    this.session.enterSettlement('endless-settlement');
     if (this.playerController) this.playerController.isPaused = true;
     if (this.compressionSystem) this.compressionSystem.isPaused = true;
     if (this.machine) this.machine.isPaused = true;
@@ -699,7 +636,7 @@ export class GameManager extends Component {
   }
 
   private openArenaRevive(snapshot: ArenaMatchSnapshot): void {
-    this.gameState = 'REVIVING';
+    this.session.enterReviving();
     if (this.playerController) this.playerController.isPaused = true;
     if (this.compressionSystem) this.compressionSystem.isPaused = true;
     this.hud?.updateRevive(snapshot);
@@ -707,7 +644,7 @@ export class GameManager extends Component {
   }
 
   private resumeArenaAfterRespawn(snapshot: ArenaMatchSnapshot): void {
-    this.gameState = 'ARENA';
+    this.session.resumeArenaAfterRevive();
     if (this.playerController) this.playerController.isPaused = false;
     if (this.compressionSystem) this.compressionSystem.isPaused = false;
     if (this.machine) this.machine.isPaused = false;
@@ -717,8 +654,7 @@ export class GameManager extends Component {
   }
 
   private showArenaSettlement(snapshot: ArenaMatchSnapshot): void {
-    this.gameState = 'SETTLEMENT';
-    this.isPaused = true;
+    this.session.enterSettlement('arena-settlement');
     if (this.playerController) this.playerController.isPaused = true;
     if (this.compressionSystem) this.compressionSystem.isPaused = true;
     if (this.machine) this.machine.isPaused = true;
@@ -737,8 +673,7 @@ export class GameManager extends Component {
       || (this.gameState === 'PAUSED' && this.pausedGameplayState === 'NETWORK_ARENA');
     if (this.networkSettlementShown || !canSettle) return;
     this.networkSettlementShown = true;
-    this.gameState = 'SETTLEMENT';
-    this.isPaused = true;
+    this.session.enterSettlement('network-arena-settlement');
     this.setPlayerSimulationPaused(true);
     const reward = snapshot.settlementReward;
     if (reward.coins > 0 && this.networkArenaMatchId) {
@@ -817,7 +752,7 @@ export class GameManager extends Component {
     mode.active = true;
     this.setPlayerSimulationPaused(true);
     this.hud?.hideAllScreens();
-    this.gameState = 'MODE_SELECT';
+    this.session.openModeSelect();
   }
 
   /** Opens the Creator-saved, read-only machine progression page from Home. */
@@ -838,7 +773,7 @@ export class GameManager extends Component {
     page.active = true;
     this.setPlayerSimulationPaused(true);
     this.hud?.hideAllScreens();
-    this.gameState = 'MACHINE_INFO';
+    this.session.openMachineInfo();
   }
 
   private setPlayerSimulationPaused(paused: boolean): void {
@@ -851,304 +786,48 @@ export class GameManager extends Component {
   }
 
   /**
-   * 只读布局快照：用于真机/预览运行时排查 UI 被裁切或缩放错误，
-   * 不暴露任何修改场景或游戏状态的能力。
+   * The browser bridge is a DEV/acceptance-only observer. Production flows
+   * neither allocate it nor expose a global mutable backdoor.
    */
-  private getV2HomeLayoutSnapshot(): Record<string, unknown> {
-    const canvas = director.getScene()?.getChildByName('Canvas') || null;
-    const home = canvas?.getChildByName('HomePage') || null;
-    const mode = canvas?.getChildByName('ModeSelectPage') || null;
-    const endlessHud = canvas?.getChildByName('EndlessHUD') || null;
-    const arenaHud = canvas?.getChildByName('ArenaHUD') || null;
-    const revivePage = canvas?.getChildByName('RevivePage') || null;
-    const pausePage = canvas?.getChildByName('PausePage') || null;
-    const settlementPage = canvas?.getChildByName('SettlementPage') || null;
-    const machineInfoPage = canvas?.getChildByName('MachineInfoPage') || null;
-    const skinSelectionPage = canvas?.getChildByName('SkinSelectionPage') || null;
-    const joystick = endlessHud?.getChildByName('Joystick') || null;
-    const homeNode = (name: string): Node | null => home?.getChildByName(name) || home?.getChildByName('SafeAreaRoot')?.getChildByName(name) || null;
-    const canvasComponent = canvas?.getComponent(Canvas) || null;
-    const runtimePageInput = canvas?.getComponent(RuntimePageInputRouter) || null;
-    const uiCamera = canvas?.getChildByName('UICamera')?.getComponent(Camera) || null;
-    const viewport = view.getViewportRect();
-    const describe = (node: Node | null): Record<string, unknown> | null => {
-      if (!node) return null;
-      const transform = node.getComponent(UITransform);
-      const worldPoint = transform?.convertToWorldSpaceAR(Vec3.ZERO, new Vec3()) || null;
-      const screenPoint = worldPoint && uiCamera ? uiCamera.worldToScreen(worldPoint, new Vec3()) : null;
-      const button = node.getComponent(Button);
-      return {
-        active: node.activeInHierarchy,
-        interactable: button?.interactable ?? null,
-        x: node.position.x,
-        y: node.position.y,
-        width: transform?.width || 0,
-        height: transform?.height || 0,
-        scaleX: node.scale.x,
-        scaleY: node.scale.y,
-        world: worldPoint ? { x: worldPoint.x, y: worldPoint.y, z: worldPoint.z } : null,
-        // Normalized visual centre after Canvas/viewport letterboxing. The
-        // acceptance runner uses this read-only point to tap the actual
-        // editor-saved button rather than assuming a design-resolution map.
-        screen: screenPoint && viewport.width > 0 && viewport.height > 0 ? {
-          x: (screenPoint.x - viewport.x) / viewport.width,
-          y: 1 - (screenPoint.y - viewport.y) / viewport.height,
-        } : null,
-      };
-    };
-    const labelText = (node: Node | null): string | null => node?.getComponent(Label)?.string || null;
+  private installQABridgeIfRequested(): void {
+    const runtimeLocation = (globalThis as { location?: { search?: unknown } }).location;
+    if (typeof runtimeLocation?.search !== 'string') return;
+    if (new URLSearchParams(runtimeLocation.search).get('qa') !== '1') return;
 
-    const design = view.getDesignResolutionSize();
-    const visible = view.getVisibleSize();
-    const frame = view.getFrameSize();
-    const targetRatio = this.portraitWidth / this.portraitHeight;
-    return {
-      design: { width: design.width, height: design.height },
-      visible: { width: visible.width, height: visible.height },
-      frame: { width: frame.width, height: frame.height },
-      portrait: {
-        targetRatio,
-        frameRatio: frame.height > 0 ? frame.width / frame.height : null,
-        viewport: { x: viewport.x, y: viewport.y, width: viewport.width, height: viewport.height },
-        designIsPortrait: design.width < design.height,
-        frameIsPortrait: frame.width < frame.height,
-        viewportIsPortrait: viewport.width < viewport.height,
-        viewportWithinFrame:
-          viewport.x >= 0 && viewport.y >= 0 &&
-          viewport.x + viewport.width <= frame.width &&
-          viewport.y + viewport.height <= frame.height,
-        viewportRatio: viewport.height > 0 ? viewport.width / viewport.height : null,
-      },
-      canvas: {
-        ...describe(canvas),
-        alignCanvasWithScreen: canvasComponent?.alignCanvasWithScreen ?? null
-      },
-      uiCamera: uiCamera ? {
-        projection: uiCamera.projection,
-        orthoHeight: uiCamera.orthoHeight,
-        x: uiCamera.node.position.x,
-        y: uiCamera.node.position.y,
-        z: uiCamera.node.position.z
-      } : null,
-      home: describe(home),
-      // Keep this distinct from the HomePage "mode" action button snapshot
-      // below.  QA needs the page's actual hierarchy/visibility after the
-      // user performs a touch navigation, not merely the trigger button.
-      modePage: describe(mode),
-      machineInfo: describe(machineInfoPage),
-      skinSelection: describe(skinSelectionPage),
-      skinSelectionBack: describe(skinSelectionPage?.getChildByName('BtnBack') || null),
-      skinSelectionData: {
-        coin: labelText(skinSelectionPage?.getChildByName('CoinValue') || null),
-        previewName: labelText(skinSelectionPage?.getChildByName('PreviewNameValue') || null),
-        previewDescription: labelText(skinSelectionPage?.getChildByName('PreviewDescriptionValue') || null),
-        status: labelText(skinSelectionPage?.getChildByName('StatusValue') || null),
-        states: SKINS_CONFIG.map((_skin, index) => labelText(skinSelectionPage?.getChildByName(`SkinState_${index + 1}`) || null)),
-      },
-      skinSelectionButtons: SKINS_CONFIG.map((_skin, index) => describe(skinSelectionPage?.getChildByName(`BtnSkin_${index + 1}`) || null)),
-      machineInfoBack: describe(machineInfoPage?.getChildByName('BtnBack') || null),
-      machineInfoData: {
-        currentName: labelText(machineInfoPage?.getChildByName('CurrentNameValue') || null),
-        currentMass: labelText(machineInfoPage?.getChildByName('CurrentMassValue') || null),
-        currentRadius: labelText(machineInfoPage?.getChildByName('CurrentRadiusValue') || null),
-        currentTier: labelText(machineInfoPage?.getChildByName('CurrentTierValue') || null),
-        progress: labelText(machineInfoPage?.getChildByName('ProgressValue') || null),
-        levelRows: MACHINE_EVOLUTION_CONFIG.map((config) => labelText(machineInfoPage?.getChildByName(`LevelRowText${config.level}`) || null)),
-      },
-      modeArena: describe(mode?.getChildByName('BtnArena') || null),
-      modeEndless: describe(mode?.getChildByName('BtnEndless') || null),
-      modeBrawlLocked: describe(mode?.getChildByName('LockedBrawlCard') || null),
-      modeLeaderboardLocked: describe(mode?.getChildByName('LockedLeaderboardCard') || null),
-      runtimeHUD: {
-        endless: describe(endlessHud),
-        pauseButton: describe(endlessHud?.getChildByName('BtnPause') || null),
-        joystick: describe(joystick),
-        joystickBase: describe(joystick?.getChildByName('JoystickBase') || null),
-        joystickKnob: describe(joystick?.getChildByName('JoystickKnob') || null),
-      },
-      pickupFeedback: this.hud?.getPickupFeedbackDiagnostics() || null,
-      arenaHUD: {
-        root: describe(arenaHud),
-        pauseButton: describe(arenaHud?.getChildByName('BtnPause') || null),
-        joystick: describe(arenaHud?.getChildByName('Joystick') || null),
-        timer: describe(arenaHud?.getChildByName('TimerValue') || null),
-        nameplates: arenaHud?.getComponent(ArenaHUDController)?.getNameplateDiagnostics() || [],
-      },
-      formalPages: {
-        pause: describe(pausePage),
-        pauseResume: describe(pausePage?.getChildByName('BtnResume') || null),
-        pauseSettle: describe(pausePage?.getChildByName('BtnSettle') || null),
-        pauseHome: describe(pausePage?.getChildByName('BtnHome') || null),
-        settlement: describe(settlementPage),
-        settlementRestart: describe(settlementPage?.getChildByName('BtnRestart') || null),
-        settlementHome: describe(settlementPage?.getChildByName('BtnHome') || null),
-        revive: describe(revivePage),
-        reviveNow: describe(revivePage?.getChildByName('BtnRevive') || null),
-        reviveGiveUp: describe(revivePage?.getChildByName('BtnGiveUp') || null),
-      },
-      runtimePageInput: runtimePageInput?.lastInputDiagnostic || null,
-      registrationBranding: describe(canvas?.getChildByName('RegistrationBranding') || null),
-      registrationBrandingText: labelText(canvas?.getChildByName('RegistrationBranding') || null),
-      logo: describe(homeNode('Logo')),
-      hero: describe(homeNode('HeroBlackHole')),
-      start: describe(homeNode('BtnStart')),
-      mode: describe(homeNode('BtnMode')),
-      skin: describe(homeNode('BtnSkin')),
-      machine: describe(homeNode('BtnMachine')),
-      settings: describe(homeNode('BtnSettings'))
-    };
-  }
-
-  private setupQABridge(): void {
-    // 注入严格只读的 QA Bridge (无任何 setter 或内部状态修补后门)
-    (window as any).__BHR_QA__ = {
-      snapshot: () => {
-        const mPos = this.machine?.node.position;
-        const viewport = view.getViewportRect();
-        // Player composition is measured from actual recursively merged
-        // MeshRenderer world bounds in InfiniteWorldManager.  Do not infer a
-        // made-up width from Node.scale: imported machine meshes do not share
-        // one stable source-unit size.
-        const goldenCityComposition = this.infiniteWorldManager?.getGoldenCityCompositionDiagnostics(
-          this.mainCamera,
-          this.machine?.node || null,
-          this.arenaMatchManager?.getCompositionCompetitors() || [],
-        ) || null;
-        const goldenPlayer = goldenCityComposition?.player || null;
-        const playerViewport = goldenPlayer?.screenBounds && viewport.width > 0 && viewport.height > 0 ? {
-          x: ((goldenPlayer.screenBounds.left + goldenPlayer.screenBounds.right) * 0.5 - viewport.x) / viewport.width,
-          y: goldenPlayer.screenYRatio,
-          width: goldenPlayer.widthRatio,
-          measured: true,
-        } : null;
-        const allObjs = this.infiniteWorldManager?.getAllObjects() || [];
-        const sampledObjs = allObjs.map(o => {
-          const p = o.getPosition();
-          return {
-            runtimeId: o.runtimeId,
-            type: o.template.type,
-            tier: o.template.tier,
-            state: o.getState(),
-            x: p ? p.x : 0,
-            z: p ? p.z : 0,
-            lockVisible: o.isShowingLockAlert()
-          };
-        });
-
-        return {
-          scene: director.getScene()?.name || 'Game',
-          uiScreen: this.hud?.currentScreenName || 'Home',
-          gameState: this.gameState,
-          ui: this.getV2HomeLayoutSnapshot(),
-        player: {
-            position: {
-              x: mPos ? mPos.x : 0,
-              y: mPos ? mPos.y : 0,
-              z: mPos ? mPos.z : 0
-            },
-            x: mPos ? mPos.x : 0,
-            y: mPos ? mPos.y : 0,
-            z: mPos ? mPos.z : 0,
-            isMoving: this.playerController?.isDragging || false,
-          isDragging: this.playerController?.isDragging || false
-        },
-        camera: {
-          fov: this.mainCamera?.fov ?? null,
-          fovAxis: this.mainCamera?.fovAxis ?? null,
-          offset: (() => {
-            const activeCameraOffset = this.getActiveCameraOffset();
-            return { x: activeCameraOffset.x, y: activeCameraOffset.y, z: activeCameraOffset.z };
-          })(),
-          playerViewport,
-          position: {
-            x: this.mainCamera?.node.position.x ?? 0,
-            y: this.mainCamera?.node.position.y ?? 0,
-            z: this.mainCamera?.node.position.z ?? 0,
-          },
-          forward: {
-            x: this.mainCamera?.node.forward.x ?? 0,
-            z: this.mainCamera?.node.forward.z ?? 0,
-          },
-          right: {
-            x: this.mainCamera?.node.right.x ?? 0,
-            z: this.mainCamera?.node.right.z ?? 0,
-          },
-        },
-        machine: {
-            level: this.machine?.currentLevel || 1,
-          mass: this.machine?.currentMass || 0,
-          requiredMass: (MACHINE_EVOLUTION_CONFIG[Math.min(4, (this.machine?.currentLevel || 1))] || MACHINE_EVOLUTION_CONFIG[0]).massThreshold,
-          suctionRadius: this.machine?.getSuctionRadius() || 2.4,
-          maxTier: this.machine?.getMaxTier() || 1,
-          movementInput: {
-            x: this.playerController?.moveInput.x ?? 0,
-            y: this.playerController?.moveInput.y ?? 0,
-          },
-          activeTouchId: this.playerController?.touchInput.activeTouchId ?? null,
-          touchDiagnostic: this.playerController?.lastTouchDiagnostic ?? null,
-          controller: this.playerController ? {
-            enabled: this.playerController.enabled,
-            activeInHierarchy: this.playerController.node.activeInHierarchy,
-            nodeName: this.playerController.node.name,
-          } : null,
-          velocity: {
-            x: this.machine?.velocity.x ?? 0,
-            z: this.machine?.velocity.z ?? 0,
-          },
-          visualMaterials: this.machine?.getVisualMaterialDiagnostics() || [],
-          },
-          world: {
-            currentRegion: this.infiniteWorldManager?.currentTheme.id || 'bedroom',
-            regionIndex: this.infiniteWorldManager?.getRegionIndex() || 0,
-            activeCellCount: this.infiniteWorldManager?.activeCells.size || 0,
-            visibleObjectCount: this.infiniteWorldManager?.getVisibleObjectCount() || 0,
-            streaming: this.infiniteWorldManager ? {
-              ...this.infiniteWorldManager.getSnapshot(),
-              // JSON-only diagnostic evidence. Cocos nodes, components and
-              // mutable methods never cross the browser QA bridge.
-              goldenCityComposition,
-            } : null,
-          },
-          arena: this.networkArenaClient.snapshot
-            && (this.gameState === 'NETWORK_ARENA' || this.networkSettlementShown)
-            ? this.toNetworkArenaSnapshot(this.networkArenaClient.snapshot)
-            : this.arenaMatchManager?.getSnapshot() || null,
-          // This is copied from the actual Colyseus room callback. QA receives
-          // no setters and cannot manufacture an arena snapshot locally.
-          network: {
-            status: this.networkArenaClient.status,
-            lastError: this.networkArenaClient.lastError,
-            snapshot: this.networkArenaClient.snapshot,
-            replica: this.networkArenaReplica?.getDiagnostics() || null,
-          },
-          sceneVisuals: this.getActiveVisualDiagnostics(),
-          objects: sampledObjs,
-          compression: {
-            state: this.compressionSystem?.state || 'IDLE',
-            stateHistory: this.compressionSystem?.stateHistory ? [...this.compressionSystem.stateHistory] : [],
-            bufferMass: this.compressionSystem?.bufferMass || 0,
-            bufferCount: this.compressionSystem?.bufferCount || 0,
-            resourceBlockCount: this.compressionSystem?.resourceBlockCount || 0,
-            storedResources: this.compressionSystem?.storedResources || 0
-          },
-          session: {
-            absorbed: this.totalAbsorbedCount,
-            absorbedTiers: { ...this.absorbedTierCounts },
-            coinsEarned: this.currentCoins - this.sessionStartCoins,
-            score: this.score,
-            regionsVisited: this.regionsVisitedCount
-          },
-          save: {
-            coins: saveService.data.coins,
-            machineLevel: saveService.data.machineLevel,
-            bestMass: saveService.data.highScore,
-            skinId: saveService.data.currentSkinId,
-            unlockedSkinIds: [...saveService.data.unlockedSkins],
-            homeSkinSelectionCount: this.homeSkinSelectionCount
-          }
-        };
-      }
-    };
+    this.qaBridge?.dispose();
+    this.qaBridge = new QABridge({
+      getGameState: () => this.gameState,
+      getHUD: () => this.hud,
+      getMachine: () => this.machine,
+      getPlayerController: () => this.playerController,
+      getCompressionSystem: () => this.compressionSystem,
+      getWorld: () => this.infiniteWorldManager,
+      getMainCamera: () => this.mainCamera,
+      getArenaMatchManager: () => this.arenaMatchManager,
+      getNetworkClient: () => this.networkArenaClient,
+      getNetworkReplica: () => this.networkArenaReplica,
+      getArenaSnapshot: () => this.networkArenaClient.snapshot
+        && (this.gameState === 'NETWORK_ARENA' || this.networkSettlementShown)
+        ? this.toNetworkArenaSnapshot(this.networkArenaClient.snapshot)
+        : this.arenaMatchManager?.getSnapshot() || null,
+      getCameraOffset: (state) => this.portraitCameraController?.getActiveOffset(state) || Vec3.ZERO,
+      getSessionSnapshot: () => ({
+        absorbed: this.totalAbsorbedCount,
+        absorbedTiers: { ...this.absorbedTierCounts },
+        coinsEarned: this.currentCoins - this.sessionStartCoins,
+        score: this.score,
+        regionsVisited: this.regionsVisitedCount,
+      }),
+      getSaveSnapshot: () => ({
+        coins: saveService.data.coins,
+        machineLevel: saveService.data.machineLevel,
+        bestMass: saveService.data.highScore,
+        skinId: saveService.data.currentSkinId,
+        unlockedSkinIds: [...saveService.data.unlockedSkins],
+        homeSkinSelectionCount: this.homeSkinSelectionCount,
+      }),
+    });
+    this.qaBridge.install();
   }
 
   /**
@@ -1232,41 +911,6 @@ export class GameManager extends Component {
     };
   }
 
-  /** Read-only scan used only to identify real Web Mobile visual fallbacks. */
-  private getActiveVisualDiagnostics(): Record<string, unknown> {
-    const invalidMeshes: Array<Record<string, unknown>> = [];
-    const sprites: Array<Record<string, unknown>> = [];
-    const visit = (node: Node, path: string): void => {
-      if (!node.activeInHierarchy) return;
-      const renderer = node.getComponent(MeshRenderer);
-      if (renderer) {
-        const primitiveCount = renderer.mesh?.struct.primitives.length || 0;
-        const slotCount = Math.max(1, primitiveCount, renderer.sharedMaterials.length);
-        const slots = Array.from({ length: slotCount }, (_, index) => {
-          const material = renderer.getRenderMaterial(index);
-          return { effect: material?.effectName || null, valid: material?.validate() || false };
-        });
-        if (slots.some((slot) => !slot.valid || !slot.effect)) {
-          invalidMeshes.push({ path, primitiveCount, slots });
-        }
-      }
-      const sprite = node.getComponent(Sprite);
-      if (sprite) {
-        sprites.push({
-          path,
-          frame: sprite.spriteFrame?.name || null,
-          texture: sprite.spriteFrame?.texture?.name || null,
-          frameValid: sprite.spriteFrame?.isValid || false,
-          textureValid: sprite.spriteFrame?.texture?.isValid || false,
-        });
-      }
-      node.children.forEach((child) => visit(child, `${path}/${child.name}`));
-    };
-    const scene = director.getScene();
-    if (scene) visit(scene, scene.name);
-    return { invalidMeshes, sprites };
-  }
-
   update(dt: number): void {
     this.syncRegistrationBranding();
     this.forwardNetworkArenaInput(dt);
@@ -1330,29 +974,9 @@ export class GameManager extends Component {
       if (this.gameState === 'PLAYING') this.updateHUD();
     }
 
-    // 3. 相机平滑跟随 (垂直 FOV 锁定的 9:16 俯视视角)
-    const isArenaView = this.gameState === 'ARENA' || this.gameState === 'NETWORK_ARENA' || this.gameState === 'REVIVING';
-    Vec3.add(this.cameraTarget, mPos, this.getActiveCameraOffset());
-    const cPos = this.mainCamera.node.position;
-    this.mainCamera.node.setPosition(
-      math.lerp(cPos.x, this.cameraTarget.x, dt * 5.0),
-      math.lerp(cPos.y, this.cameraTarget.y, dt * 5.0),
-      math.lerp(cPos.z, this.cameraTarget.z, dt * 5.0)
-    );
-    // Endless exploration keeps a shallow three-quarter view, while the
-    // competitive park benefits from a slightly steeper tactical angle. At
-    // -42° tall background props eclipsed rivals and left the arena reading
-    // as an empty lawn; -50° exposes the actual road, park furnishing and
-    // nearby competitors without altering input, world coordinates, suction
-    // ranges, or the general portrait camera follow.
-    this.mainCamera.node.setRotationFromEuler(isArenaView ? -55 : -42, 0, 0);
-  }
-
-  /** Returns an explicit, mode-owned preset rather than mutating shared follow state. */
-  private getActiveCameraOffset(): Readonly<Vec3> {
-    return this.gameState === 'ARENA' || this.gameState === 'NETWORK_ARENA' || this.gameState === 'REVIVING'
-      ? this.arenaCameraOffset
-      : this.cameraOffset;
+    // The already scene-saved camera remains the concrete dependency; the
+    // portrait service owns its viewport, FOV and follow mathematics.
+    this.portraitCameraController?.updateFollow(mPos, this.gameState, dt);
   }
 
   /**

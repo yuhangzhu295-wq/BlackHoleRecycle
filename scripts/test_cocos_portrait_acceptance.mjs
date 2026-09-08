@@ -17,7 +17,12 @@ const repoRoot = path.resolve(path.dirname(thisFile), '..');
 const cocosProject = path.join(repoRoot, 'cocos');
 const creatorExe = process.env.COCOS_CREATOR_EXE || 'C:\\ProgramData\\cocos\\editors\\Creator\\3.8.3\\CocosCreator.exe';
 const buildDirectory = path.join(cocosProject, 'build', 'web-mobile');
-const evidenceDirectory = path.join(cocosProject, 'docs', 'evidence', 'v2', 'portrait');
+// Runtime evidence is intentionally local by default. Keep only deliberately
+// curated, final evidence in cocos/docs/evidence/final/; repeated regression
+// runs must not pollute source control with stale screenshots and reports.
+const evidenceDirectory = path.resolve(
+  process.env.BHR_ARTIFACTS_DIR || path.join(repoRoot, 'artifacts', 'qa', 'portrait'),
+);
 const reportPath = path.join(evidenceDirectory, 'acceptance-report.json');
 // `npm run acceptance:v2 -- --scope=pages` is the ergonomic local visual-QA
 // command. Keep the environment variable for CI, but do not silently ignore
@@ -1809,8 +1814,8 @@ try {
   server = await createStaticServer(buildDirectory);
   const address = server.address();
   const baseUrl = acceptanceScope === 'network'
-    ? `http://127.0.0.1:${address.port}/?arenaProbe=${encodeURIComponent(networkProbeEndpoint)}`
-    : `http://127.0.0.1:${address.port}/`;
+    ? `http://127.0.0.1:${address.port}/?qa=1&arenaProbe=${encodeURIComponent(networkProbeEndpoint)}`
+    : `http://127.0.0.1:${address.port}/?qa=1`;
   browser = await chromium.launch({ headless: true, args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-webgl'] });
 
   const targetViewports = acceptanceScope === 'pages' || acceptanceScope === 'skins' || acceptanceScope === 'skin-unlock' || acceptanceScope === 'arena-timer' || acceptanceScope === 'network' || acceptanceScope === 'regions' || acceptanceScope === 'progression' || acceptanceScope === 'golden-city'
