@@ -12,6 +12,7 @@ import { CellItemGenerator, IChunkSpawnItem } from './ChunkConfig';
 import { DistrictKind, DistrictTemplate, getDistrictTemplateForRegion } from './DistrictTemplates';
 import { DynamicVehicle } from './DynamicVehicle';
 import { WorldArtKind, WorldArtLibrary } from './WorldArtLibrary';
+import { WorldStreamer } from './WorldStreamer';
 
 const { ccclass } = _decorator;
 const V3 = (x: number, y: number, z: number): Vec3 => new Vec3(x, y, z);
@@ -491,6 +492,11 @@ export class InfiniteWorldManager extends Component {
   /** The only remote-derived art added by this manager, imported by Creator. */
   private constructionSitePrefab: Prefab | null = null;
   private constructionSiteLoadState: 'IDLE' | 'LOADING' | 'READY' | 'FAILED' = 'IDLE';
+  private readonly streamer = new WorldStreamer({
+    cellSize: InfiniteWorldManager.CELL_SIZE,
+    activeRadius: InfiniteWorldManager.ACTIVE_RADIUS,
+    rebaseThreshold: InfiniteWorldManager.REBASE_THRESHOLD,
+  });
 
   public init(objectFactory: () => CompressibleObject): void {
     if (this.initialized) return;
@@ -528,6 +534,9 @@ export class InfiniteWorldManager extends Component {
     this.logicalOrigin.set(0, 0, 0);
     this.currentCell.set(0, 0, 0);
     this.rebaseCount = 0;
+    this.streamer.logicalOrigin.set(0, 0, 0);
+    this.streamer.currentCell.set(0, 0, 0);
+    this.streamer.rebaseCount = 0;
     this.updateCells(renderPlayerPosition);
     this.installConstructionLandmarkInOpeningCell();
   }
@@ -573,32 +582,32 @@ export class InfiniteWorldManager extends Component {
   /** Streams the 3×3 active grid for both X and Z; returns a rebase when needed. */
   public updateCells(renderPlayerPosition: Readonly<Vec3>): WorldRebase | null {
     if (!this.initialized || !this.objectPool || !this.artLibrary) return null;
-    const logicalPosition = V3(
-      renderPlayerPosition.x + this.logicalOrigin.x,
-      0,
-      renderPlayerPosition.z + this.logicalOrigin.z,
+    this.streamer.stream(
+      renderPlayerPosition,
+      new Set(this.activeCells.keys()),
+      (coord) => this.createCell(coord),
+      (key) => {
+        const cell = this.activeCells.get(key);
+        if (!cell) return;
+        cell.recycle(this.objectPool!);
+        this.activeCells.delete(key);
+      },
     );
-    const coord = this.toCellCoord(logicalPosition.x, logicalPosition.z);
-    this.currentCell.set(coord.x, 0, coord.z);
-
-    const requiredKeys = new Set<string>();
-    for (let x = coord.x - InfiniteWorldManager.ACTIVE_RADIUS; x <= coord.x + InfiniteWorldManager.ACTIVE_RADIUS; x++) {
-      for (let z = coord.z - InfiniteWorldManager.ACTIVE_RADIUS; z <= coord.z + InfiniteWorldManager.ACTIVE_RADIUS; z++) {
-        const cellCoord = { x, z };
-        const key = cellKey(cellCoord);
-        requiredKeys.add(key);
-        if (!this.activeCells.has(key)) this.createCell(cellCoord);
+    this.logicalOrigin.set(this.streamer.logicalOrigin);
+    this.currentCell.set(this.streamer.currentCell);
+    this.updateCurrentTheme({ x: this.currentCell.x, z: this.currentCell.z });
+    return this.streamer.rebaseIfNeeded(renderPlayerPosition, (rebase) => {
+      this.logicalOrigin.set(this.streamer.logicalOrigin);
+      this.rebaseCount = this.streamer.rebaseCount;
+      for (const cell of this.activeCells.values()) {
+        cell.node.setPosition(
+          cell.coord.x * InfiniteWorldManager.CELL_SIZE - this.logicalOrigin.x,
+          0,
+          cell.coord.z * InfiniteWorldManager.CELL_SIZE - this.logicalOrigin.z,
+        );
+        cell.applyWorldRebase(rebase.shift);
       }
-    }
-
-    for (const [key, cell] of this.activeCells) {
-      if (requiredKeys.has(key)) continue;
-      cell.recycle(this.objectPool);
-      this.activeCells.delete(key);
-    }
-
-    this.updateCurrentTheme(coord);
-    return this.tryRebase(renderPlayerPosition);
+    });
   }
 
   public updateObjects(
@@ -797,36 +806,6 @@ export class InfiniteWorldManager extends Component {
     this.currentTheme = theme;
     this.currentRegionIndex = REGION_THEMES.findIndex((candidate) => candidate.id === theme.id);
     eventBus.emit('UI_REGION_CHANGED', { region: theme.name, regionId: theme.id });
-  }
-
-  private tryRebase(renderPlayerPosition: Readonly<Vec3>): WorldRebase | null {
-    if (Math.abs(renderPlayerPosition.x) < InfiniteWorldManager.REBASE_THRESHOLD
-      && Math.abs(renderPlayerPosition.z) < InfiniteWorldManager.REBASE_THRESHOLD) return null;
-
-    const shiftX = Math.trunc(renderPlayerPosition.x / InfiniteWorldManager.CELL_SIZE) * InfiniteWorldManager.CELL_SIZE;
-    const shiftZ = Math.trunc(renderPlayerPosition.z / InfiniteWorldManager.CELL_SIZE) * InfiniteWorldManager.CELL_SIZE;
-    if (shiftX === 0 && shiftZ === 0) return null;
-    const shift = V3(shiftX, 0, shiftZ);
-    this.logicalOrigin.add(shift);
-    this.rebaseCount++;
-
-    for (const cell of this.activeCells.values()) {
-      cell.node.setPosition(
-        cell.coord.x * InfiniteWorldManager.CELL_SIZE - this.logicalOrigin.x,
-        0,
-        cell.coord.z * InfiniteWorldManager.CELL_SIZE - this.logicalOrigin.z,
-      );
-      cell.applyWorldRebase(shift);
-    }
-    return { shift, logicalOrigin: this.logicalOrigin.clone() };
-  }
-
-  private toCellCoord(logicalX: number, logicalZ: number): WorldCellCoord {
-    const half = InfiniteWorldManager.CELL_SIZE * 0.5;
-    return {
-      x: Math.floor((logicalX + half) / InfiniteWorldManager.CELL_SIZE),
-      z: Math.floor((logicalZ + half) / InfiniteWorldManager.CELL_SIZE),
-    };
   }
 
   private themeFor(coord: WorldCellCoord): IRegionThemeConfig {
