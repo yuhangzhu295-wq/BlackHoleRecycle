@@ -18,11 +18,35 @@
         "path": "i18n:menu.extension",
         "label": "验证 V2 世界 glTF 资产库",
         "message": "verify-world-art-library"
+      },
+      {
+        "path": "i18n:menu.extension",
+        "label": "创建 Golden City Creator Cell（编辑器保存）",
+        "message": "build-golden-city-cell"
+      },
+      {
+        "path": "i18n:menu.extension",
+        "label": "验证 Golden City Creator Cell",
+        "message": "verify-golden-city-cell"
+      },
+      {
+        "path": "i18n:menu.extension",
+        "label": "创建 Collectible Base Prefab（编辑器保存）",
+        "message": "build-collectible-base"
+      },
+      {
+        "path": "i18n:menu.extension",
+        "label": "验证 Collectible Base Prefab",
+        "message": "verify-collectible-base"
       }
     ],
     "messages": {
       "build-world-art-library": { "methods": ["buildWorldArtLibrary"] },
-      "verify-world-art-library": { "methods": ["verifyWorldArtLibrary"] }
+      "verify-world-art-library": { "methods": ["verifyWorldArtLibrary"] },
+      "build-golden-city-cell": { "methods": ["buildGoldenCityCell"] },
+      "verify-golden-city-cell": { "methods": ["verifyGoldenCityCell"] },
+      "build-collectible-base": { "methods": ["buildCollectibleBase"] },
+      "verify-collectible-base": { "methods": ["verifyCollectibleBase"] }
     },
     "shortcuts": [
       {

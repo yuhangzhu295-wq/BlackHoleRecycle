@@ -1,7 +1,7 @@
 /**
  * 游戏主控制器与运行时生命周期驱动 (GameManager.ts)
  */
-import { _decorator, Component, Node, Camera, Vec3, director, DirectionalLight, Color, Label, LabelOutline, UITransform, instantiate } from 'cc';
+import { _decorator, Component, Node, Camera, Vec3, director, DirectionalLight, Color, Label, LabelOutline, UITransform, instantiate, Prefab } from 'cc';
 import { BlackHoleMachine } from '../machine/BlackHoleMachine';
 import { InfiniteWorldManager } from '../world/InfiniteWorldManager';
 import { CompressibleObject } from './CompressibleObject';
@@ -31,6 +31,11 @@ export class GameManager extends Component {
   /** The editor-saved production 2D grid. Legacy WorldChunkManager is not used here. */
   @property(InfiniteWorldManager)
   public infiniteWorldManager: InfiniteWorldManager | null = null;
+
+  /** Creator-saved pooled collectible root. Assigned after the editor extension
+   * creates db://assets/prefabs/objects/CollectibleBase.prefab. */
+  @property(Prefab)
+  public collectibleBasePrefab: Prefab | null = null;
 
   @property(Camera)
   public mainCamera: Camera | null = null;
@@ -138,19 +143,24 @@ export class GameManager extends Component {
   private autoBindDependencies(): void {
     const scene = director.getScene();
 
-    // 1. 自动挂载或查找 BlackHoleMachine
+    // 1. Production dependencies must come from Creator-saved scene/prefab
+    // instances. Runtime component synthesis hides broken scenes and makes a
+    // release build diverge from the authored project, so missing bindings
+    // fail fast with an actionable error.
     if (!this.machine) {
       this.machine = scene?.getComponentInChildren(BlackHoleMachine) || null;
       if (!this.machine) {
-        const machineNode = new Node('BlackHoleMachine');
-        this.node.addChild(machineNode);
-        this.machine = machineNode.addComponent(BlackHoleMachine);
+        throw new Error('[GameManager] Missing editor-saved BlackHoleMachine. Assign the machine prefab in Game.scene.');
       }
     }
 
-    // 2. 自动挂载或查找 PlayerController
+    // 2. PlayerController is authored on the machine prefab. Do not add a
+    // second runtime component when the scene wiring is incomplete.
     if (!this.playerController && this.machine) {
-      const pc = this.machine.getComponent(PlayerController) || this.machine.addComponent(PlayerController);
+      const pc = this.machine.getComponent(PlayerController);
+      if (!pc) {
+        throw new Error('[GameManager] Missing editor-saved PlayerController on BlackHoleMachine.');
+      }
       this.playerController = pc;
       if (pc) pc.machine = this.machine;
     }
@@ -163,9 +173,12 @@ export class GameManager extends Component {
       }
     }
 
-    // 4. 自动挂载或查找 CompressionSystem
+    // 4. CompressionSystem is authored on GameRoot.
     if (!this.compressionSystem) {
-      this.compressionSystem = this.node.getComponent(CompressionSystem) || this.node.addComponent(CompressionSystem);
+      this.compressionSystem = this.node.getComponent(CompressionSystem) || null;
+      if (!this.compressionSystem) {
+        throw new Error('[GameManager] Missing editor-saved CompressionSystem on GameRoot.');
+      }
       if (this.machine) {
         this.compressionSystem.machine = this.machine;
       }
@@ -191,13 +204,12 @@ export class GameManager extends Component {
       }
     }
 
-    // 6. 自动挂载或查找 HUDView
+    // 6. HUDView is authored under Canvas. Runtime HUD synthesis is disabled;
+    // a missing page must be fixed in Creator rather than silently replaced.
     if (!this.hud) {
       this.hud = scene?.getComponentInChildren(HUDView) || null;
       if (!this.hud) {
-        const runtimeHudNode = new Node('RuntimeHUD');
-        this.node.addChild(runtimeHudNode);
-        this.hud = runtimeHudNode.addComponent(HUDView);
+        throw new Error('[GameManager] Missing editor-saved HUDView under Canvas.');
       }
     }
   }
@@ -258,11 +270,7 @@ export class GameManager extends Component {
 
   private initWorld(): void {
     if (this.infiniteWorldManager) {
-      this.infiniteWorldManager.init(() => {
-        const objNode = new Node('CompressibleObject');
-        const comp = objNode.addComponent(CompressibleObject);
-        return comp;
-      });
+      this.infiniteWorldManager.init(this.collectibleBasePrefab);
     }
 
     analyticsService.track('game_launch');

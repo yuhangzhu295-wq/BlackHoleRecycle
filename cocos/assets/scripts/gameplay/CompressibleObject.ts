@@ -83,13 +83,16 @@ export class CompressibleObject extends Component {
   private buildVisibleNode(): void {
     if (this.visualNode) return;
 
-    this.visualNode = new Node('Visual');
-    this.node.addChild(this.visualNode);
+    // Creator-authored CollectibleBase.prefab supplies these roots. A missing
+    // hierarchy is an authored-asset error; never synthesize a runtime shell.
+    this.visualNode = this.node.getChildByName('VisualRoot') || this.node.getChildByName('Visual');
+    if (!this.visualNode) throw new Error('[CompressibleObject] CollectibleBase.prefab is missing VisualRoot.');
 
     // 锁定反馈复用审计的锥桶模型，而不是红色 Box 占位符。
-    this.lockIndicatorNode = new Node('TierLockWarning');
+    this.lockIndicatorNode = this.node.getChildByName('LockIndicator') || this.node.getChildByName('TierLockWarning');
+    if (!this.lockIndicatorNode) throw new Error('[CompressibleObject] CollectibleBase.prefab is missing LockIndicator.');
+    if (!this.node.getChildByName('FXRoot')) throw new Error('[CompressibleObject] CollectibleBase.prefab is missing FXRoot.');
     this.lockIndicatorNode.setPosition(0, 0.8, 0);
-    this.node.addChild(this.lockIndicatorNode);
     this.getArtLibrary().spawn(
       'constructionCone',
       this.lockIndicatorNode,

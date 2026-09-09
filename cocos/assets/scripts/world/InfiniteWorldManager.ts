@@ -13,15 +13,12 @@ import { DistrictKind, DistrictTemplate, getDistrictTemplateForRegion } from './
 import { DynamicVehicle } from './DynamicVehicle';
 import { WorldArtKind, WorldArtLibrary } from './WorldArtLibrary';
 import { WorldStreamer } from './WorldStreamer';
+import { WorldCellFactory } from './WorldCellFactory';
+import type { WorldCellCoord, WorldRebase } from './WorldTypes';
 
-const { ccclass } = _decorator;
+const { ccclass, property } = _decorator;
 const V3 = (x: number, y: number, z: number): Vec3 => new Vec3(x, y, z);
 const ONE = new Vec3(1, 1, 1);
-
-export interface WorldCellCoord {
-  readonly x: number;
-  readonly z: number;
-}
 
 /**
  * Narrow read-only view of a live streamed cell. It is intentionally useful
@@ -33,13 +30,6 @@ export interface WorldCellRuntimeContent {
   readonly node: Node;
   readonly objects: readonly CompressibleObject[];
   readonly dynamicVehicles: readonly DynamicVehicle[];
-}
-
-export interface WorldRebase {
-  /** Render-space amount removed from the player and every active object. */
-  readonly shift: Readonly<Vec3>;
-  /** Logical offset that is subsequently added to render coordinates. */
-  readonly logicalOrigin: Readonly<Vec3>;
 }
 
 function cellKey(coord: WorldCellCoord): string {
@@ -66,9 +56,10 @@ class InfiniteWorldCell {
     district: DistrictTemplate,
     private readonly art: WorldArtLibrary,
     private readonly cellSize: number,
+    private readonly authored = false,
   ) {
     this.district = district;
-    this.buildEnvironment();
+    if (!authored) this.buildEnvironment();
   }
 
   public populate(
@@ -492,13 +483,22 @@ export class InfiniteWorldManager extends Component {
   /** The only remote-derived art added by this manager, imported by Creator. */
   private constructionSitePrefab: Prefab | null = null;
   private constructionSiteLoadState: 'IDLE' | 'LOADING' | 'READY' | 'FAILED' = 'IDLE';
+  /** Optional Creator-authored cell registry. Unregistered districts retain
+   * the existing deterministic strangler path until their prefabs are wired. */
+  private cellFactory: WorldCellFactory | null = null;
+  /** Assigned by Creator only when a district has completed authored-cell QA. */
+  @property(Prefab)
+  public goldenCityCellPrefab: Prefab | null = null;
+  /** Creator-saved pooled collectible root required by the production scene. */
+  @property(Prefab)
+  public collectibleBasePrefab: Prefab | null = null;
   private readonly streamer = new WorldStreamer({
     cellSize: InfiniteWorldManager.CELL_SIZE,
     activeRadius: InfiniteWorldManager.ACTIVE_RADIUS,
     rebaseThreshold: InfiniteWorldManager.REBASE_THRESHOLD,
   });
 
-  public init(objectFactory: () => CompressibleObject): void {
+  public init(collectibleBasePrefab: Prefab | null = null): void {
     if (this.initialized) return;
     this.artLibrary = director.getScene()?.getComponentInChildren(WorldArtLibrary) || null;
     if (!this.artLibrary) throw new Error('[InfiniteWorldManager] Missing editor-saved WorldArtLibrary.');
@@ -506,16 +506,38 @@ export class InfiniteWorldManager extends Component {
 
     this.objectRoot = new Node('InfiniteWorldObjectPool');
     this.node.addChild(this.objectRoot);
+    const authoredCollectiblePrefab = collectibleBasePrefab || this.collectibleBasePrefab;
     this.objectPool = new ObjectPool<CompressibleObject>(
       () => {
-        const object = objectFactory();
-        if (this.objectRoot && object.node.parent !== this.objectRoot) this.objectRoot.addChild(object.node);
-        return object;
+        if (!authoredCollectiblePrefab) {
+          throw new Error('[InfiniteWorldManager] Missing editor-saved CollectibleBase.prefab. Bind it in Game.scene before previewing.');
+        }
+        const resolved = instantiate(authoredCollectiblePrefab).getComponent(CompressibleObject);
+        if (!resolved) {
+          throw new Error('[InfiniteWorldManager] CollectibleBase.prefab is missing CompressibleObject.');
+        }
+        if (this.objectRoot && resolved.node.parent !== this.objectRoot) this.objectRoot.addChild(resolved.node);
+        return resolved;
       },
       (object) => object.recycle(),
       48,
       288,
     );
+    this.cellFactory = new WorldCellFactory({
+      cellSize: InfiniteWorldManager.CELL_SIZE,
+      parent: this.node,
+    });
+    if (this.goldenCityCellPrefab) {
+      // Golden City is the authored opening cell, not a template to stamp
+      // across every residential district in the endless grid. Other
+      // residential cells retain the deterministic strangler path until their
+      // own Creator-authored prefabs are completed and registered.
+      this.cellFactory.register({
+        district: 'RESIDENTIAL',
+        prefab: this.goldenCityCellPrefab,
+        matches: (coord) => coord.x === 0 && coord.z === 0,
+      });
+    }
     this.initialized = true;
     this.updateCells(Vec3.ZERO);
     this.loadConstructionLandmark();
@@ -760,6 +782,28 @@ export class InfiniteWorldManager extends Component {
     );
     const theme = this.themeFor(coord);
     const district = getDistrictTemplateForRegion(theme.id, coord.x, coord.z);
+    // The factory is intentionally consulted before the legacy builder. A
+    // district only takes the authored path after its Prefab is registered;
+    // this keeps migration incremental and preserves the tested fallback.
+    const authoredNode = this.cellFactory?.instantiateAuthoredCell(coord, district.kind, cellNode.name) || null;
+    if (authoredNode) {
+      cellNode.destroy();
+      authoredNode.setPosition(
+        coord.x * InfiniteWorldManager.CELL_SIZE - this.logicalOrigin.x,
+        0,
+        coord.z * InfiniteWorldManager.CELL_SIZE - this.logicalOrigin.z,
+      );
+      const authoredCell = new InfiniteWorldCell(coord, authoredNode, theme, district, this.artLibrary, InfiniteWorldManager.CELL_SIZE, true);
+      const stableIndex = positiveMod(coord.x * 73856093 ^ coord.z * 19349663, 2147483647);
+      authoredCell.populate(
+        CellItemGenerator.generateCellItems(theme, coord.x, coord.z, stableIndex, InfiniteWorldManager.CELL_SIZE, district),
+        this.objectPool,
+        this.logicalOrigin,
+      );
+      this.activeCells.set(cellKey(coord), authoredCell);
+      if (coord.x === 0 && coord.z === 0) this.installConstructionLandmarkInOpeningCell();
+      return;
+    }
     const cell = new InfiniteWorldCell(coord, cellNode, theme, district, this.artLibrary, InfiniteWorldManager.CELL_SIZE);
     const stableIndex = positiveMod(coord.x * 73856093 ^ coord.z * 19349663, 2147483647);
     cell.populate(
