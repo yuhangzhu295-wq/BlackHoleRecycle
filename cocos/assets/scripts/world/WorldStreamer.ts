@@ -1,6 +1,6 @@
 import { Vec3 } from 'cc';
 
-import type { WorldCellCoord, WorldRebase } from './InfiniteWorldManager';
+import type { WorldCellCoord, WorldRebase } from './WorldTypes';
 
 export interface WorldStreamerOptions {
   readonly cellSize: number;

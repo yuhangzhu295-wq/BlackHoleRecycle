@@ -13,15 +13,13 @@ import { DistrictKind, DistrictTemplate, getDistrictTemplateForRegion } from './
 import { DynamicVehicle } from './DynamicVehicle';
 import { WorldArtKind, WorldArtLibrary } from './WorldArtLibrary';
 import { WorldStreamer } from './WorldStreamer';
+import type { WorldCellCoord as SharedWorldCellCoord, WorldRebase as SharedWorldRebase } from './WorldTypes';
 
 const { ccclass } = _decorator;
 const V3 = (x: number, y: number, z: number): Vec3 => new Vec3(x, y, z);
 const ONE = new Vec3(1, 1, 1);
 
-export interface WorldCellCoord {
-  readonly x: number;
-  readonly z: number;
-}
+export type WorldCellCoord = SharedWorldCellCoord;
 
 /**
  * Narrow read-only view of a live streamed cell. It is intentionally useful
@@ -35,12 +33,7 @@ export interface WorldCellRuntimeContent {
   readonly dynamicVehicles: readonly DynamicVehicle[];
 }
 
-export interface WorldRebase {
-  /** Render-space amount removed from the player and every active object. */
-  readonly shift: Readonly<Vec3>;
-  /** Logical offset that is subsequently added to render coordinates. */
-  readonly logicalOrigin: Readonly<Vec3>;
-}
+export type WorldRebase = SharedWorldRebase;
 
 function cellKey(coord: WorldCellCoord): string {
   return `${coord.x}:${coord.z}`;
