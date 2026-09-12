@@ -12366,6 +12366,10 @@
     },
     "_enabled": true,
     "__prefab": null,
+    "goldenCityCellPrefab": {
+      "__uuid__": "2cf2305d-1157-4422-b4b7-97fb63cdc017",
+      "__expectedType__": "cc.Prefab"
+    },
     "_id": "f1vObLXThEsZIN7BTCS7IU"
   },
   {
