@@ -219,18 +219,33 @@ export class WorldCompositionProbe {
     entries: GoldenCityEntry[],
   ): void {
     for (const root of cell.node.children) {
-      const classification = this.classifyEnvironmentNode(root.name);
-      if (!classification) continue;
+      this.collectEnvironmentNode(root, root.name, camera, viewport, entries);
+    }
+  }
+
+  private static collectEnvironmentNode(
+    node: Node,
+    path: string,
+    camera: Camera,
+    viewport: Readonly<{ x: number; y: number; width: number; height: number }>,
+    entries: GoldenCityEntry[],
+  ): void {
+    const classification = this.classifyEnvironmentNode(node.name);
+    if (classification) {
       entries.push(this.createEntry(
-        root.name,
+        node.name,
         classification.category,
-        classification.rule,
-        [root],
+        `${classification.rule}; path=${path}`,
+        [node],
         camera,
         viewport,
         classification.logicalUnits,
         classification.reason,
       ));
+      return;
+    }
+    for (const child of node.children) {
+      this.collectEnvironmentNode(child, `${path}/${child.name}`, camera, viewport, entries);
     }
   }
 
@@ -376,7 +391,10 @@ export class WorldCompositionProbe {
     logicalUnits: number;
     reason: string;
   }> | null {
-    if (name === 'DistrictGround') {
+    if (name === 'Ground' || name === 'Roads' || name === 'Buildings' || name === 'Park' || name === 'Props'
+      || name === 'TrafficRoutes' || name === 'CollectibleSpawnPoints' || name === 'CompetitorSpawnPoints'
+      || name === 'ClusterAnchors') return null;
+    if (name === 'DistrictGround' || name === 'GroundTile') {
       return {
         category: 'GROUND',
         rule: 'Opening-cell actual DistrictGround terrain tile',
@@ -392,7 +410,7 @@ export class WorldCompositionProbe {
         reason: 'The single imported crossroad root is a four-arm junction.',
       };
     }
-    if (name === 'DistrictRoad') {
+    if (name === 'DistrictRoad' || /^Road(?:North|South|East|West)$/.test(name) || name === 'MainCrossroad') {
       return {
         category: 'ROAD',
         rule: 'Opening-cell imported road root',
@@ -400,7 +418,7 @@ export class WorldCompositionProbe {
         reason: 'One authored road segment root.',
       };
     }
-    if (/ResidentialHouse|Neighbourhood|ArenaSkyline|Market|Clinic|Store|Building|Tower|Skyline/.test(name)) {
+    if (/ResidentialHouse|Neighbourhood|ArenaSkyline|Market|Clinic|Store|Shop|Commercial|Building|Tower|Skyline/.test(name)) {
       return {
         category: 'BUILDING',
         rule: 'Opening-cell named building, shop, clinic, house, or skyline root',

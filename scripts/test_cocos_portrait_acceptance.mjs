@@ -878,6 +878,9 @@ async function collectGoldenCityBaseline(cdp, page, canvasRect, homeSnapshot) {
   }, undefined, { timeout: 7000 });
 
   const before = await readRuntimeSnapshot(page);
+  const streaming = before.world?.streaming;
+  assert(streaming?.currentCellSource === 'AUTHORED_GOLDEN_CITY',
+    `FAIL_GOLDEN_CITY_SOURCE: ${JSON.stringify(streaming)}`);
   const composition = before.world?.streaming?.goldenCityComposition;
   assert(before.arena?.competitorCount === 8,
     `FAIL_GOLDEN_CITY_COMPETITOR_ROSTER: ${JSON.stringify(before.arena)}`);
@@ -889,10 +892,23 @@ async function collectGoldenCityBaseline(cdp, page, canvasRect, homeSnapshot) {
   const dynamicBefore = before.world?.streaming?.dynamicVehicles || [];
   assert(dynamicBefore.length > 0,
     `FAIL_GOLDEN_CITY_DYNAMIC_VEHICLE_MISSING: ${JSON.stringify(before.world?.streaming)}`);
-  const roadsideTrees = composition.entries.filter((entry) => entry.name.startsWith('OpeningParkTreeRoad'));
-  assert(roadsideTrees.length === 2 && roadsideTrees.every((entry) => entry.category === 'TREE'),
-    `FAIL_GOLDEN_CITY_ROADSIDE_TREE_CLASSIFICATION: ${JSON.stringify(roadsideTrees)}`);
-  const openingRoad = composition.entries.find((entry) => entry.name === 'FourWayRoad')?.worldBounds;
+  const treeEntries = composition.entries.filter((entry) => entry.category === 'TREE');
+  const visibleTrees = treeEntries.filter((entry) => entry.visible);
+  const visibleEntries = composition.entries.filter((entry) => entry.visible);
+  const compositionMetrics = {
+    currentCellSource: streaming.currentCellSource,
+    visibleTrees: visibleTrees.length,
+    visibleRoads: visibleEntries.filter((entry) => entry.category === 'ROAD').length,
+    visiblePOI: visibleEntries.filter((entry) => entry.category === 'POI').length,
+    visibleBuildings: visibleEntries.filter((entry) => entry.category === 'BUILDING').length,
+    visibleVehicles: visibleEntries.filter((entry) => entry.category === 'VEHICLE').length,
+    visibleCollectibles: visibleEntries.filter((entry) => entry.category === 'COLLECTIBLE').length,
+    resourceClusters: visibleEntries.filter((entry) => entry.category === 'RESOURCE_CLUSTER').length,
+    largeEmptyGroundRatio: composition.emptyGround?.largeEmptyGroundRatio ?? null,
+  };
+  assert(visibleTrees.length >= 10 && visibleTrees.every((entry) => entry.category === 'TREE'),
+    `FAIL_GOLDEN_CITY_TREE_GATE: ${JSON.stringify({ metrics: compositionMetrics, treeEntries, visibleTrees })}`);
+  const openingRoad = composition.entries.find((entry) => entry.name === 'FourWayRoad' || entry.name === 'MainCrossroad')?.worldBounds;
   const openingTraffic = dynamicBefore.filter((vehicle) => vehicle.id.startsWith('traffic_0_0_'));
   const isInsideOpeningRoad = (vehicle) => openingRoad
     && vehicle.x >= openingRoad.min.x && vehicle.x <= openingRoad.max.x
@@ -918,7 +934,7 @@ async function collectGoldenCityBaseline(cdp, page, canvasRect, homeSnapshot) {
   }).find((vehicle) => vehicle && vehicle.distance > 0.2);
   assert(movingVehicle,
     `FAIL_GOLDEN_CITY_DYNAMIC_VEHICLE_NOT_MOVING: ${JSON.stringify({ dynamicBefore, dynamicAfter })}`);
-  return { start, arena, composition, dynamicBefore, dynamicAfter, movingVehicle };
+  return { start, arena, currentCellSource: streaming.currentCellSource, composition, dynamicBefore, dynamicAfter, movingVehicle };
 }
 
 /**
