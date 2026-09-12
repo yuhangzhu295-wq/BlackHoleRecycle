@@ -12,7 +12,7 @@ export interface WorldCellPrefabEntry {
 export interface WorldCellFactoryOptions {
   readonly cellSize: number;
   readonly parent: Node;
-  readonly resolvePrefab?: (district: string) => Prefab | null;
+  readonly resolvePrefab?: (district: string, coord?: WorldCellCoord) => Prefab | null;
 }
 
 /**
@@ -35,11 +35,11 @@ export class WorldCellFactory {
   public resolve(district: string, coord?: WorldCellCoord): Prefab | null {
     const entry = this.registry.get(district);
     if (entry && (!entry.matches || (coord && entry.matches(coord)))) return entry.prefab;
-    return this.options.resolvePrefab?.(district) || null;
+    return this.options.resolvePrefab?.(district, coord) || null;
   }
 
-  public instantiateAuthoredCell(coord: WorldCellCoord, district: string, name = `WorldCell_${coord.x}_${coord.z}`): Node | null {
-    const prefab = this.resolve(district, coord);
+  public instantiateAuthoredCell(coord: WorldCellCoord, district: string, prefabOverride?: Prefab | null, name = `WorldCell_${coord.x}_${coord.z}`): Node | null {
+    const prefab = prefabOverride || this.resolve(district, coord);
     if (!prefab) return null;
     const node = instantiate(prefab);
     node.name = name;

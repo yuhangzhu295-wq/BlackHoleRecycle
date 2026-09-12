@@ -13,6 +13,7 @@ bin/
 # Local QA artifacts (runtime screenshots, traces, reports and performance data).
 # Product-ready evidence is curated explicitly under cocos/docs/evidence/final/.
 artifacts/
+artifacts/authoring/
 
 # Cocos Creator Cache & Temp
 /library/

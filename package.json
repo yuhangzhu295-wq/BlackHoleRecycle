@@ -12,7 +12,9 @@
     "preflight:release": "node scripts/verify_cocos_minigame_builds.mjs --platform=wechatgame,bytedance-mini-game --require-release-ids",
     "typecheck:cocos": "tsc --project cocos/tsconfig.json --noEmit",
     "test:cocos": "node scripts/test_cocos_vertical_slice.js",
-    "acceptance:v2": "node scripts/test_cocos_portrait_acceptance.mjs"
+    "acceptance:v2": "node scripts/test_cocos_portrait_acceptance.mjs",
+    "audit:object-art": "node scripts/validate-object-art-coverage.mjs",
+    "author:golden-city": "node scripts/author_golden_city.mjs"
   },
   "keywords": [
     "wechat-minigame",

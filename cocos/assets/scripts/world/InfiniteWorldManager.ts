@@ -13,9 +13,10 @@ import { DistrictKind, DistrictTemplate, getDistrictTemplateForRegion } from './
 import { DynamicVehicle } from './DynamicVehicle';
 import { WorldArtKind, WorldArtLibrary } from './WorldArtLibrary';
 import { WorldStreamer } from './WorldStreamer';
+import { WorldCellFactory } from './WorldCellFactory';
 import type { WorldCellCoord as SharedWorldCellCoord, WorldRebase as SharedWorldRebase } from './WorldTypes';
 
-const { ccclass } = _decorator;
+const { ccclass, property } = _decorator;
 const V3 = (x: number, y: number, z: number): Vec3 => new Vec3(x, y, z);
 const ONE = new Vec3(1, 1, 1);
 
@@ -59,9 +60,12 @@ class InfiniteWorldCell {
     district: DistrictTemplate,
     private readonly art: WorldArtLibrary,
     private readonly cellSize: number,
+    isAuthored: boolean = false,
   ) {
     this.district = district;
-    this.buildEnvironment();
+    if (!isAuthored) {
+      this.buildEnvironment();
+    }
   }
 
   public populate(
@@ -471,6 +475,11 @@ export class InfiniteWorldManager extends Component {
   public static readonly ACTIVE_CELL_COUNT = 9;
   public static readonly REBASE_THRESHOLD = 192;
 
+  @property(Prefab)
+  public goldenCityCellPrefab: Prefab | null = null;
+
+  public currentCellSource: 'AUTHORED_GOLDEN_CITY' | 'PROCEDURAL_FALLBACK' = 'PROCEDURAL_FALLBACK';
+
   public currentTheme: IRegionThemeConfig = REGION_THEMES[0];
   public currentRegionIndex: number = 0;
   public readonly activeCells: Map<string, InfiniteWorldCell> = new Map();
@@ -485,6 +494,7 @@ export class InfiniteWorldManager extends Component {
   /** The only remote-derived art added by this manager, imported by Creator. */
   private constructionSitePrefab: Prefab | null = null;
   private constructionSiteLoadState: 'IDLE' | 'LOADING' | 'READY' | 'FAILED' = 'IDLE';
+  private worldCellFactory: WorldCellFactory | null = null;
   private readonly streamer = new WorldStreamer({
     cellSize: InfiniteWorldManager.CELL_SIZE,
     activeRadius: InfiniteWorldManager.ACTIVE_RADIUS,
@@ -509,6 +519,10 @@ export class InfiniteWorldManager extends Component {
       48,
       288,
     );
+    this.worldCellFactory = new WorldCellFactory({
+      cellSize: InfiniteWorldManager.CELL_SIZE,
+      parent: this.node,
+    });
     this.initialized = true;
     this.updateCells(Vec3.ZERO);
     this.loadConstructionLandmark();
@@ -722,6 +736,7 @@ export class InfiniteWorldManager extends Component {
       currentRegionName: this.getCurrentRegionName(),
       currentDistrict: this.getCurrentDistrictName(),
       currentDistrictKind: currentCell?.district.kind || null,
+      currentCellSource: this.currentCellSource,
       logicalOrigin: { x: this.logicalOrigin.x, z: this.logicalOrigin.z },
       rebaseCount: this.rebaseCount,
       // Do not spread Map.values(): Cocos' ES5 build transform emits a single
@@ -742,24 +757,48 @@ export class InfiniteWorldManager extends Component {
 
   private createCell(coord: WorldCellCoord): void {
     if (!this.artLibrary || !this.objectPool) return;
-    const logicalCenterX = coord.x * InfiniteWorldManager.CELL_SIZE;
+    const theme = this.themeFor(coord);
+    const district = getDistrictTemplateForRegion(theme.id, coord.x, coord.z);
+
+    let cellNode: Node | null = null;
+    let isAuthored = false;
+
+    if (coord.x === 0 && coord.z === 0) {
+      if (this.goldenCityCellPrefab && this.worldCellFactory) {
+        cellNode = this.worldCellFactory.instantiateAuthoredCell(coord, district.kind, this.goldenCityCellPrefab);
+      }
+      if (cellNode) {
+        isAuthored = true;
+        this.currentCellSource = 'AUTHORED_GOLDEN_CITY';
+      } else {
+        this.currentCellSource = 'PROCEDURAL_FALLBACK';
+      }
+    }
+
+    if (!cellNode) {
+      const logicalCenterX = coord.x * InfiniteWorldManager.CELL_SIZE;
     const logicalCenterZ = coord.z * InfiniteWorldManager.CELL_SIZE;
-    const cellNode = new Node(`WorldCell_${coord.x}_${coord.z}`);
+    cellNode = new Node(`WorldCell_${coord.x}_${coord.z}`);
     this.node.addChild(cellNode);
     cellNode.setPosition(
       logicalCenterX - this.logicalOrigin.x,
       0,
       logicalCenterZ - this.logicalOrigin.z,
     );
-    const theme = this.themeFor(coord);
-    const district = getDistrictTemplateForRegion(theme.id, coord.x, coord.z);
-    const cell = new InfiniteWorldCell(coord, cellNode, theme, district, this.artLibrary, InfiniteWorldManager.CELL_SIZE);
-    const stableIndex = positiveMod(coord.x * 73856093 ^ coord.z * 19349663, 2147483647);
-    cell.populate(
-      CellItemGenerator.generateCellItems(theme, coord.x, coord.z, stableIndex, InfiniteWorldManager.CELL_SIZE, district),
-      this.objectPool,
-      this.logicalOrigin,
-    );
+    }
+
+    const cell = new InfiniteWorldCell(coord, cellNode, theme, district, this.artLibrary, InfiniteWorldManager.CELL_SIZE, isAuthored);
+    // Authored Opening Cells own their environment and spawn-point authoring.
+    // Do not append the legacy procedural Opening objects/traffic on top of them.
+    // Cells without an authored prefab retain the strangler fallback path.
+    if (!isAuthored) {
+      const stableIndex = positiveMod(coord.x * 73856093 ^ coord.z * 19349663, 2147483647);
+      cell.populate(
+        CellItemGenerator.generateCellItems(theme, coord.x, coord.z, stableIndex, InfiniteWorldManager.CELL_SIZE, district),
+        this.objectPool,
+        this.logicalOrigin,
+      );
+    }
     this.activeCells.set(cellKey(coord), cell);
     if (coord.x === 0 && coord.z === 0) this.installConstructionLandmarkInOpeningCell();
   }
