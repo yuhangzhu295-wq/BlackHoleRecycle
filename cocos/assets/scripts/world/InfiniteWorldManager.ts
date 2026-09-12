@@ -60,7 +60,7 @@ class InfiniteWorldCell {
     district: DistrictTemplate,
     private readonly art: WorldArtLibrary,
     private readonly cellSize: number,
-    isAuthored: boolean = false,
+    public readonly isAuthored: boolean = false,
   ) {
     this.district = district;
     if (!isAuthored) {
@@ -87,6 +87,93 @@ class InfiniteWorldCell {
       this.objects.push(object);
     }
     this.populateDynamicTraffic(objectPool, logicalOrigin);
+  }
+
+  public populateAuthoredContent(
+    objectPool: ObjectPool<CompressibleObject>,
+    logicalOrigin: Readonly<Vec3>,
+  ): void {
+    const findNodeByName = (root: Node, targetName: string): Node | null => {
+      if (root.name === targetName) return root;
+      for (const child of root.children) {
+        const found = findNodeByName(child, targetName);
+        if (found) return found;
+      }
+      return null;
+    };
+
+    const spawnPointsRoot = findNodeByName(this.node, 'CollectibleSpawnPoints');
+    if (!spawnPointsRoot) return;
+
+    const t1Templates = OBJECT_TEMPLATES.filter((template) => template.tier === ObjectTier.T1);
+    if (t1Templates.length === 0) return;
+
+    for (const clusterNode of spawnPointsRoot.children) {
+      const clusterName = clusterNode.name;
+      const spawnPoints = clusterNode.children.filter((child) => child.name.startsWith('SpawnPoint_'));
+      spawnPoints.forEach((spNode, index) => {
+        const template = t1Templates[index % t1Templates.length];
+        const worldPos = spNode.worldPosition;
+        const object = objectPool.get();
+        object.spawn(
+         template,
+         worldPos.x - logicalOrigin.x,
+         worldPos.z - logicalOrigin.z,
+         0.35,
+          `cluster_${clusterName}_${index}`,
+        );
+        this.objects.push(object);
+      });
+    }
+  }
+
+  public populateAuthoredTraffic(
+    objectPool: ObjectPool<CompressibleObject>,
+    logicalOrigin: Readonly<Vec3>,
+  ): void {
+    const findNodeByName = (root: Node, targetName: string): Node | null => {
+      if (root.name === targetName) return root;
+      for (const child of root.children) {
+        const found = findNodeByName(child, targetName);
+        if (found) return found;
+      }
+      return null;
+    };
+
+    const routesRoot = findNodeByName(this.node, 'TrafficRoutes');
+    if (!routesRoot) return;
+    const roadRouteNames = ['RoadWest', 'RoadNorth', 'RoadEast', 'RoadSouth'];
+    const roadRoute = roadRouteNames
+      .map((name) => findNodeByName(this.node, name))
+      .filter((node): node is Node => Boolean(node))
+      .map((node) => {
+        const position = node.worldPosition;
+        return { x: position.x - logicalOrigin.x, z: position.z - logicalOrigin.z };
+      });
+    if (roadRoute.length < 4) return;
+    for (const anchor of routesRoot.children.filter((child) => child.name.startsWith('VehicleAnchor_'))) {
+      const kind = anchor.name.includes('GarbageTruck')
+        ? 'garbage_truck'
+        : anchor.name.includes('DeliveryVan')
+          ? 'delivery_van'
+          : 'car';
+      const template = OBJECT_TEMPLATES.find((candidate) => candidate.type === kind);
+      if (!template) continue;
+      const worldPos = anchor.worldPosition;
+      const x = worldPos.x - logicalOrigin.x;
+      const z = worldPos.z - logicalOrigin.z;
+      const object = objectPool.get();
+      const id = 'traffic_0_0_authored_' + anchor.name;
+      object.spawn(template, x, z, 0.35, id);
+      this.objects.push(object);
+      this.dynamicVehicles.push(new DynamicVehicle(
+        id,
+        kind === 'car' ? 'sedan' : kind,
+        object,
+        roadRoute,
+        kind === 'car' ? 4.0 : kind === 'delivery_van' ? 3.2 : 2.6,
+      ));
+    }
   }
 
   public recycle(objectPool: ObjectPool<CompressibleObject>): void {
@@ -602,6 +689,10 @@ export class InfiniteWorldManager extends Component {
     );
     this.logicalOrigin.set(this.streamer.logicalOrigin);
     this.currentCell.set(this.streamer.currentCell);
+    const currentCell = this.activeCells.get(cellKey({ x: this.currentCell.x, z: this.currentCell.z }));
+    this.currentCellSource = currentCell?.isAuthored
+      ? 'AUTHORED_GOLDEN_CITY'
+      : 'PROCEDURAL_FALLBACK';
     this.updateCurrentTheme({ x: this.currentCell.x, z: this.currentCell.z });
     return this.streamer.rebaseIfNeeded(renderPlayerPosition, (rebase) => {
       this.logicalOrigin.set(this.streamer.logicalOrigin);
@@ -752,6 +843,76 @@ export class InfiniteWorldManager extends Component {
         loadState: this.constructionSiteLoadState,
         visible: this.activeCells.get(cellKey({ x: 0, z: 0 }))?.hasConstructionLandmark() || false,
       },
+     authoredDynamicCounts: (() => {
+       const openingCell = this.activeCells.get(cellKey({ x: 0, z: 0 }));
+       const clusterSet = new Set<string>();
+       openingCell?.objects.forEach((obj) => {
+         const match = /^cluster_(.+)_\d+$/.exec(obj.runtimeId);
+         if (match) clusterSet.add(match[1]);
+       });
+       return {
+         collectibles: openingCell?.objects.filter((object) => !object.runtimeId.startsWith('traffic_')).length || 0,
+         clusters: clusterSet.size,
+         vehicles: openingCell?.dynamicVehicles.length || 0,
+       };
+     })(),
+      authoredClusterAnchors: (() => {
+        const openingCell = this.activeCells.get(cellKey({ x: 0, z: 0 }));
+        if (!openingCell || !openingCell.isAuthored) return [];
+        const findNodeByName = (root: Node, targetName: string): Node | null => {
+          if (root.name === targetName) return root;
+          for (const child of root.children) {
+            const found = findNodeByName(child, targetName);
+            if (found) return found;
+          }
+          return null;
+        };
+        const anchorsRoot = findNodeByName(openingCell.node, 'ClusterAnchors');
+        if (!anchorsRoot) return [];
+        const spawnPointsRoot = findNodeByName(openingCell.node, 'CollectibleSpawnPoints');
+        const clusterCenters = (spawnPointsRoot?.children || [])
+          .map((cluster) => {
+            const points = cluster.children.filter((child) => child.name.startsWith('SpawnPoint_'));
+            if (points.length === 0) return null;
+            const center = points.reduce((sum, point) => {
+              const position = point.worldPosition;
+              sum.x += position.x;
+              sum.y += position.y;
+              sum.z += position.z;
+              return sum;
+            }, new Vec3());
+            center.multiplyScalar(1 / points.length);
+            return { name: cluster.name, center };
+          })
+          .filter((cluster): cluster is { name: string; center: Vec3 } => Boolean(cluster));
+        return anchorsRoot.children.map((anchor) => {
+          const pos = anchor.worldPosition;
+          const semanticClusterName = anchor.name.includes('RecyclingSquare')
+            ? 'Cluster_CitySquare'
+            : anchor.name.includes('CentralPark')
+              ? 'Cluster_Park'
+              : null;
+          const semanticCluster = semanticClusterName
+            ? clusterCenters.find((cluster) => cluster.name === semanticClusterName) || null
+            : null;
+          const associated = semanticCluster || clusterCenters.reduce<{ name: string; center: Vec3 } | null>((nearest, cluster) => {
+            if (!nearest) return cluster;
+            const nearestDistance = Vec3.squaredDistance(pos, nearest.center);
+            const candidateDistance = Vec3.squaredDistance(pos, cluster.center);
+            return candidateDistance < nearestDistance ? cluster : nearest;
+          }, null);
+          const associatedCluster = associated?.name || null;
+          const objectCount = associatedCluster
+            ? openingCell.objects.filter((obj) => obj.runtimeId.startsWith(`cluster_${associatedCluster}_`)).length
+            : 0;
+          return {
+            name: anchor.name,
+            associatedCluster,
+            worldPosition: { x: pos.x, y: pos.y, z: pos.z },
+            objectCount,
+          };
+        });
+      })(),
     };
   }
 
@@ -798,6 +959,9 @@ export class InfiniteWorldManager extends Component {
         this.objectPool,
         this.logicalOrigin,
       );
+    } else {
+      cell.populateAuthoredContent(this.objectPool, this.logicalOrigin);
+      cell.populateAuthoredTraffic(this.objectPool, this.logicalOrigin);
     }
     this.activeCells.set(cellKey(coord), cell);
     if (coord.x === 0 && coord.z === 0) this.installConstructionLandmarkInOpeningCell();
