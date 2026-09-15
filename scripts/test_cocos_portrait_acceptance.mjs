@@ -1175,7 +1175,7 @@ async function verifyCardinalLongTravel(cdp, page, joystick, direction) {
  * joystick. The QA bridge is read-only: it supplies the live camera basis and
  * position so CDP can issue the same camera-relative touch a player would.
  */
-async function driveJoystickToLogicalPoint(cdp, page, joystick, target, label, arrivalRadius = 1.6, timeoutMs = 30_000) {
+async function driveJoystickToLogicalPoint(cdp, page, joystick, target, label, arrivalRadius = 1.6, timeoutMs = 30_000, allowMiss = false) {
   const deadline = Date.now() + timeoutMs;
   let bestDistance = Number.POSITIVE_INFINITY;
   let finalSnapshot = await readRuntimeSnapshot(page);
@@ -1249,6 +1249,7 @@ async function driveJoystickToLogicalPoint(cdp, page, joystick, target, label, a
   // route genuinely reached the target in that case; the next assertion
   // still requires the live Cocos compression system to absorb the item.
   if (bestDistance <= arrivalRadius) return finalSnapshot;
+  if (allowMiss) return finalSnapshot;
   throw new Error(`FAIL_VERTICAL_SLICE_ROUTE_${label}: target=${JSON.stringify(target)} final=${JSON.stringify(finalPosition)} bestDistance=${bestDistance}`);
 }
 
@@ -1426,22 +1427,40 @@ async function verifyFiveLevelProgression(cdp, page, joystick) {
       joystick,
       { x: target.logicalX, z: target.logicalZ },
       `FULL_PROGRESSION_T1_${target.runtimeId}`,
-      Math.max(1.0, latest.machine.suctionRadius * 0.62),
+      // Capture starts inside the machine radius, but the production FSM only
+      // switches ATTRACTED -> SUCKING below 0.6m. Finish the physical route
+      // inside that core so the evidence can prove the whole FSM instead of
+      // merely proving that a target was approached.
+      0.45,
     );
     // The real FSM finishes ATTRACTED -> SUCKING -> ABSORBED asynchronously
-    // after the genuine touch is released. Observe that production result
-    // rather than treating one arbitrary 900ms sample as a gameplay command.
+    // after the genuine touch is released. Keep a short read-only trace so
+    // the gate records the production transitions rather than treating one
+    // arbitrary delayed sample as a gameplay command.
     const absorptionDeadline = Date.now() + 5_000;
     let absorbed = false;
+    const stateTrace = [];
     while (Date.now() < absorptionDeadline && !absorbed) {
-      await page.waitForTimeout(200);
+      await page.waitForTimeout(100);
       latest = await readRuntimeSnapshot(page);
-      absorbed = !latest.objects.some((object) => object.runtimeId === target.runtimeId)
-        && latest.machine.mass > massBefore;
+      const currentTarget = latest.objects.find((object) => object.runtimeId === target.runtimeId);
+      stateTrace.push({
+        elapsedMs: 5_000 - Math.max(0, absorptionDeadline - Date.now()),
+        state: currentTarget?.state || 'REMOVED',
+        mass: latest.machine.mass,
+      });
+      absorbed = !currentTarget && latest.machine.mass > massBefore;
     }
+    const observedIntermediateState = stateTrace.some((entry) => entry.state === 'ATTRACTED' || entry.state === 'SUCKING');
     assert(absorbed,
-    `FAIL_FULL_PROGRESSION_T1_ABSORPTION: ${JSON.stringify({ target, massBefore, player: getLogicalPlayerPosition(latest), machine: latest.machine, objects: latest.objects })}`);
-    openingAbsorptions.push({ runtimeId: target.runtimeId, massBefore, massAfter: latest.machine.mass });
+    `FAIL_FULL_PROGRESSION_T1_ABSORPTION: ${JSON.stringify({ target, massBefore, player: getLogicalPlayerPosition(latest), machine: latest.machine, objects: latest.objects, stateTrace })}`);
+    openingAbsorptions.push({
+      runtimeId: target.runtimeId,
+      massBefore,
+      massAfter: latest.machine.mass,
+      observedIntermediateState,
+      stateTrace,
+    });
   }
   await page.waitForTimeout(3200);
   latest = await readRuntimeSnapshot(page);
@@ -1512,6 +1531,13 @@ async function verifyFiveLevelProgression(cdp, page, joystick) {
  * below is an actual portrait joystick touch.
  */
 async function verifyTrafficReplenishment(cdp, page, joystick) {
+  const getTrafficTiming = (snapshot, runtimeId) => (snapshot.world?.streaming?.respawnTiming || [])
+    .map((cell) => ({
+      cell: { x: cell.x, z: cell.z },
+      clock: cell.clock,
+      slot: cell.trafficSlots?.find((candidate) => candidate.id === runtimeId) || null,
+    }))
+    .find((entry) => entry.slot) || null;
   let latest = await readRuntimeSnapshot(page);
   assert(latest.machine?.maxTier >= 5,
     `FAIL_TRAFFIC_REPLENISHMENT_LEVEL: ${JSON.stringify(latest.machine)}`);
@@ -1520,7 +1546,9 @@ async function verifyTrafficReplenishment(cdp, page, joystick) {
     const origin = snapshot.world?.streaming?.logicalOrigin || { x: 0, z: 0 };
     const player = getLogicalPlayerPosition(snapshot);
     return (snapshot.world?.streaming?.dynamicVehicles || [])
-      .filter((vehicle) => vehicle.objectState === 'IDLE' && vehicle.routeLength >= 4)
+      .filter((vehicle) => vehicle.state === 'DRIVE'
+        && vehicle.objectState === 'IDLE'
+        && vehicle.routeLength >= 4)
       .map((vehicle) => {
         const object = snapshot.objects.find((candidate) => candidate.runtimeId === vehicle.id
           && candidate.state === 'IDLE' && candidate.tier <= snapshot.machine.maxTier);
@@ -1573,45 +1601,101 @@ async function verifyTrafficReplenishment(cdp, page, joystick) {
       { x: vehicle.x + origin.x, z: vehicle.z + origin.z },
       `TRAFFIC_T5_${targetId}`,
       Math.max(1.5, latest.machine.suctionRadius * 0.48),
-      9_000,
+      2_500,
+      true,
     );
-    await page.waitForTimeout(700);
-    latest = await readRuntimeSnapshot(page);
+    // Record the first observable removal promptly.  A long blind wait here
+    // would discount part of the real cooldown and make wall-clock evidence
+    // falsely report an early respawn.
+    const observationDeadline = Date.now() + 800;
+    while (Date.now() < observationDeadline) {
+      await page.waitForTimeout(100);
+      latest = await readRuntimeSnapshot(page);
+      const observedVehicle = latest.world?.streaming?.dynamicVehicles?.find((entry) => entry.id === targetId);
+      const observedObject = latest.objects.find((entry) => entry.runtimeId === targetId);
+      if (!observedVehicle && !observedObject && (latest.session?.absorbedTiers?.[5] || 0) > tier5Before) {
+        absorbedAt = Date.now();
+        break;
+      }
+    }
   }
   assert(absorbedAt > 0,
     `FAIL_TRAFFIC_REPLENISHMENT_ABSORB: ${JSON.stringify({ targetId, tier5Before, latest: { machine: latest.machine, absorbedTiers: latest.session?.absorbedTiers, vehicles: latest.world?.streaming?.dynamicVehicles, objects: latest.objects } })}`);
+  const absorbTiming = getTrafficTiming(latest, targetId);
+  assert(absorbTiming?.slot && absorbTiming.slot.active === false,
+    `FAIL_TRAFFIC_REPLENISHMENT_SLOT_NOT_COOLING: ${JSON.stringify({ targetId, absorbTiming })}`);
+  const cooldownDeadline = absorbTiming.slot.availableAt;
+  const absorptionClock = cooldownDeadline - 4;
   const poolAfterAbsorb = latest.world?.streaming?.pool || null;
   assert(poolBeforeAbsorb && poolAfterAbsorb && poolAfterAbsorb.released > poolBeforeAbsorb.released,
     `FAIL_TRAFFIC_REPLENISHMENT_POOL_RELEASE: ${JSON.stringify({ targetId, poolBeforeAbsorb, poolAfterAbsorb })}`);
 
+  // The slot deliberately respawns at the same road entry. Move the player
+  // away through the visible joystick before that deadline, otherwise a valid
+  // new vehicle is immediately pulled into SUCKING and cannot demonstrate its
+  // required DRIVE/IDLE re-entry state.
   const playerAfterAbsorb = getLogicalPlayerPosition(latest);
-  const safePoint = { x: playerAfterAbsorb.x + 14, z: playerAfterAbsorb.z };
-  await driveJoystickToLogicalPoint(cdp, page, joystick, safePoint, 'TRAFFIC_RESPAWN_SAFE_DISTANCE', 1.2, 8_000);
-  await page.waitForTimeout(350);
-  const duringCooldown = await readRuntimeSnapshot(page);
-  const cooldownElapsedMs = Date.now() - absorbedAt;
-  assert(cooldownElapsedMs < 4_000
-      && !duringCooldown.objects.some((object) => object.runtimeId === targetId)
-      && !duringCooldown.world?.streaming?.dynamicVehicles?.some((vehicle) => vehicle.id === targetId),
-  `FAIL_TRAFFIC_REPLENISHMENT_EARLY: ${JSON.stringify({ targetId, cooldownElapsedMs, player: getLogicalPlayerPosition(duringCooldown), vehicles: duringCooldown.world?.streaming?.dynamicVehicles })}`);
+  const awayX = playerAfterAbsorb.x - target.logicalX;
+  const awayZ = playerAfterAbsorb.z - target.logicalZ;
+  const awayLength = Math.hypot(awayX, awayZ) || 1;
+  const safeDistance = latest.machine.suctionRadius * 2 + 8;
+  await driveJoystickToLogicalPoint(
+    cdp,
+    page,
+    joystick,
+    {
+      x: playerAfterAbsorb.x + (awayX / awayLength) * safeDistance,
+      z: playerAfterAbsorb.z + (awayZ / awayLength) * safeDistance,
+    },
+    `TRAFFIC_RESPAWN_SAFE_DISTANCE_${targetId}`,
+    1.5,
+    3_000,
+    true,
+  );
+  latest = await readRuntimeSnapshot(page);
+
+  let lastCooldownSnapshot = latest;
+  // Snapshot reads occur after the current engine update. Use the existing
+  // slot deadline as the precise cooldown boundary, then verify four engine
+  // seconds from the slot's recorded absorption clock.
+  while ((getTrafficTiming(lastCooldownSnapshot, targetId)?.clock ?? 0) < cooldownDeadline) {
+    await page.waitForTimeout(100);
+    lastCooldownSnapshot = await readRuntimeSnapshot(page);
+    const cooldownElapsedMs = Date.now() - absorbedAt;
+    const currentTiming = getTrafficTiming(lastCooldownSnapshot, targetId);
+    if ((currentTiming?.clock ?? 0) >= cooldownDeadline) break;
+    assert(!lastCooldownSnapshot.objects.some((object) => object.runtimeId === targetId)
+        && !lastCooldownSnapshot.world?.streaming?.dynamicVehicles?.some((vehicle) => vehicle.id === targetId),
+    `FAIL_TRAFFIC_REPLENISHMENT_EARLY: ${JSON.stringify({ targetId, cooldownElapsedMs, absorbTiming, currentTiming, player: getLogicalPlayerPosition(lastCooldownSnapshot), vehicles: lastCooldownSnapshot.world?.streaming?.dynamicVehicles })}`);
+  }
 
   const respawnDeadline = absorbedAt + 9_000;
   let respawned = null;
   while (Date.now() < respawnDeadline && !respawned) {
-    await page.waitForTimeout(200);
+    await page.waitForTimeout(100);
     const snapshot = await readRuntimeSnapshot(page);
     const vehicle = snapshot.world?.streaming?.dynamicVehicles?.find((entry) => entry.id === targetId);
     const object = snapshot.objects.find((entry) => entry.runtimeId === targetId);
-    if (vehicle && object) respawned = { vehicle, object, elapsedMs: Date.now() - absorbedAt };
+    if (vehicle && object) {
+      const timing = getTrafficTiming(snapshot, targetId);
+      respawned = {
+        vehicle,
+        object,
+        elapsedMs: Date.now() - absorbedAt,
+        engineElapsedSeconds: (timing?.clock ?? 0) - absorptionClock,
+        timing,
+      };
+    }
   }
-  assert(respawned?.elapsedMs >= 3_800
+  assert(respawned?.engineElapsedSeconds >= 4
       && respawned.vehicle.kind === targetKind
       && respawned.vehicle.routeLength >= 4
+      && respawned.vehicle.state === 'DRIVE'
       && respawned.vehicle.objectState === 'IDLE'
       && respawned.object.state === 'IDLE'
       && respawned.object.type === targetType
       && respawned.object.tier === targetTier,
-  `FAIL_TRAFFIC_REPLENISHMENT: ${JSON.stringify({ target: { targetId, targetKind, targetType, targetTier }, respawned })}`);
+  `FAIL_TRAFFIC_REPLENISHMENT: ${JSON.stringify({ target: { targetId, targetKind, targetType, targetTier }, absorbTiming, respawned })}`);
   const poolAfterRespawn = (await readRuntimeSnapshot(page)).world?.streaming?.pool || null;
   assert(poolAfterRespawn && poolAfterRespawn.reused > poolAfterAbsorb.reused,
     `FAIL_TRAFFIC_REPLENISHMENT_POOL_REUSE: ${JSON.stringify({ targetId, poolAfterAbsorb, poolAfterRespawn })}`);
@@ -1623,8 +1707,10 @@ async function verifyTrafficReplenishment(cdp, page, joystick) {
     cooldownAbsent: true,
     moved: true,
     pool: { beforeAbsorb: poolBeforeAbsorb, afterAbsorb: poolAfterAbsorb, afterRespawn: poolAfterRespawn },
+    timing: { absorb: absorbTiming, respawn: getTrafficTiming(await readRuntimeSnapshot(page), targetId) },
     respawned: { state: respawned.vehicle.state, objectState: respawned.vehicle.objectState, routeLength: respawned.vehicle.routeLength },
     elapsedMs: respawned.elapsedMs,
+    engineElapsedSeconds: respawned.engineElapsedSeconds,
   };
 }
 

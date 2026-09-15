@@ -284,6 +284,18 @@ class InfiniteWorldCell {
     this.respawnClock += Math.max(0, dt);
   }
 
+  /** Read-only timing projection used by runtime cooldown acceptance. */
+  public getRespawnTimingSnapshot(): Readonly<Record<string, unknown>> {
+    return {
+      clock: this.respawnClock,
+      trafficSlots: this.trafficSlots.map((slot) => ({
+        id: slot.id,
+        active: slot.active,
+        availableAt: slot.availableAt,
+      })),
+    };
+  }
+
   private refreshRuntimeMaterialBindings(): void {
     if (this.authoredMaterialRebindFrames > 0 && this.node.activeInHierarchy) {
       this.art.hydrateAuthoredOpeningMaterials(this.node);
@@ -1061,6 +1073,15 @@ export class InfiniteWorldManager extends Component {
       currentCellSource: this.currentCellSource,
       logicalOrigin: { x: this.logicalOrigin.x, z: this.logicalOrigin.z },
       rebaseCount: this.rebaseCount,
+      pool: this.objectPool?.getDiagnostics() || null,
+      // Read-only runtime timing evidence for cooldown acceptance.  These
+      // values expose the existing cell clocks and slot deadlines only; they
+      // never write gameplay state or influence spawning.
+      respawnTiming: Array.from(this.activeCells.values(), (cell) => ({
+        x: cell.coord.x,
+        z: cell.coord.z,
+        ...cell.getRespawnTimingSnapshot(),
+      })),
       // Do not spread Map.values(): Cocos' ES5 build transform emits a single
       // iterator element for that form. Array.from preserves all real cells in
       // the Web Mobile runtime and keeps QA strictly read-only.
