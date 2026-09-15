@@ -1397,18 +1397,78 @@ async function verifyFiveLevelProgression(cdp, page, joystick) {
   };
 
   // The public opening tutorial supplies real T1 and T2 object clusters.
-  // Reuse it rather than injecting a test-only mass grant.
-  let latest = await driveJoystickToLogicalPoint(cdp, page, joystick, { x: 0, z: 5.2 }, 'FULL_PROGRESSION_T1', 1.6);
-  await page.waitForTimeout(3600);
+  // Resolve live authored T1 positions instead of relying on the former
+  // opening-cell coordinate. Creator retains ownership of WHERE; this
+  // evidence only drives real portrait input to the registered objects.
+  const openingDeadline = Date.now() + 60_000;
+  const openingAbsorptions = [];
+  let latest = await readRuntimeSnapshot(page);
+  while (latest.machine.level < 2 && Date.now() < openingDeadline) {
+    const origin = validateInfiniteWorldSnapshot(latest).logicalOrigin;
+    const player = getLogicalPlayerPosition(latest);
+    const target = latest.objects
+      .filter((object) => object.state === 'IDLE'
+        && object.tier === 1
+        && String(object.runtimeId || '').startsWith('cluster_'))
+      .map((object) => ({
+        ...object,
+        logicalX: object.x + origin.x,
+        logicalZ: object.z + origin.z,
+      }))
+      .sort((a, b) => Math.hypot(a.logicalX - player.x, a.logicalZ - player.z)
+        - Math.hypot(b.logicalX - player.x, b.logicalZ - player.z))[0];
+    assert(target,
+      `FAIL_FULL_PROGRESSION_T1_MISSING: ${JSON.stringify({ machine: latest.machine, player, objects: latest.objects })}`);
+    const massBefore = latest.machine.mass;
+    await driveJoystickToLogicalPoint(
+      cdp,
+      page,
+      joystick,
+      { x: target.logicalX, z: target.logicalZ },
+      `FULL_PROGRESSION_T1_${target.runtimeId}`,
+      Math.max(1.0, latest.machine.suctionRadius * 0.62),
+    );
+    // The real FSM finishes ATTRACTED -> SUCKING -> ABSORBED asynchronously
+    // after the genuine touch is released. Observe that production result
+    // rather than treating one arbitrary 900ms sample as a gameplay command.
+    const absorptionDeadline = Date.now() + 5_000;
+    let absorbed = false;
+    while (Date.now() < absorptionDeadline && !absorbed) {
+      await page.waitForTimeout(200);
+      latest = await readRuntimeSnapshot(page);
+      absorbed = !latest.objects.some((object) => object.runtimeId === target.runtimeId)
+        && latest.machine.mass > massBefore;
+    }
+    assert(absorbed,
+    `FAIL_FULL_PROGRESSION_T1_ABSORPTION: ${JSON.stringify({ target, massBefore, player: getLogicalPlayerPosition(latest), machine: latest.machine, objects: latest.objects })}`);
+    openingAbsorptions.push({ runtimeId: target.runtimeId, massBefore, massAfter: latest.machine.mass });
+  }
+  await page.waitForTimeout(3200);
   latest = await readRuntimeSnapshot(page);
   assert(latest.machine.level >= 2 && latest.machine.maxTier >= 2,
-    `FAIL_FULL_PROGRESSION_LV2: ${JSON.stringify(latest.machine)}`);
-  latest = await driveJoystickToLogicalPoint(cdp, page, joystick, { x: 0, z: -8 }, 'FULL_PROGRESSION_T2', 2.3);
+    `FAIL_FULL_PROGRESSION_LV2: ${JSON.stringify({ machine: latest.machine, openingAbsorptions })}`);
+  const t2Origin = validateInfiniteWorldSnapshot(latest).logicalOrigin;
+  const t2Player = getLogicalPlayerPosition(latest);
+  const t2Target = latest.objects
+    .filter((object) => object.state === 'IDLE' && object.tier === 2)
+    .map((object) => ({
+      ...object,
+      logicalX: object.x + t2Origin.x,
+      logicalZ: object.z + t2Origin.z,
+      tutorial: object.runtimeId === 'tutorial_t2_target',
+    }))
+    .sort((a, b) => Number(b.tutorial) - Number(a.tutorial)
+      || Math.hypot(a.logicalX - t2Player.x, a.logicalZ - t2Player.z)
+        - Math.hypot(b.logicalX - t2Player.x, b.logicalZ - t2Player.z))[0];
+  assert(t2Target,
+    `FAIL_FULL_PROGRESSION_T2_MISSING: ${JSON.stringify({ machine: latest.machine, objects: latest.objects })}`);
+  const tier2Before = latest.session.absorbedTiers?.[2] || 0;
+  latest = await driveJoystickToLogicalPoint(cdp, page, joystick, { x: t2Target.logicalX, z: t2Target.logicalZ }, `FULL_PROGRESSION_T2_${t2Target.runtimeId}`, 2.3);
   await page.waitForTimeout(1400);
   latest = await readRuntimeSnapshot(page);
-  assert((latest.session.absorbedTiers?.[2] || 0) > 0,
-    `FAIL_FULL_PROGRESSION_T2: ${JSON.stringify(latest.session?.absorbedTiers)}`);
-  record.levels.push({ level: 2, region: 'bedroom', district: 'RESIDENTIAL', mass: latest.machine.mass, maxTier: latest.machine.maxTier, absorbed: [], activePart: 'MagneticTurbineLeft' });
+  assert((latest.session.absorbedTiers?.[2] || 0) > tier2Before,
+    `FAIL_FULL_PROGRESSION_T2: ${JSON.stringify({ target: t2Target, absorbedTiers: latest.session?.absorbedTiers })}`);
+  record.levels.push({ level: 2, region: 'bedroom', district: 'RESIDENTIAL', mass: latest.machine.mass, maxTier: latest.machine.maxTier, absorbed: openingAbsorptions, activePart: 'MagneticTurbineLeft' });
 
   for (const stage of stages) {
     latest = await driveJoystickToLogicalPoint(cdp, page, joystick, stage.point, `FULL_PROGRESSION_${stage.region.toUpperCase()}`, 3.2, 70_000);
@@ -1444,6 +1504,128 @@ async function verifyFiveLevelProgression(cdp, page, joystick) {
     `FAIL_FULL_PROGRESSION_T5_ABSORPTION: ${JSON.stringify({ tier5, before: tier5Before, after: latest.session?.absorbedTiers, machine: latest.machine })}`);
   record.finalTier5Absorption = { runtimeId: tier5.runtimeId, type: tier5.type, mass: latest.machine.mass, absorbedTiers: latest.session.absorbedTiers };
   return record;
+}
+
+/**
+ * S2 exercises a real T5 traffic slot only after the player has reached LV5
+ * through ordinary collection. The bridge observes state; every interaction
+ * below is an actual portrait joystick touch.
+ */
+async function verifyTrafficReplenishment(cdp, page, joystick) {
+  let latest = await readRuntimeSnapshot(page);
+  assert(latest.machine?.maxTier >= 5,
+    `FAIL_TRAFFIC_REPLENISHMENT_LEVEL: ${JSON.stringify(latest.machine)}`);
+
+  const selectTarget = (snapshot) => {
+    const origin = snapshot.world?.streaming?.logicalOrigin || { x: 0, z: 0 };
+    const player = getLogicalPlayerPosition(snapshot);
+    return (snapshot.world?.streaming?.dynamicVehicles || [])
+      .filter((vehicle) => vehicle.objectState === 'IDLE' && vehicle.routeLength >= 4)
+      .map((vehicle) => {
+        const object = snapshot.objects.find((candidate) => candidate.runtimeId === vehicle.id
+          && candidate.state === 'IDLE' && candidate.tier <= snapshot.machine.maxTier);
+        return object ? {
+          vehicle,
+          object,
+          logicalX: vehicle.x + origin.x,
+          logicalZ: vehicle.z + origin.z,
+          distance: Math.hypot(vehicle.x + origin.x - player.x, vehicle.z + origin.z - player.z),
+        } : null;
+      })
+      .filter(Boolean)
+      .sort((left, right) => left.distance - right.distance)[0] || null;
+  };
+
+  const target = selectTarget(latest);
+  assert(target,
+    `FAIL_TRAFFIC_REPLENISHMENT_TARGET: ${JSON.stringify({ machine: latest.machine, objects: latest.objects, vehicles: latest.world?.streaming?.dynamicVehicles })}`);
+  const tier5Before = latest.session?.absorbedTiers?.[5] || 0;
+  const targetId = target.vehicle.id;
+  const targetKind = target.vehicle.kind;
+  const targetType = target.object.type;
+  const targetTier = target.object.tier;
+  const vehicleStart = { x: target.vehicle.x, z: target.vehicle.z };
+  const poolBeforeAbsorb = latest.world?.streaming?.pool || null;
+  await page.waitForTimeout(500);
+  latest = await readRuntimeSnapshot(page);
+  const movingVehicle = latest.world?.streaming?.dynamicVehicles?.find((entry) => entry.id === targetId);
+  assert(movingVehicle && Math.hypot(movingVehicle.x - vehicleStart.x, movingVehicle.z - vehicleStart.z) > 0.05,
+    `FAIL_TRAFFIC_REPLENISHMENT_NOT_MOVING: ${JSON.stringify({ targetId, vehicleStart, movingVehicle })}`);
+  const absorbDeadline = Date.now() + 55_000;
+  let absorbedAt = 0;
+
+  // The target continues driving. Re-read its position between normal joystick
+  // approaches instead of freezing it or issuing a test-only movement command.
+  while (Date.now() < absorbDeadline) {
+    const vehicle = latest.world?.streaming?.dynamicVehicles?.find((entry) => entry.id === targetId);
+    const object = latest.objects.find((entry) => entry.runtimeId === targetId);
+    if (!vehicle && !object && (latest.session?.absorbedTiers?.[5] || 0) > tier5Before) {
+      absorbedAt = Date.now();
+      break;
+    }
+    assert(vehicle && object,
+      `FAIL_TRAFFIC_REPLENISHMENT_UNEXPECTED_TARGET_LOSS: ${JSON.stringify({ targetId, vehicle, object, machine: latest.machine })}`);
+    const origin = latest.world?.streaming?.logicalOrigin || { x: 0, z: 0 };
+    await driveJoystickToLogicalPoint(
+      cdp,
+      page,
+      joystick,
+      { x: vehicle.x + origin.x, z: vehicle.z + origin.z },
+      `TRAFFIC_T5_${targetId}`,
+      Math.max(1.5, latest.machine.suctionRadius * 0.48),
+      9_000,
+    );
+    await page.waitForTimeout(700);
+    latest = await readRuntimeSnapshot(page);
+  }
+  assert(absorbedAt > 0,
+    `FAIL_TRAFFIC_REPLENISHMENT_ABSORB: ${JSON.stringify({ targetId, tier5Before, latest: { machine: latest.machine, absorbedTiers: latest.session?.absorbedTiers, vehicles: latest.world?.streaming?.dynamicVehicles, objects: latest.objects } })}`);
+  const poolAfterAbsorb = latest.world?.streaming?.pool || null;
+  assert(poolBeforeAbsorb && poolAfterAbsorb && poolAfterAbsorb.released > poolBeforeAbsorb.released,
+    `FAIL_TRAFFIC_REPLENISHMENT_POOL_RELEASE: ${JSON.stringify({ targetId, poolBeforeAbsorb, poolAfterAbsorb })}`);
+
+  const playerAfterAbsorb = getLogicalPlayerPosition(latest);
+  const safePoint = { x: playerAfterAbsorb.x + 14, z: playerAfterAbsorb.z };
+  await driveJoystickToLogicalPoint(cdp, page, joystick, safePoint, 'TRAFFIC_RESPAWN_SAFE_DISTANCE', 1.2, 8_000);
+  await page.waitForTimeout(350);
+  const duringCooldown = await readRuntimeSnapshot(page);
+  const cooldownElapsedMs = Date.now() - absorbedAt;
+  assert(cooldownElapsedMs < 4_000
+      && !duringCooldown.objects.some((object) => object.runtimeId === targetId)
+      && !duringCooldown.world?.streaming?.dynamicVehicles?.some((vehicle) => vehicle.id === targetId),
+  `FAIL_TRAFFIC_REPLENISHMENT_EARLY: ${JSON.stringify({ targetId, cooldownElapsedMs, player: getLogicalPlayerPosition(duringCooldown), vehicles: duringCooldown.world?.streaming?.dynamicVehicles })}`);
+
+  const respawnDeadline = absorbedAt + 9_000;
+  let respawned = null;
+  while (Date.now() < respawnDeadline && !respawned) {
+    await page.waitForTimeout(200);
+    const snapshot = await readRuntimeSnapshot(page);
+    const vehicle = snapshot.world?.streaming?.dynamicVehicles?.find((entry) => entry.id === targetId);
+    const object = snapshot.objects.find((entry) => entry.runtimeId === targetId);
+    if (vehicle && object) respawned = { vehicle, object, elapsedMs: Date.now() - absorbedAt };
+  }
+  assert(respawned?.elapsedMs >= 3_800
+      && respawned.vehicle.kind === targetKind
+      && respawned.vehicle.routeLength >= 4
+      && respawned.vehicle.objectState === 'IDLE'
+      && respawned.object.state === 'IDLE'
+      && respawned.object.type === targetType
+      && respawned.object.tier === targetTier,
+  `FAIL_TRAFFIC_REPLENISHMENT: ${JSON.stringify({ target: { targetId, targetKind, targetType, targetTier }, respawned })}`);
+  const poolAfterRespawn = (await readRuntimeSnapshot(page)).world?.streaming?.pool || null;
+  assert(poolAfterRespawn && poolAfterRespawn.reused > poolAfterAbsorb.reused,
+    `FAIL_TRAFFIC_REPLENISHMENT_POOL_REUSE: ${JSON.stringify({ targetId, poolAfterAbsorb, poolAfterRespawn })}`);
+  return {
+    runtimeId: targetId,
+    kind: targetKind,
+    type: targetType,
+    tier: targetTier,
+    cooldownAbsent: true,
+    moved: true,
+    pool: { beforeAbsorb: poolBeforeAbsorb, afterAbsorb: poolAfterAbsorb, afterRespawn: poolAfterRespawn },
+    respawned: { state: respawned.vehicle.state, objectState: respawned.vehicle.objectState, routeLength: respawned.vehicle.routeLength },
+    elapsedMs: respawned.elapsedMs,
+  };
 }
 
 async function runPortraitCase(browser, baseUrl, viewport, report) {
@@ -1527,6 +1709,7 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
           maxOffsetY: Math.min(120, canvasRect.top + canvasRect.height - joystickCenter.y - 3),
         };
         report.fullProgression = await verifyFiveLevelProgression(cdp, page, joystick);
+        report.trafficReplenishment = await verifyTrafficReplenishment(cdp, page, joystick);
         await page.screenshot({ path: path.join(evidenceDirectory, 'portrait-390x844-lv5-city.png') });
         assert(runtimeErrors.length === 0, `Runtime console errors after LV1-to-LV5 touch progression: ${runtimeErrors.join(' | ')}`);
         return;
@@ -2004,6 +2187,7 @@ const report = {
   network: null,
   regions: null,
   fullProgression: null,
+  trafficReplenishment: null,
   paidSkinUnlock: null,
   goldenCity: null,
   consoleErrors: [],
