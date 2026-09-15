@@ -175,7 +175,7 @@ module.exports = {
       };
     },
 
-        async buildGoldenCityCell() {
+    async buildGoldenCityCell(stage = 'full') {
       const { director, instantiate, Node, Vec3 } = require('cc');
       const stageLog = [];
       function logStage(stage) {
@@ -193,14 +193,6 @@ module.exports = {
         const library = libraryNode?.getComponent(getComponentClass('WorldArtLibrary'));
         if (!library) throw new Error('GameRoot does not contain an editor-saved WorldArtLibrary component');
 
-        logStage('CLEANUP_OLD');
-        const oldCell = gameRoot.getChildByName('GoldenCityCell');
-        if (oldCell) oldCell.destroy();
-
-        logStage('CREATE_ROOT_AND_CHILDREN');
-        const rootNode = new Node('GoldenCityCell');
-        gameRoot.addChild(rootNode);
-
         const requiredChildNames = [
           'Ground',
           'Roads',
@@ -214,12 +206,37 @@ module.exports = {
         ];
 
         const children = {};
-        for (const name of requiredChildNames) {
-          const child = new Node(name);
-          rootNode.addChild(child);
-          children[name] = child;
+        let rootNode = null;
+        if (stage === 'prepare' || stage === 'full') {
+          logStage('CLEANUP_OLD');
+          const oldCell = gameRoot.getChildByName('GoldenCityCell');
+          if (oldCell) oldCell.destroy();
+
+          logStage('CREATE_ROOT_AND_CHILDREN');
+          rootNode = new Node('GoldenCityCell');
+          gameRoot.addChild(rootNode);
+          for (const name of requiredChildNames) {
+            const child = new Node(name);
+            rootNode.addChild(child);
+            children[name] = child;
+          }
+        } else {
+          rootNode = gameRoot.getChildByName('GoldenCityCell');
+          if (!rootNode) throw new Error('GoldenCityCell is missing; run prepare before ' + stage);
+          for (const name of requiredChildNames) {
+            const child = rootNode.getChildByName(name);
+            if (!child) throw new Error('GoldenCityCell is missing child ' + name + '; run prepare before ' + stage);
+            children[name] = child;
+          }
         }
 
+        if (stage === 'prepare') {
+          logStage('SAVE_PREPARE');
+          await Editor.Message.request('scene', 'save-scene');
+          return { status: 'PASS', stage, root: rootNode.name, childCount: requiredChildNames.length, stages: stageLog };
+        }
+
+        if (stage === 'structure' || stage === 'full') {
         logStage('INSTANTIATE_GROUND');
         // 1. Ground: 2 tiles instead of 4 heavy tiles
         if (library.terrainTileTemplate) {
@@ -282,29 +299,48 @@ module.exports = {
           shop.setRotationFromEuler(0, -90, 0);
           children.Buildings.addChild(shop);
         }
+        if (stage === 'structure') {
+          logStage('SAVE_STRUCTURE');
+          await Editor.Message.request('scene', 'save-scene');
+          return { status: 'PASS', stage, root: rootNode.name, stages: stageLog };
+        }
+        }
 
+        if (stage === 'park' || stage === 'full') {
         logStage('INSTANTIATE_PARK');
-        // 4. Park: 2 real template instances (1 small, 1 large) + placeholder tree nodes to meet >= 10
+        // 4. Park: twelve real authored tree instances arranged as a readable frame.
+        const smallTreePositions = [
+          [-6, 6], [-7, 8], [-7, 3], [6, -6], [7, -8], [7, -3],
+        ];
+        const largeTreePositions = [
+          [-6, 9], [-7, 7], [-5, 10], [8, -10], [7, -7], [5, -10],
+        ];
         if (library.treeSmallTemplate) {
-          const tSmall = instantiate(library.treeSmallTemplate);
-          tSmall.name = 'ParkTreeSmall_1';
-          tSmall.active = true;
-          tSmall.setPosition(new Vec3(-6, 0.07, 6));
-          children.Park.addChild(tSmall);
+          smallTreePositions.forEach(([x, z], index) => {
+            const tree = instantiate(library.treeSmallTemplate);
+            tree.name = 'ParkTreeSmall_' + (index + 1);
+            tree.active = true;
+            tree.setPosition(new Vec3(x, 0.07, z));
+            children.Park.addChild(tree);
+          });
         }
         if (library.treeLargeTemplate) {
-          const tLarge = instantiate(library.treeLargeTemplate);
-          tLarge.name = 'ParkTreeLarge_1';
-          tLarge.active = true;
-          tLarge.setPosition(new Vec3(6, 0.07, -6));
-          children.Park.addChild(tLarge);
+          largeTreePositions.forEach(([x, z], index) => {
+            const tree = instantiate(library.treeLargeTemplate);
+            tree.name = 'ParkTreeLarge_' + (index + 1);
+            tree.active = true;
+            tree.setPosition(new Vec3(x, 0.07, z));
+            children.Park.addChild(tree);
+          });
         }
-        for (let i = children.Park.children.length + 1; i <= 10; i++) {
-          const tNode = new Node('ParkTree_' + i);
-          tNode.setPosition(new Vec3(-10 + i * 2, 0.07, 4));
-          children.Park.addChild(tNode);
+        if (stage === 'park') {
+          logStage('SAVE_PARK');
+          await Editor.Message.request('scene', 'save-scene');
+          return { status: 'PASS', stage, root: rootNode.name, treeCount: children.Park.children.length, stages: stageLog };
+        }
         }
 
+        if (stage === 'content' || stage === 'full') {
         logStage('INSTANTIATE_PROPS');
         // 5. Props: 3 POI semantic nodes with minimal instantiated props
         const poi1 = new Node('POI_RecyclingHub');
@@ -336,6 +372,49 @@ module.exports = {
           poi3.addChild(light);
         }
         children.Props.addChild(poi3);
+
+        // Low authored props break up empty grass without occupying the central gameplay corridor.
+        const pathStonesWest = new Node('ParkPathStonesWest');
+        pathStonesWest.setPosition(new Vec3(-8, 0, 1.5));
+        if (library.pathStonesTemplate) {
+          const stones = instantiate(library.pathStonesTemplate);
+          stones.name = 'PathStones';
+          stones.active = true;
+          pathStonesWest.addChild(stones);
+        }
+        children.Props.addChild(pathStonesWest);
+
+        const pathStonesEast = new Node('ParkPathStonesEast');
+        pathStonesEast.setPosition(new Vec3(8, 0, 1.5));
+        if (library.pathStonesTemplate) {
+          const stones = instantiate(library.pathStonesTemplate);
+          stones.name = 'PathStones';
+          stones.active = true;
+          pathStonesEast.addChild(stones);
+        }
+        children.Props.addChild(pathStonesEast);
+
+        const fenceWest = new Node('ParkFenceWest');
+        fenceWest.setPosition(new Vec3(-8, 0, 3.5));
+        fenceWest.setRotationFromEuler(0, 90, 0);
+        if (library.fenceTemplate) {
+          const fence = instantiate(library.fenceTemplate);
+          fence.name = 'Fence';
+          fence.active = true;
+          fenceWest.addChild(fence);
+        }
+        children.Props.addChild(fenceWest);
+
+        const fenceEast = new Node('ParkFenceEast');
+        fenceEast.setPosition(new Vec3(8, 0, 3.5));
+        fenceEast.setRotationFromEuler(0, 90, 0);
+        if (library.fenceTemplate) {
+          const fence = instantiate(library.fenceTemplate);
+          fence.name = 'Fence';
+          fence.active = true;
+          fenceEast.addChild(fence);
+        }
+        children.Props.addChild(fenceEast);
 
         logStage('INSTANTIATE_TRAFFIC');
         // 6. TrafficRoutes: 3 vehicle anchors (1 instantiated sedan + 2 anchor nodes)
@@ -393,23 +472,22 @@ module.exports = {
         const anchor2 = new Node('ClusterAnchor_RecyclingSquare');
         anchor2.setPosition(new Vec3(-5, 0, -5));
         children.ClusterAnchors.addChild(anchor2);
+        if (stage === 'content') {
+          logStage('SAVE_CONTENT');
+          await Editor.Message.request('scene', 'save-scene');
+          return { status: 'PASS', stage, root: rootNode.name, stages: stageLog };
+        }
+        }
+
+        if (stage !== 'persist' && stage !== 'full') {
+          throw new Error('Unsupported Golden City build stage: ' + stage);
+        }
 
         logStage('SAVE_SCENE_BEFORE_PREFAB');
         await Editor.Message.request('scene', 'save-scene');
 
         logStage('CREATE_PREFAB');
         await Editor.Message.request('scene', 'create-prefab', rootNode.uuid, 'db://assets/prefabs/world/GoldenCityCell.prefab');
-
-        logStage('BIND_PREFAB_TO_MANAGER');
-        const goldenCityPrefab = await getPrefabAsset('db://assets/prefabs/world/GoldenCityCell.prefab');
-        const worldRoot = gameRoot.getChildByName('InfiniteWorldRoot');
-        if (!worldRoot) throw new Error('GameRoot does not contain InfiniteWorldRoot');
-        const manager = worldRoot.getComponent(getComponentClass('InfiniteWorldManager'));
-        if (!manager) throw new Error('InfiniteWorldRoot does not contain InfiniteWorldManager component');
-        manager.goldenCityCellPrefab = goldenCityPrefab;
-
-        logStage('SAVE_SCENE_FINAL');
-        await Editor.Message.request('scene', 'save-scene');
 
         logStage('COMPLETED');
         return {
@@ -422,7 +500,6 @@ module.exports = {
           vehicleCount: children.TrafficRoutes.children.length,
           collectibleSpawnCount: 20,
           clusterAnchorCount: children.ClusterAnchors.children.length,
-          managerPrefabBound: manager.goldenCityCellPrefab === goldenCityPrefab,
           stages: stageLog,
         };
       } catch (err) {

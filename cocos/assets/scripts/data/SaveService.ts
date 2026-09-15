@@ -10,6 +10,7 @@ export interface ISaveData {
   highScore: number;
   highestRegion: number;
   machineLevel: number;
+  machineMass: number;
   currentSkinId: string;
   unlockedSkins: string[];
   /** Locally persisted idempotency keys for server-finalized arena rewards. */
@@ -64,6 +65,7 @@ export class SaveService {
       highScore: 0,
       highestRegion: 0,
       machineLevel: 1,
+      machineMass: 0,
       currentSkinId: 'skin_classic',
       unlockedSkins: [...STARTER_SKIN_IDS],
       claimedArenaSettlementIds: [],
@@ -188,6 +190,16 @@ export class SaveService {
   public setMachineLevel(level: number): void {
     if (level > this.data.machineLevel) {
       this.data.machineLevel = level;
+      this.save();
+    }
+  }
+
+  public setMachineProgression(mass: number, level: number): void {
+    const nextMass = Number.isFinite(mass) ? Math.max(0, mass) : 0;
+    const nextLevel = Number.isFinite(level) ? Math.max(1, Math.floor(level)) : 1;
+    if (nextMass !== this.data.machineMass || nextLevel > this.data.machineLevel) {
+      this.data.machineMass = nextMass;
+      this.data.machineLevel = Math.max(this.data.machineLevel, nextLevel);
       this.save();
     }
   }

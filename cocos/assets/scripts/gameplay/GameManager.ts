@@ -948,6 +948,7 @@ export class GameManager extends Component {
             this.machine.getSuctionRadius(),
             this.machine.getMaxTier(),
             this.machine.isMagnetStormActive,
+            this.machine.getSuctionPullMultiplier(),
             (obj) => this.onObjectAbsorbed(obj)
           );
         } else if (this.gameState === 'NETWORK_ARENA') {

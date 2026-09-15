@@ -29,7 +29,8 @@ export class SuctionMotionCalculator {
     dt: number,
     suckTimer: number,
     suckDuration: number = 0.4,
-    isMagnetStorm: boolean = false
+    isMagnetStorm: boolean = false,
+    pullMultiplier: number = 1.0,
   ): ISuctionMotionResult {
     const dx = targetHolePos.x - currentPos.x;
     const dz = targetHolePos.z - currentPos.z;
@@ -59,7 +60,8 @@ export class SuctionMotionCalculator {
       }
     } else {
       // 处于受引力吸引飞行态 (ATTRACTED)：沿引力矢量加速并带切向螺旋力
-      const pullSpeed = isMagnetStorm ? 18.0 : (9.0 + (1.0 - Math.min(1.0, dist / suctionRadius)) * 12.0);
+      const pullSpeed = (isMagnetStorm ? 18.0 : (9.0 + (1.0 - Math.min(1.0, dist / suctionRadius)) * 12.0))
+        * Math.max(0.1, pullMultiplier);
       const dirX = dist > 0.001 ? dx / dist : 0;
       const dirZ = dist > 0.001 ? dz / dist : 0;
 

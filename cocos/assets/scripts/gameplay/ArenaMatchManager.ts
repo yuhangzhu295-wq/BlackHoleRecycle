@@ -379,6 +379,19 @@ export class ArenaMatchManager extends Component {
       return;
     }
 
+    const eventFragment = (this.world?.getAllObjects() || [])
+      .filter((object) => object.getState() === 'IDLE' && !object.getCaptureOwnerId()
+        && object.template.type === 'arena_mass_fragment'
+        && object.template.tier <= bot.machine.getMaxTier())
+      .sort((left, right) => distanceXZ(position, left.getPosition()) - distanceXZ(position, right.getPosition()))[0] || null;
+    if (eventFragment && distanceXZ(position, eventFragment.getPosition()) < 32) {
+      bot.behavior = 'EVENT_HUNT';
+      bot.targetId = eventFragment.runtimeId;
+      directionXZ(position, eventFragment.getPosition(), this.steering);
+      bot.machine.setMovementDirection(this.steering, 0.95);
+      return;
+    }
+
     const prey = this.competitors
       .filter((other) => other.id !== bot.id && other.alive && other.shieldSeconds <= 0
         && bot.machine.currentMass >= other.machine.currentMass * CONSUME_RATIO)
@@ -456,6 +469,7 @@ export class ArenaMatchManager extends Component {
         collector.machine.getMaxTier(),
         collector.machine.isMagnetStormActive,
         owner,
+        collector.machine.getSuctionPullMultiplier(),
       );
       if (wasIdleAndUnclaimed && object.getCaptureOwnerId() === collector.id && collector.isBot) {
         botClaims.add(collector.id);

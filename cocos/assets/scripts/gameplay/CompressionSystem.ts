@@ -29,6 +29,7 @@ export class CompressionSystem extends Component {
   private massThreshold: number = 180;
   private countThreshold: number = 3;
   private timer: number = 0;
+  private compressionBasePosition: Vec3 = new Vec3();
   /**
    * Items can finish their physical suction while the previous resource block
    * is animating. They must remain payable; dropping them here made absorbed
@@ -87,18 +88,27 @@ export class CompressionSystem extends Component {
       this.setState('COMPRESSING');
       this.timer = 0;
       if (this.machine) {
+        this.compressionBasePosition.set(this.machine.node.position);
         platformAdapter.vibrate('medium');
+        eventBus.emit('COMPRESSION_STARTED', {
+          duration: this.machine.currentConfig.compressionDuration,
+          amplitude: this.machine.currentConfig.compressionShakeAmplitude,
+          mass: this.bufferMass,
+        });
       }
     } else if (this.state === 'COMPRESSING') {
       this.timer += dt;
       // 压缩震颤动画
       if (this.machine) {
-        const p = this.machine.node.getPosition();
-        const shake = (Math.sin(this.timer * 35) * 0.08);
-        this.machine.node.setPosition(p.x, p.y + shake, p.z);
+        const shake = Math.sin(this.timer * 35) * this.machine.currentConfig.compressionShakeAmplitude;
+        this.machine.node.setPosition(
+          this.compressionBasePosition.x,
+          this.compressionBasePosition.y + shake,
+          this.compressionBasePosition.z,
+        );
       }
 
-      if (this.timer >= 0.35) {
+      if (this.timer >= (this.machine?.currentConfig.compressionDuration || 0.42)) {
         this.setState('EJECTING');
         this.timer = 0;
         this.spawnResourceBlock();
@@ -108,7 +118,8 @@ export class CompressionSystem extends Component {
       if (this.currentBlock) {
         const p = this.currentBlock.getPosition();
         // 资源块向上弹射并滑入后仓
-        this.currentBlock.setPosition(p.x, p.y + dt * 1.5, p.z + dt * 1.2);
+        const ejectSpeed = this.machine?.currentConfig.compressionEjectSpeed || 1.4;
+        this.currentBlock.setPosition(p.x, p.y + dt * ejectSpeed, p.z + dt * ejectSpeed * 0.8);
         this.currentBlock.setScale(Vec3.ONE.clone().multiplyScalar(Math.min(1.0, this.timer * 3.0)));
       }
       
@@ -132,6 +143,7 @@ export class CompressionSystem extends Component {
       // 质量在此刻真实注入机器，触发潜在升级
       if (this.machine) {
         this.machine.addMass(this.bufferMass);
+        this.machine.node.setPosition(this.compressionBasePosition);
       }
       
       eventBus.emit('UI_UPDATE_HUD', { coins: saveService.data.coins });

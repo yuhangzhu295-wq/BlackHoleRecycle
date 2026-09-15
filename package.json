@@ -11,7 +11,7 @@
     "build:all": "node scripts/verify_cocos_minigame_builds.mjs --platform=all",
     "preflight:release": "node scripts/verify_cocos_minigame_builds.mjs --platform=wechatgame,bytedance-mini-game --require-release-ids",
     "typecheck:cocos": "tsc --project cocos/tsconfig.json --noEmit",
-    "test:cocos": "node scripts/test_cocos_vertical_slice.js",
+    "test:cocos": "node scripts/test_cocos_vertical_slice.js && node scripts/test_machine_progression_compression_contract.mjs && node scripts/test_resource_replenishment_contract.mjs && node scripts/test_traffic_replenishment_contract.mjs && node scripts/test_cell_lifecycle_contract.mjs && node scripts/test_collectible_production_contract.mjs",
     "acceptance:p0b": "node scripts/test_cocos_p0b_runtime.mjs",
     "acceptance:v2": "node scripts/test_cocos_portrait_acceptance.mjs",
     "audit:object-art": "node scripts/validate-object-art-coverage.mjs",

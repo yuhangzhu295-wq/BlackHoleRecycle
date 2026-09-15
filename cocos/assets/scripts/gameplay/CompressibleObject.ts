@@ -2,7 +2,7 @@
  * 可吸附回收实体：维护 IDLE -> ATTRACTED -> SUCKING -> ABSORBED -> RECYCLED
  * 状态机。正式可见物仅实例化 Cocos Creator 导入并保存的 glTF 美术模板。
  */
-import { _decorator, Component, director, Node, Vec3 } from 'cc';
+import { _decorator, Component, director, Label, Node, Vec3 } from 'cc';
 import { IObjectTemplate, ObjectTier, OBJECT_TEMPLATES } from '../data/GameConfig';
 import { SuctionMotionCalculator } from './SuctionMotion';
 import { FSM } from '../core/FSM';
@@ -25,6 +25,7 @@ export class CompressibleObject extends Component {
   private lockTimer: number = 0;
   private visualNode: Node | null = null;
   private lockIndicatorNode: Node | null = null;
+  private lockLabel: Label | null = null;
   /** The actual machine currently pulling this entity into its black hole. */
   private captureOwnerId: string | null = null;
   /** Optional physical spin for a real moving vehicle during the shared suction FSM. */
@@ -90,6 +91,12 @@ export class CompressibleObject extends Component {
     this.lockIndicatorNode = new Node('TierLockWarning');
     this.lockIndicatorNode.setPosition(0, 0.8, 0);
     this.node.addChild(this.lockIndicatorNode);
+    const lockLabelNode = new Node('TierLockLabel');
+    lockLabelNode.setPosition(0, 1.1, 0);
+    this.lockIndicatorNode.addChild(lockLabelNode);
+    this.lockLabel = lockLabelNode.addComponent(Label);
+    this.lockLabel.string = '';
+    this.lockLabel.fontSize = 28;
     this.getArtLibrary().spawn(
       'constructionCone',
       this.lockIndicatorNode,
@@ -142,6 +149,7 @@ export class CompressibleObject extends Component {
     this.node.setPosition(this.currentPos);
     this.node.setScale(Vec3.ONE);
     this.node.active = true;
+    if (this.lockLabel) this.lockLabel.string = '';
     this.suckTimer = 0;
     this.isLockAlertActive = false;
     this.lockTimer = 0;
@@ -187,6 +195,7 @@ export class CompressibleObject extends Component {
     if (this.lockTimer > 0) return;
     this.isLockAlertActive = true;
     this.lockTimer = 1.0;
+    if (this.lockLabel) this.lockLabel.string = 'Lv.' + this.template.tier;
     if (this.lockIndicatorNode) this.lockIndicatorNode.active = true;
   }
 
@@ -201,6 +210,7 @@ export class CompressibleObject extends Component {
     machineMaxTier: ObjectTier,
     isMagnetStorm: boolean = false,
     consumerId: string = 'endless-player',
+    suctionPullMultiplier: number = 1.0,
   ): boolean {
     const state = this.fsm.getState();
     if (state === 'ABSORBED' || state === 'RECYCLED') return false;
@@ -221,14 +231,17 @@ export class CompressibleObject extends Component {
     const dz = machinePos.z - this.currentPos.z;
     const distSq = dx * dx + dz * dz;
     if (state === 'IDLE') {
-      if (distSq < suctionRadius * suctionRadius) {
-        if (this.template.tier > machineMaxTier && !isMagnetStorm) this.showLockAlert();
-        else {
-          this.captureOwnerId = consumerId;
-          this.fsm.setState('ATTRACTED');
-        }
+      if (distSq >= suctionRadius * suctionRadius) return false;
+      if (this.template.tier > machineMaxTier && !isMagnetStorm) {
+        this.showLockAlert();
+        return false;
       }
-      return false;
+
+      // Complete the IDLE -> ATTRACTED handoff in this frame. Waiting for
+      // the next tick loses the first pull step at streaming/rebase edges and
+      // can leave a player chasing a target that has already started moving.
+      this.captureOwnerId = consumerId;
+      this.fsm.setState('ATTRACTED');
     }
 
     if (state === 'ATTRACTED' || state === 'SUCKING') {
@@ -236,7 +249,8 @@ export class CompressibleObject extends Component {
       else if (Math.sqrt(distSq) < 0.6) this.fsm.setState('SUCKING');
 
       const result = SuctionMotionCalculator.computeMotion(
-        this.currentPos, machinePos, suctionRadius, dt, this.suckTimer, 0.4, isMagnetStorm
+        this.currentPos, machinePos, suctionRadius, dt, this.suckTimer, 0.4, isMagnetStorm,
+        suctionPullMultiplier,
       );
       this.currentPos.set(result.newPosition);
       this.node.setPosition(this.currentPos);

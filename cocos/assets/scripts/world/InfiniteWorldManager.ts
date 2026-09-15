@@ -10,7 +10,7 @@ import { eventBus } from '../core/EventBus';
 import { CompressibleObject } from '../gameplay/CompressibleObject';
 import { CellItemGenerator, IChunkSpawnItem } from './ChunkConfig';
 import { DistrictKind, DistrictTemplate, getDistrictTemplateForRegion } from './DistrictTemplates';
-import { DynamicVehicle } from './DynamicVehicle';
+import { DynamicVehicle, RoadRoutePoint } from './DynamicVehicle';
 import { WorldArtKind, WorldArtLibrary } from './WorldArtLibrary';
 import { WorldStreamer } from './WorldStreamer';
 import { WorldCellFactory } from './WorldCellFactory';
@@ -45,10 +45,42 @@ function positiveMod(value: number, divisor: number): number {
   return result < 0 ? result + divisor : result;
 }
 
+interface CollectibleRespawnSlot {
+  readonly template: IObjectTemplate;
+  readonly x: number;
+  readonly z: number;
+  readonly customId: string;
+  availableAt: number;
+  active: boolean;
+}
+
+interface TrafficRespawnSlot {
+  readonly template: IObjectTemplate;
+  readonly route: RoadRoutePoint[];
+  spawnX: number;
+  spawnZ: number;
+  readonly id: string;
+  readonly kind: 'sedan' | 'delivery_van' | 'garbage_truck';
+  readonly speed: number;
+  availableAt: number;
+  active: boolean;
+}
+
+function isCollectibleObject(object: CompressibleObject): boolean {
+  return !object.runtimeId.startsWith('traffic_') && !object.runtimeId.startsWith('arena_fragment_');
+}
+
+function isVehicleObject(object: CompressibleObject): boolean {
+  return object.runtimeId.startsWith('traffic_');
+}
+
 /** One generated cell with its own Creator-imported environment and pooled loot. */
 class InfiniteWorldCell {
   public readonly objects: CompressibleObject[] = [];
   public readonly dynamicVehicles: DynamicVehicle[] = [];
+  private readonly collectibleSlots: CollectibleRespawnSlot[] = [];
+  private readonly trafficSlots: TrafficRespawnSlot[] = [];
+  private respawnClock = 0;
   public readonly district: DistrictTemplate;
   /** One Creator-imported CC0 landmark; never a gameplay or collision node. */
   private constructionLandmark: Node | null = null;
@@ -76,15 +108,26 @@ class InfiniteWorldCell {
     const centerX = this.coord.x * this.cellSize;
     const centerZ = this.coord.z * this.cellSize;
     for (const item of items) {
+      const customId = item.customId || ('cell_' + this.coord.x + '_' + this.coord.z + '_collectible_' + this.collectibleSlots.length);
       const object = objectPool.get();
       object.spawn(
         item.template,
         centerX + item.localX - logicalOrigin.x,
         centerZ + item.localZ - logicalOrigin.z,
         0.35,
-        item.customId,
+        customId,
       );
       this.objects.push(object);
+      if (!customId.startsWith('arena_fragment_')) {
+        this.collectibleSlots.push({
+          template: item.template,
+          x: centerX + item.localX,
+          z: centerZ + item.localZ,
+          customId,
+          availableAt: 0,
+          active: true,
+        });
+      }
     }
     this.populateDynamicTraffic(objectPool, logicalOrigin);
   }
@@ -123,7 +166,64 @@ class InfiniteWorldCell {
           `cluster_${clusterName}_${index}`,
         );
         this.objects.push(object);
+        this.collectibleSlots.push({
+          template,
+          x: worldPos.x,
+          z: worldPos.z,
+          customId: 'cluster_' + clusterName + '_' + index,
+          availableAt: 0,
+          active: true,
+        });
       });
+    }
+
+    // The authored Opening owns its environment, but the playable tutorial
+    // still needs the same real starter run as the procedural opening path:
+    // enough nearby T1 objects to reach LV2, followed by a T2 target just
+    // beyond the initial suction radius. These remain pooled gameplay objects
+    // with ordinary respawn slots; no mass or level is granted here.
+    const isGoldenCityOpening = this.coord.x === 0
+      && this.coord.z === 0
+      && spawnPointsRoot.children.some((cluster) => cluster.name === 'Cluster_Park')
+      && spawnPointsRoot.children.some((cluster) => cluster.name === 'Cluster_CitySquare');
+    if (isGoldenCityOpening) {
+      const starterPositions: ReadonlyArray<readonly [number, number]> = [
+        [-0.72, 4.65], [-0.36, 4.55], [0.00, 4.60], [0.36, 4.55], [0.72, 4.65],
+        [-0.78, 5.20], [-0.38, 5.12], [0.00, 5.18], [0.38, 5.12], [0.78, 5.20],
+        [-0.72, 5.76], [-0.36, 5.86], [0.00, 5.80], [0.36, 5.86], [0.72, 5.76],
+      ];
+      starterPositions.forEach(([x, z], index) => {
+        const template = t1Templates[index % t1Templates.length];
+        if (!template) return;
+        const customId = `starter_recycling_cluster_${index}`;
+        const object = objectPool.get();
+        object.spawn(template, x - logicalOrigin.x, z - logicalOrigin.z, 0.35, customId);
+        this.objects.push(object);
+        this.collectibleSlots.push({
+          template,
+          x,
+          z,
+          customId,
+          availableAt: 0,
+          active: true,
+        });
+      });
+
+      const target = OBJECT_TEMPLATES.find((template) => template.tier === ObjectTier.T2);
+      if (target) {
+        const customId = 't2_target_bed_box';
+        const object = objectPool.get();
+        object.spawn(target, -logicalOrigin.x, -8 - logicalOrigin.z, 0.35, customId);
+        this.objects.push(object);
+        this.collectibleSlots.push({
+          template: target,
+          x: 0,
+          z: -8,
+          customId,
+          availableAt: 0,
+          active: true,
+        });
+      }
     }
   }
 
@@ -166,13 +266,10 @@ class InfiniteWorldCell {
       const id = 'traffic_0_0_authored_' + anchor.name;
       object.spawn(template, x, z, 0.35, id);
       this.objects.push(object);
-      this.dynamicVehicles.push(new DynamicVehicle(
-        id,
-        kind === 'car' ? 'sedan' : kind,
-        object,
-        roadRoute,
-        kind === 'car' ? 4.0 : kind === 'delivery_van' ? 3.2 : 2.6,
-      ));
+      const vehicleKind = kind === 'car' ? 'sedan' : kind;
+      const speed = kind === 'car' ? 4.0 : kind === 'delivery_van' ? 3.2 : 2.6;
+      this.dynamicVehicles.push(new DynamicVehicle(id, vehicleKind, object, roadRoute, speed));
+      this.trafficSlots.push({ template, route: roadRoute.map((point) => ({ ...point })), spawnX: x, spawnZ: z, id, kind: vehicleKind, speed, availableAt: 0, active: true });
     }
   }
 
@@ -183,16 +280,100 @@ class InfiniteWorldCell {
     });
     this.objects.length = 0;
     this.dynamicVehicles.length = 0;
+    this.collectibleSlots.length = 0;
+    this.trafficSlots.length = 0;
     this.node.destroy();
+  }
+
+  public updateCollectibleRespawn(
+    dt: number,
+    objectPool: ObjectPool<CompressibleObject>,
+    logicalOrigin: Readonly<Vec3>,
+    activeCollectibleCount: number,
+    maxActiveCollectibles: number,
+  ): number {
+    this.respawnClock += Math.max(0, dt);
+    let spawned = 0;
+    for (const slot of this.collectibleSlots) {
+      if (slot.active || slot.availableAt > this.respawnClock) continue;
+      if (activeCollectibleCount + spawned >= maxActiveCollectibles) break;
+      const object = objectPool.get();
+      object.spawn(slot.template, slot.x - logicalOrigin.x, slot.z - logicalOrigin.z, 0.35, slot.customId);
+      this.objects.push(object);
+      slot.active = true;
+      spawned += 1;
+    }
+    return spawned;
+  }
+
+  public removeAbsorbedCollectible(
+    object: CompressibleObject,
+    objectPool: ObjectPool<CompressibleObject>,
+    respawnDelaySeconds: number,
+  ): boolean {
+    const objectIndex = this.objects.indexOf(object);
+    if (objectIndex === -1) return false;
+    this.objects.splice(objectIndex, 1);
+    if (isCollectibleObject(object)) {
+      const slot = this.collectibleSlots.find((candidate) => candidate.customId === object.runtimeId);
+      if (slot) {
+        slot.active = false;
+        slot.availableAt = this.respawnClock + respawnDelaySeconds;
+      }
+    }
+    objectPool.release(object);
+    return true;
   }
 
   public updateDynamicTraffic(dt: number): void {
     this.dynamicVehicles.forEach((vehicle) => vehicle.update(dt));
   }
 
+  public removeAbsorbedVehicle(object: CompressibleObject, objectPool: ObjectPool<CompressibleObject>, respawnDelaySeconds: number): boolean {
+    const objectIndex = this.objects.indexOf(object);
+    const vehicleIndex = this.dynamicVehicles.findIndex((vehicle) => vehicle.object === object);
+    if (objectIndex === -1 || vehicleIndex === -1) return false;
+    const vehicle = this.dynamicVehicles[vehicleIndex];
+    this.objects.splice(objectIndex, 1);
+    this.dynamicVehicles.splice(vehicleIndex, 1);
+    const slot = this.trafficSlots.find((candidate) => candidate.id === vehicle.id);
+    if (slot) {
+      slot.active = false;
+      slot.availableAt = this.respawnClock + respawnDelaySeconds;
+    }
+    objectPool.release(object);
+    return true;
+  }
+
+  public replenishTraffic(dt: number, objectPool: ObjectPool<CompressibleObject>, maxActiveVehicles: number, activeVehicleCount: number): number {
+    this.respawnClock += Math.max(0, dt);
+    let spawned = 0;
+    for (const slot of this.trafficSlots) {
+      if (slot.active || slot.availableAt > this.respawnClock) continue;
+      if (activeVehicleCount + spawned >= maxActiveVehicles) break;
+      const routeEntryBusy = this.dynamicVehicles.some((vehicle) => {
+        const position = vehicle.object.getPosition();
+        return Math.hypot(position.x - slot.spawnX, position.z - slot.spawnZ) < 5;
+      });
+      if (routeEntryBusy) continue;
+      const object = objectPool.get();
+      object.spawn(slot.template, slot.spawnX, slot.spawnZ, 0.35, slot.id);
+      this.objects.push(object);
+      this.dynamicVehicles.push(new DynamicVehicle(slot.id, slot.kind, object, slot.route, slot.speed));
+      slot.active = true;
+      spawned += 1;
+    }
+    return spawned;
+  }
+
   public applyWorldRebase(shift: Readonly<Vec3>): void {
     this.objects.forEach((object) => object.applyWorldRebase(shift));
     this.dynamicVehicles.forEach((vehicle) => vehicle.applyWorldRebase(shift));
+    this.trafficSlots.forEach((slot) => {
+      slot.route.forEach((point) => { point.x -= shift.x; point.z -= shift.z; });
+      slot.spawnX -= shift.x;
+      slot.spawnZ -= shift.z;
+    });
   }
 
   /**
@@ -277,6 +458,17 @@ class InfiniteWorldCell {
       route,
       visualKind === 'sedan' ? 4.0 : visualKind === 'delivery_van' ? 3.2 : 2.6,
     ));
+    this.trafficSlots.push({
+      template,
+      route: route.map((point) => ({ ...point })),
+      spawnX: start.x,
+      spawnZ: start.z,
+      id: `traffic_${this.coord.x}_${this.coord.z}_${visualKind}`,
+      kind: visualKind,
+      speed: visualKind === 'sedan' ? 4.0 : visualKind === 'delivery_van' ? 3.2 : 2.6,
+      availableAt: 0,
+      active: true,
+    });
   }
 
   /**
@@ -560,6 +752,10 @@ export class InfiniteWorldManager extends Component {
   public static readonly CELL_SIZE = 64;
   public static readonly ACTIVE_RADIUS = 1;
   public static readonly ACTIVE_CELL_COUNT = 9;
+  public static readonly MAX_ACTIVE_COLLECTIBLES = 240;
+  public static readonly COLLECTIBLE_RESPAWN_DELAY_SECONDS = 4;
+  public static readonly MAX_ACTIVE_VEHICLES = 24;
+  public static readonly TRAFFIC_RESPAWN_DELAY_SECONDS = 4;
   public static readonly REBASE_THRESHOLD = 192;
 
   @property(Prefab)
@@ -714,17 +910,55 @@ export class InfiniteWorldManager extends Component {
     suctionRadius: number,
     machineMaxTier: ObjectTier,
     isMagnetStorm: boolean,
+    suctionPullMultiplier: number,
     onAbsorb: (object: CompressibleObject) => void,
   ): void {
+    const objectPool = this.objectPool;
+    if (!objectPool) return;
     this.updateDynamicTraffic(dt);
+    let activeCollectibleCount = this.getAllObjects()
+      .filter((object) => isCollectibleObject(object) && object.getState() !== 'ABSORBED' && object.getState() !== 'RECYCLED').length;
     for (const cell of this.activeCells.values()) {
-      for (const object of cell.objects) {
+      for (const object of [...cell.objects]) {
         const state = object.getState();
         if (state !== 'ABSORBED' && state !== 'RECYCLED'
-          && object.updateMotion(dt, machinePos, suctionRadius, machineMaxTier, isMagnetStorm)) {
+          && object.updateMotion(
+            dt,
+            machinePos,
+            suctionRadius,
+            machineMaxTier,
+            isMagnetStorm,
+            'endless-player',
+            suctionPullMultiplier,
+          )) {
           onAbsorb(object);
+          if (isCollectibleObject(object)) {
+            activeCollectibleCount = Math.max(0, activeCollectibleCount - 1);
+            cell.removeAbsorbedCollectible(object, objectPool, InfiniteWorldManager.COLLECTIBLE_RESPAWN_DELAY_SECONDS);
+          } else if (isVehicleObject(object)) {
+            cell.removeAbsorbedVehicle(object, objectPool, InfiniteWorldManager.TRAFFIC_RESPAWN_DELAY_SECONDS);
+          }
         }
       }
+    }
+    for (const cell of this.activeCells.values()) {
+      activeCollectibleCount += cell.updateCollectibleRespawn(
+        dt,
+        objectPool,
+        this.logicalOrigin,
+        activeCollectibleCount,
+        InfiniteWorldManager.MAX_ACTIVE_COLLECTIBLES,
+      );
+    }
+    let activeVehicleCount = Array.from(this.activeCells.values())
+      .reduce((count, cell) => count + cell.dynamicVehicles.length, 0);
+    for (const cell of this.activeCells.values()) {
+      activeVehicleCount += cell.replenishTraffic(
+        dt,
+        objectPool,
+        InfiniteWorldManager.MAX_ACTIVE_VEHICLES,
+        activeVehicleCount,
+      );
     }
   }
 

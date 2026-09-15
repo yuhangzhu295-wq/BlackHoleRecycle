@@ -27,7 +27,11 @@ export interface IMachineEvolutionConfig {
   readonly suctionRadius: number;
   readonly maxTier: ObjectTier;
   readonly moveSpeed: number;
+  readonly suctionPullMultiplier: number;
   readonly compressionEfficiency: number;
+  readonly compressionDuration: number;
+  readonly compressionShakeAmplitude: number;
+  readonly compressionEjectSpeed: number;
   readonly baseColor: string;
   readonly rimColor: string;
   readonly scale: number;
@@ -95,7 +99,11 @@ export const MACHINE_EVOLUTION_CONFIG: readonly IMachineEvolutionConfig[] = [
     suctionRadius: 2.4,
     maxTier: ObjectTier.T1,
     moveSpeed: 7.5,
+    suctionPullMultiplier: 1.0,
     compressionEfficiency: 1.0,
+    compressionDuration: 0.42,
+    compressionShakeAmplitude: 0.06,
+    compressionEjectSpeed: 1.4,
     baseColor: '#2b7fff',
     rimColor: '#00e5ff',
     scale: 1.0,
@@ -109,7 +117,11 @@ export const MACHINE_EVOLUTION_CONFIG: readonly IMachineEvolutionConfig[] = [
     suctionRadius: 3.4,
     maxTier: ObjectTier.T2,
     moveSpeed: 8.2,
+    suctionPullMultiplier: 1.12,
     compressionEfficiency: 1.25,
+    compressionDuration: 0.40,
+    compressionShakeAmplitude: 0.08,
+    compressionEjectSpeed: 1.6,
     baseColor: '#34c759',
     rimColor: '#70ff00',
     scale: 1.25,
@@ -123,7 +135,11 @@ export const MACHINE_EVOLUTION_CONFIG: readonly IMachineEvolutionConfig[] = [
     suctionRadius: 4.6,
     maxTier: ObjectTier.T3,
     moveSpeed: 9.0,
+    suctionPullMultiplier: 1.28,
     compressionEfficiency: 1.6,
+    compressionDuration: 0.36,
+    compressionShakeAmplitude: 0.11,
+    compressionEjectSpeed: 1.9,
     baseColor: '#ff9500',
     rimColor: '#ffd600',
     scale: 1.55,
@@ -137,7 +153,11 @@ export const MACHINE_EVOLUTION_CONFIG: readonly IMachineEvolutionConfig[] = [
     suctionRadius: 6.0,
     maxTier: ObjectTier.T4,
     moveSpeed: 9.8,
+    suctionPullMultiplier: 1.45,
     compressionEfficiency: 2.0,
+    compressionDuration: 0.32,
+    compressionShakeAmplitude: 0.14,
+    compressionEjectSpeed: 2.2,
     baseColor: '#af52de',
     rimColor: '#ff2d55',
     scale: 1.9,
@@ -151,7 +171,11 @@ export const MACHINE_EVOLUTION_CONFIG: readonly IMachineEvolutionConfig[] = [
     suctionRadius: 8.0,
     maxTier: ObjectTier.T5,
     moveSpeed: 10.5,
+    suctionPullMultiplier: 1.65,
     compressionEfficiency: 2.8,
+    compressionDuration: 0.28,
+    compressionShakeAmplitude: 0.18,
+    compressionEjectSpeed: 2.6,
     baseColor: '#ff2d55',
     rimColor: '#ffffff',
     scale: 2.3,

@@ -7,6 +7,7 @@ import { eventBus } from '../core/EventBus';
 import { MeshFactory } from '../core/MeshFactory';
 import { MachineVisualLibrary } from './MachineVisualLibrary';
 import { WorldArtLibrary } from '../world/WorldArtLibrary';
+import { saveService } from '../data/SaveService';
 
 const { ccclass, property } = _decorator;
 
@@ -64,7 +65,9 @@ export class BlackHoleMachine extends Component {
 
   onLoad(): void {
     this.buildVisibleGeometry();
-    this.applyEvolutionLevel(1, false);
+    this.currentMass = Math.max(0, saveService.data.machineMass || 0);
+    const savedLevel = Math.max(1, Math.min(MACHINE_EVOLUTION_CONFIG.length, saveService.data.machineLevel || 1));
+    this.applyEvolutionLevel(savedLevel, false);
   }
 
   /**
@@ -207,6 +210,10 @@ export class BlackHoleMachine extends Component {
   public stopMovement(): void {
     this.movementMagnitude = 0;
     this.movementDirection.set(0, 0, 0);
+    // A released touch is a hard gameplay stop. Clearing residual velocity
+    // prevents a short final suction approach from coasting outside the live
+    // pickup radius between touch samples.
+    this.velocity.set(0, 0, 0);
   }
 
   public resetMovement(): void {
@@ -263,6 +270,7 @@ export class BlackHoleMachine extends Component {
 
   public addMass(amount: number): boolean {
     this.currentMass += Math.max(0, amount);
+    saveService.setMachineProgression(this.currentMass, this.currentLevel);
     return this.checkEvolution();
   }
 
@@ -283,6 +291,7 @@ export class BlackHoleMachine extends Component {
   public applyEvolutionLevel(level: number, triggerEvent: boolean = true): void {
     this.currentLevel = level;
     this.currentConfig = MACHINE_EVOLUTION_CONFIG[level - 1] || MACHINE_EVOLUTION_CONFIG[0];
+    saveService.setMachineProgression(this.currentMass, this.currentLevel);
 
     // Exactly one Creator-saved upgrade assembly is selected per level.
     // HYBRID is the player-facing presentation: its chassis is suppressed so
@@ -432,5 +441,9 @@ export class BlackHoleMachine extends Component {
 
   public getMaxTier(): ObjectTier {
     return this.currentConfig.maxTier;
+  }
+
+  public getSuctionPullMultiplier(): number {
+    return this.currentConfig.suctionPullMultiplier;
   }
 }
