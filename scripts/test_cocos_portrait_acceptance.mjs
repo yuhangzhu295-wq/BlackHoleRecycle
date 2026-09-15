@@ -10,6 +10,7 @@ import { createServer } from 'node:http';
 import { mkdirSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { inflateSync } from 'node:zlib';
 import { chromium } from 'playwright';
 
 const thisFile = fileURLToPath(import.meta.url);
@@ -47,6 +48,82 @@ mkdirSync(evidenceDirectory, { recursive: true });
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
+}
+
+/** Decode the RGBA/RGB Playwright PNG without adding a runtime dependency. */
+function inspectHotMagentaPixels(pngPath) {
+  const png = readFileSync(pngPath);
+  assert(png.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])),
+    `FAIL_SCREENSHOT_PNG_SIGNATURE: ${pngPath}`);
+  let cursor = 8;
+  let width = 0;
+  let height = 0;
+  let colorType = -1;
+  const idat = [];
+  while (cursor < png.length) {
+    const length = png.readUInt32BE(cursor);
+    const type = png.toString('ascii', cursor + 4, cursor + 8);
+    const dataStart = cursor + 8;
+    const dataEnd = dataStart + length;
+    if (type === 'IHDR') {
+      width = png.readUInt32BE(dataStart);
+      height = png.readUInt32BE(dataStart + 4);
+      assert(png[dataStart + 8] === 8 && (png[dataStart + 9] === 2 || png[dataStart + 9] === 6),
+        `FAIL_SCREENSHOT_PNG_FORMAT: bitDepth=${png[dataStart + 8]} colorType=${png[dataStart + 9]}`);
+      colorType = png[dataStart + 9];
+    } else if (type === 'IDAT') {
+      idat.push(png.subarray(dataStart, dataEnd));
+    } else if (type === 'IEND') {
+      break;
+    }
+    cursor = dataEnd + 4;
+  }
+  assert(width > 0 && height > 0 && colorType >= 0, `FAIL_SCREENSHOT_PNG_HEADER: ${pngPath}`);
+  const bytesPerPixel = colorType === 6 ? 4 : 3;
+  const stride = width * bytesPerPixel;
+  const raw = inflateSync(Buffer.concat(idat));
+  assert(raw.length === height * (stride + 1), `FAIL_SCREENSHOT_PNG_DATA: ${pngPath}`);
+  const previous = Buffer.alloc(stride);
+  const current = Buffer.alloc(stride);
+  let rawOffset = 0;
+  let magentaPixels = 0;
+  for (let row = 0; row < height; row += 1) {
+    const filter = raw[rawOffset++];
+    for (let column = 0; column < stride; column += 1) {
+      const value = raw[rawOffset++];
+      const left = column >= bytesPerPixel ? current[column - bytesPerPixel] : 0;
+      const up = previous[column];
+      const upLeft = column >= bytesPerPixel ? previous[column - bytesPerPixel] : 0;
+      if (filter === 0) current[column] = value;
+      else if (filter === 1) current[column] = (value + left) & 0xff;
+      else if (filter === 2) current[column] = (value + up) & 0xff;
+      else if (filter === 3) current[column] = (value + Math.floor((left + up) / 2)) & 0xff;
+      else if (filter === 4) {
+        const p = left + up - upLeft;
+        const pa = Math.abs(p - left);
+        const pb = Math.abs(p - up);
+        const pc = Math.abs(p - upLeft);
+        current[column] = (value + (pa <= pb && pa <= pc ? left : pb <= pc ? up : upLeft)) & 0xff;
+      } else {
+        throw new Error(`FAIL_SCREENSHOT_PNG_FILTER: ${filter}`);
+      }
+    }
+    for (let pixel = 0; pixel < stride; pixel += bytesPerPixel) {
+      const red = current[pixel];
+      const green = current[pixel + 1];
+      const blue = current[pixel + 2];
+      if (red >= 210 && green <= 70 && blue >= 180) magentaPixels += 1;
+    }
+    current.copy(previous);
+  }
+  return { width, height, magentaPixels, magentaRatio: magentaPixels / (width * height) };
+}
+
+function assertNoLargeHotMagentaSurface(pngPath) {
+  const inspection = inspectHotMagentaPixels(pngPath);
+  assert(inspection.magentaRatio < 0.03,
+    `FAIL_HOT_MAGENTA_SURFACE: ${JSON.stringify({ pngPath, ...inspection })}`);
+  return inspection;
 }
 
 function buildCocosWebMobile() {
@@ -171,6 +248,13 @@ async function beginTouchJoystick(cdp, startX, startY, endX, endY) {
 
 async function releaseTouchJoystick(cdp) {
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+}
+
+async function moveTouchJoystick(cdp, endX, endY) {
+  await cdp.send('Input.dispatchTouchEvent', {
+    type: 'touchMove',
+    touchPoints: [{ x: endX, y: endY }],
+  });
 }
 
 async function verifySecondaryTouchDoesNotHijack(cdp, page, canvasRect, joystick) {
@@ -1095,12 +1179,16 @@ async function driveJoystickToLogicalPoint(cdp, page, joystick, target, label, a
   const deadline = Date.now() + timeoutMs;
   let bestDistance = Number.POSITIVE_INFINITY;
   let finalSnapshot = await readRuntimeSnapshot(page);
-  while (Date.now() < deadline) {
+  let touchHeld = false;
+  try {
+    while (Date.now() < deadline) {
     const current = getLogicalPlayerPosition(finalSnapshot);
     const delta = { x: target.x - current.x, z: target.z - current.z };
     const distance = Math.hypot(delta.x, delta.z);
     bestDistance = Math.min(bestDistance, distance);
-    if (distance <= arrivalRadius) return finalSnapshot;
+    if (distance <= arrivalRadius) {
+      return finalSnapshot;
+    }
 
     const cameraRight = finalSnapshot.camera.right;
     const cameraForward = finalSnapshot.camera.forward;
@@ -1117,7 +1205,12 @@ async function driveJoystickToLogicalPoint(cdp, page, joystick, target, label, a
     // Browser Y grows downward while Cocos joystick EventTouch coordinates
     // grow upward, hence the sign inversion for the forward component.
     const endY = joystick.y - Math.max(-1, Math.min(1, inputY)) * joystick.maxOffsetY * targetStickMagnitude;
-    await beginTouchJoystick(cdp, joystick.x, joystick.y, endX, endY);
+    if (touchHeld) {
+      await moveTouchJoystick(cdp, endX, endY);
+    } else {
+      await beginTouchJoystick(cdp, joystick.x, joystick.y, endX, endY);
+      touchHeld = true;
+    }
     // Use the actual visible-stick distance to choose a short final press.
     // A fixed 850ms press is natural for long travel but necessarily overshoots
     // a tight resource cluster on the final approach.
@@ -1139,9 +1232,16 @@ async function driveJoystickToLogicalPoint(cdp, page, joystick, target, label, a
         arena: engaged.arena,
         runtimeInput: engaged.ui?.runtimePageInput,
       })}`);
-    await releaseTouchJoystick(cdp);
-    await page.waitForTimeout(220);
-    finalSnapshot = await readRuntimeSnapshot(page);
+    // Keep one real finger down while steering. A release invokes the
+    // production hard-stop, so releasing between samples converts continuous
+    // travel into repeated zero-velocity starts that a player never performs.
+    finalSnapshot = engaged;
+    }
+  } finally {
+    if (touchHeld) {
+      await releaseTouchJoystick(cdp);
+      await page.waitForTimeout(220);
+    }
   }
   const finalPosition = getLogicalPlayerPosition(finalSnapshot);
   // A physical drag can cross the pickup radius between two diagnostic
@@ -1514,11 +1614,17 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
           error: error instanceof Error ? error.message : String(error),
         })}`);
       }
+      // Let Creator finish the post-activation imported-renderer material
+      // binding before capturing the release-evidence frame. The runtime
+      // itself performs only two bounded rebinds; this is not a test setter.
+      await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
       const gameplaySnapshot = await readRuntimeSnapshot(page);
-      // Capture the actual opening composition before any later diagnostic
-      // assertion can abort the run. This prevents a previous passing run's
-      // PNG being mistaken for evidence of a currently failing build.
-      await page.screenshot({ path: path.join(evidenceDirectory, 'portrait-390x844-endless-initial.png') });
+      // Capture the actual settled opening composition before any later
+      // diagnostic assertion can abort the run. This prevents a previous
+      // passing PNG being mistaken for evidence of a currently failing build.
+      const endlessInitialScreenshot = path.join(evidenceDirectory, 'portrait-390x844-endless-initial.png');
+      await page.screenshot({ path: endlessInitialScreenshot });
+      report.openingScreenshotPixels = assertNoLargeHotMagentaSurface(endlessInitialScreenshot);
       assert(gameplaySnapshot.ui.runtimeHUD?.joystick?.active,
         `FAIL_VISIBLE_JOYSTICK: ${JSON.stringify(gameplaySnapshot.ui.runtimeHUD)}`);
       const visualMaterials = gameplaySnapshot.machine?.visualMaterials || [];
@@ -1537,9 +1643,14 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
         `FAIL_CC0_CONSTRUCTION_LANDMARK: ${JSON.stringify(constructionLandmark)}`);
       report.constructionLandmark = constructionLandmark;
       const openingWorldVisuals = gameplaySnapshot.world?.streaming?.visualDiagnostics || [];
-      const grassVisuals = openingWorldVisuals.filter((row) => row.name === 'DistrictGround');
-      assert(grassVisuals.length === 4 && grassVisuals.every((row) => row.active
-        && row.renderers?.some((renderer) => renderer.materials?.every((material) => material.valid && material.effect))),
+      const hasImportedSpecGlossiness = openingWorldVisuals.some((group) => group.renderers?.some((renderer) => renderer.materials?.some((material) => material.effect === 'util/dcc/imported-specular-glossiness')));
+      assert(!hasImportedSpecGlossiness,
+        `FAIL_OPENING_IMPORTED_MATERIAL_FALLBACK: ${JSON.stringify(openingWorldVisuals)}`);
+      const groundGroup = openingWorldVisuals.find((row) => row.name === 'Ground');
+      const groundTiles = groundGroup?.renderers?.filter((renderer) => renderer.name === 'tile-low') || [];
+      assert(groundGroup?.active === true && groundTiles.length === 4
+        && groundTiles.every((renderer) => renderer.primitiveCount > 0
+          && renderer.materials?.every((material) => material.valid && material.effect)),
       `FAIL_OPENING_GRASS_RENDERER: ${JSON.stringify(openingWorldVisuals)}`);
       report.openingWorldVisuals = openingWorldVisuals;
       const dynamicBefore = gameplaySnapshot.world?.streaming?.dynamicVehicles || [];
@@ -1687,18 +1798,102 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
       // 2.3m is deliberately inside the real LV1 2.4m lock radius, while
       // remaining outside the item's centre. It avoids asking a 0.85s held
       // human joystick sample to stop at an artificial point precision.
-      await driveJoystickToLogicalPoint(cdp, page, joystick, { x: 0, z: -8 }, 'T2_LOCK', 2.3);
+      const authoredT2Target = (await readRuntimeSnapshot(page)).objects
+        .find((object) => object.runtimeId === 'tutorial_t2_target');
+      assert(authoredT2Target,
+        'FAIL_VERTICAL_SLICE_T2_AUTHORING_TARGET_MISSING: tutorial_t2_target was not registered from the opening cell authoring data');
+      const authoredT2Point = { x: authoredT2Target.x, z: authoredT2Target.z };
+      await driveJoystickToLogicalPoint(cdp, page, joystick, authoredT2Point, 'T2_LOCK', 2.3);
       await page.waitForTimeout(700);
       const lockedT2Snapshot = await readRuntimeSnapshot(page);
-      const lockedT2 = lockedT2Snapshot.objects.find((object) => object.tier === 2 && object.lockVisible);
+      // Only the approached authored tutorial target participates in this
+      // interaction check. Other streamed T2 objects remain correctly idle
+      // and must not display a lock while they are outside suction range.
+      const lockedT2 = lockedT2Snapshot.objects.find((object) => object.runtimeId === 'tutorial_t2_target' && object.lockVisible);
       assert(lockedT2,
-        `FAIL_VERTICAL_SLICE_T2_LOCK: ${JSON.stringify(lockedT2Snapshot.objects.filter((object) => object.tier === 2))}`);
+        `FAIL_VERTICAL_SLICE_T2_LOCK: ${JSON.stringify({
+          target: lockedT2Snapshot.objects.find((object) => object.runtimeId === 'tutorial_t2_target'),
+          player: lockedT2Snapshot.player,
+          machine: lockedT2Snapshot.machine,
+        })}`);
 
-      // 1.6m is still safely inside the LV1 2.4m suction radius. It gives
-      // touch samples enough room to settle without treating a physics-free
-      // target coordinate as a gameplay condition. The following assertions
-      // still require actual T1 absorption, feedback, and LV2 evolution.
-      await driveJoystickToLogicalPoint(cdp, page, joystick, { x: 0, z: 5.2 }, 'T1_CLUSTER', 1.6);
+      // Resolve the authored T1 slots from the runtime snapshot rather than
+      // navigating to a historical centre point. Creator owns these points,
+      // and a physical route must collect enough of their real objects to
+      // cross the LV2 threshold without a test-side grant.
+      const t1Absorptions = [];
+      let resourceReplenishment = null;
+      let t1Snapshot = await readRuntimeSnapshot(page);
+      while (t1Snapshot.machine.level < 2) {
+        const logicalOrigin = t1Snapshot.world?.streaming?.logicalOrigin || { x: 0, z: 0 };
+        const player = getLogicalPlayerPosition(t1Snapshot);
+        const targets = t1Snapshot.objects
+          .filter((object) => object.state === 'IDLE'
+            && object.tier === 1
+            && String(object.runtimeId || '').startsWith('cluster_'))
+          .map((object) => ({
+            ...object,
+            logicalX: object.x + logicalOrigin.x,
+            logicalZ: object.z + logicalOrigin.z,
+          }))
+          .sort((a, b) => Math.hypot(a.logicalX - player.x, a.logicalZ - player.z)
+            - Math.hypot(b.logicalX - player.x, b.logicalZ - player.z));
+        assert(targets.length > 0,
+          `FAIL_VERTICAL_SLICE_NO_AUTHORED_T1_TARGET: ${JSON.stringify({ machine: t1Snapshot.machine, player, objects: t1Snapshot.objects })}`);
+        const target = targets[0];
+        const massBefore = t1Snapshot.machine.mass;
+        await driveJoystickToLogicalPoint(
+          cdp,
+          page,
+          joystick,
+          { x: target.logicalX, z: target.logicalZ },
+          `T1_${target.runtimeId}`,
+          Math.max(1.0, t1Snapshot.machine.suctionRadius * 0.62),
+        );
+        await page.waitForTimeout(900);
+        t1Snapshot = await readRuntimeSnapshot(page);
+        const remainingTarget = t1Snapshot.objects.find((object) => object.runtimeId === target.runtimeId);
+        const absorbed = !remainingTarget;
+        assert(absorbed && t1Snapshot.machine.mass > massBefore,
+          `FAIL_VERTICAL_SLICE_T1_NOT_ABSORBED: ${JSON.stringify({ target, massBefore, machine: t1Snapshot.machine, objects: t1Snapshot.objects })}`);
+        t1Absorptions.push({ runtimeId: target.runtimeId, massBefore, massAfter: t1Snapshot.machine.mass });
+        if (!resourceReplenishment) {
+          // This is an end-to-end replenishment probe driven only by real
+          // touch movement. Move beyond the suction radius before the slot's
+          // four-second cooldown expires so a genuine respawn remains visible.
+          const safePoint = {
+            x: target.logicalX + Math.max(6, t1Snapshot.machine.suctionRadius * 2.75),
+            z: target.logicalZ,
+          };
+          await driveJoystickToLogicalPoint(cdp, page, joystick, safePoint, 'RESOURCE_RESPAWN_SAFE_DISTANCE', 1.0);
+          await page.waitForTimeout(1000);
+          const duringCooldown = await readRuntimeSnapshot(page);
+          assert(!duringCooldown.objects.some((object) => object.runtimeId === target.runtimeId),
+            `FAIL_RESOURCE_RESPAWN_EARLY: ${JSON.stringify({ target, player: getLogicalPlayerPosition(duringCooldown) })}`);
+          const respawnDeadline = Date.now() + 5_000;
+          let respawned = null;
+          while (Date.now() < respawnDeadline && !respawned) {
+            await page.waitForTimeout(200);
+            const snapshot = await readRuntimeSnapshot(page);
+            respawned = snapshot.objects.find((object) => object.runtimeId === target.runtimeId) || null;
+          }
+          assert(respawned?.state === 'IDLE'
+              && respawned.tier === target.tier
+              && respawned.type === target.type
+              && Math.hypot((respawned.x + (t1Snapshot.world?.streaming?.logicalOrigin?.x || 0)) - target.logicalX,
+                (respawned.z + (t1Snapshot.world?.streaming?.logicalOrigin?.z || 0)) - target.logicalZ) < 0.25,
+          `FAIL_RESOURCE_REPLENISHMENT: ${JSON.stringify({ target, respawned })}`);
+          resourceReplenishment = {
+            runtimeId: target.runtimeId,
+            tier: target.tier,
+            type: target.type,
+            cooldownAbsent: true,
+            respawned: { state: respawned.state, x: respawned.x, z: respawned.z },
+          };
+        }
+      }
+      report.verticalSlice.t1Absorptions = t1Absorptions;
+      report.resourceReplenishment = resourceReplenishment;
       // The cluster can complete its real attraction animation while the
       // physical drag is still held. Capture immediately after release; a
       // later 1.6s wait is deliberately long enough for short feedback to
@@ -1733,7 +1928,7 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
       assert((endlessFeedback?.emittedCount || 0) > 0 && /^\+\d+$/.test(endlessFeedback?.lastText || ''),
         `FAIL_ABSORB_FEEDBACK_NOT_EMITTED: ${JSON.stringify(upgradedSnapshot.ui?.pickupFeedback)}`);
 
-      await driveJoystickToLogicalPoint(cdp, page, joystick, { x: 0, z: -8 }, 'T2_UNLOCK', 2.3);
+      await driveJoystickToLogicalPoint(cdp, page, joystick, authoredT2Point, 'T2_UNLOCK', 2.3);
       await page.waitForTimeout(1200);
       const unlockedT2Snapshot = await readRuntimeSnapshot(page);
       assert((unlockedT2Snapshot.session.absorbedTiers?.[2] || 0) > 0,

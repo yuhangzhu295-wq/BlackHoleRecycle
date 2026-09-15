@@ -379,6 +379,39 @@ export class WorldArtLibrary extends Component {
     this.applyMaterial(kind, visual, this.createRuntimeMaterial(kind, tint));
   }
 
+  /**
+   * GoldenCityCell owns its static placement in Creator, but its imported
+   * template renderers have no serializable material slots. Hydrate only the
+   * instantiated cell's authored visual groups before it becomes visible.
+   */
+  public hydrateAuthoredOpeningMaterials(cell: Node): void {
+    const groups: ReadonlyArray<readonly [string, WorldArtKind]> = [
+      ['Ground', 'terrainTile'],
+      ['Roads', 'roadStraight'],
+      ['Buildings', 'commercialBuildingA'],
+      ['Park', 'treeSmall'],
+      ['Props', 'recyclingBox'],
+      ['TrafficRoutes', 'sedan'],
+    ];
+    for (const [name, kind] of groups) {
+      const group = cell.getChildByName(name);
+      if (group) this.applyRuntimeMaterial(kind, group);
+    }
+  }
+
+  /**
+   * The construction landmark is loaded as a separate Creator resource after
+   * the opening cell exists, so it does not participate in the cell's initial
+   * hydration. Its imported specular-glossiness materials render magenta in
+   * Web Mobile unless each renderer receives a runtime-safe material instance.
+   */
+  public hydrateConstructionLandmarkMaterials(landmark: Node): void {
+    const road = landmark.getChildByName('Roads');
+    if (road) this.applyRuntimeMaterial('roadStraight', road);
+    const site = landmark.getChildByName('HouseConstructionSite');
+    if (site) this.applyRuntimeMaterial('commercialBuildingA', site);
+  }
+
   private applyMaterial(kind: WorldArtKind, visual: Node, material: Material): void {
     const applyToNode = (node: Node): void => {
       const renderer = node.getComponent(MeshRenderer);
@@ -388,7 +421,10 @@ export class WorldArtLibrary extends Component {
         // the platform's missing-material magenta after Web Mobile packing.
         const primitiveCount = renderer.mesh?.struct.primitives.length || 0;
         const slotCount = Math.max(1, renderer.sharedMaterials.length, primitiveCount);
-        for (let slot = 0; slot < slotCount; slot++) renderer.setSharedMaterial(material, slot);
+        // Runtime-created materials must be assigned as per-renderer instances.
+        // Keeping them only in the shared slot leaves Web Mobile with a stale
+        // native descriptor after instantiation, which renders as magenta.
+        for (let slot = 0; slot < slotCount; slot++) renderer.setMaterial(material, slot);
       }
       node.children.forEach(applyToNode);
     };

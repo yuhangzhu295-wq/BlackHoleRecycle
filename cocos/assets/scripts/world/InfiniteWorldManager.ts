@@ -84,6 +84,11 @@ class InfiniteWorldCell {
   public readonly district: DistrictTemplate;
   /** One Creator-imported CC0 landmark; never a gameplay or collision node. */
   private constructionLandmark: Node | null = null;
+  // Imported glTF renderers can finish their Web Mobile sub-model setup after
+  // the authored cell becomes active. Rebind the approved runtime material on
+  // the next frames, matching the bounded machine visual lifecycle repair.
+  private authoredMaterialRebindFrames: number = 0;
+  private constructionMaterialRebindFrames: number = 0;
 
   public constructor(
     public readonly coord: WorldCellCoord,
@@ -95,7 +100,10 @@ class InfiniteWorldCell {
     public readonly isAuthored: boolean = false,
   ) {
     this.district = district;
-    if (!isAuthored) {
+    if (isAuthored) {
+      this.art.hydrateAuthoredOpeningMaterials(this.node);
+      this.authoredMaterialRebindFrames = 2;
+    } else {
       this.buildEnvironment();
     }
   }
@@ -151,78 +159,64 @@ class InfiniteWorldCell {
     const t1Templates = OBJECT_TEMPLATES.filter((template) => template.tier === ObjectTier.T1);
     if (t1Templates.length === 0) return;
 
-    for (const clusterNode of spawnPointsRoot.children) {
-      const clusterName = clusterNode.name;
-      const spawnPoints = clusterNode.children.filter((child) => child.name.startsWith('SpawnPoint_'));
-      spawnPoints.forEach((spNode, index) => {
-        const template = t1Templates[index % t1Templates.length];
-        const worldPos = spNode.worldPosition;
-        const object = objectPool.get();
-        object.spawn(
-         template,
-         worldPos.x - logicalOrigin.x,
-         worldPos.z - logicalOrigin.z,
-         0.35,
-          `cluster_${clusterName}_${index}`,
+    const registerAuthoredSlot = (
+      template: IObjectTemplate,
+      anchor: Node,
+      customId: string,
+    ): void => {
+      const worldPos = anchor.worldPosition;
+      const object = objectPool.get();
+      object.spawn(
+        template,
+        worldPos.x - logicalOrigin.x,
+        worldPos.z - logicalOrigin.z,
+        0.35,
+        customId,
+      );
+      this.objects.push(object);
+      this.collectibleSlots.push({
+        template,
+        x: worldPos.x,
+        z: worldPos.z,
+        customId,
+        availableAt: 0,
+        active: true,
+      });
+    };
+
+    // Creator owns WHERE. These named groups are T1 respawn slots; their
+    // positions and counts remain entirely in the prefab authoring data.
+    const t1GroupNames = new Set(['TutorialStarter', 'Cluster_Park', 'Cluster_CitySquare']);
+    for (const group of spawnPointsRoot.children) {
+      if (!t1GroupNames.has(group.name)) continue;
+      const spawnPoints = group.children.filter((child) => child.name.startsWith('SpawnPoint_'));
+      spawnPoints.forEach((spawnPoint, index) => {
+        registerAuthoredSlot(
+          t1Templates[index % t1Templates.length],
+          spawnPoint,
+          `cluster_${group.name}_${index}`,
         );
-        this.objects.push(object);
-        this.collectibleSlots.push({
-          template,
-          x: worldPos.x,
-          z: worldPos.z,
-          customId: 'cluster_' + clusterName + '_' + index,
-          availableAt: 0,
-          active: true,
-        });
       });
     }
 
-    // The authored Opening owns its environment, but the playable tutorial
-    // still needs the same real starter run as the procedural opening path:
-    // enough nearby T1 objects to reach LV2, followed by a T2 target just
-    // beyond the initial suction radius. These remain pooled gameplay objects
-    // with ordinary respawn slots; no mass or level is granted here.
-    const isGoldenCityOpening = this.coord.x === 0
-      && this.coord.z === 0
-      && spawnPointsRoot.children.some((cluster) => cluster.name === 'Cluster_Park')
-      && spawnPointsRoot.children.some((cluster) => cluster.name === 'Cluster_CitySquare');
-    if (isGoldenCityOpening) {
-      const starterPositions: ReadonlyArray<readonly [number, number]> = [
-        [-0.72, 4.65], [-0.36, 4.55], [0.00, 4.60], [0.36, 4.55], [0.72, 4.65],
-        [-0.78, 5.20], [-0.38, 5.12], [0.00, 5.18], [0.38, 5.12], [0.78, 5.20],
-        [-0.72, 5.76], [-0.36, 5.86], [0.00, 5.80], [0.36, 5.86], [0.72, 5.76],
-      ];
-      starterPositions.forEach(([x, z], index) => {
-        const template = t1Templates[index % t1Templates.length];
-        if (!template) return;
-        const customId = `starter_recycling_cluster_${index}`;
-        const object = objectPool.get();
-        object.spawn(template, x - logicalOrigin.x, z - logicalOrigin.z, 0.35, customId);
-        this.objects.push(object);
-        this.collectibleSlots.push({
-          template,
-          x,
-          z,
-          customId,
-          availableAt: 0,
-          active: true,
-        });
-      });
-
-      const target = OBJECT_TEMPLATES.find((template) => template.tier === ObjectTier.T2);
-      if (target) {
-        const customId = 't2_target_bed_box';
-        const object = objectPool.get();
-        object.spawn(target, -logicalOrigin.x, -8 - logicalOrigin.z, 0.35, customId);
-        this.objects.push(object);
-        this.collectibleSlots.push({
-          template: target,
-          x: 0,
-          z: -8,
-          customId,
-          availableAt: 0,
-          active: true,
-        });
+    // The tutorial target has its own authored group so it cannot be confused
+    // with a normal T1 cluster. Existing content has no such group yet, so the
+    // named Creator anchor is an explicit deferred-authoring fallback.
+    const t2Target = OBJECT_TEMPLATES.find((template) => template.tier === ObjectTier.T2);
+    if (t2Target) {
+      const tutorialTargetGroup = spawnPointsRoot.children.find((child) => child.name === 'TutorialT2Target');
+      const targetSpawnPoint = tutorialTargetGroup?.children.find((child) => child.name.startsWith('SpawnPoint_'));
+      if (targetSpawnPoint) {
+        registerAuthoredSlot(t2Target, targetSpawnPoint, 'tutorial_t2_target');
+      } else if (tutorialTargetGroup) {
+        // A target group without a child point is itself the authored anchor.
+        registerAuthoredSlot(t2Target, tutorialTargetGroup, 'tutorial_t2_target');
+      } else {
+        const deferredAnchor = findNodeByName(this.node, 'ClusterAnchor_RecyclingSquare');
+        if (deferredAnchor) {
+          console.warn('[DEFERRED_AUTHORING] TutorialT2Target is missing; using ClusterAnchor_RecyclingSquare.');
+          registerAuthoredSlot(t2Target, deferredAnchor, 'tutorial_t2_target');
+        }
       }
     }
   }
@@ -285,14 +279,28 @@ class InfiniteWorldCell {
     this.node.destroy();
   }
 
+  public advanceRespawnClock(dt: number): void {
+    this.refreshRuntimeMaterialBindings();
+    this.respawnClock += Math.max(0, dt);
+  }
+
+  private refreshRuntimeMaterialBindings(): void {
+    if (this.authoredMaterialRebindFrames > 0 && this.node.activeInHierarchy) {
+      this.art.hydrateAuthoredOpeningMaterials(this.node);
+      this.authoredMaterialRebindFrames--;
+    }
+    if (this.constructionMaterialRebindFrames > 0 && this.constructionLandmark?.activeInHierarchy) {
+      this.art.hydrateConstructionLandmarkMaterials(this.constructionLandmark);
+      this.constructionMaterialRebindFrames--;
+    }
+  }
+
   public updateCollectibleRespawn(
-    dt: number,
     objectPool: ObjectPool<CompressibleObject>,
     logicalOrigin: Readonly<Vec3>,
     activeCollectibleCount: number,
     maxActiveCollectibles: number,
   ): number {
-    this.respawnClock += Math.max(0, dt);
     let spawned = 0;
     for (const slot of this.collectibleSlots) {
       if (slot.active || slot.availableAt > this.respawnClock) continue;
@@ -345,8 +353,7 @@ class InfiniteWorldCell {
     return true;
   }
 
-  public replenishTraffic(dt: number, objectPool: ObjectPool<CompressibleObject>, maxActiveVehicles: number, activeVehicleCount: number): number {
-    this.respawnClock += Math.max(0, dt);
+  public replenishTraffic(objectPool: ObjectPool<CompressibleObject>, maxActiveVehicles: number, activeVehicleCount: number): number {
     let spawned = 0;
     for (const slot of this.trafficSlots) {
       if (slot.active || slot.availableAt > this.respawnClock) continue;
@@ -393,6 +400,8 @@ class InfiniteWorldCell {
     landmark.setScale(0.145, 0.145, 0.145);
     this.node.addChild(landmark);
     this.constructionLandmark = landmark;
+    this.art.hydrateConstructionLandmarkMaterials(landmark);
+    this.constructionMaterialRebindFrames = 2;
     return true;
   }
 
@@ -778,6 +787,7 @@ export class InfiniteWorldManager extends Component {
   private constructionSitePrefab: Prefab | null = null;
   private constructionSiteLoadState: 'IDLE' | 'LOADING' | 'READY' | 'FAILED' = 'IDLE';
   private worldCellFactory: WorldCellFactory | null = null;
+  private serializedGoldenCityCell: Node | null = null;
   private readonly streamer = new WorldStreamer({
     cellSize: InfiniteWorldManager.CELL_SIZE,
     activeRadius: InfiniteWorldManager.ACTIVE_RADIUS,
@@ -789,6 +799,7 @@ export class InfiniteWorldManager extends Component {
     this.artLibrary = director.getScene()?.getComponentInChildren(WorldArtLibrary) || null;
     if (!this.artLibrary) throw new Error('[InfiniteWorldManager] Missing editor-saved WorldArtLibrary.');
     this.artLibrary.validateTemplates();
+    this.disableSerializedGoldenCityCell();
 
     this.objectRoot = new Node('InfiniteWorldObjectPool');
     this.node.addChild(this.objectRoot);
@@ -809,6 +820,21 @@ export class InfiniteWorldManager extends Component {
     this.initialized = true;
     this.updateCells(Vec3.ZERO);
     this.loadConstructionLandmark();
+  }
+
+  /**
+   * GoldenCityCell.prefab is the one authored source for the Opening cell.
+   * Earlier authoring left a live scene copy beside InfiniteWorldRoot, which
+   * rendered its unresolved imported materials underneath the streamed prefab.
+   * Keep that source data in the scene but disable the duplicate at runtime.
+   */
+  private disableSerializedGoldenCityCell(): void {
+    if (this.serializedGoldenCityCell?.isValid) return;
+    const scene = director.getScene();
+    const root = scene?.getChildByName('GameRoot');
+    const serialized = root?.getChildByName('GoldenCityCell') || null;
+    if (serialized?.active) serialized.active = false;
+    this.serializedGoldenCityCell = serialized;
   }
 
   /**
@@ -839,34 +865,6 @@ export class InfiniteWorldManager extends Component {
    */
   public setGameplayObjectsVisible(visible: boolean): void {
     if (this.objectRoot) this.objectRoot.active = visible;
-  }
-
-  /**
-   * Arena reuses the same Creator-backed pool and real FSM objects as
-   * Endless, but remaps the tutorial's single stacked starter cluster into
-   * equal, reachable lanes around the first fight. Leaving all fifteen T1
-   * items at (0, 5) put the whole stack inside one bot's opening suction
-   * radius, so a single competitor gained an unfair mass lead before the
-   * local player had a chance to drag. Only still-IDLE object positions move;
-   * template, tier, mass and normal absorption behaviour stay unchanged.
-   */
-  public arrangeArenaOpening(): boolean {
-    const starterItems = this.getAllObjects()
-      .filter((object) => object.runtimeId.startsWith('starter_recycling_cluster_'));
-    let arrangedStarterCount = 0;
-    starterItems.forEach((object, index) => {
-      const angle = Math.PI * 0.5 + (Math.PI * 2 * index) / starterItems.length;
-      // Alternate two nearby rings. Each human/bot begins well inside the
-      // inner ring and must make a real directional choice to secure loot;
-      // the outer ring keeps a visible next objective after the first pass.
-      const radius = index % 2 === 0 ? 10.5 : 14.0;
-      if (object.relocateIdle(Math.cos(angle) * radius, Math.sin(angle) * radius, angle * 180 / Math.PI)) {
-        arrangedStarterCount++;
-      }
-    });
-    const openingT2 = this.getAllObjects().find((object) => object.runtimeId === 't2_target_bed_box') || null;
-    const arrangedT2 = openingT2?.relocateIdle(0, -10.8, 0) || false;
-    return arrangedStarterCount > 0 || arrangedT2;
   }
 
   /** Streams the 3×3 active grid for both X and Z; returns a rebase when needed. */
@@ -942,8 +940,8 @@ export class InfiniteWorldManager extends Component {
       }
     }
     for (const cell of this.activeCells.values()) {
+      cell.advanceRespawnClock(dt);
       activeCollectibleCount += cell.updateCollectibleRespawn(
-        dt,
         objectPool,
         this.logicalOrigin,
         activeCollectibleCount,
@@ -954,7 +952,6 @@ export class InfiniteWorldManager extends Component {
       .reduce((count, cell) => count + cell.dynamicVehicles.length, 0);
     for (const cell of this.activeCells.values()) {
       activeVehicleCount += cell.replenishTraffic(
-        dt,
         objectPool,
         InfiniteWorldManager.MAX_ACTIVE_VEHICLES,
         activeVehicleCount,

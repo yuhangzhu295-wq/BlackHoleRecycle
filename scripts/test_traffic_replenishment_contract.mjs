@@ -132,7 +132,9 @@ class FakePool {
 
 const theme = { id: 'TEST', availableTiers: [1, 2, 3, 4, 5] };
 const district = { kind: 'RESIDENTIAL', resourceClusters: [] };
-const art = { spawn() {} };
+// Engine boundary: the authored cell constructor hydrates materials through the
+// art library, so the stub mirrors that same seam as a no-op.
+const art = { spawn() {}, hydrateAuthoredOpeningMaterials() {}, hydrateConstructionLandmarkMaterials() {} };
 const origin = { x: 0, y: 0, z: 0 };
 
 const record = (name, pass, detail) => {
@@ -173,8 +175,10 @@ record('VEHICLE_ABSORB_REMOVES_FROM_CELL_AND_TRAFFIC', removeResult && procedura
 record('VEHICLE_ABSORB_RELEASES_TO_SAME_POOL', pool.getActiveCount() === 0, 'vehicle object returned to same FakePool');
 
 // 3. Cooldown replenishment
-record('TRAFFIC_COOLDOWN_BLOCKS_PREMATURE_RESPAWN', proceduralCell.replenishTraffic(3.99, pool, 24, 0) === 0, 'no vehicle respawn before 4s cooldown expires');
-record('TRAFFIC_COOLDOWN_RESPAWNS_VEHICLE', proceduralCell.replenishTraffic(0.02, pool, 24, 0) === 1, 'vehicle respawned after cooldown expired');
+proceduralCell.advanceRespawnClock(3.99);
+record('TRAFFIC_COOLDOWN_BLOCKS_PREMATURE_RESPAWN', proceduralCell.replenishTraffic(pool, 24, 0) === 0, 'no vehicle respawn before 4s cooldown expires');
+proceduralCell.advanceRespawnClock(0.02);
+record('TRAFFIC_COOLDOWN_RESPAWNS_VEHICLE', proceduralCell.replenishTraffic(pool, 24, 0) === 1, 'vehicle respawned after cooldown expired');
 record('RESPAWN_RE_REGISTERS_ARRAYS_AND_POOL', proceduralCell.objects.length === 1 && proceduralCell.dynamicVehicles.length === 1 && pool.getActiveCount() === 1, 'respawned vehicle present in objects, dynamicVehicles, and active pool');
 
 // 4. Global cap limits
@@ -182,8 +186,9 @@ const cappedPool = new FakePool();
 const cappedCell = makeCell(true);
 cappedCell.populate([], cappedPool, origin);
 cappedCell.removeAbsorbedVehicle(cappedCell.dynamicVehicles[0].object, cappedPool, 4);
-record('TRAFFIC_CAP_BLOCKS_WHEN_FULL', cappedCell.replenishTraffic(4.01, cappedPool, 24, 24) === 0, 'replenishTraffic returns 0 when activeVehicleCount >= MAX_ACTIVE_VEHICLES');
-record('TRAFFIC_CAP_ALLOWS_WHEN_UNDER_LIMIT', cappedCell.replenishTraffic(0, cappedPool, 24, 23) === 1, 'replenishTraffic spawns when below cap');
+cappedCell.advanceRespawnClock(4.01);
+record('TRAFFIC_CAP_BLOCKS_WHEN_FULL', cappedCell.replenishTraffic(cappedPool, 24, 24) === 0, 'replenishTraffic returns 0 when activeVehicleCount >= MAX_ACTIVE_VEHICLES');
+record('TRAFFIC_CAP_ALLOWS_WHEN_UNDER_LIMIT', cappedCell.replenishTraffic(cappedPool, 24, 23) === 1, 'replenishTraffic spawns when below cap');
 
 // 5. Authored TrafficRoutes
 const authoredNode = new FakeNode('Cell', [
@@ -208,8 +213,50 @@ for (const v of authoredVehicles) {
 }
 record('AUTHORED_VEHICLES_ABSORBED_ALL', authoredCell.objects.length === 0 && authoredCell.dynamicVehicles.length === 0 && authoredPool.getActiveCount() === 0, 'all 3 authored vehicles removed and released to pool');
 
-const authoredReplenished = authoredCell.replenishTraffic(4.01, authoredPool, 24, 0);
+authoredCell.advanceRespawnClock(4.01);
+const authoredReplenished = authoredCell.replenishTraffic(authoredPool, 24, 0);
 record('AUTHORED_VEHICLES_COOLDOWN_REPLENISHED', authoredReplenished === 3 && authoredCell.dynamicVehicles.length === 3, 'all 3 authored slots replenished after cooldown');
+
+// 7. One shared clock advances once even though both respawn consumers run every frame.
+const clockPool = new FakePool();
+const clockCell = makeCell(true);
+clockCell.populate([{ template: globalThis.OBJECT_TEMPLATES[0], localX: 1, localZ: 1, customId: 'clock-collectible' }], clockPool, origin);
+const clockCollectible = clockCell.objects.find((object) => object.runtimeId === 'clock-collectible');
+const clockVehicle = clockCell.dynamicVehicles[0]?.object;
+record('RESPAWN_CLOCK_FIXTURE_INITIALIZED', Boolean(clockCollectible) && Boolean(clockVehicle), 'one collectible and one traffic slot are active');
+clockCell.removeAbsorbedCollectible(clockCollectible, clockPool, 4);
+clockCell.removeAbsorbedVehicle(clockVehicle, clockPool, 4);
+
+const runRespawnFrame = () => {
+  clockCell.advanceRespawnClock(1 / 60);
+  const collectibleSpawns = clockCell.updateCollectibleRespawn(clockPool, origin, 0, 240);
+  const trafficSpawns = clockCell.replenishTraffic(clockPool, 24, clockCell.dynamicVehicles.length);
+  return { collectibleSpawns, trafficSpawns };
+};
+
+let firstSecondSpawns = 0;
+for (let frame = 0; frame < 60; frame += 1) {
+  const spawned = runRespawnFrame();
+  firstSecondSpawns += spawned.collectibleSpawns + spawned.trafficSpawns;
+}
+record('RESPAWN_CLOCK_SINGLE_ADVANCE', Math.abs(clockCell.respawnClock - 1) < 1e-9 && firstSecondSpawns === 0,
+  '60 frames at 1/60 advance the shared cell clock to 1.0s, not 2.0s, without crossing the 4s cooldown');
+
+const preCooldownSpawns = (() => {
+  clockCell.advanceRespawnClock(2.99);
+  const collectibleSpawns = clockCell.updateCollectibleRespawn(clockPool, origin, 0, 240);
+  const trafficSpawns = clockCell.replenishTraffic(clockPool, 24, clockCell.dynamicVehicles.length);
+  return collectibleSpawns + trafficSpawns;
+})();
+record('SHARED_CLOCK_PRESERVES_FOUR_SECOND_COOLDOWNS', preCooldownSpawns === 0 && Math.abs(clockCell.respawnClock - 3.99) < 1e-9,
+  'collectible and traffic slots both remain unavailable before their configured 4s cooldown');
+clockCell.advanceRespawnClock(0.01);
+const cooldownExpirySpawns = {
+  collectibleSpawns: clockCell.updateCollectibleRespawn(clockPool, origin, 0, 240),
+  trafficSpawns: clockCell.replenishTraffic(clockPool, 24, clockCell.dynamicVehicles.length),
+};
+record('SHARED_CLOCK_REPLENISHES_BOTH_AFTER_CONFIGURED_DELAY', cooldownExpirySpawns.collectibleSpawns === 1 && cooldownExpirySpawns.trafficSpawns === 1,
+  'both slots replenish when the shared clock reaches the existing 4s delay');
 
 // 6. Unload and reload does not duplicate
 authoredCell.recycle(authoredPool);

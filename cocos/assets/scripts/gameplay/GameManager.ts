@@ -496,10 +496,6 @@ export class GameManager extends Component {
     // Likewise, every arena's eight competitors begin against a freshly
     // generated resource field instead of a partially consumed endless run.
     this.infiniteWorldManager.resetSession(Vec3.ZERO);
-    // The arena shares genuine world pickups with Endless. Reframe the same
-    // T2 book stack beside the opening fight so it does not visually cover
-    // the local singularity, without changing the Endless vertical slice.
-    this.infiniteWorldManager.arrangeArenaOpening();
     this.setPlayerSimulationPaused(false);
     this.hud?.showScreen('Arena');
     this.arenaMatchManager.startMatch(this.machine, this.infiniteWorldManager, {

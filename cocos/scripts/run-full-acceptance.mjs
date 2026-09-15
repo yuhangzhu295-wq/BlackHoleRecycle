@@ -207,8 +207,9 @@ async function performCdpTouchTap(cdp, x, y) {
     console.log('\n[TEST 05] 真实 T2 等级锁判定与 T1 物品吸附...');
     const initialAbsorbed = moveSnap.session.absorbed;
 
-    // 寻找 Chunk 0 中的特定 T2 目标
-    const targetT2Id = 't2_target_bed_box';
+    // The opening T2 target is an authored Golden City spawn slot. Do not
+    // fall back to a deleted coordinate convention when checking its lock.
+    const targetT2Id = 'tutorial_t2_target';
     let lockCaptured = false;
 
     for (let s = 0; s < 12; s++) {
@@ -217,7 +218,7 @@ async function performCdpTouchTap(cdp, x, y) {
       await page.waitForTimeout(100);
 
       const snap = await page.evaluate(() => window.__BHR_QA__.snapshot());
-      const t2Obj = snap.objects.find(o => o.runtimeId === targetT2Id || (o.tier === 2 && Math.abs(o.z - (-8.0)) < 2.0));
+      const t2Obj = snap.objects.find(o => o.runtimeId === targetT2Id);
       if (t2Obj && (t2Obj.lockVisible || snap.machine.maxTier < 2)) {
         if (!lockCaptured) {
           const shot05 = path.join(SCREENSHOT_DIR, '05-tier-lock.png');
@@ -233,7 +234,7 @@ async function performCdpTouchTap(cdp, x, y) {
     await page.screenshot({ path: shot04 });
 
     assertAndRecord(suctionSnap.session.absorbed > initialAbsorbed || suctionSnap.compression.bufferCount > 0, 'AC-007', 'T1吸附', 'Move near T1', 'Object absorbed & Mass/Buffer increases', `Absorbed: ${suctionSnap.session.absorbed}`, '04-suction.png');
-    assertAndRecord(suctionSnap.machine.maxTier === 1, 'AC-008', 'Tier Lock', 'LV1 vs T2 check', 'MaxTier 锁定且未被瞬吸', `MaxTier: ${suctionSnap.machine.maxTier}`, '05-tier-lock.png');
+    assertAndRecord(suctionSnap.machine.maxTier === 1 && lockCaptured, 'AC-008', 'Tier Lock', 'LV1 vs T2 check', 'Authored T2 target visibly locks at LV1 and is not instantly absorbed', `MaxTier: ${suctionSnap.machine.maxTier}; lockCaptured: ${lockCaptured}`, '05-tier-lock.png');
     console.log('✅ TEST 05 PASS: 真实物理吸附与 Tier Lock 验证通过');
 
     // ----------------------------------------------------

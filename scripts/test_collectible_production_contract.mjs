@@ -87,11 +87,12 @@ const theme = { id: 'S4', availableTiers: [1, 2, 3, 4, 5] };
 const district = { kind: 'UNKNOWN', resourceClusters: [] };
 const origin = { x: 0, y: 0, z: 0 };
 const node = new FakeNode('Cell', [new FakeNode('CollectibleSpawnPoints', [
-  new FakeNode('Cluster_T1_T5', templateTypes.map((type, index) => new FakeNode(
+  new FakeNode('Cluster_Park', templateTypes.map((type, index) => new FakeNode(
     'SpawnPoint_' + index, [], { x: index * 2, y: 0, z: index * 2 + 1 },
   ))),
 ])]);
-const cell = new InfiniteWorldCell({ x: 0, z: 0 }, node, theme, district, { spawn() {} }, 64, true);
+const art = { spawn() {}, hydrateAuthoredOpeningMaterials() {}, hydrateConstructionLandmarkMaterials() {} };
+const cell = new InfiniteWorldCell({ x: 0, z: 0 }, node, theme, district, art, 64, true);
 const pool = new FakePool();
 cell.populateAuthoredContent(pool, origin);
 record('AUTHORED_SPAWN_USES_POOL_AND_REAL_OBJECTS', cell.objects.length === 5
@@ -104,8 +105,11 @@ const firstId = first.runtimeId;
 record('ABSORB_REMOVES_AND_RETURNS_TO_SAME_POOL', cell.removeAbsorbedCollectible(first, pool, 4)
   && cell.objects.length === 4 && pool.getActiveCount() === 4,
   'absorption removes the object from the cell and releases it to the same pool.');
-record('RESPAWN_REUSES_SLOT_AND_POOL', cell.updateCollectibleRespawn(3.99, pool, origin, 4, 240) === 0
-  && cell.updateCollectibleRespawn(0.01, pool, origin, 4, 240) === 1
+cell.advanceRespawnClock(3.99);
+const blockedCollectibleRespawn = cell.updateCollectibleRespawn(pool, origin, 4, 240) === 0;
+cell.advanceRespawnClock(0.01);
+record('RESPAWN_REUSES_SLOT_AND_POOL', blockedCollectibleRespawn
+  && cell.updateCollectibleRespawn(pool, origin, 4, 240) === 1
   && cell.objects.some((object) => object.runtimeId === firstId)
   && pool.getActiveCount() === 5,
   'cooldown respawn takes the same slot and restores the pool active count.');

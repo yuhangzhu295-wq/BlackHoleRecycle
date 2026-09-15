@@ -15,6 +15,10 @@ import { transformSync } from 'esbuild';
 const rootDirectory = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const managerPath = path.join(rootDirectory, 'cocos/assets/scripts/world/InfiniteWorldManager.ts');
 const source = fs.readFileSync(managerPath, 'utf8');
+const authoredContentStart = source.indexOf('public populateAuthoredContent');
+const authoredContentEnd = source.indexOf('  public populateAuthoredTraffic', authoredContentStart);
+if (authoredContentStart < 0 || authoredContentEnd < 0) throw new Error('populateAuthoredContent source boundary not found');
+const authoredContentSource = source.slice(authoredContentStart, authoredContentEnd);
 const classStart = source.indexOf('class InfiniteWorldCell');
 const classEnd = source.indexOf('\n@ccclass', classStart);
 if (classStart < 0 || classEnd < 0) throw new Error('InfiniteWorldCell source boundary not found');
@@ -26,8 +30,11 @@ const compiled = transformSync(`${extracted}\n;globalThis.__InfiniteWorldCell = 
   target: 'es2022',
   format: 'iife',
 }).code;
-globalThis.ObjectTier = { T1: 1 };
-globalThis.OBJECT_TEMPLATES = [{ type: 'test-cardboard', tier: 1, mass: 10, value: 1, radius: 0.3 }];
+globalThis.ObjectTier = { T1: 1, T2: 2 };
+globalThis.OBJECT_TEMPLATES = [
+  { type: 'test-cardboard', tier: 1, mass: 10, value: 1, radius: 0.3 },
+  { type: 'test-bin', tier: 2, mass: 20, value: 2, radius: 0.4 },
+];
 new Function(compiled)();
 const InfiniteWorldCell = globalThis.__InfiniteWorldCell;
 
@@ -97,7 +104,9 @@ class FakePool {
 const template = { type: 'cardboard', tier: 1, mass: 10, value: 1, radius: 0.3 };
 const theme = { id: 'TEST', availableTiers: [1] };
 const district = { kind: 'UNKNOWN', resourceClusters: [] };
-const art = { spawn() {} };
+// Engine boundary: the authored cell constructor hydrates materials through the
+// art library, so the stub mirrors that same seam as a no-op.
+const art = { spawn() {}, hydrateAuthoredOpeningMaterials() {}, hydrateConstructionLandmarkMaterials() {} };
 const origin = { x: 0, y: 0, z: 0 };
 
 const record = (name, pass, detail) => {
@@ -115,26 +124,66 @@ procedural.populate([{ template, localX: 1, localZ: 2, customId: 'procedural-slo
 const absorbed = procedural.objects[0];
 record('ABSORB_REMOVES_FROM_CELL', procedural.removeAbsorbedCollectible(absorbed, pool, 4), 'remove returned true');
 record('ABSORB_REMOVES_AND_RETURNS_TO_POOL', procedural.objects.length === 0 && pool.getActiveCount() === 0, 'cell=0, pool.active=0');
-record('COOLDOWN_BLOCKS_RESPAWN', procedural.updateCollectibleRespawn(3.99, pool, origin, 0, 240) === 0, 'no respawn before four seconds');
-record('COOLDOWN_RESPAWNS_SLOT', procedural.updateCollectibleRespawn(0.01, pool, origin, 0, 240) === 1, 'one procedural slot respawned');
+procedural.advanceRespawnClock(3.99);
+record('COOLDOWN_BLOCKS_RESPAWN', procedural.updateCollectibleRespawn(pool, origin, 0, 240) === 0, 'no respawn before four seconds');
+procedural.advanceRespawnClock(0.01);
+record('COOLDOWN_RESPAWNS_SLOT', procedural.updateCollectibleRespawn(pool, origin, 0, 240) === 1, 'one procedural slot respawned');
 record('RESPAWN_REUSES_RUNTIME_ID', procedural.objects[0].runtimeId === 'procedural-slot', 'original slot id reused');
 
-const authoredPoint = new FakeNode('SpawnPoint_0', [], { x: 12, y: 0, z: 13 });
+const tutorialStarterPoint = new FakeNode('SpawnPoint_Starter_1', [], { x: 12, y: 0, z: 13 });
+const parkPoint = new FakeNode('SpawnPoint_Park_1', [], { x: 14, y: 0, z: 15 });
+const citySquarePoint = new FakeNode('SpawnPoint_Square_1', [], { x: 16, y: 0, z: 17 });
+const tutorialT2Point = new FakeNode('SpawnPoint_T2_1', [], { x: 18, y: 0, z: 19 });
 const authored = makeCell(true, new FakeNode('Cell', [
-  new FakeNode('CollectibleSpawnPoints', [new FakeNode('Cluster_A', [authoredPoint])]),
+  new FakeNode('CollectibleSpawnPoints', [
+    new FakeNode('TutorialStarter', [tutorialStarterPoint]),
+    new FakeNode('TutorialT2Target', [tutorialT2Point]),
+    new FakeNode('Cluster_Park', [parkPoint]),
+    new FakeNode('Cluster_CitySquare', [citySquarePoint]),
+  ]),
 ]));
 const authoredPool = new FakePool();
 authored.populateAuthoredContent(authoredPool, origin);
-const authoredObject = authored.objects[0];
-record('AUTHORED_SLOT_REGISTERED', authoredObject?.runtimeId === 'cluster_Cluster_A_0', 'authored spawn point became a respawn slot');
+const authoredObject = authored.objects.find((object) => object.runtimeId === 'cluster_TutorialStarter_0');
+const authoredT2Object = authored.objects.find((object) => object.runtimeId === 'tutorial_t2_target');
+record('TUTORIAL_STARTER_REGISTERED_AS_T1_SLOT', authoredObject?.template.tier === 1 && authoredObject.position.x === 12 && authoredObject.position.z === 13, 'TutorialStarter spawn point became a T1 respawn slot at its authored position');
+record('CLUSTER_GROUPS_REGISTERED_AS_T1_SLOTS', authored.objects.filter((object) => object.template.tier === 1).length === 3, 'Cluster_Park and Cluster_CitySquare use T1 templates');
+record('TUTORIAL_T2_TARGET_USES_AUTHORED_POINT', authoredT2Object?.template.tier === 2 && authoredT2Object.position.x === 18 && authoredT2Object.position.z === 19, 'TutorialT2Target uses its authored spawn point with a T2 template');
 authored.removeAbsorbedCollectible(authoredObject, authoredPool, 4);
-authored.updateCollectibleRespawn(4, authoredPool, origin, 0, 240);
-record('AUTHORED_SLOT_RESPAWNS', authored.objects.length === 1 && authored.objects[0].runtimeId === 'cluster_Cluster_A_0', 'authored id and position slot reused');
+authored.removeAbsorbedCollectible(authoredT2Object, authoredPool, 4);
+authored.advanceRespawnClock(4);
+authored.updateCollectibleRespawn(authoredPool, origin, 0, 240);
+authored.updateCollectibleRespawn(authoredPool, origin, 0, 240);
+record('AUTHORED_SLOTS_RESPAWN', authored.objects.some((object) => object.runtimeId === 'cluster_TutorialStarter_0') && authored.objects.some((object) => object.runtimeId === 'tutorial_t2_target'), 'TutorialStarter and TutorialT2Target reuse regular authored respawn slots');
 
 authored.recycle(authoredPool);
 record('UNLOAD_CLEARS_OBJECTS_AND_SLOTS', authored.objects.length === 0 && authoredPool.getActiveCount() === 0, 'unload releases active objects and clears slot state');
 authored.populateAuthoredContent(authoredPool, origin);
-record('RELOAD_DOES_NOT_DUPLICATE', authored.objects.length === 1 && authoredPool.getActiveCount() === 1, 'reload creates one authored object');
+record('RELOAD_DOES_NOT_DUPLICATE', authored.objects.length === 4 && authoredPool.getActiveCount() === 4, 'reload recreates each authored slot once');
+
+const fallbackAnchor = new FakeNode('ClusterAnchor_RecyclingSquare', [], { x: 22, y: 0, z: 23 });
+const deferredAuthored = makeCell(true, new FakeNode('Cell', [
+  new FakeNode('CollectibleSpawnPoints', [new FakeNode('TutorialStarter', [tutorialStarterPoint])]),
+  fallbackAnchor,
+]));
+const deferredPool = new FakePool();
+const warnings = [];
+const originalWarn = console.warn;
+console.warn = (message) => warnings.push(message);
+try {
+  deferredAuthored.populateAuthoredContent(deferredPool, origin);
+} finally {
+  console.warn = originalWarn;
+}
+const fallbackObject = deferredAuthored.objects.find((object) => object.runtimeId === 'tutorial_t2_target');
+record('TUTORIAL_T2_DEFERRED_AUTHORING_FALLBACK', fallbackObject?.template.tier === 2 && fallbackObject.position.x === 22 && fallbackObject.position.z === 23 && warnings.some((message) => message.includes('DEFERRED_AUTHORING')), 'missing TutorialT2Target explicitly falls back to the named authored recycling-square anchor');
+
+record(
+  'NO_RUNTIME_GOLDEN_CITY_COORDINATE_TABLE',
+  !['starterPositions', 'starter_recycling_cluster', 't2_target_bed_box'].some((legacyId) => authoredContentSource.includes(legacyId))
+    && !/\[\s*-?\d+(?:\.\d+)?\s*,\s*-?\d+(?:\.\d+)?\s*\]/.test(authoredContentSource),
+  'authored collectible placement has no legacy IDs or numeric position table',
+);
 
 const capped = makeCell();
 const cappedPool = new FakePool();
@@ -143,8 +192,9 @@ capped.populate([
   { template, localX: 1, localZ: 0, customId: 'cap-b' },
 ], cappedPool, origin);
 for (const object of [...capped.objects]) capped.removeAbsorbedCollectible(object, cappedPool, 4);
-record('GLOBAL_CAP_LIMITS_RESPAWN', capped.updateCollectibleRespawn(4.01, cappedPool, origin, 239, 240) === 1, 'one slot fills the final available global capacity');
-record('GLOBAL_CAP_PREVENTS_OVERFLOW', capped.updateCollectibleRespawn(0, cappedPool, origin, 240, 240) === 0 && capped.objects.length === 1, 'second slot remains pending at cap');
+capped.advanceRespawnClock(4.01);
+record('GLOBAL_CAP_LIMITS_RESPAWN', capped.updateCollectibleRespawn(cappedPool, origin, 239, 240) === 1, 'one slot fills the final available global capacity');
+record('GLOBAL_CAP_PREVENTS_OVERFLOW', capped.updateCollectibleRespawn(cappedPool, origin, 240, 240) === 0 && capped.objects.length === 1, 'second slot remains pending at cap');
 
 console.log('[PASS] S1 deterministic resource replenishment contract (implementation-level, non-renderer).');
 console.log('[NOTE] Cocos scene/runtime, visual density, and console-error evidence require acceptance:v2 and are not claimed here.');

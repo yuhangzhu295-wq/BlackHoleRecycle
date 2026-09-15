@@ -35,6 +35,7 @@ async function run() {
   const level1 = evolutionBlock(gameConfig, 1);
   const level2 = evolutionBlock(gameConfig, 2);
   const chunkConfig = readSource('assets/scripts/world/ChunkConfig.ts');
+  const worldManager = readSource('assets/scripts/world/InfiniteWorldManager.ts');
   const compressibleObject = readSource('assets/scripts/gameplay/CompressibleObject.ts');
   const machine = readSource('assets/scripts/machine/BlackHoleMachine.ts');
   const visualLibrary = readSource('assets/scripts/machine/MachineVisualLibrary.ts');
@@ -56,14 +57,23 @@ async function run() {
     'Current GameConfig LV1 radius=2.4m, maxTier=T1.',
   );
 
-  const hasOpeningCluster = /starter_recycling_cluster_\$\{index\}/.test(chunkConfig)
-    && /starterPositions/.test(chunkConfig)
-    && /t2_target_bed_box/.test(chunkConfig)
-    && /cellX === 0 && cellZ === 0/.test(chunkConfig);
+  const authoredOpeningOnly = [
+    'starter_recycling_cluster',
+    'starterPositions',
+    't2_target_bed_box',
+    'cellX === 0 && cellZ === 0',
+  ].every((legacyId) => !chunkConfig.includes(legacyId))
+    && containsAll(worldManager, [
+      "'CollectibleSpawnPoints'",
+      "'TutorialStarter'",
+      "'TutorialT2Target'",
+      "'Cluster_Park'",
+      "'Cluster_CitySquare'",
+    ]);
   record(
-    'CHECK_OPENING_RECYCLABLE_LAYOUT',
-    hasOpeningCluster,
-    'Current CellItemGenerator defines a real opening T1 cluster and adjacent T2 target.',
+    'CHECK_AUTHORED_OPENING_RECYCLABLE_LAYOUT',
+    authoredOpeningOnly,
+    'Golden City tutorial placement is consumed from Creator spawn groups; procedural fallback carries no opening coordinate table.',
   );
 
   const hasLockContract = /this\.template\.tier > machineMaxTier && !isMagnetStorm/.test(compressibleObject)
