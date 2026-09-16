@@ -293,6 +293,11 @@ class InfiniteWorldCell {
         active: slot.active,
         availableAt: slot.availableAt,
       })),
+      collectibleSlots: this.collectibleSlots.map((slot) => ({
+        id: slot.customId,
+        active: slot.active,
+        availableAt: slot.availableAt,
+      })),
     };
   }
 

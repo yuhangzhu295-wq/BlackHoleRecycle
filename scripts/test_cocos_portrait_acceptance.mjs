@@ -1293,10 +1293,11 @@ async function verifyCellLifecycle(cdp, page, joystick) {
  * joystick. The QA bridge is read-only: it supplies the live camera basis and
  * position so CDP can issue the same camera-relative touch a player would.
  */
-async function driveJoystickToLogicalPoint(cdp, page, joystick, target, label, arrivalRadius = 1.6, timeoutMs = 30_000, allowMiss = false) {
+async function driveJoystickToLogicalPoint(cdp, page, joystick, target, label, arrivalRadius = 1.6, timeoutMs = 30_000, allowMiss = false, onSnapshot = null, releaseDelayMs = 220) {
   const deadline = Date.now() + timeoutMs;
   let bestDistance = Number.POSITIVE_INFINITY;
   let finalSnapshot = await readRuntimeSnapshot(page);
+  if (onSnapshot?.(finalSnapshot)) return finalSnapshot;
   let touchHeld = false;
   try {
     while (Date.now() < deadline) {
@@ -1338,8 +1339,26 @@ async function driveJoystickToLogicalPoint(cdp, page, joystick, target, label, a
     const maximumHoldMs = distance <= 8 ? 220 : 850;
     const holdMs = Math.max(120, Math.min(maximumHoldMs,
       Math.round(Math.max(0, distance - arrivalRadius * 0.45) / estimatedSpeed * 1000)));
-    await page.waitForTimeout(holdMs);
-    const engaged = await readRuntimeSnapshot(page);
+    // Lifecycle verification needs to observe the production FSM while the
+    // same physical touch remains held. A full steering hold can otherwise
+    // span the short ATTRACTED transition between two read-only snapshots.
+    let engaged;
+    if (onSnapshot) {
+      let remainingHoldMs = holdMs;
+      while (remainingHoldMs > 0) {
+        const sampleMs = Math.min(50, remainingHoldMs);
+        await page.waitForTimeout(sampleMs);
+        remainingHoldMs -= sampleMs;
+        engaged = await readRuntimeSnapshot(page);
+        if (onSnapshot(engaged)) {
+          finalSnapshot = engaged;
+          return finalSnapshot;
+        }
+      }
+    } else {
+      await page.waitForTimeout(holdMs);
+      engaged = await readRuntimeSnapshot(page);
+    }
     assert(Math.hypot(engaged.machine.movementInput.x, engaged.machine.movementInput.y) > 0.1,
       `FAIL_VERTICAL_SLICE_GUIDED_TOUCH_${label}: ${JSON.stringify({
         input: engaged.machine.movementInput,
@@ -1358,7 +1377,7 @@ async function driveJoystickToLogicalPoint(cdp, page, joystick, target, label, a
   } finally {
     if (touchHeld) {
       await releaseTouchJoystick(cdp);
-      await page.waitForTimeout(220);
+      if (releaseDelayMs > 0) await page.waitForTimeout(releaseDelayMs);
     }
   }
   const finalPosition = getLogicalPlayerPosition(finalSnapshot);
@@ -1648,14 +1667,27 @@ async function verifyFiveLevelProgression(cdp, page, joystick) {
  * through ordinary collection. The bridge observes state; every interaction
  * below is an actual portrait joystick touch.
  */
-async function verifyTrafficReplenishment(cdp, page, joystick) {
-  const getTrafficTiming = (snapshot, runtimeId) => (snapshot.world?.streaming?.respawnTiming || [])
+const getTrafficTiming = (snapshot, runtimeId) => (snapshot.world?.streaming?.respawnTiming || [])
     .map((cell) => ({
       cell: { x: cell.x, z: cell.z },
       clock: cell.clock,
       slot: cell.trafficSlots?.find((candidate) => candidate.id === runtimeId) || null,
     }))
     .find((entry) => entry.slot) || null;
+
+// This is deliberately a read-only projection of the cell-owned collectible
+// slot. Object presence cannot stand in for the slot because it loses the
+// authoritative engine-clock deadline while the object is pooled.
+const getCollectibleTiming = (snapshot, runtimeId) => (snapshot.world?.streaming?.respawnTiming || [])
+  .map((cell) => ({
+    cell: { x: cell.x, z: cell.z },
+    clock: cell.clock,
+    slot: cell.collectibleSlots?.find((candidate) => candidate.id === runtimeId
+      || candidate.customId === runtimeId) || null,
+  }))
+  .find((entry) => entry.slot) || null;
+
+async function verifyTrafficReplenishment(cdp, page, joystick) {
   let latest = await readRuntimeSnapshot(page);
   assert(latest.machine?.maxTier >= 5,
     `FAIL_TRAFFIC_REPLENISHMENT_LEVEL: ${JSON.stringify(latest.machine)}`);
@@ -2250,52 +2282,236 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
           `FAIL_VERTICAL_SLICE_NO_AUTHORED_T1_TARGET: ${JSON.stringify({ machine: t1Snapshot.machine, player, objects: t1Snapshot.objects })}`);
         const target = targets[0];
         const massBefore = t1Snapshot.machine.mass;
-        await driveJoystickToLogicalPoint(
+        const lifecycleStartedAt = Date.now();
+        const lifecycleTrace = [];
+        let removalObservedAt = null;
+        let removalTiming = null;
+        let removalSnapshot = null;
+        const observeCollectibleLifecycle = (snapshot, phase) => {
+          const object = snapshot.objects.find((candidate) => candidate.runtimeId === target.runtimeId) || null;
+          const timing = getCollectibleTiming(snapshot, target.runtimeId);
+          // ABSORBED is immediately pooled by production; a later read can
+          // only observe its legitimate removal plus the gained machine mass.
+          const state = object?.state || (snapshot.machine.mass > massBefore ? 'ABSORBED/RECYCLED' : 'MISSING');
+          const previous = lifecycleTrace[lifecycleTrace.length - 1] || null;
+          if (!previous || previous.state !== state || state === 'ABSORBED/RECYCLED') {
+            lifecycleTrace.push({
+              elapsedMs: Date.now() - lifecycleStartedAt,
+              phase,
+              state,
+              objectPresent: Boolean(object),
+              mass: snapshot.machine.mass,
+              timing: timing ? {
+                cell: timing.cell,
+                clock: timing.clock,
+                active: timing.slot.active,
+                availableAt: timing.slot.availableAt,
+              } : null,
+            });
+          }
+          if (state === 'ABSORBED/RECYCLED' && removalObservedAt === null) {
+            removalObservedAt = Date.now();
+            removalTiming = timing;
+            removalSnapshot = snapshot;
+          }
+          // Stop the approach on the first real pooled observation. Waiting
+          // for a later route-completion snapshot would spend part of the
+          // production cooldown before the escape touch can begin.
+          return state === 'ABSORBED/RECYCLED';
+        };
+        observeCollectibleLifecycle(t1Snapshot, 'BEFORE_TOUCH');
+        t1Snapshot = await driveJoystickToLogicalPoint(
           cdp,
           page,
           joystick,
           { x: target.logicalX, z: target.logicalZ },
           `T1_${target.runtimeId}`,
           Math.max(1.0, t1Snapshot.machine.suctionRadius * 0.62),
+          30_000,
+          false,
+          (snapshot) => observeCollectibleLifecycle(snapshot, 'TOUCH_ROUTE'),
+          0,
         );
-        await page.waitForTimeout(900);
-        t1Snapshot = await readRuntimeSnapshot(page);
+        const absorptionDeadline = Date.now() + 3_000;
+        while (Date.now() < absorptionDeadline) {
+          await page.waitForTimeout(80);
+          t1Snapshot = await readRuntimeSnapshot(page);
+          observeCollectibleLifecycle(t1Snapshot, 'POST_TOUCH');
+          if (!t1Snapshot.objects.some((object) => object.runtimeId === target.runtimeId) && t1Snapshot.machine.mass > massBefore) break;
+        }
         const remainingTarget = t1Snapshot.objects.find((object) => object.runtimeId === target.runtimeId);
         const absorbed = !remainingTarget;
         assert(absorbed && t1Snapshot.machine.mass > massBefore,
           `FAIL_VERTICAL_SLICE_T1_NOT_ABSORBED: ${JSON.stringify({ target, massBefore, machine: t1Snapshot.machine, objects: t1Snapshot.objects })}`);
-        t1Absorptions.push({ runtimeId: target.runtimeId, massBefore, massAfter: t1Snapshot.machine.mass });
+        const expectedLifecycle = ['IDLE', 'ATTRACTED', 'SUCKING', 'ABSORBED/RECYCLED'];
+        const lifecycleIndexes = expectedLifecycle.map((state) => lifecycleTrace.findIndex((entry) => entry.state === state));
+        assert(lifecycleIndexes.every((index, position) => index >= 0 && (position === 0 || index > lifecycleIndexes[position - 1])),
+          `FAIL_COLLECTIBLE_LIFECYCLE_ORDER: ${JSON.stringify({ target, expectedLifecycle, lifecycleTrace })}`);
+        assert(removalObservedAt !== null,
+          `FAIL_COLLECTIBLE_TERMINAL_OBSERVATION: ${JSON.stringify({ target, massBefore, lifecycleTrace })}`);
+        t1Absorptions.push({ runtimeId: target.runtimeId, massBefore, massAfter: t1Snapshot.machine.mass, lifecycle: { expected: expectedLifecycle, observed: lifecycleTrace } });
         if (!resourceReplenishment) {
-          // This is an end-to-end replenishment probe driven only by real
-          // touch movement. Move beyond the suction radius before the slot's
-          // four-second cooldown expires so a genuine respawn remains visible.
-          const safePoint = {
-            x: target.logicalX + Math.max(6, t1Snapshot.machine.suctionRadius * 2.75),
-            z: target.logicalZ,
+          const absorbTiming = removalTiming || getCollectibleTiming(removalSnapshot || t1Snapshot, target.runtimeId);
+          assert(absorbTiming?.slot && absorbTiming.slot.active === false
+              && absorbTiming.clock < absorbTiming.slot.availableAt
+              && Number.isFinite(absorbTiming.slot.availableAt),
+          `FAIL_RESOURCE_RESPAWN_SLOT_TIMING_UNAVAILABLE: ${JSON.stringify({ target, absorbTiming, respawnTiming: t1Snapshot.world?.streaming?.respawnTiming })}`);
+          const cooldownDeadline = absorbTiming.slot.availableAt;
+          const absorptionClock = absorbTiming.clock;
+          const configuredCooldownMs = 4_000;
+          const minimumObservedCooldownMs = configuredCooldownMs - 400;
+          const playerAtAbsorption = getLogicalPlayerPosition(removalSnapshot || t1Snapshot);
+          const departure = {
+            x: playerAtAbsorption.x - target.logicalX,
+            z: playerAtAbsorption.z - target.logicalZ,
           };
-          await driveJoystickToLogicalPoint(cdp, page, joystick, safePoint, 'RESOURCE_RESPAWN_SAFE_DISTANCE', 1.0);
-          await page.waitForTimeout(1000);
-          const duringCooldown = await readRuntimeSnapshot(page);
-          assert(!duringCooldown.objects.some((object) => object.runtimeId === target.runtimeId),
-            `FAIL_RESOURCE_RESPAWN_EARLY: ${JSON.stringify({ target, player: getLogicalPlayerPosition(duringCooldown) })}`);
-          const respawnDeadline = Date.now() + 5_000;
-          let respawned = null;
-          while (Date.now() < respawnDeadline && !respawned) {
-            await page.waitForTimeout(200);
-            const snapshot = await readRuntimeSnapshot(page);
-            respawned = snapshot.objects.find((object) => object.runtimeId === target.runtimeId) || null;
+          const departureLength = Math.hypot(departure.x, departure.z) || 1;
+          // Keep a full-deflection touch held while moving radially outward.
+          // The live player position determines each renewed direction, so
+          // camera rotation and tiny post-absorption displacement cannot turn
+          // this into a shallow, fixed-target route that remains in range.
+          const requiredEscapeDistance = t1Snapshot.machine.suctionRadius * 2;
+          const escapeDirection = departureLength > 0.05
+            ? { x: departure.x / departureLength, z: departure.z / departureLength }
+            : { x: 1, z: 0 };
+
+          const cooldownObservations = [];
+          let lastInactiveTiming = null;
+          let firstDeadlineTouchSample = null;
+          const recordCooldownSample = (snapshot, phase) => {
+            const current = snapshot.objects.find((object) => object.runtimeId === target.runtimeId) || null;
+            const timing = getCollectibleTiming(snapshot, target.runtimeId);
+            const player = getLogicalPlayerPosition(snapshot);
+            const observation = {
+              elapsedMs: Date.now() - lifecycleStartedAt,
+              phase,
+              clock: timing?.clock ?? null,
+              active: timing?.slot?.active ?? null,
+              availableAt: timing?.slot?.availableAt ?? null,
+              objectState: current?.state || null,
+              player,
+            };
+            cooldownObservations.push(observation);
+            assert(timing?.slot,
+              `FAIL_RESOURCE_RESPAWN_SLOT_TIMING_UNAVAILABLE: ${JSON.stringify({ target, timing, respawnTiming: snapshot.world?.streaming?.respawnTiming })}`);
+            if (timing.clock < cooldownDeadline) {
+              lastInactiveTiming = timing;
+              assert(timing.slot.active === false
+                  && timing.slot.availableAt === cooldownDeadline
+                  && !current,
+              `FAIL_RESOURCE_RESPAWN_EARLY: ${JSON.stringify({ target, cooldownDeadline, timing, current, player, phase })}`);
+              return false;
+            }
+            firstDeadlineTouchSample = { snapshot, current, timing, player, observation };
+            return true;
+          };
+
+          // Sample the authoritative cell clock while one real CDP touch is
+          // held at maximum joystick deflection. We renew its camera-relative
+          // outward vector from each live snapshot, then release immediately
+          // at the first post-deadline sample.
+          let escapeSnapshot = removalSnapshot || t1Snapshot;
+          let escapeTouchHeld = false;
+          const escapeDeadline = Date.now() + 6_000;
+          try {
+            while (!firstDeadlineTouchSample && Date.now() < escapeDeadline) {
+              const player = getLogicalPlayerPosition(escapeSnapshot);
+              const radial = {
+                x: player.x - target.logicalX,
+                z: player.z - target.logicalZ,
+              };
+              const radialLength = Math.hypot(radial.x, radial.z);
+              const outward = radialLength > 0.05
+                ? { x: radial.x / radialLength, z: radial.z / radialLength }
+                : escapeDirection;
+              const cameraRight = escapeSnapshot.camera.right;
+              const cameraForward = escapeSnapshot.camera.forward;
+              const inputX = outward.x * cameraRight.x + outward.z * cameraRight.z;
+              const inputY = outward.x * cameraForward.x + outward.z * cameraForward.z;
+              const inputLength = Math.hypot(inputX, inputY) || 1;
+              const endX = joystick.x + (inputX / inputLength) * joystick.maxOffsetX;
+              const endY = joystick.y - (inputY / inputLength) * joystick.maxOffsetY;
+              if (escapeTouchHeld) {
+                await moveTouchJoystick(cdp, endX, endY);
+              } else {
+                await beginTouchJoystick(cdp, joystick.x, joystick.y, endX, endY);
+                // beginTouchJoystick ramps through the browser's native touch
+                // sequence; immediately renew at full deflection afterwards.
+                await moveTouchJoystick(cdp, endX, endY);
+                escapeTouchHeld = true;
+              }
+              await page.waitForTimeout(50);
+              escapeSnapshot = await readRuntimeSnapshot(page);
+              recordCooldownSample(escapeSnapshot, 'ESCAPE_FULL_DEFLECTION');
+            }
+          } finally {
+            if (escapeTouchHeld) await releaseTouchJoystick(cdp);
           }
+
+          let firstRespawnSample = firstDeadlineTouchSample;
+          const observationDeadline = Date.now() + 6_000;
+          while (Date.now() < observationDeadline && !firstRespawnSample) {
+            await page.waitForTimeout(50);
+            const snapshot = await readRuntimeSnapshot(page);
+            if (recordCooldownSample(snapshot, 'POST_ESCAPE')) {
+              const current = snapshot.objects.find((object) => object.runtimeId === target.runtimeId) || null;
+              firstRespawnSample = {
+                snapshot,
+                current,
+                timing: getCollectibleTiming(snapshot, target.runtimeId),
+                player: getLogicalPlayerPosition(snapshot),
+                observation: cooldownObservations[cooldownObservations.length - 1],
+              };
+            }
+          }
+          assert(firstRespawnSample,
+            `FAIL_RESOURCE_RESPAWN_DEADLINE_NOT_REACHED: ${JSON.stringify({ target, cooldownDeadline, cooldownObservations })}`);
+          const firstRespawnSnapshot = firstRespawnSample.snapshot;
+          const cooldownTiming = firstRespawnSample.timing;
+          const escapedPlayer = firstRespawnSample.player;
+          const respawned = firstRespawnSample.current;
+          const respawnObservedAt = Date.now();
+          assert(Math.hypot(escapedPlayer.x - target.logicalX, escapedPlayer.z - target.logicalZ) > requiredEscapeDistance,
+            `FAIL_RESOURCE_RESPAWN_ESCAPE_DISTANCE: ${JSON.stringify({ target, requiredEscapeDistance, escapedPlayer, machine: firstRespawnSnapshot.machine, cooldownObservations })}`);
+          assert(cooldownTiming.slot.active === true && respawned?.state === 'IDLE',
+            `FAIL_RESOURCE_RESPAWN_FIRST_REACTIVATION: ${JSON.stringify({ target, cooldownDeadline, timing: cooldownTiming, current: respawned, escapedPlayer, cooldownObservations })}`);
+          observeCollectibleLifecycle(firstRespawnSnapshot, 'RESPAWN');
+          const observedCooldownMs = respawnObservedAt - removalObservedAt;
           assert(respawned?.state === 'IDLE'
               && respawned.tier === target.tier
               && respawned.type === target.type
+              && cooldownTiming?.slot?.active === true
+              && cooldownTiming.clock >= cooldownDeadline
               && Math.hypot((respawned.x + (t1Snapshot.world?.streaming?.logicalOrigin?.x || 0)) - target.logicalX,
                 (respawned.z + (t1Snapshot.world?.streaming?.logicalOrigin?.z || 0)) - target.logicalZ) < 0.25,
-          `FAIL_RESOURCE_REPLENISHMENT: ${JSON.stringify({ target, respawned })}`);
+          `FAIL_RESOURCE_REPLENISHMENT: ${JSON.stringify({ target, respawned, configuredCooldownMs, minimumObservedCooldownMs, observedCooldownMs, cooldownDeadline, absorbTiming, cooldownTiming, lifecycleTrace })}`);
           resourceReplenishment = {
             runtimeId: target.runtimeId,
             tier: target.tier,
             type: target.type,
             cooldownAbsent: true,
+            lifecycle: {
+              ordered: ['IDLE', 'ATTRACTED', 'SUCKING', 'ABSORBED/RECYCLED', 'RESPAWN'],
+              observed: lifecycleTrace,
+              terminalEvidence: { objectRemoved: true, massBefore, massAfter: t1Snapshot.machine.mass, observedAtMs: removalObservedAt - lifecycleStartedAt },
+            },
+            cooldown: {
+              configuredMs: configuredCooldownMs,
+              minimumObservedMs: minimumObservedCooldownMs,
+              observedMs: observedCooldownMs,
+              authoritative: 'cell-respawn-clock',
+              absorptionClock,
+              availableAt: cooldownDeadline,
+              remainingAtEscapeMs: Math.max(0, (cooldownDeadline - (lastInactiveTiming?.clock || absorptionClock)) * 1_000),
+              observedEngineSeconds: cooldownTiming.clock - absorptionClock,
+              absorb: absorbTiming,
+              escape: lastInactiveTiming,
+              lastInactive: lastInactiveTiming,
+              observations: cooldownObservations,
+              finalObservation: cooldownTiming,
+              removalObservedAtMs: removalObservedAt - lifecycleStartedAt,
+              respawnObservedAtMs: respawnObservedAt - lifecycleStartedAt,
+            },
             respawned: { state: respawned.state, x: respawned.x, z: respawned.z },
           };
         }
