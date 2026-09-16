@@ -413,6 +413,8 @@ async function performCdpTouchTap(cdp, x, y) {
 
     const homeAfterSettle = await page.evaluate(() => window.__BHR_QA__.snapshot());
     const coinsBeforeReload = homeAfterSettle.save.coins;
+    const machineMassBeforeReload = homeAfterSettle.machine.mass;
+    const machineLevelBeforeReload = homeAfterSettle.machine.level;
 
     await page.reload({ waitUntil: 'load' });
     await page.waitForTimeout(5000);
@@ -423,6 +425,8 @@ async function performCdpTouchTap(cdp, x, y) {
 
     assertAndRecord(reloadSnap.save.coins >= coinsBeforeReload, 'AC-022', '数据存档', 'saveService.save()', '金币数据与升级状态持久化', `Coins: ${reloadSnap.save.coins}`, '-');
     assertAndRecord(reloadSnap.save.coins >= coinsBeforeReload, 'AC-023', '刷新保留', 'page.reload()', '刷新后存档数据完全保留', `Coins: ${reloadSnap.save.coins}`, '-');
+    assertAndRecord(reloadSnap.machine.mass === machineMassBeforeReload, 'AC-024', '机器质量恢复', 'page.reload() + read-only snapshot', 'Reloaded mass equals pre-reload mass', `Before: ${machineMassBeforeReload}, After: ${reloadSnap.machine.mass}`, '-');
+    assertAndRecord(reloadSnap.machine.level === machineLevelBeforeReload, 'AC-025', '机器等级恢复', 'page.reload() + read-only snapshot', 'Reloaded level equals pre-reload level', `Before: ${machineLevelBeforeReload}, After: ${reloadSnap.machine.level}`, '-');
     console.log('✅ TEST 11 PASS: 纯刷新后场景自动启动且存档数据完整保留');
 
     // ----------------------------------------------------

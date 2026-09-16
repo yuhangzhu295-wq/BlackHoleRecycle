@@ -1479,7 +1479,27 @@ async function verifyFiveLevelProgression(cdp, page, joystick) {
     { level: 4, region: 'supermarket', district: 'SUPERMARKET', point: { x: 0, z: -427 }, part: 'GravityWingLeft' },
     { level: 5, region: 'parking', district: 'PARKING', point: { x: 0, z: -619 }, part: 'SingularityFrame' },
   ];
-  const record = { levels: [], finalTier5Absorption: null };
+  const record = { levels: [], finalTier5Absorption: null, compression: null };
+  const compressionStates = new Set();
+  let maximumResourceBlocks = 0;
+  let maximumStoredResources = 0;
+  let compressionCoinBaseline = null;
+
+  // QABridge exposes this diagnostic as a read-only projection of the live
+  // CompressionSystem. Preserve samples across the long real-touch route so
+  // the report proves the complete production cycle rather than one frame.
+  const observeCompression = (snapshot) => {
+    const compression = snapshot.compression || {};
+    if (compression.state) compressionStates.add(compression.state);
+    for (const entry of compression.stateHistory || []) {
+      if (entry?.state) compressionStates.add(entry.state);
+    }
+    maximumResourceBlocks = Math.max(maximumResourceBlocks, compression.resourceBlockCount || 0);
+    maximumStoredResources = Math.max(maximumStoredResources, compression.storedResources || 0);
+    if (compressionCoinBaseline === null && Number.isFinite(snapshot.save?.coins)) {
+      compressionCoinBaseline = snapshot.save.coins;
+    }
+  };
 
   const collectUntil = async (stage) => {
     // High-tier regions intentionally require several ordinary T1/T2
@@ -1489,6 +1509,7 @@ async function verifyFiveLevelProgression(cdp, page, joystick) {
     const deadline = Date.now() + 240_000;
     const absorbed = [];
     let latest = await readRuntimeSnapshot(page);
+    observeCompression(latest);
     while (latest.machine.level < stage.level && Date.now() < deadline) {
       const streaming = validateInfiniteWorldSnapshot(latest);
       const prefix = `cluster_${stage.district}_`;
@@ -1512,6 +1533,7 @@ async function verifyFiveLevelProgression(cdp, page, joystick) {
       await driveJoystickToLogicalPoint(cdp, page, joystick, { x: target.logicalX, z: target.logicalZ }, `LV${stage.level}_${target.type}`, Math.max(1.0, latest.machine.suctionRadius * 0.62));
       await page.waitForTimeout(900);
       latest = await readRuntimeSnapshot(page);
+      observeCompression(latest);
       const disappeared = !latest.objects.some((object) => object.runtimeId === target.runtimeId && object.state === 'IDLE');
       assert(disappeared || latest.machine.mass > massBefore,
         `FAIL_FULL_PROGRESSION_NO_ABSORPTION_${stage.region.toUpperCase()}: ${JSON.stringify({ target, massBefore, latest: latest.machine })}`);
@@ -1541,6 +1563,7 @@ async function verifyFiveLevelProgression(cdp, page, joystick) {
   const openingDeadline = Date.now() + 60_000;
   const openingAbsorptions = [];
   let latest = await readRuntimeSnapshot(page);
+  observeCompression(latest);
   while (latest.machine.level < 2 && Date.now() < openingDeadline) {
     const origin = validateInfiniteWorldSnapshot(latest).logicalOrigin;
     const player = getLogicalPlayerPosition(latest);
@@ -1580,6 +1603,7 @@ async function verifyFiveLevelProgression(cdp, page, joystick) {
     while (Date.now() < absorptionDeadline && !absorbed) {
       await page.waitForTimeout(100);
       latest = await readRuntimeSnapshot(page);
+      observeCompression(latest);
       const currentTarget = latest.objects.find((object) => object.runtimeId === target.runtimeId);
       stateTrace.push({
         elapsedMs: 5_000 - Math.max(0, absorptionDeadline - Date.now()),
@@ -1601,6 +1625,7 @@ async function verifyFiveLevelProgression(cdp, page, joystick) {
   }
   await page.waitForTimeout(3200);
   latest = await readRuntimeSnapshot(page);
+  observeCompression(latest);
   assert(latest.machine.level >= 2 && latest.machine.maxTier >= 2,
     `FAIL_FULL_PROGRESSION_LV2: ${JSON.stringify({ machine: latest.machine, openingAbsorptions })}`);
   const t2Origin = validateInfiniteWorldSnapshot(latest).logicalOrigin;
@@ -1622,6 +1647,7 @@ async function verifyFiveLevelProgression(cdp, page, joystick) {
   latest = await driveJoystickToLogicalPoint(cdp, page, joystick, { x: t2Target.logicalX, z: t2Target.logicalZ }, `FULL_PROGRESSION_T2_${t2Target.runtimeId}`, 2.3);
   await page.waitForTimeout(1400);
   latest = await readRuntimeSnapshot(page);
+  observeCompression(latest);
   assert((latest.session.absorbedTiers?.[2] || 0) > tier2Before,
     `FAIL_FULL_PROGRESSION_T2: ${JSON.stringify({ target: t2Target, absorbedTiers: latest.session?.absorbedTiers })}`);
   record.levels.push({ level: 2, region: 'bedroom', district: 'RESIDENTIAL', mass: latest.machine.mass, maxTier: latest.machine.maxTier, absorbed: openingAbsorptions, activePart: 'MagneticTurbineLeft' });
@@ -1630,6 +1656,7 @@ async function verifyFiveLevelProgression(cdp, page, joystick) {
     latest = await driveJoystickToLogicalPoint(cdp, page, joystick, stage.point, `FULL_PROGRESSION_${stage.region.toUpperCase()}`, 3.2, 70_000);
     await page.waitForTimeout(500);
     latest = await readRuntimeSnapshot(page);
+    observeCompression(latest);
     const streaming = validateInfiniteWorldSnapshot(latest);
     assert(latest.world?.currentRegion === stage.region && streaming.currentDistrictKind === stage.district,
       `FAIL_FULL_PROGRESSION_REGION_${stage.region.toUpperCase()}: ${JSON.stringify({ world: latest.world, streaming })}`);
@@ -1641,6 +1668,7 @@ async function verifyFiveLevelProgression(cdp, page, joystick) {
   latest = await driveJoystickToLogicalPoint(cdp, page, joystick, { x: 0, z: -1003 }, 'FULL_PROGRESSION_CITY', 3.2, 70_000);
   await page.waitForTimeout(500);
   latest = await readRuntimeSnapshot(page);
+  observeCompression(latest);
   const cityStream = validateInfiniteWorldSnapshot(latest);
   assert(latest.world?.currentRegion === 'city' && cityStream.currentDistrictKind === 'DOWNTOWN',
     `FAIL_FULL_PROGRESSION_CITY_REGION: ${JSON.stringify({ world: latest.world, cityStream })}`);
@@ -1656,9 +1684,28 @@ async function verifyFiveLevelProgression(cdp, page, joystick) {
   await driveJoystickToLogicalPoint(cdp, page, joystick, { x: tier5.logicalX, z: tier5.logicalZ }, `FULL_PROGRESSION_T5_${tier5.type}`, Math.max(1.5, latest.machine.suctionRadius * 0.62));
   await page.waitForTimeout(1500);
   latest = await readRuntimeSnapshot(page);
+  observeCompression(latest);
   assert((latest.session.absorbedTiers?.[5] || 0) > tier5Before,
     `FAIL_FULL_PROGRESSION_T5_ABSORPTION: ${JSON.stringify({ tier5, before: tier5Before, after: latest.session?.absorbedTiers, machine: latest.machine })}`);
   record.finalTier5Absorption = { runtimeId: tier5.runtimeId, type: tier5.type, mass: latest.machine.mass, absorbedTiers: latest.session.absorbedTiers };
+  const requiredCompressionStates = ['BUFFERING', 'READY', 'COMPRESSING', 'EJECTING', 'COLLECTING'];
+  const observedCompressionStates = requiredCompressionStates.filter((state) => compressionStates.has(state));
+  assert(observedCompressionStates.length === requiredCompressionStates.length,
+    `FAIL_COMPRESSION_RUNTIME_STATE_CHAIN: ${JSON.stringify({ requiredCompressionStates, observedCompressionStates: [...compressionStates] })}`);
+  assert(maximumResourceBlocks > 0 && maximumStoredResources > 0,
+    `FAIL_COMPRESSION_RUNTIME_RESOURCE_BLOCK: ${JSON.stringify({ maximumResourceBlocks, maximumStoredResources })}`);
+  assert(Number.isFinite(compressionCoinBaseline) && latest.save?.coins > compressionCoinBaseline,
+    `FAIL_COMPRESSION_RUNTIME_COIN_SETTLEMENT: ${JSON.stringify({ before: compressionCoinBaseline, after: latest.save?.coins, maximumStoredResources })}`);
+  record.compression = {
+    status: 'PASS',
+    method: 'real-touch progression + read-only CompressionSystem snapshots',
+    requiredStates: requiredCompressionStates,
+    observedStates: observedCompressionStates,
+    resourceBlockCount: maximumResourceBlocks,
+    storedResources: maximumStoredResources,
+    coinsBefore: compressionCoinBaseline,
+    coinsAfter: latest.save?.coins,
+  };
   return record;
 }
 
@@ -1947,6 +1994,27 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
         report.fullProgression = await verifyFiveLevelProgression(cdp, page, joystick);
         report.trafficReplenishment = await verifyTrafficReplenishment(cdp, page, joystick);
         await page.screenshot({ path: path.join(evidenceDirectory, 'portrait-390x844-lv5-city.png') });
+        const machineBeforeReload = await readRuntimeSnapshot(page);
+        const savedMachine = {
+          mass: machineBeforeReload.machine.mass,
+          level: machineBeforeReload.machine.level,
+        };
+        await page.reload({ waitUntil: 'domcontentloaded' });
+        await page.waitForFunction(() => Boolean(window.__BHR_QA__?.snapshot), undefined, { timeout: 45000 });
+        const machineAfterReload = await readRuntimeSnapshot(page);
+        assert(machineAfterReload.machine.mass === savedMachine.mass,
+          `FAIL_MACHINE_SAVE_RESUME_MASS: ${JSON.stringify({ before: savedMachine.mass, after: machineAfterReload.machine.mass })}`);
+        assert(machineAfterReload.machine.level === savedMachine.level,
+          `FAIL_MACHINE_SAVE_RESUME_LEVEL: ${JSON.stringify({ before: savedMachine.level, after: machineAfterReload.machine.level })}`);
+        report.machineSaveResume = {
+          status: 'PASS',
+          method: 'real-touch progression + page.reload() + read-only snapshot',
+          beforeReload: savedMachine,
+          afterReload: {
+            mass: machineAfterReload.machine.mass,
+            level: machineAfterReload.machine.level,
+          },
+        };
         assert(runtimeErrors.length === 0, `Runtime console errors after LV1-to-LV5 touch progression: ${runtimeErrors.join(' | ')}`);
         return;
       }
@@ -2629,6 +2697,7 @@ const report = {
   regions: null,
   fullProgression: null,
   trafficReplenishment: null,
+  machineSaveResume: null,
   cellLifecycle: null,
   paidSkinUnlock: null,
   goldenCity: null,
