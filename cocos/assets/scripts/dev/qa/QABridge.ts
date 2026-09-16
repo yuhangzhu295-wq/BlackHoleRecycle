@@ -197,6 +197,8 @@ export class QABridge {
           visualDiagnostics: currentCellVisualDiagnostics,
         } : null,
       },
+      // Engine-side observations only; never CDP DOM metrics or test labels.
+      performance: this.getPerformanceSnapshot(world),
       arena: this.read.getArenaSnapshot(),
       network: {
         status: networkClient.status,
@@ -384,5 +386,61 @@ export class QABridge {
     const scene = director.getScene();
     if (scene) visit(scene, scene.name);
     return { invalidMeshes, sprites };
+  }
+
+  /** Read-only Cocos scene and streamed-object counters for performance QA. */
+  private getPerformanceSnapshot(world: InfiniteWorldManager | null): Record<string, unknown> {
+    let sceneNodeCount = 0;
+    let activeNodeCount = 0;
+    let activeMeshRendererCount = 0;
+    let activeMeshPrimitiveCount = 0;
+    const visit = (node: Node): void => {
+      if (!node.isValid) return;
+      sceneNodeCount += 1;
+      if (node.activeInHierarchy) {
+        activeNodeCount += 1;
+        const renderer = node.getComponent(MeshRenderer);
+        if (renderer) {
+          activeMeshRendererCount += 1;
+          activeMeshPrimitiveCount += renderer.mesh?.struct.primitives.length || 0;
+        }
+      }
+      node.children.forEach(visit);
+    };
+    const scene = director.getScene();
+    if (scene) visit(scene);
+
+    const objects = world?.getAllObjects() || [];
+    const isVehicle = (runtimeId: string): boolean => runtimeId.startsWith('traffic_');
+    const isAvailable = (state: string): boolean => state !== 'ABSORBED' && state !== 'RECYCLED';
+    const activeObjects = objects.filter((object) => object.node.activeInHierarchy);
+    const visibleObjects = activeObjects.filter((object) => isAvailable(object.getState()));
+    const count = (items: typeof objects, predicate: (runtimeId: string) => boolean): number =>
+      items.filter((object) => predicate(object.runtimeId)).length;
+    const countAvailable = (predicate: (runtimeId: string) => boolean): number =>
+      count(visibleObjects, predicate);
+
+    return {
+      cocos: {
+        sceneNodeCount,
+        activeNodeCount,
+        activeMeshRendererCount,
+        activeMeshPrimitiveCount,
+        // Cocos 3.8 exposes no stable public counter for batches, draw calls,
+        // or distinct mesh assets in this production build.
+        meshAssetCount: 'BLOCKED_UNEXPOSED',
+        drawCalls: 'BLOCKED_UNEXPOSED',
+        batches: 'BLOCKED_UNEXPOSED',
+      },
+      world: {
+        activeCellRegisteredObjectCount: objects.length,
+        activeObjectCount: activeObjects.length,
+        lifecycleVisibleObjectCount: visibleObjects.length,
+        activeCollectibleCount: count(activeObjects, (runtimeId) => !isVehicle(runtimeId)),
+        lifecycleVisibleCollectibleCount: countAvailable((runtimeId) => !isVehicle(runtimeId)),
+        activeVehicleCount: count(activeObjects, isVehicle),
+        lifecycleVisibleVehicleCount: countAvailable(isVehicle),
+      },
+    };
   }
 }

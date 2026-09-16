@@ -1930,6 +1930,11 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
     const snapshot = await readRuntimeSnapshot(page);
     validatePortraitSnapshot(viewport, canvasRect, snapshot);
     assert(runtimeErrors.length === 0, `Runtime console errors: ${runtimeErrors.join(' | ')}`);
+    report.runtimeObservations.push({
+      viewport: viewport.id,
+      phase: 'home',
+      performance: snapshot.performance || null,
+    });
 
     // Preserve the read-only initial layout snapshot with the evidence so
     // visual QA can audit actual safe-area placement rather than estimating
@@ -2211,6 +2216,11 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
         },
         evolved: null,
       };
+      report.runtimeObservations.push({
+        viewport: viewport.id,
+        phase: 'endless-opening',
+        performance: gameplaySnapshot.performance || null,
+      });
 
       if (acceptanceScope === 'pages') {
         report.runtimePages = await verifyRuntimePages(cdp, page, canvasRect);
@@ -2240,6 +2250,32 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
         maxOffsetX: Math.min(120, canvasRect.width - (joystickStartX - canvasRect.left) - 3),
         maxOffsetY: Math.min(120, canvasRect.top + canvasRect.height - joystickStartY - 3),
       };
+      // Verify the authored LV1 lock before any broad control calibration.
+      // The eight-direction probe is deliberately real gameplay input and can
+      // legitimately collect nearby T1 objects, which would invalidate an LV1
+      // gate later in the same player session.
+      const authoredT2Target = (await readRuntimeSnapshot(page)).objects
+        .find((object) => object.runtimeId === 'tutorial_t2_target');
+      assert(authoredT2Target,
+        'FAIL_VERTICAL_SLICE_T2_AUTHORING_TARGET_MISSING: tutorial_t2_target was not registered from the opening cell authoring data');
+      const authoredT2Point = { x: authoredT2Target.x, z: authoredT2Target.z };
+      await driveJoystickToLogicalPoint(cdp, page, joystick, authoredT2Point, 'T2_LOCK', 2.3);
+      await page.waitForTimeout(700);
+      const lockedT2Snapshot = await readRuntimeSnapshot(page);
+      // Only the approached authored tutorial target participates in this
+      // interaction check. Other streamed T2 objects remain correctly idle
+      // and must not display a lock while they are outside suction range.
+      const lockedT2 = lockedT2Snapshot.objects.find((object) => object.runtimeId === 'tutorial_t2_target' && object.lockVisible);
+      assert(lockedT2,
+        `FAIL_VERTICAL_SLICE_T2_LOCK: ${JSON.stringify({
+          target: lockedT2Snapshot.objects.find((object) => object.runtimeId === 'tutorial_t2_target'),
+          player: lockedT2Snapshot.player,
+          machine: lockedT2Snapshot.machine,
+        })}`);
+      assert(lockedT2Snapshot.machine.level === 1 && lockedT2Snapshot.machine.maxTier === 1,
+        `FAIL_VERTICAL_SLICE_T2_LOCK_MACHINE_NOT_LV1: ${JSON.stringify({ machine: lockedT2Snapshot.machine })}`);
+      assert(lockedT2.state !== 'ABSORBED' && lockedT2.state !== 'RECYCLED',
+        `FAIL_VERTICAL_SLICE_T2_LOCK_TARGET_UNAVAILABLE: ${JSON.stringify({ target: lockedT2 })}`);
       const joystickDirections = [
         { name: 'up', x: 0, y: -1 },
         { name: 'down', x: 0, y: 1 },
@@ -2299,32 +2335,9 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
       }
       report.multiTouch = await verifySecondaryTouchDoesNotHijack(cdp, page, canvasRect, joystick);
 
-      // The first-cell route proves the actual player-facing tier flow before
-      // the subsequent 500m world traversal moves away from its tutorial
-      // district. Every movement below is a raw CDP touch; it never calls a
-      // gameplay setter, teleport, or mass grant.
-      // 2.3m is deliberately inside the real LV1 2.4m lock radius, while
-      // remaining outside the item's centre. It avoids asking a 0.85s held
-      // human joystick sample to stop at an artificial point precision.
-      const authoredT2Target = (await readRuntimeSnapshot(page)).objects
-        .find((object) => object.runtimeId === 'tutorial_t2_target');
-      assert(authoredT2Target,
-        'FAIL_VERTICAL_SLICE_T2_AUTHORING_TARGET_MISSING: tutorial_t2_target was not registered from the opening cell authoring data');
-      const authoredT2Point = { x: authoredT2Target.x, z: authoredT2Target.z };
-      await driveJoystickToLogicalPoint(cdp, page, joystick, authoredT2Point, 'T2_LOCK', 2.3);
-      await page.waitForTimeout(700);
-      const lockedT2Snapshot = await readRuntimeSnapshot(page);
-      // Only the approached authored tutorial target participates in this
-      // interaction check. Other streamed T2 objects remain correctly idle
-      // and must not display a lock while they are outside suction range.
-      const lockedT2 = lockedT2Snapshot.objects.find((object) => object.runtimeId === 'tutorial_t2_target' && object.lockVisible);
-      assert(lockedT2,
-        `FAIL_VERTICAL_SLICE_T2_LOCK: ${JSON.stringify({
-          target: lockedT2Snapshot.objects.find((object) => object.runtimeId === 'tutorial_t2_target'),
-          player: lockedT2Snapshot.player,
-          machine: lockedT2Snapshot.machine,
-        })}`);
-
+      // The first-cell route now advances from the proved LV1 lock through the
+      // real player-facing tier flow before the 500m traversal moves away from
+      // its tutorial district. Every movement below is raw CDP touch input.
       // Resolve the authored T1 slots from the runtime snapshot rather than
       // navigating to a historical centre point. Creator owns these points,
       // and a physical route must collect enough of their real objects to
@@ -2701,6 +2714,7 @@ const report = {
   cellLifecycle: null,
   paidSkinUnlock: null,
   goldenCity: null,
+  runtimeObservations: [],
   consoleErrors: [],
   failures: [],
 };

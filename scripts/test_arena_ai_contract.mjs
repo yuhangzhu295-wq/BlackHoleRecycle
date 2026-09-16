@@ -161,10 +161,23 @@ for (let slot = 1; slot <= 7; slot++) {
 
 const worldObjects = [];
 let nextItemId = 1;
+// Fixed Numerical Recipes LCG seed: deterministic ambient layouts keep this
+// representative 180s fixture reproducible without changing production RNG.
+// Seed 1 retains all active production-aligned states and combat fragment flow.
+const SIMULATION_RANDOM_SEED = 1;
+let simulationRandomState = SIMULATION_RANDOM_SEED;
+function nextSimulationRandom() {
+  simulationRandomState = (simulationRandomState * 1664525 + 1013904223) >>> 0;
+  return simulationRandomState / 0x100000000;
+}
+
+// The fixture must be repeatable: event fragments still come only from a
+// simulated defeat, but a random item layout must not decide whether combat
+// and the resulting EVENT_HUNT path occur.
 function spawnItems(count = 30) {
   for (let i = 0; i < count; i++) {
-    const angle = Math.random() * Math.PI * 2;
-    const r = Math.random() * 24;
+    const angle = nextSimulationRandom() * Math.PI * 2;
+    const r = nextSimulationRandom() * 24;
     worldObjects.push(new SimItem(`item-${nextItemId++}`, 'trash', 1, 15, Math.cos(angle) * r, Math.sin(angle) * r));
   }
 }
