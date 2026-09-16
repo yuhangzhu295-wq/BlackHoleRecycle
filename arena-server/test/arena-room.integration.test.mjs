@@ -145,6 +145,28 @@ test('two Colyseus clients receive authoritative movement, LV2 evolution and T2 
     assert.equal(respawnedVictim.alive, true);
     assert.ok(respawnedVictim.shieldMilliseconds > 0, 'Expected a real respawn protection interval.');
 
+    // A disconnect must immediately restore its exact roster slot to a
+    // server-owned bot. A later client join must then claim a bot slot, which
+    // proves the room keeps the public match at eight competitors throughout.
+    const departedSlotId = secondRoom.sessionId;
+    await secondRoom.leave();
+    secondRoom = null;
+    await sleep(120);
+    assert.equal(firstRoom.state.players.size, 8, 'Expected bot fill after a client disconnect.');
+    assert.equal(firstRoom.state.players.get(departedSlotId), undefined, 'Disconnected client remained in authoritative roster.');
+    assert.equal([...firstRoom.state.players.values()].filter((player) => player.isBot).length, 7,
+      'Expected seven server bots after one of two clients disconnects.');
+
+    const reconnectClient = new Client(baseUrl);
+    secondRoom = await reconnectClient.joinOrCreate('black_hole_arena', { displayName: 'Beta Reconnected' });
+    secondRoom.onMessage('match_finished', () => {});
+    await sleep(160);
+    assert.equal(firstRoom.state.players.size, 8, 'Expected fixed eight-player roster after reconnect.');
+    assert.equal([...firstRoom.state.players.values()].filter((player) => player.connected).length, 2,
+      'Expected reconnecting client to become an authoritative human competitor.');
+    assert.equal([...firstRoom.state.players.values()].filter((player) => player.isBot).length, 6,
+      'Expected bot fill to yield one slot to the reconnecting client.');
+
     // The visible settle action requests an authoritative early finish. The
     // room computes and replicates the complete reward ledger; the client does
     // not derive or mutate any of these values locally.
