@@ -31,7 +31,7 @@ const reportPath = path.join(evidenceDirectory, 'acceptance-report.json');
 const requestedAcceptanceScope = process.argv.find((argument) => argument.startsWith('--scope='))?.slice('--scope='.length)
   || process.env.BHR_ACCEPTANCE_SCOPE
   || 'full';
-const acceptanceScope = ['full', 'pages', 'skins', 'skin-unlock', 'arena-timer', 'network', 'regions', 'progression', 'golden-city'].includes(requestedAcceptanceScope)
+const acceptanceScope = ['full', 'pages', 'skins', 'skin-unlock', 'arena-timer', 'network', 'regions', 'progression', 'cell-lifecycle', 'golden-city'].includes(requestedAcceptanceScope)
   ? requestedAcceptanceScope
   : 'full';
 // Preserve each independently-runnable acceptance scope. The canonical report
@@ -1171,6 +1171,124 @@ async function verifyCardinalLongTravel(cdp, page, joystick, direction) {
 }
 
 /**
+ * Exercises the production 2D streamer with the required cardinal loop.
+ * Every location is reached with the player-facing joystick; snapshots only
+ * project existing world state for lifecycle evidence and never mutate it.
+ */
+async function verifyCellLifecycle(cdp, page, joystick) {
+  const activeCellKey = (cell) => String(cell.x) + ':' + String(cell.z);
+  const objectIds = (snapshot) => snapshot.world?.streaming?.activeCells
+    ?.flatMap((cell) => cell.collectibleRuntimeIds || []) || [];
+  const trafficIds = (snapshot) => snapshot.world?.streaming?.activeCells
+    ?.flatMap((cell) => cell.vehicleRuntimeIds || []) || [];
+  const assertUnique = (ids, label) => {
+    assert(new Set(ids).size === ids.length,
+      'FAIL_CELL_LIFECYCLE_DUPLICATE_' + label + ': ' + JSON.stringify(ids));
+  };
+  const assertActiveGrid = (snapshot, checkpoint) => {
+    const stream = validateInfiniteWorldSnapshot(snapshot);
+    const active = new Set(stream.activeCells.map(activeCellKey));
+    assert(active.size === 9,
+      'FAIL_CELL_LIFECYCLE_ACTIVE_COUNT_' + checkpoint + ': ' + JSON.stringify(stream.activeCells));
+    assertUnique(objectIds(snapshot), 'OBJECT_' + checkpoint);
+    assertUnique(trafficIds(snapshot), 'TRAFFIC_' + checkpoint);
+    return { stream, active };
+  };
+  const initial = await readRuntimeSnapshot(page);
+  const initialCheck = assertActiveGrid(initial, 'OPENING');
+  assert(initialCheck.active.has('0:0')
+      && initialCheck.stream.currentCell.x === 0
+      && initialCheck.stream.currentCell.z === 0
+      && initialCheck.stream.currentCellSource === 'AUTHORED_GOLDEN_CITY',
+  'FAIL_CELL_LIFECYCLE_OPENING: ' + JSON.stringify(initialCheck.stream));
+  const openingCell = initialCheck.stream.activeCells.find((cell) => cell.x === 0 && cell.z === 0);
+  const openingObjects = openingCell?.collectibleRuntimeIds || [];
+  const openingTraffic = openingCell?.vehicleRuntimeIds || [];
+  assert(openingObjects.length > 0 && openingTraffic.length > 0,
+    'FAIL_CELL_LIFECYCLE_OPENING_CONTENT: ' + JSON.stringify(initialCheck.stream.activeCells));
+  const poolBefore = initialCheck.stream.pool;
+  const checkpoints = [
+    { id: 'EAST', target: { x: 196, z: 0 }, cell: { x: 3, z: 0 } },
+    { id: 'NORTH', target: { x: 196, z: -196 }, cell: { x: 3, z: -3 } },
+    { id: 'WEST', target: { x: -196, z: -196 }, cell: { x: -3, z: -3 } },
+    { id: 'SOUTH', target: { x: -196, z: 196 }, cell: { x: -3, z: 3 } },
+    { id: 'RETURN_X', target: { x: 0, z: 196 }, cell: { x: 0, z: 3 } },
+    { id: 'OPENING', target: { x: 0, z: 0 }, cell: { x: 0, z: 0 } },
+  ];
+  const captures = [];
+  let previousRebaseCount = initialCheck.stream.rebaseCount;
+  for (const checkpoint of checkpoints) {
+    await driveJoystickToLogicalPoint(
+      cdp,
+      page,
+      joystick,
+      checkpoint.target,
+      'CELL_LIFECYCLE_' + checkpoint.id,
+      2.4,
+      70_000,
+    );
+    await page.waitForTimeout(450);
+    const settled = await readRuntimeSnapshot(page);
+    const check = assertActiveGrid(settled, checkpoint.id);
+    const logical = getLogicalPlayerPosition(settled);
+    assert(check.stream.currentCell.x === checkpoint.cell.x
+        && check.stream.currentCell.z === checkpoint.cell.z,
+    'FAIL_CELL_LIFECYCLE_CURRENT_' + checkpoint.id + ': ' + JSON.stringify({ expected: checkpoint.cell, stream: check.stream }));
+    assert(Math.hypot(logical.x - checkpoint.target.x, logical.z - checkpoint.target.z) <= 3,
+      'FAIL_CELL_LIFECYCLE_LOGICAL_CONTINUITY_' + checkpoint.id + ': ' + JSON.stringify({ target: checkpoint.target, logical, origin: check.stream.logicalOrigin }));
+    assert(Math.hypot(settled.machine.velocity.x, settled.machine.velocity.z) < 0.06,
+      'FAIL_CELL_LIFECYCLE_RELEASE_' + checkpoint.id + ': ' + JSON.stringify(settled.machine.velocity));
+    assert(Number.isFinite(settled.camera?.position?.x) && Number.isFinite(settled.camera?.position?.z),
+      'FAIL_CELL_LIFECYCLE_CAMERA_' + checkpoint.id + ': ' + JSON.stringify(settled.camera));
+    assert(check.stream.rebaseCount >= previousRebaseCount,
+      'FAIL_CELL_LIFECYCLE_REBASE_REGRESSION_' + checkpoint.id + ': ' + JSON.stringify({ previousRebaseCount, actual: check.stream.rebaseCount }));
+    previousRebaseCount = check.stream.rebaseCount;
+    captures.push({
+      id: checkpoint.id,
+      currentCell: check.stream.currentCell,
+      logical,
+      logicalOrigin: check.stream.logicalOrigin,
+      rebaseCount: check.stream.rebaseCount,
+      activeCells: [...check.active].sort(),
+      pool: check.stream.pool,
+      objectCount: objectIds(settled).length,
+      trafficCount: trafficIds(settled).length,
+      lifecycleEvents: check.stream.cellLifecycle,
+    });
+    if (checkpoint.id === 'EAST') {
+      const openingUnload = check.stream.cellLifecycle.find((event) => event.action === 'UNLOAD'
+        && event.x === 0 && event.z === 0);
+      assert(!check.active.has('0:0')
+          && !objectIds(settled).some((id) => openingObjects.includes(id))
+          && !trafficIds(settled).some((id) => openingTraffic.includes(id))
+          && openingUnload?.collectibleCount > 0
+          && openingUnload?.vehicleCount > 0,
+      'FAIL_CELL_LIFECYCLE_UNLOAD_CLEANUP: ' + JSON.stringify({ active: [...check.active], openingObjects, openingTraffic, objectIds: objectIds(settled), trafficIds: trafficIds(settled), openingUnload }));
+      assert(check.stream.pool?.released > poolBefore?.released
+          && check.stream.pool?.reused > poolBefore?.reused,
+      'FAIL_CELL_LIFECYCLE_POOL_TRANSITION: ' + JSON.stringify({ before: poolBefore, east: check.stream.pool }));
+    }
+    if (checkpoint.id === 'OPENING') {
+      const reloaded = check.stream.activeCells.find((cell) => cell.x === 0 && cell.z === 0);
+      const openingEvents = check.stream.cellLifecycle.filter((event) => event.x === 0 && event.z === 0);
+      const unloadIndex = openingEvents.findIndex((event) => event.action === 'UNLOAD');
+      const reload = openingEvents.slice(unloadIndex + 1).find((event) => event.action === 'LOAD');
+      assert(reloaded
+          && reload?.collectibleCount === openingObjects.length
+          && reload?.vehicleCount === openingTraffic.length,
+      'FAIL_CELL_LIFECYCLE_OPENING_RELOAD: ' + JSON.stringify({ openingObjects, openingTraffic, reloaded, openingEvents, reload }));
+      assert(check.stream.constructionLandmark?.visible === true,
+        'FAIL_CELL_LIFECYCLE_GOLDEN_CITY_RELOAD: ' + JSON.stringify(check.stream.constructionLandmark));
+    }
+  }
+  const final = await readRuntimeSnapshot(page);
+  const finalStream = validateInfiniteWorldSnapshot(final);
+  assert(finalStream.rebaseCount > initialCheck.stream.rebaseCount,
+    'FAIL_CELL_LIFECYCLE_REBASE_MISSING: ' + JSON.stringify({ initial: initialCheck.stream.rebaseCount, final: finalStream.rebaseCount }));
+  return { opening: { objectIds: openingObjects, trafficIds: openingTraffic }, poolBefore, captures };
+}
+
+/**
  * Navigate to an authored world-space point exclusively through the visible
  * joystick. The QA bridge is read-only: it supplies the live camera basis and
  * position so CDP can issue the same camera-relative touch a player would.
@@ -1800,6 +1918,27 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
         assert(runtimeErrors.length === 0, `Runtime console errors after LV1-to-LV5 touch progression: ${runtimeErrors.join(' | ')}`);
         return;
       }
+      if (acceptanceScope === 'cell-lifecycle') {
+        const startButton = snapshot.ui?.start;
+        const start = pointForVisibleNode(canvasRect, snapshot, startButton, 'CELL_LIFECYCLE_HOME_START');
+        await dispatchTouchTap(cdp, start.x, start.y);
+        await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'MODE_SELECT', undefined, { timeout: 5000 });
+        const mode = await readRuntimeSnapshot(page);
+        const endless = pointForVisibleNode(canvasRect, mode, mode.ui?.modeEndless, 'CELL_LIFECYCLE_MODE_ENDLESS');
+        await dispatchTouchTap(cdp, endless.x, endless.y);
+        await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'PLAYING', undefined, { timeout: 5000 });
+        const gameplay = await readRuntimeSnapshot(page);
+        const joystickCenter = pointForVisibleNode(canvasRect, gameplay, gameplay.ui?.runtimeHUD?.joystick, 'CELL_LIFECYCLE_JOYSTICK');
+        const joystick = {
+          x: joystickCenter.x,
+          y: joystickCenter.y,
+          maxOffsetX: Math.min(120, canvasRect.width - (joystickCenter.x - canvasRect.left) - 3),
+          maxOffsetY: Math.min(120, canvasRect.top + canvasRect.height - joystickCenter.y - 3),
+        };
+        report.cellLifecycle = await verifyCellLifecycle(cdp, page, joystick);
+        assert(runtimeErrors.length === 0, `Runtime console errors after cell lifecycle touch traversal: ${runtimeErrors.join(' | ')}`);
+        return;
+      }
       if (acceptanceScope === 'skin-unlock') {
         const startButton = snapshot.ui?.start;
         const start = pointForVisibleNode(canvasRect, snapshot, startButton, 'SKIN_UNLOCK_HOME_START');
@@ -2274,6 +2413,7 @@ const report = {
   regions: null,
   fullProgression: null,
   trafficReplenishment: null,
+  cellLifecycle: null,
   paidSkinUnlock: null,
   goldenCity: null,
   consoleErrors: [],

@@ -800,6 +800,16 @@ export class InfiniteWorldManager extends Component {
   private constructionSiteLoadState: 'IDLE' | 'LOADING' | 'READY' | 'FAILED' = 'IDLE';
   private worldCellFactory: WorldCellFactory | null = null;
   private serializedGoldenCityCell: Node | null = null;
+  /** Bounded, read-only evidence of actual streaming ownership transitions. */
+  private readonly cellLifecycle: Array<{
+    sequence: number;
+    action: 'LOAD' | 'UNLOAD';
+    x: number;
+    z: number;
+    collectibleCount: number;
+    vehicleCount: number;
+  }> = [];
+  private cellLifecycleSequence: number = 0;
   private readonly streamer = new WorldStreamer({
     cellSize: InfiniteWorldManager.CELL_SIZE,
     activeRadius: InfiniteWorldManager.ACTIVE_RADIUS,
@@ -862,6 +872,8 @@ export class InfiniteWorldManager extends Component {
     this.logicalOrigin.set(0, 0, 0);
     this.currentCell.set(0, 0, 0);
     this.rebaseCount = 0;
+    this.cellLifecycle.length = 0;
+    this.cellLifecycleSequence = 0;
     this.streamer.logicalOrigin.set(0, 0, 0);
     this.streamer.currentCell.set(0, 0, 0);
     this.streamer.rebaseCount = 0;
@@ -889,6 +901,7 @@ export class InfiniteWorldManager extends Component {
       (key) => {
         const cell = this.activeCells.get(key);
         if (!cell) return;
+        this.recordCellLifecycle('UNLOAD', cell);
         cell.recycle(this.objectPool!);
         this.activeCells.delete(key);
       },
@@ -1089,7 +1102,12 @@ export class InfiniteWorldManager extends Component {
         x: cell.coord.x,
         z: cell.coord.z,
         district: cell.district.kind,
+        collectibleRuntimeIds: cell.objects
+          .filter((object) => !isVehicleObject(object))
+          .map((object) => object.runtimeId),
+        vehicleRuntimeIds: cell.dynamicVehicles.map((vehicle) => vehicle.id),
       })),
+      cellLifecycle: this.cellLifecycle.map((event) => ({ ...event })),
       dynamicVehicles: Array.from(this.activeCells.values(), (cell) => cell.dynamicVehicles.map((vehicle) => vehicle.getSnapshot())).flat(),
       constructionLandmark: {
         loadState: this.constructionSiteLoadState,
@@ -1216,7 +1234,20 @@ export class InfiniteWorldManager extends Component {
       cell.populateAuthoredTraffic(this.objectPool, this.logicalOrigin);
     }
     this.activeCells.set(cellKey(coord), cell);
+    this.recordCellLifecycle('LOAD', cell);
     if (coord.x === 0 && coord.z === 0) this.installConstructionLandmarkInOpeningCell();
+  }
+
+  private recordCellLifecycle(action: 'LOAD' | 'UNLOAD', cell: InfiniteWorldCell): void {
+    this.cellLifecycle.push({
+      sequence: ++this.cellLifecycleSequence,
+      action,
+      x: cell.coord.x,
+      z: cell.coord.z,
+      collectibleCount: cell.objects.filter((object) => !isVehicleObject(object)).length,
+      vehicleCount: cell.dynamicVehicles.length,
+    });
+    if (this.cellLifecycle.length > 96) this.cellLifecycle.shift();
   }
 
   /**
