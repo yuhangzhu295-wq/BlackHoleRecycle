@@ -31,7 +31,7 @@ const reportPath = path.join(evidenceDirectory, 'acceptance-report.json');
 const requestedAcceptanceScope = process.argv.find((argument) => argument.startsWith('--scope='))?.slice('--scope='.length)
   || process.env.BHR_ACCEPTANCE_SCOPE
   || 'full';
-const acceptanceScope = ['full', 'pages', 'arena', 'revive', 'settlement', 'skins', 'skin-unlock', 'arena-timer', 'network', 'regions', 'progression', 'cell-lifecycle', 'golden-city'].includes(requestedAcceptanceScope)
+const acceptanceScope = ['full', 'pages', 'arena', 'revive', 'settlement', 'ui-full-flow', 'skins', 'skin-unlock', 'arena-timer', 'network', 'regions', 'progression', 'cell-lifecycle', 'golden-city'].includes(requestedAcceptanceScope)
   ? requestedAcceptanceScope
   : 'full';
 // Preserve each independently-runnable acceptance scope. The canonical report
@@ -1114,6 +1114,63 @@ async function verifySettlementFlow(cdp, page, canvasRect, homeSnapshot) {
   };
 }
 
+/** UI product gate: two complete player-facing paths through rendered controls. */
+async function verifyUiFullFlow(cdp, page, canvasRect, homeSnapshot) {
+  const start = pointForVisibleNode(canvasRect, homeSnapshot, homeSnapshot.ui?.start, 'UI_FLOW_HOME_START');
+  await dispatchTouchTap(cdp, start.x, start.y);
+  await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'MODE_SELECT', undefined, { timeout: 5000 });
+  const modeForEndless = await readRuntimeSnapshot(page);
+  const endless = pointForVisibleNode(canvasRect, modeForEndless, modeForEndless.ui?.modeEndless, 'UI_FLOW_MODE_ENDLESS');
+  await dispatchTouchTap(cdp, endless.x, endless.y);
+  await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'PLAYING', undefined, { timeout: 5000 });
+  const endlessPlaying = await readRuntimeSnapshot(page);
+  const endlessPause = pointForVisibleNode(canvasRect, endlessPlaying, endlessPlaying.ui?.runtimeHUD?.pauseButton, 'UI_FLOW_ENDLESS_PAUSE');
+  await dispatchTouchTap(cdp, endlessPause.x, endlessPause.y);
+  await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'PAUSED', undefined, { timeout: 5000 });
+  const endlessPaused = await readRuntimeSnapshot(page);
+  const resume = pointForVisibleNode(canvasRect, endlessPaused, endlessPaused.ui?.formalPages?.pauseResume, 'UI_FLOW_ENDLESS_RESUME');
+  await dispatchTouchTap(cdp, resume.x, resume.y);
+  await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'PLAYING', undefined, { timeout: 5000 });
+  const resumed = await readRuntimeSnapshot(page);
+  const exitPause = pointForVisibleNode(canvasRect, resumed, resumed.ui?.runtimeHUD?.pauseButton, 'UI_FLOW_ENDLESS_EXIT_PAUSE');
+  await dispatchTouchTap(cdp, exitPause.x, exitPause.y);
+  await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'PAUSED', undefined, { timeout: 5000 });
+  const exitPaused = await readRuntimeSnapshot(page);
+  const exitHome = pointForVisibleNode(canvasRect, exitPaused, exitPaused.ui?.formalPages?.pauseHome, 'UI_FLOW_ENDLESS_EXIT_HOME');
+  await dispatchTouchTap(cdp, exitHome.x, exitHome.y);
+  await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'HOME', undefined, { timeout: 5000 });
+
+  const arenaHome = await readRuntimeSnapshot(page);
+  const arenaStart = pointForVisibleNode(canvasRect, arenaHome, arenaHome.ui?.start, 'UI_FLOW_ARENA_HOME_START');
+  await dispatchTouchTap(cdp, arenaStart.x, arenaStart.y);
+  await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'MODE_SELECT', undefined, { timeout: 5000 });
+  const modeForArena = await readRuntimeSnapshot(page);
+  const arena = pointForVisibleNode(canvasRect, modeForArena, modeForArena.ui?.modeArena, 'UI_FLOW_MODE_ARENA');
+  await dispatchTouchTap(cdp, arena.x, arena.y);
+  await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'ARENA', undefined, { timeout: 7000 });
+  const defeat = await waitForLocalArenaDefeat(page);
+  assert(defeat.ui?.formalPages?.revive?.active && defeat.uiScreen === 'Revive',
+    'FAIL_UI_FLOW_REVIVE_NOT_VISIBLE: ' + JSON.stringify({ gameState: defeat.gameState, uiScreen: defeat.uiScreen, pages: defeat.ui?.formalPages }));
+  const giveUp = pointForVisibleNode(canvasRect, defeat, defeat.ui?.formalPages?.reviveGiveUp, 'UI_FLOW_REVIVE_GIVE_UP');
+  await dispatchTouchTap(cdp, giveUp.x, giveUp.y);
+  await page.waitForFunction(() => {
+    const snapshot = window.__BHR_QA__.snapshot();
+    return snapshot.gameState === 'SETTLEMENT' && snapshot.uiScreen === 'Settlement' && snapshot.arena?.reason === 'FORFEIT';
+  }, undefined, { timeout: 5000 });
+  const settlement = await readRuntimeSnapshot(page);
+  assert(settlement.settlement?.claimed === true && settlement.ui?.formalPages?.settlement?.active,
+    'FAIL_UI_FLOW_SETTLEMENT: ' + JSON.stringify({ settlement: settlement.settlement, page: settlement.ui?.formalPages?.settlement }));
+  await page.screenshot({ path: path.join(evidenceDirectory, 'portrait-390x844-ui-full-flow-settlement.png') });
+  const settlementHome = pointForVisibleNode(canvasRect, settlement, settlement.ui?.formalPages?.settlementHome, 'UI_FLOW_SETTLEMENT_HOME');
+  await dispatchTouchTap(cdp, settlementHome.x, settlementHome.y);
+  await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'HOME', undefined, { timeout: 5000 });
+
+  return {
+    endless: { pause: endlessPause, resume, exitHome },
+    arena: { defeated: true, giveUp, settlementClaimed: settlement.settlement?.claimed, homeReturned: true },
+  };
+}
+
 /**
  * Baseline-only Golden City probe. It starts a genuine 1-human + 7-bot arena
  * by CDP touch, reads JSON evidence from the live Cocos engine, and observes
@@ -2156,6 +2213,11 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
         assert(runtimeErrors.length === 0, 'Runtime console errors after Settlement flow: ' + runtimeErrors.join(' | '));
         return;
       }
+      if (acceptanceScope === 'ui-full-flow') {
+        report.uiFullFlow = await verifyUiFullFlow(cdp, page, canvasRect, snapshot);
+        assert(runtimeErrors.length === 0, 'Runtime console errors after UI full flow: ' + runtimeErrors.join(' | '));
+        return;
+      }
       if (acceptanceScope === 'regions') {
         const startButton = snapshot.ui?.start;
         const start = pointForVisibleNode(canvasRect, snapshot, startButton, 'REGION_HOME_START');
@@ -2896,6 +2958,7 @@ const report = {
   runtimePages: null,
   arena: null,
   settlement: null,
+  uiFullFlow: null,
   arenaTimer: null,
   network: null,
   regions: null,
@@ -2929,7 +2992,7 @@ try {
     : `http://127.0.0.1:${address.port}/?qa=1`;
   browser = await chromium.launch({ headless: true, args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-webgl'] });
 
-  const targetViewports = acceptanceScope === 'pages' || acceptanceScope === 'revive' || acceptanceScope === 'settlement' || acceptanceScope === 'skins' || acceptanceScope === 'skin-unlock' || acceptanceScope === 'arena-timer' || acceptanceScope === 'network' || acceptanceScope === 'regions' || acceptanceScope === 'progression' || acceptanceScope === 'golden-city'
+  const targetViewports = acceptanceScope === 'pages' || acceptanceScope === 'revive' || acceptanceScope === 'settlement' || acceptanceScope === 'ui-full-flow' || acceptanceScope === 'skins' || acceptanceScope === 'skin-unlock' || acceptanceScope === 'arena-timer' || acceptanceScope === 'network' || acceptanceScope === 'regions' || acceptanceScope === 'progression' || acceptanceScope === 'golden-city'
     ? requiredPortraitViewports.filter((viewport) => viewport.id === '390x844')
     : requiredPortraitViewports;
   for (const viewport of targetViewports) {
