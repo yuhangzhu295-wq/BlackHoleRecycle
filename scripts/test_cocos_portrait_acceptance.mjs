@@ -31,7 +31,7 @@ const reportPath = path.join(evidenceDirectory, 'acceptance-report.json');
 const requestedAcceptanceScope = process.argv.find((argument) => argument.startsWith('--scope='))?.slice('--scope='.length)
   || process.env.BHR_ACCEPTANCE_SCOPE
   || 'full';
-const acceptanceScope = ['full', 'pages', 'arena', 'revive', 'skins', 'skin-unlock', 'arena-timer', 'network', 'regions', 'progression', 'cell-lifecycle', 'golden-city'].includes(requestedAcceptanceScope)
+const acceptanceScope = ['full', 'pages', 'arena', 'revive', 'settlement', 'skins', 'skin-unlock', 'arena-timer', 'network', 'regions', 'progression', 'cell-lifecycle', 'golden-city'].includes(requestedAcceptanceScope)
   ? requestedAcceptanceScope
   : 'full';
 // Preserve each independently-runnable acceptance scope. The canonical report
@@ -1008,6 +1008,110 @@ async function verifyReviveFlow(cdp, page, canvasRect, homeSnapshot) {
   await page.screenshot({ path: path.join(evidenceDirectory, 'portrait-390x844-revive-expiry.png') });
 
   return { frozenRespawnSeconds, heldRespawnSeconds: held.arena?.localRespawnSeconds, giveUpReason: givenUp.arena?.reason, expiryElapsedMs, expiryReason: expired.arena?.reason };
+}
+
+/** P6: verify arena settlement page data, reward idempotency, and Restart flow. */
+async function verifySettlementFlow(cdp, page, canvasRect, homeSnapshot) {
+  const coinsBeforeMatch = homeSnapshot.save?.coins;
+  assert(Number.isFinite(coinsBeforeMatch),
+    'FAIL_SETTLE_SAVE_BASELINE_MISSING: ' + JSON.stringify(homeSnapshot.save));
+  // Navigate Home -> Mode -> Arena
+  const start = pointForVisibleNode(canvasRect, homeSnapshot, homeSnapshot.ui?.start, 'SETTLE_HOME_START');
+  await dispatchTouchTap(cdp, start.x, start.y);
+  await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'MODE_SELECT', undefined, { timeout: 5000 });
+  const mode = await readRuntimeSnapshot(page);
+  const arena = pointForVisibleNode(canvasRect, mode, mode.ui?.modeArena, 'SETTLE_MODE_ARENA');
+  await dispatchTouchTap(cdp, arena.x, arena.y);
+  await page.waitForFunction(() => {
+    const s = window.__BHR_QA__.snapshot();
+    return s.gameState === 'ARENA' && s.ui?.arenaHUD?.root?.active === true;
+  }, undefined, { timeout: 7000 });
+
+  // Pause -> Settle (FORFEIT) to reach Settlement page
+  const arenaSnap = await readRuntimeSnapshot(page);
+  const pauseBtn = pointForVisibleNode(canvasRect, arenaSnap, arenaSnap.ui?.arenaHUD?.pauseButton, 'SETTLE_PAUSE');
+  await dispatchTouchTap(cdp, pauseBtn.x, pauseBtn.y);
+  await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'PAUSED', undefined, { timeout: 5000 });
+  const paused = await readRuntimeSnapshot(page);
+  const settleBtn = pointForVisibleNode(canvasRect, paused, paused.ui?.formalPages?.pauseSettle, 'SETTLE_FORFEIT');
+  await dispatchTouchTap(cdp, settleBtn.x, settleBtn.y);
+  await page.waitForFunction(() => {
+    const s = window.__BHR_QA__.snapshot();
+    return s.gameState === 'SETTLEMENT' && s.uiScreen === 'Settlement' && s.arena?.reason === 'FORFEIT';
+  }, undefined, { timeout: 5000 });
+
+  const settled = await readRuntimeSnapshot(page);
+  // Assert settlement page is visible
+  assert(settled.ui?.formalPages?.settlement?.active,
+    'FAIL_SETTLE_PAGE_NOT_ACTIVE: ' + JSON.stringify(settled.ui?.formalPages));
+
+  // Assert reward fields are present and non-negative
+  const reward = settled.arena?.settlementReward;
+  assert(reward && reward.coins >= 0,
+    'FAIL_SETTLE_REWARD_MISSING: ' + JSON.stringify(reward));
+
+  // Assert reward sum integrity
+  const breakdown = (reward.massCoins || 0) + (reward.collectedCoins || 0) +
+    (reward.eliminationCoins || 0) + (reward.survivalCoins || 0) + (reward.placementCoins || 0);
+  assert(breakdown === reward.coins,
+    'FAIL_SETTLE_REWARD_SUM: breakdown=' + breakdown + ' total=' + reward.coins);
+
+  // The account balance must receive this finished match exactly once.
+  assert(settled.save?.coins === coinsBeforeMatch + reward.coins,
+    'FAIL_SETTLE_COINS_NOT_SAVED: ' + JSON.stringify({ before: coinsBeforeMatch, after: settled.save?.coins, reward }));
+
+  // Assert idempotency: settlement must be claimed
+  assert(settled.settlement?.claimed === true,
+    'FAIL_SETTLE_NOT_CLAIMED: ' + JSON.stringify(settled.settlement));
+
+  // Read labels rendered by the real SettlementPageController, rather than
+  // merely proving the root node is active.
+  const settlementData = settled.ui?.formalPages?.settlementData;
+  assert(typeof settlementData?.title === 'string' && settlementData.title.length > 0
+    && typeof settlementData?.result === 'string' && settlementData.result.length > 0
+    && settlementData.reward === '+' + reward.coins,
+    'FAIL_SETTLE_RENDERED_LABELS: ' + JSON.stringify(settlementData));
+
+  // Capture settlement screenshot
+  await page.screenshot({ path: path.join(evidenceDirectory, 'portrait-390x844-settlement.png') });
+
+  // Tap Restart -> new match with different matchId
+  const firstMatchId = settled.settlement?.matchId;
+  const restartBtn = pointForVisibleNode(canvasRect, settled, settled.ui?.formalPages?.settlementRestart, 'SETTLE_RESTART');
+  await dispatchTouchTap(cdp, restartBtn.x, restartBtn.y);
+  await page.waitForFunction(() => {
+    const s = window.__BHR_QA__.snapshot();
+    return s.gameState === 'ARENA' && s.ui?.arenaHUD?.root?.active === true;
+  }, undefined, { timeout: 7000 });
+  const restarted = await readRuntimeSnapshot(page);
+  assert(restarted.arena?.matchId !== firstMatchId,
+    'FAIL_SETTLE_SAME_MATCH_ID_AFTER_RESTART: ' + JSON.stringify({ firstMatchId, newId: restarted.arena?.matchId }));
+
+  // Second match: pause -> settle -> Home
+  const pauseBtn2 = pointForVisibleNode(canvasRect, restarted, restarted.ui?.arenaHUD?.pauseButton, 'SETTLE2_PAUSE');
+  await dispatchTouchTap(cdp, pauseBtn2.x, pauseBtn2.y);
+  await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'PAUSED', undefined, { timeout: 5000 });
+  const paused2 = await readRuntimeSnapshot(page);
+  const settleBtn2 = pointForVisibleNode(canvasRect, paused2, paused2.ui?.formalPages?.pauseSettle, 'SETTLE2_FORFEIT');
+  await dispatchTouchTap(cdp, settleBtn2.x, settleBtn2.y);
+  await page.waitForFunction(() => {
+    const s = window.__BHR_QA__.snapshot();
+    return s.gameState === 'SETTLEMENT' && s.uiScreen === 'Settlement';
+  }, undefined, { timeout: 5000 });
+  const settled2 = await readRuntimeSnapshot(page);
+  const homeBtn = pointForVisibleNode(canvasRect, settled2, settled2.ui?.formalPages?.settlementHome, 'SETTLE2_HOME');
+  await dispatchTouchTap(cdp, homeBtn.x, homeBtn.y);
+  await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'HOME', undefined, { timeout: 5000 });
+
+  return {
+    matchId: firstMatchId,
+    reward,
+    breakdown,
+    claimed: settled.settlement?.claimed,
+    savedCoinsBefore: coinsBeforeMatch,
+    savedCoinsAfter: settled.save?.coins,
+    secondMatchId: settled2.settlement?.matchId,
+  };
 }
 
 /**
@@ -2047,6 +2151,11 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
         assert(runtimeErrors.length === 0, `Runtime console errors after Revive flow: ${runtimeErrors.join(' | ')}`);
         return;
       }
+      if (acceptanceScope === 'settlement') {
+        report.settlement = await verifySettlementFlow(cdp, page, canvasRect, snapshot);
+        assert(runtimeErrors.length === 0, 'Runtime console errors after Settlement flow: ' + runtimeErrors.join(' | '));
+        return;
+      }
       if (acceptanceScope === 'regions') {
         const startButton = snapshot.ui?.start;
         const start = pointForVisibleNode(canvasRect, snapshot, startButton, 'REGION_HOME_START');
@@ -2786,6 +2895,7 @@ const report = {
   verticalSlice: null,
   runtimePages: null,
   arena: null,
+  settlement: null,
   arenaTimer: null,
   network: null,
   regions: null,
@@ -2819,7 +2929,7 @@ try {
     : `http://127.0.0.1:${address.port}/?qa=1`;
   browser = await chromium.launch({ headless: true, args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-webgl'] });
 
-  const targetViewports = acceptanceScope === 'pages' || acceptanceScope === 'revive' || acceptanceScope === 'skins' || acceptanceScope === 'skin-unlock' || acceptanceScope === 'arena-timer' || acceptanceScope === 'network' || acceptanceScope === 'regions' || acceptanceScope === 'progression' || acceptanceScope === 'golden-city'
+  const targetViewports = acceptanceScope === 'pages' || acceptanceScope === 'revive' || acceptanceScope === 'settlement' || acceptanceScope === 'skins' || acceptanceScope === 'skin-unlock' || acceptanceScope === 'arena-timer' || acceptanceScope === 'network' || acceptanceScope === 'regions' || acceptanceScope === 'progression' || acceptanceScope === 'golden-city'
     ? requiredPortraitViewports.filter((viewport) => viewport.id === '390x844')
     : requiredPortraitViewports;
   for (const viewport of targetViewports) {

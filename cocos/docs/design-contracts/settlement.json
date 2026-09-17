@@ -1,15 +1,82 @@
 {
-  "version": 2,
+  "version": 3,
   "page": "settlement",
-  "status": "REFERENCE_BLUEPRINT_DRAFT",
-  "reference": "../design-reference/v2-05-settlement.png",
+  "status": "LOCKED",
+  "reference": "../design-reference/ui-v3/settlement-reference.png",
   "designSpace": { "width": 720, "height": 1280, "origin": "top-left" },
+  "hudRoot": "SettlementPage",
+  "sceneRoot": "Canvas",
+  "rewardSource": "ArenaMatchManager.claimSettlementReward() or ArenaMatchSnapshot.settlementReward",
+  "persistencePolicy": "SaveService.claimArenaSettlement(matchId, coins) for local and network arena; addCoins is forbidden for arena settlement",
+  "idempotencyKey": "ArenaMatchManager.getMatchId() -- stable local match identifier generated once at startMatch and consumed by GameManager.showArenaSettlement",
   "elements": [
-    { "id": "dim_overlay", "nodeName": "DimOverlay", "role": "modal_overlay", "referenceBounds": { "x": 0, "y": 0, "width": 720, "height": 1280 }, "expectedComponents": ["cc.Sprite"], "required": true, "tolerance": { "x": 0, "y": 0, "width": 2, "height": 2 } },
-    { "id": "settlement_card", "nodeName": "SettlementCard", "role": "result_panel", "referenceBounds": { "x": 30, "y": 180, "width": 660, "height": 920 }, "expectedComponents": ["cc.Sprite"], "required": true, "tolerance": { "x": 10, "y": 10, "width": 12, "height": 12 } },
-    { "id": "arena_leaderboard", "nodeName": "ArenaLeaderboardPanel", "role": "ranked_results", "referenceBounds": { "x": 75, "y": 380, "width": 570, "height": 530 }, "expectedComponents": ["cc.Sprite"], "required": true, "tolerance": { "x": 10, "y": 10, "width": 12, "height": 12 } },
-    { "id": "restart", "nodeName": "BtnRestart", "role": "continue", "referenceBounds": { "x": 65, "y": 1110, "width": 270, "height": 94 }, "expectedComponents": ["cc.Sprite", "cc.Button"], "required": true, "tolerance": { "x": 8, "y": 8, "width": 10, "height": 10 } },
-    { "id": "home", "nodeName": "BtnHome", "role": "home", "referenceBounds": { "x": 385, "y": 1110, "width": 270, "height": 94 }, "expectedComponents": ["cc.Sprite", "cc.Button"], "required": true, "tolerance": { "x": 8, "y": 8, "width": 10, "height": 10 } }
+    {
+      "id": "dim_overlay",
+      "nodeName": "DimOverlay",
+      "role": "modal_overlay",
+      "referenceBounds": { "x": 0, "y": 0, "width": 720, "height": 1280 },
+      "required": true
+    },
+    {
+      "id": "settlement_card",
+      "nodeName": "SettlementCard",
+      "role": "result_panel",
+      "referenceBounds": { "x": 30, "y": 180, "width": 660, "height": 920 },
+      "required": true
+    },
+    {
+      "id": "arena_leaderboard",
+      "nodeName": "ArenaLeaderboardPanel",
+      "role": "ranked_results",
+      "dataSource": "ArenaMatchSnapshot.leaderboard (real per-competitor mass/kills/consumed, sorted by mass)",
+      "referenceBounds": { "x": 75, "y": 380, "width": 570, "height": 530 },
+      "required": true
+    },
+    {
+      "id": "reward_breakdown",
+      "nodeName": "ArenaRewardBreakdown",
+      "role": "reward_details",
+      "dataSource": "ArenaSettlementReward (massCoins, collectedCoins, eliminationCoins, survivalCoins, placementCoins)",
+      "required": false,
+      "note": "Present when SettlementPageController binds breakdown labels; absent nodes are tolerated during Creator authoring."
+    },
+    {
+      "id": "restart",
+      "nodeName": "BtnRestart",
+      "role": "continue",
+      "action": "GAME_RESTART_CURRENT -> GameManager.startArenaGame() when the last session mode is Arena",
+      "referenceBounds": { "x": 65, "y": 1110, "width": 270, "height": 94 },
+      "expectedComponents": ["cc.Sprite", "cc.Button"],
+      "required": true
+    },
+    {
+      "id": "home",
+      "nodeName": "BtnHome",
+      "role": "home",
+      "action": "GAME_RETURN_HOME -> GameManager.returnToHome()",
+      "referenceBounds": { "x": 385, "y": 1110, "width": 270, "height": 94 },
+      "expectedComponents": ["cc.Sprite", "cc.Button"],
+      "required": true
+    }
   ],
-  "forbiddenElements": ["design-example scores", "fixed rankings", "fixed rewards"]
+  "forbiddenElements": [
+    "hardcoded scores",
+    "fixed rankings",
+    "fixed rewards",
+    "addCoins for arena settlement",
+    "QA force-grant",
+    "fake matchId"
+  ],
+  "stateFlow": {
+    "entry": "Arena/Revive -> forfeitLocal() or TIME -> onMatchFinished -> showArenaSettlement -> SETTLEMENT session state",
+    "persistence": "claimArenaSettlement(matchId, reward.coins) -- idempotent; duplicate calls for same matchId are no-ops",
+    "restartButton": "GAME_RESTART_CURRENT event -> GameManager starts a fresh arena match",
+    "homeButton": "GAME_RETURN_HOME event -> GameManager.returnToHome()"
+  },
+  "qaReadModel": {
+    "snapshot_key": "arena",
+    "fields": ["reason", "localRank", "localMass", "localKills", "localConsumed", "settlementReward"],
+    "settlement_key": "settlement",
+    "settlement_fields": ["coins", "massCoins", "collectedCoins", "eliminationCoins", "survivalCoins", "placementCoins", "matchId", "claimed"]
+  }
 }

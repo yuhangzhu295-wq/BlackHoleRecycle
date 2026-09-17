@@ -200,6 +200,7 @@ export class QABridge {
       // Engine-side observations only; never CDP DOM metrics or test labels.
       performance: this.getPerformanceSnapshot(world),
       arena: this.read.getArenaSnapshot(),
+      settlement: this.getSettlementSnapshot(),
       network: {
         status: networkClient.status,
         lastError: networkClient.lastError,
@@ -338,6 +339,27 @@ export class QABridge {
         settlement: describe(settlementPage),
         settlementRestart: describe(settlementPage?.getChildByName('BtnRestart') || null),
         settlementHome: describe(settlementPage?.getChildByName('BtnHome') || null),
+        settlementData: {
+          title: labelText(settlementPage?.getChildByName('Title') || null),
+          subtitle: labelText(settlementPage?.getChildByName('Subtitle') || null),
+          result: labelText(settlementPage?.getChildByName('ArenaResult') || null),
+          mass: labelText(settlementPage?.getChildByName('ArenaStatMassValue') || null),
+          kills: labelText(settlementPage?.getChildByName('ArenaStatKillsValue') || null),
+          time: labelText(settlementPage?.getChildByName('ArenaStatTimeValue') || null),
+          reward: labelText(settlementPage?.getChildByName('ArenaRewardValue') || null),
+          breakdown: labelText(settlementPage?.getChildByName('ArenaRewardBreakdown') || null),
+          localRow: {
+            badge: labelText(settlementPage?.getChildByName('ArenaPlayerBadge') || null),
+            name: labelText(settlementPage?.getChildByName('ArenaPlayerName') || null),
+            score: labelText(settlementPage?.getChildByName('ArenaPlayerScore') || null),
+          },
+          rows: [1, 2, 3, 4, 5].map((rank) => ({
+            active: settlementPage?.getChildByName(`ArenaRankRow_${rank}`)?.activeInHierarchy || false,
+            badge: labelText(settlementPage?.getChildByName(`ArenaRankBadge_${rank}`) || null),
+            name: labelText(settlementPage?.getChildByName(`ArenaRankName_${rank}`) || null),
+            score: labelText(settlementPage?.getChildByName(`ArenaRankScore_${rank}`) || null),
+          })),
+        },
         revive: describe(revivePage),
         reviveNow: describe(revivePage?.getChildByName('BtnRevive') || null),
         reviveGiveUp: describe(revivePage?.getChildByName('BtnGiveUp') || null),
@@ -352,6 +374,18 @@ export class QABridge {
       skin: describe(homeNode('BtnSkin')),
       machine: describe(homeNode('BtnMachine')),
       settings: describe(homeNode('BtnSettings')),
+    };
+  }
+
+  private getSettlementSnapshot(): Record<string, unknown> | null {
+    const arena = this.read.getArenaSnapshot();
+    if (!arena?.matchId) return null;
+    const claimedIds = this.read.getSaveSnapshot().claimedArenaSettlementIds;
+    const claimed = Array.isArray(claimedIds) && claimedIds.includes(arena.matchId);
+    return {
+      matchId: arena.matchId,
+      claimed,
+      ...arena.settlementReward,
     };
   }
 

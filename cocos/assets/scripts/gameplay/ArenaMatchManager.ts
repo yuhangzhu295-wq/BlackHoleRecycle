@@ -33,6 +33,8 @@ export interface ArenaLeaderboardEntry {
 }
 
 export interface ArenaMatchSnapshot {
+  /** Stable local identifier generated once when this offline match starts. */
+  readonly matchId: string;
   readonly running: boolean;
   readonly elapsedSeconds: number;
   readonly remainingSeconds: number;
@@ -167,6 +169,8 @@ export class ArenaMatchManager extends Component {
   private eliminationCount: number = 0;
   private settlementReward: ArenaSettlementReward = EMPTY_SETTLEMENT_REWARD;
   private settlementRewardClaimed: boolean = false;
+  private matchId: string = '';
+  private matchSequence: number = 0;
 
   public startMatch(
     playerMachine: BlackHoleMachine,
@@ -181,6 +185,7 @@ export class ArenaMatchManager extends Component {
     this.eliminationCount = 0;
     this.settlementReward = EMPTY_SETTLEMENT_REWARD;
     this.settlementRewardClaimed = false;
+    this.matchId = this.createMatchId();
     this.world = world;
     this.callbacks = callbacks;
     this.node.active = true;
@@ -296,6 +301,11 @@ export class ArenaMatchManager extends Component {
     return this.settlementReward;
   }
 
+  /** The settlement persistence key remains constant for this match lifetime. */
+  public getMatchId(): string {
+    return this.matchId;
+  }
+
   public getSnapshot(): ArenaMatchSnapshot {
     const ordered = this.getLeaderboard();
     const local = this.getLocalCompetitor();
@@ -305,6 +315,7 @@ export class ArenaMatchManager extends Component {
       if (competitor.isBot) botStates[competitor.id] = competitor.behavior;
     }
     return {
+      matchId: this.matchId,
       running: this.running,
       elapsedSeconds: Math.max(0, this.elapsedSeconds),
       remainingSeconds: Math.max(0, this.durationSeconds - this.elapsedSeconds),
@@ -323,6 +334,12 @@ export class ArenaMatchManager extends Component {
       reason: this.endReason,
       settlementReward: this.settlementReward,
     };
+  }
+
+  private createMatchId(): string {
+    this.matchSequence += 1;
+    const entropy = Math.floor(Math.random() * 0x100000000).toString(36);
+    return `local-arena-${Date.now().toString(36)}-${this.matchSequence.toString(36)}-${entropy}`;
   }
 
   /**

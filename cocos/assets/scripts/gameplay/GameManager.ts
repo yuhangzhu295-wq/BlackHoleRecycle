@@ -660,10 +660,12 @@ export class GameManager extends Component {
     if (this.machine) this.machine.isPaused = true;
     this.arenaMatchManager?.setMatchPaused(true);
     // ArenaMatchManager produces this ledger once from the finished match.
-    // Saving here makes the visible result a genuine account change, while its
-    // single-claim guard prevents duplicate coins if the page is reopened.
+    // SaveService keeps the account-side idempotency key if delivery repeats
+    // after a page reload or a duplicate UI event.
     const reward = this.arenaMatchManager?.claimSettlementReward() || snapshot.settlementReward;
-    if (reward.coins > 0) this.currentCoins = saveService.addCoins(reward.coins);
+    const matchId = this.arenaMatchManager?.getMatchId() || snapshot.matchId;
+    if (reward.coins > 0 && matchId) saveService.claimArenaSettlement(matchId, reward.coins);
+    this.currentCoins = saveService.data.coins;
     this.hud?.updateArenaSettlement(snapshot, reward);
     this.hud?.showScreen('Settlement');
   }
@@ -820,6 +822,7 @@ export class GameManager extends Component {
       }),
       getSaveSnapshot: () => ({
         coins: saveService.data.coins,
+        claimedArenaSettlementIds: [...saveService.data.claimedArenaSettlementIds],
         machineLevel: saveService.data.machineLevel,
         bestMass: saveService.data.highScore,
         skinId: saveService.data.currentSkinId,
@@ -869,6 +872,7 @@ export class GameManager extends Component {
     const elapsedSeconds = snapshot.elapsedMilliseconds / 1000;
     const durationSeconds = snapshot.durationMilliseconds / 1000;
     return {
+      matchId: snapshot.matchId,
       running: snapshot.phase === 'RUNNING',
       elapsedSeconds,
       remainingSeconds: Math.max(0, durationSeconds - elapsedSeconds),
