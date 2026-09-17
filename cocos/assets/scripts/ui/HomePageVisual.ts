@@ -6,6 +6,26 @@ import { _decorator, Component, Node, UITransform } from 'cc';
 
 const { ccclass } = _decorator;
 
+type HomeLayoutEntry = readonly [width: number, height: number, x: number, y: number];
+
+// Keep runtime geometry aligned with home.json without serializing authoring data.
+const HOME_LAYOUT: Readonly<Record<string, HomeLayoutEntry>> = {
+  Background: [720, 1280, 0, 0],
+  CoinPanel: [220, 64, -224, 564],
+  MachineStatus: [220, 64, 224, 564],
+  CoinIcon: [54, 54, -302, 560],
+  CoinValue: [140, 50, -190, 560],
+  MachineName: [200, 34, 216, 580],
+  MachineValue: [200, 34, 216, 544],
+  Logo: [600, 180, 0, 370],
+  HeroBlackHole: [360, 360, 0, 30],
+  BtnStart: [360, 104, 0, -312],
+  BtnMode: [160, 112, -208, -468],
+  BtnSkin: [160, 112, 0, -468],
+  BtnMachine: [160, 112, 208, -468],
+  BtnSettings: [80, 80, 288, -540],
+};
+
 @ccclass('HomePageVisual')
 export class HomePageVisual extends Component {
   onEnable(): void {
@@ -16,30 +36,17 @@ export class HomePageVisual extends Component {
     // Product UI owns a 720×1280 portrait design space. Widgets may later
     // apply safe-area offsets, but desktop window dimensions must never
     // stretch the gameplay page into a landscape composition.
-    this.resize('Background', 720, 1280, 0, 0);
-    this.resize('CoinPanel', 236, 66, -216, 560);
-    this.resize('MachineStatus', 236, 66, 216, 560);
-    this.resize('CoinIcon', 54, 54, -302, 560);
-    this.resize('CoinValue', 140, 50, -190, 560);
-    this.resize('MachineName', 200, 34, 216, 580);
-    this.resize('MachineValue', 200, 34, 216, 544);
-    // Keep the title inside the V2 reference's 17%-34% top band. The prior
-    // position began above the safe visual hierarchy on 9:16 phones.
-    this.resize('Logo', 600, 180, 0, 315);
-    this.resize('HeroBlackHole', 360, 360, 0, 35);
-    this.resize('BtnStart', 430, 104, 0, -295);
-    this.resize('BtnMode', 168, 142, -190, -510);
-    this.resize('BtnSkin', 168, 142, 0, -510);
-    this.resize('BtnMachine', 168, 142, 190, -510);
-    this.resize('BtnSettings', 80, 80, 288, -540);
+    for (const [name, [width, height, x, y]] of Object.entries(HOME_LAYOUT)) {
+      this.resize(name, width, height, x, y);
+    }
 
     this.centerButtonLabel('BtnStart');
     // The three small action cards carry pictograms in their upper half. Keep
     // their captions on the lower strip just like the V2 home reference;
     // centering them over the icons made both affordances harder to read.
-    this.positionButtonLabel('BtnMode', -46);
-    this.positionButtonLabel('BtnSkin', -46);
-    this.positionButtonLabel('BtnMachine', -46);
+    this.positionButtonLabel('BtnMode', -32);
+    this.positionButtonLabel('BtnSkin', -32);
+    this.positionButtonLabel('BtnMachine', -32);
   }
 
   private resize(name: string, width: number, height: number, x: number, y: number): void {
