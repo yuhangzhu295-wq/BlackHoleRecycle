@@ -31,7 +31,7 @@ const reportPath = path.join(evidenceDirectory, 'acceptance-report.json');
 const requestedAcceptanceScope = process.argv.find((argument) => argument.startsWith('--scope='))?.slice('--scope='.length)
   || process.env.BHR_ACCEPTANCE_SCOPE
   || 'full';
-const acceptanceScope = ['full', 'pages', 'arena', 'skins', 'skin-unlock', 'arena-timer', 'network', 'regions', 'progression', 'cell-lifecycle', 'golden-city'].includes(requestedAcceptanceScope)
+const acceptanceScope = ['full', 'pages', 'arena', 'revive', 'skins', 'skin-unlock', 'arena-timer', 'network', 'regions', 'progression', 'cell-lifecycle', 'golden-city'].includes(requestedAcceptanceScope)
   ? requestedAcceptanceScope
   : 'full';
 // Preserve each independently-runnable acceptance scope. The canonical report
@@ -941,6 +941,73 @@ async function verifyArenaFlow(cdp, page, canvasRect, modeSnapshot) {
     settled: settled.arena,
     returnMode: (await readRuntimeSnapshot(page)).ui?.modePage,
   };
+}
+
+async function waitForLocalArenaDefeat(page, timeoutMs = 30000) {
+  const deadline = Date.now() + timeoutMs;
+  let latest = await readRuntimeSnapshot(page);
+  while (Date.now() < deadline) {
+    await page.waitForTimeout(120);
+    latest = await readRuntimeSnapshot(page);
+    if (latest.gameState === 'REVIVING' && latest.arena?.localAlive === false) return latest;
+  }
+  throw new Error('FAIL_REVIVE_REAL_DEFEAT_TIMEOUT: ' + JSON.stringify({
+    gameState: latest.gameState,
+    arena: latest.arena,
+    ui: latest.ui?.formalPages,
+  }));
+}
+
+/** P5: exercise real defeat, frozen revive, give-up, and natural expiry. */
+async function verifyReviveFlow(cdp, page, canvasRect, homeSnapshot) {
+  const start = pointForVisibleNode(canvasRect, homeSnapshot, homeSnapshot.ui?.start, 'REVIVE_HOME_START');
+  await dispatchTouchTap(cdp, start.x, start.y);
+  await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'MODE_SELECT', undefined, { timeout: 5000 });
+  const mode = await readRuntimeSnapshot(page);
+  const arena = pointForVisibleNode(canvasRect, mode, mode.ui?.modeArena, 'REVIVE_MODE_ARENA');
+  await dispatchTouchTap(cdp, arena.x, arena.y);
+  await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'ARENA', undefined, { timeout: 7000 });
+
+  const defeated = await waitForLocalArenaDefeat(page);
+  const frozenRespawnSeconds = defeated.arena?.localRespawnSeconds;
+  await page.waitForTimeout(2800);
+  const held = await readRuntimeSnapshot(page);
+  assert(held.gameState === 'REVIVING' && held.uiScreen === 'Revive'
+    && held.arena?.localAlive === false && held.ui?.formalPages?.revive?.active,
+  'FAIL_REVIVE_MODAL_EARLY_CLOSE: ' + JSON.stringify({ frozenRespawnSeconds, held: { gameState: held.gameState, uiScreen: held.uiScreen, arena: held.arena, pages: held.ui?.formalPages } }));
+  assert(Math.abs((held.arena?.localRespawnSeconds || 0) - (frozenRespawnSeconds || 0)) < 0.05,
+    'FAIL_REVIVE_RESPAWN_CLOCK_ADVANCED: ' + JSON.stringify({ frozenRespawnSeconds, held: held.arena?.localRespawnSeconds }));
+  await page.screenshot({ path: path.join(evidenceDirectory, 'portrait-390x844-revive-hold.png') });
+
+  const giveUp = pointForVisibleNode(canvasRect, held, held.ui?.formalPages?.reviveGiveUp, 'REVIVE_GIVE_UP');
+  await dispatchTouchTap(cdp, giveUp.x, giveUp.y);
+  await page.waitForFunction(() => {
+    const snapshot = window.__BHR_QA__.snapshot();
+    return snapshot.gameState === 'SETTLEMENT' && snapshot.uiScreen === 'Settlement' && snapshot.arena?.reason === 'FORFEIT';
+  }, undefined, { timeout: 5000 });
+  const givenUp = await readRuntimeSnapshot(page);
+  // Native Cocos Button dispatch is the primary path. RuntimePageInputRouter
+  // remains a Canvas-target fallback, so its diagnostic may stay NONE when
+  // the visible Button itself consumes the touch. The real FORFEIT settlement
+  // above is the interaction assertion.
+  await page.screenshot({ path: path.join(evidenceDirectory, 'portrait-390x844-revive-give-up.png') });
+
+  const restart = pointForVisibleNode(canvasRect, givenUp, givenUp.ui?.formalPages?.settlementRestart, 'REVIVE_SETTLEMENT_RESTART');
+  await dispatchTouchTap(cdp, restart.x, restart.y);
+  await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'ARENA', undefined, { timeout: 7000 });
+  const expiryDefeat = await waitForLocalArenaDefeat(page);
+  const expiryStartedAt = Date.now();
+  await page.waitForFunction(() => {
+    const snapshot = window.__BHR_QA__.snapshot();
+    return snapshot.gameState === 'SETTLEMENT' && snapshot.uiScreen === 'Settlement' && snapshot.arena?.reason === 'FORFEIT';
+  }, undefined, { timeout: 8000 });
+  const expired = await readRuntimeSnapshot(page);
+  const expiryElapsedMs = Date.now() - expiryStartedAt;
+  assert(expiryElapsedMs >= 4300,
+    'FAIL_REVIVE_COUNTDOWN_EARLY_EXPIRY: ' + JSON.stringify({ expiryElapsedMs, defeat: expiryDefeat.arena, expired: expired.arena }));
+  await page.screenshot({ path: path.join(evidenceDirectory, 'portrait-390x844-revive-expiry.png') });
+
+  return { frozenRespawnSeconds, heldRespawnSeconds: held.arena?.localRespawnSeconds, giveUpReason: givenUp.arena?.reason, expiryElapsedMs, expiryReason: expired.arena?.reason };
 }
 
 /**
@@ -1975,6 +2042,11 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
         assert(runtimeErrors.length === 0, `Runtime console errors after Arena flow: ${runtimeErrors.join(' | ')}`);
         return;
       }
+      if (acceptanceScope === 'revive') {
+        report.revive = await verifyReviveFlow(cdp, page, canvasRect, snapshot);
+        assert(runtimeErrors.length === 0, `Runtime console errors after Revive flow: ${runtimeErrors.join(' | ')}`);
+        return;
+      }
       if (acceptanceScope === 'regions') {
         const startButton = snapshot.ui?.start;
         const start = pointForVisibleNode(canvasRect, snapshot, startButton, 'REGION_HOME_START');
@@ -2747,7 +2819,7 @@ try {
     : `http://127.0.0.1:${address.port}/?qa=1`;
   browser = await chromium.launch({ headless: true, args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-webgl'] });
 
-  const targetViewports = acceptanceScope === 'pages' || acceptanceScope === 'skins' || acceptanceScope === 'skin-unlock' || acceptanceScope === 'arena-timer' || acceptanceScope === 'network' || acceptanceScope === 'regions' || acceptanceScope === 'progression' || acceptanceScope === 'golden-city'
+  const targetViewports = acceptanceScope === 'pages' || acceptanceScope === 'revive' || acceptanceScope === 'skins' || acceptanceScope === 'skin-unlock' || acceptanceScope === 'arena-timer' || acceptanceScope === 'network' || acceptanceScope === 'regions' || acceptanceScope === 'progression' || acceptanceScope === 'golden-city'
     ? requiredPortraitViewports.filter((viewport) => viewport.id === '390x844')
     : requiredPortraitViewports;
   for (const viewport of targetViewports) {
