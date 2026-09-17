@@ -353,6 +353,8 @@ export class GameManager extends Component {
     });
 
     eventBus.on('ARENA_REVIVE_REQUESTED', () => {
+      // Re-enable match clock before instant respawn so the player enters an active arena.
+      this.arenaMatchManager?.setMatchPaused(false);
       this.arenaMatchManager?.reviveLocal();
     });
 
@@ -635,6 +637,8 @@ export class GameManager extends Component {
     this.session.enterReviving();
     if (this.playerController) this.playerController.isPaused = true;
     if (this.compressionSystem) this.compressionSystem.isPaused = true;
+    // Freeze the arena respawn clock so the revive page countdown governs timing.
+    this.arenaMatchManager?.setMatchPaused(true);
     this.hud?.updateRevive(snapshot);
     this.hud?.showScreen('Revive');
   }

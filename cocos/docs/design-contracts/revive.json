@@ -1,15 +1,98 @@
 {
-  "version": 2,
+  "version": 3,
   "page": "revive",
-  "status": "REFERENCE_BLUEPRINT_DRAFT",
-  "reference": "../design-reference/v2-04-revive.png",
-  "designSpace": { "width": 720, "height": 1280, "origin": "top-left" },
+  "status": "LOCKED",
+  "reference": "../design-reference/ui-v3/revive-reference.png",
+  "designSpace": {
+    "width": 720,
+    "height": 1280,
+    "origin": "top-left"
+  },
+  "hudRoot": "RevivePage",
+  "sceneRoot": "Canvas",
+  "countdownSeconds": 5,
+  "countdownBehavior": "page_owned_independent_of_arena_clock",
+  "expiryAction": "ARENA_GIVE_UP_REQUESTED",
+  "reviveAction": "ARENA_REVIVE_REQUESTED_via_real_ArenaMatchManager_reviveLocal",
+  "adsPolicy": "hidden_when_no_real_ad_unit_configured",
   "elements": [
-    { "id": "dim_overlay", "nodeName": "DimOverlay", "role": "modal_overlay", "referenceBounds": { "x": 0, "y": 0, "width": 720, "height": 1280 }, "expectedComponents": ["cc.Sprite"], "required": true, "tolerance": { "x": 0, "y": 0, "width": 2, "height": 2 } },
-    { "id": "revive_card", "nodeName": "ReviveCard", "role": "modal_card", "referenceBounds": { "x": 50, "y": 250, "width": 620, "height": 900 }, "expectedComponents": ["cc.Sprite"], "required": true, "tolerance": { "x": 10, "y": 10, "width": 12, "height": 12 } },
-    { "id": "countdown", "nodeName": "CountdownPanel", "role": "countdown", "referenceBounds": { "x": 251, "y": 686, "width": 218, "height": 96 }, "expectedComponents": ["cc.Sprite"], "required": true, "tolerance": { "x": 8, "y": 8, "width": 10, "height": 10 } },
-    { "id": "revive_action", "nodeName": "BtnRevive", "role": "conditional_rewarded_action", "referenceBounds": { "x": 164, "y": 890, "width": 392, "height": 98 }, "expectedComponents": ["cc.Sprite", "cc.Button"], "required": true, "tolerance": { "x": 8, "y": 8, "width": 10, "height": 10 } },
-    { "id": "end_action", "nodeName": "BtnGiveUp", "role": "end_run", "referenceBounds": { "x": 190, "y": 1018, "width": 340, "height": 78 }, "expectedComponents": ["cc.Sprite", "cc.Button"], "required": true, "tolerance": { "x": 8, "y": 8, "width": 10, "height": 10 } }
+    {
+      "id": "dim_overlay",
+      "nodeName": "DimOverlay",
+      "role": "modal_overlay",
+      "referenceBounds": {
+        "x": 0,
+        "y": 0,
+        "width": 720,
+        "height": 1280
+      },
+      "required": true
+    },
+    {
+      "id": "revive_card",
+      "nodeName": "ReviveCard",
+      "role": "modal_card",
+      "referenceBounds": {
+        "x": 50,
+        "y": 250,
+        "width": 620,
+        "height": 900
+      },
+      "required": true
+    },
+    {
+      "id": "loss_value",
+      "nodeName": "LossValue",
+      "role": "match_summary",
+      "dataSource": "ArenaMatchSnapshot.localKills",
+      "required": true
+    },
+    {
+      "id": "countdown_panel",
+      "nodeName": "CountdownPanel",
+      "role": "countdown",
+      "required": true
+    },
+    {
+      "id": "countdown_value",
+      "nodeName": "CountdownValue",
+      "role": "countdown_label",
+      "dataSource": "RevivePageController.countdownRemaining (page-owned, not match respawnSeconds)",
+      "required": true
+    },
+    {
+      "id": "rank_value",
+      "nodeName": "RankValue",
+      "role": "rank_display",
+      "dataSource": "ArenaMatchSnapshot.localRank",
+      "required": true
+    },
+    {
+      "id": "revive_action",
+      "nodeName": "BtnRevive",
+      "role": "revive_button",
+      "action": "ARENA_REVIVE_REQUESTED -> ArenaMatchManager.reviveLocal()",
+      "required": true
+    },
+    {
+      "id": "end_action",
+      "nodeName": "BtnGiveUp",
+      "role": "forfeit_button",
+      "action": "ARENA_GIVE_UP_REQUESTED -> ArenaMatchManager.forfeitLocal()",
+      "required": true
+    }
   ],
-  "forbiddenElements": ["rewarded revive when no real ad unit"]
+  "forbiddenElements": [
+    "rewarded revive when no real ad SDK configured",
+    "fake ad grant",
+    "QA force respawn",
+    "hardcoded match data"
+  ],
+  "stateFlow": {
+    "entry": "Arena -> localDefeated callback -> openArenaRevive -> REVIVING session state",
+    "matchClockDuringRevive": "FROZEN via setMatchPaused(true) in openArenaRevive",
+    "reviveButton": "setMatchPaused(false) then reviveLocal() -> onLocalRespawned -> ARENA screen",
+    "giveUpButton": "forfeitLocal() -> onMatchFinished -> Settlement screen",
+    "countdownExpiry": "auto-emits ARENA_GIVE_UP_REQUESTED -> Settlement screen"
+  }
 }
