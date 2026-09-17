@@ -31,7 +31,7 @@ const reportPath = path.join(evidenceDirectory, 'acceptance-report.json');
 const requestedAcceptanceScope = process.argv.find((argument) => argument.startsWith('--scope='))?.slice('--scope='.length)
   || process.env.BHR_ACCEPTANCE_SCOPE
   || 'full';
-const acceptanceScope = ['full', 'pages', 'skins', 'skin-unlock', 'arena-timer', 'network', 'regions', 'progression', 'cell-lifecycle', 'golden-city'].includes(requestedAcceptanceScope)
+const acceptanceScope = ['full', 'pages', 'arena', 'skins', 'skin-unlock', 'arena-timer', 'network', 'regions', 'progression', 'cell-lifecycle', 'golden-city'].includes(requestedAcceptanceScope)
   ? requestedAcceptanceScope
   : 'full';
 // Preserve each independently-runnable acceptance scope. The canonical report
@@ -1964,6 +1964,15 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
       if (acceptanceScope === 'arena-timer') {
         report.arenaTimer = await verifyArenaTimerExpiry(cdp, page, canvasRect);
         assert(runtimeErrors.length === 0, `Runtime console errors after timer expiry: ${runtimeErrors.join(' | ')}`);
+        return;
+      }
+      if (acceptanceScope === 'arena') {
+        const start = pointForVisibleNode(canvasRect, snapshot, snapshot.ui?.start, 'ARENA_HOME_START');
+        await dispatchTouchTap(cdp, start.x, start.y);
+        await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'MODE_SELECT', undefined, { timeout: 5000 });
+        const mode = await readRuntimeSnapshot(page);
+        report.arena = await verifyArenaFlow(cdp, page, canvasRect, mode);
+        assert(runtimeErrors.length === 0, `Runtime console errors after Arena flow: ${runtimeErrors.join(' | ')}`);
         return;
       }
       if (acceptanceScope === 'regions') {

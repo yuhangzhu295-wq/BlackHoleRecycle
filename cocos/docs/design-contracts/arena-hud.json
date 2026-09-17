@@ -1,0 +1,556 @@
+{
+  "contract": "arena-hud",
+  "version": "1.0.0",
+  "description": "Design contract for ArenaHUD in Game.scene (720x1280 portrait 9:16).",
+  "canvas": {
+    "width": 720,
+    "height": 1280,
+    "aspectRatio": "9:16"
+  },
+  "sceneRoot": "Canvas",
+  "hudRoot": "ArenaHUD",
+  "scenePath": "cocos/assets/scenes/Game.scene",
+  "controller": "cocos/assets/scripts/ui/ArenaHUDController.ts",
+  "hudView": "cocos/assets/scripts/ui/HUDView.ts",
+  "gameManager": "cocos/assets/scripts/gameplay/GameManager.ts",
+  "arenaMatchManager": "cocos/assets/scripts/gameplay/ArenaMatchManager.ts",
+  "joystickVisual": "cocos/assets/scripts/ui/JoystickVisual.ts",
+  "pickupFeedback": "cocos/assets/scripts/ui/PickupFeedbackPresenter.ts",
+  "uiReference": {
+    "note": "Authoritative visual layout is defined in Game.scene under Canvas/ArenaHUD. Real-time Arena state drives all values.",
+    "referenceImage": "cocos/docs/design-reference/ui-v3/arena-hud-reference.png",
+    "auditEntry": "cocos/docs/design-reference/ui-v3/ui-gap-audit.md",
+    "entry": "Arena Gameplay HUD"
+  },
+  "directElements": [
+    {
+      "name": "LeaderboardPanel",
+      "role": "leaderboard_panel_bg",
+      "lpos": {
+        "x": -226,
+        "y": 352,
+        "z": 0
+      },
+      "size": {
+        "width": 236,
+        "height": 276
+      },
+      "expectedComponents": [
+        "cc.UITransform",
+        "cc.Sprite"
+      ],
+      "children": []
+    },
+    {
+      "name": "ArenaTitle",
+      "role": "arena_title",
+      "lpos": {
+        "x": -226,
+        "y": 465,
+        "z": 0
+      },
+      "size": {
+        "width": 214,
+        "height": 42
+      },
+      "expectedComponents": [
+        "cc.UITransform",
+        "cc.Label",
+        "cc.LabelOutline"
+      ],
+      "children": []
+    },
+    {
+      "name": "TopRow1",
+      "role": "top_row_1_bg",
+      "lpos": {
+        "x": -226,
+        "y": 408,
+        "z": 0
+      },
+      "size": {
+        "width": 208,
+        "height": 34
+      },
+      "expectedComponents": [
+        "cc.UITransform",
+        "cc.Sprite"
+      ],
+      "children": []
+    },
+    {
+      "name": "Top1",
+      "role": "top_1_label",
+      "lpos": {
+        "x": -226,
+        "y": 408,
+        "z": 0
+      },
+      "size": {
+        "width": 196,
+        "height": 30
+      },
+      "expectedComponents": [
+        "cc.UITransform",
+        "cc.Label",
+        "cc.LabelOutline"
+      ],
+      "children": []
+    },
+    {
+      "name": "TopRow2",
+      "role": "top_row_2_bg",
+      "lpos": {
+        "x": -226,
+        "y": 365,
+        "z": 0
+      },
+      "size": {
+        "width": 208,
+        "height": 34
+      },
+      "expectedComponents": [
+        "cc.UITransform",
+        "cc.Sprite"
+      ],
+      "children": []
+    },
+    {
+      "name": "Top2",
+      "role": "top_2_label",
+      "lpos": {
+        "x": -226,
+        "y": 365,
+        "z": 0
+      },
+      "size": {
+        "width": 196,
+        "height": 30
+      },
+      "expectedComponents": [
+        "cc.UITransform",
+        "cc.Label",
+        "cc.LabelOutline"
+      ],
+      "children": []
+    },
+    {
+      "name": "TopRow3",
+      "role": "top_row_3_bg",
+      "lpos": {
+        "x": -226,
+        "y": 322,
+        "z": 0
+      },
+      "size": {
+        "width": 208,
+        "height": 34
+      },
+      "expectedComponents": [
+        "cc.UITransform",
+        "cc.Sprite"
+      ],
+      "children": []
+    },
+    {
+      "name": "Top3",
+      "role": "top_3_label",
+      "lpos": {
+        "x": -226,
+        "y": 322,
+        "z": 0
+      },
+      "size": {
+        "width": 196,
+        "height": 30
+      },
+      "expectedComponents": [
+        "cc.UITransform",
+        "cc.Label",
+        "cc.LabelOutline"
+      ],
+      "children": []
+    },
+    {
+      "name": "TopRow4",
+      "role": "top_row_4_bg",
+      "lpos": {
+        "x": -226,
+        "y": 279,
+        "z": 0
+      },
+      "size": {
+        "width": 208,
+        "height": 34
+      },
+      "expectedComponents": [
+        "cc.UITransform",
+        "cc.Sprite"
+      ],
+      "children": []
+    },
+    {
+      "name": "Top4",
+      "role": "top_4_label",
+      "lpos": {
+        "x": -226,
+        "y": 279,
+        "z": 0
+      },
+      "size": {
+        "width": 196,
+        "height": 30
+      },
+      "expectedComponents": [
+        "cc.UITransform",
+        "cc.Label",
+        "cc.LabelOutline"
+      ],
+      "children": []
+    },
+    {
+      "name": "TopRow5",
+      "role": "top_row_5_bg",
+      "lpos": {
+        "x": -226,
+        "y": 236,
+        "z": 0
+      },
+      "size": {
+        "width": 208,
+        "height": 34
+      },
+      "expectedComponents": [
+        "cc.UITransform",
+        "cc.Sprite"
+      ],
+      "children": []
+    },
+    {
+      "name": "Top5",
+      "role": "top_5_label",
+      "lpos": {
+        "x": -226,
+        "y": 236,
+        "z": 0
+      },
+      "size": {
+        "width": 196,
+        "height": 30
+      },
+      "expectedComponents": [
+        "cc.UITransform",
+        "cc.Label",
+        "cc.LabelOutline"
+      ],
+      "children": []
+    },
+    {
+      "name": "TimerPanel",
+      "role": "timer_panel_bg",
+      "lpos": {
+        "x": 0,
+        "y": 492,
+        "z": 0
+      },
+      "size": {
+        "width": 160,
+        "height": 62
+      },
+      "expectedComponents": [
+        "cc.UITransform",
+        "cc.Sprite"
+      ],
+      "children": []
+    },
+    {
+      "name": "TimerValue",
+      "role": "timer_value",
+      "lpos": {
+        "x": 0,
+        "y": 492,
+        "z": 0
+      },
+      "size": {
+        "width": 148,
+        "height": 46
+      },
+      "expectedComponents": [
+        "cc.UITransform",
+        "cc.Label"
+      ],
+      "children": []
+    },
+    {
+      "name": "StatusPanel",
+      "role": "status_panel_bg",
+      "lpos": {
+        "x": 222,
+        "y": 415,
+        "z": 0
+      },
+      "size": {
+        "width": 220,
+        "height": 82
+      },
+      "expectedComponents": [
+        "cc.UITransform",
+        "cc.Sprite"
+      ],
+      "children": []
+    },
+    {
+      "name": "RankValue",
+      "role": "rank_value",
+      "lpos": {
+        "x": 222,
+        "y": 434,
+        "z": 0
+      },
+      "size": {
+        "width": 200,
+        "height": 30
+      },
+      "expectedComponents": [
+        "cc.UITransform",
+        "cc.Label",
+        "cc.LabelOutline"
+      ],
+      "children": []
+    },
+    {
+      "name": "MassValue",
+      "role": "mass_value",
+      "lpos": {
+        "x": 222,
+        "y": 405,
+        "z": 0
+      },
+      "size": {
+        "width": 200,
+        "height": 28
+      },
+      "expectedComponents": [
+        "cc.UITransform",
+        "cc.Label",
+        "cc.LabelOutline"
+      ],
+      "children": []
+    },
+    {
+      "name": "KillCaption",
+      "role": "kill_caption",
+      "lpos": {
+        "x": 183,
+        "y": 380,
+        "z": 0
+      },
+      "size": {
+        "width": 58,
+        "height": 24
+      },
+      "expectedComponents": [
+        "cc.UITransform",
+        "cc.Label",
+        "cc.LabelOutline"
+      ],
+      "children": []
+    },
+    {
+      "name": "KillValue",
+      "role": "kill_value",
+      "lpos": {
+        "x": 251,
+        "y": 380,
+        "z": 0
+      },
+      "size": {
+        "width": 46,
+        "height": 26
+      },
+      "expectedComponents": [
+        "cc.UITransform",
+        "cc.Label",
+        "cc.LabelOutline"
+      ],
+      "children": []
+    },
+    {
+      "name": "StatusValue",
+      "role": "status_value",
+      "lpos": {
+        "x": 0,
+        "y": -518,
+        "z": 0
+      },
+      "size": {
+        "width": 420,
+        "height": 34
+      },
+      "expectedComponents": [
+        "cc.UITransform",
+        "cc.Label",
+        "cc.LabelOutline"
+      ],
+      "children": []
+    },
+    {
+      "name": "BtnPause",
+      "role": "pause_button",
+      "lpos": {
+        "x": 294,
+        "y": 500,
+        "z": 0
+      },
+      "size": {
+        "width": 58,
+        "height": 58
+      },
+      "expectedComponents": [
+        "cc.UITransform",
+        "cc.Sprite",
+        "cc.Button"
+      ],
+      "children": [
+        "BtnPauseLabel"
+      ]
+    },
+    {
+      "name": "BotArrowLeft",
+      "role": "arrow_left",
+      "lpos": {
+        "x": -276,
+        "y": 26,
+        "z": 0
+      },
+      "size": {
+        "width": 58,
+        "height": 58
+      },
+      "expectedComponents": [
+        "cc.UITransform",
+        "cc.Sprite"
+      ],
+      "children": [
+        "BotArrowLeftLabel"
+      ],
+      "runtimeActive": false
+    },
+    {
+      "name": "BotArrowRight",
+      "role": "arrow_right",
+      "lpos": {
+        "x": 276,
+        "y": 26,
+        "z": 0
+      },
+      "size": {
+        "width": 58,
+        "height": 58
+      },
+      "expectedComponents": [
+        "cc.UITransform",
+        "cc.Sprite"
+      ],
+      "children": [
+        "BotArrowRightLabel"
+      ],
+      "runtimeActive": false
+    },
+    {
+      "name": "BotArrowTop",
+      "role": "arrow_top",
+      "lpos": {
+        "x": 0,
+        "y": 350,
+        "z": 0
+      },
+      "size": {
+        "width": 58,
+        "height": 58
+      },
+      "expectedComponents": [
+        "cc.UITransform",
+        "cc.Sprite"
+      ],
+      "children": [
+        "BotArrowTopLabel"
+      ],
+      "runtimeActive": false
+    },
+    {
+      "name": "BotArrowBottom",
+      "role": "arrow_bottom",
+      "lpos": {
+        "x": 0,
+        "y": -344,
+        "z": 0
+      },
+      "size": {
+        "width": 58,
+        "height": 58
+      },
+      "expectedComponents": [
+        "cc.UITransform",
+        "cc.Sprite"
+      ],
+      "children": [
+        "BotArrowBottomLabel"
+      ],
+      "runtimeActive": false
+    },
+    {
+      "name": "Joystick",
+      "role": "virtual_joystick",
+      "lpos": {
+        "x": 232,
+        "y": -470,
+        "z": 0
+      },
+      "size": {
+        "width": 196,
+        "height": 196
+      },
+      "expectedComponents": [
+        "cc.UITransform",
+        "JoystickVisual"
+      ],
+      "children": [
+        "JoystickBase",
+        "JoystickKnob"
+      ]
+    }
+  ],
+  "eventWiring": {
+    "updateMatch": {
+      "caller": "GameManager.updateHUD -> HUDView.updateArena",
+      "callee": "ArenaHUDController.updateMatch",
+      "snapshotSource": "ArenaMatchManager.getSnapshot (authoritative)"
+    },
+    "onObjectAbsorbed": {
+      "caller": "GameManager.onObjectAbsorbed",
+      "callee": "HUDView.showAbsorbFeedback -> ArenaHUDController.showAbsorbFeedback -> PickupFeedbackPresenter.emit"
+    },
+    "pauseTrigger": {
+      "caller": "ArenaHUDController.onEnable (BtnPause)",
+      "event": "UI_TRIGGER_PAUSE",
+      "handler": "GameManager (eventBus.on UI_TRIGGER_PAUSE -> togglePause)"
+    },
+    "joystickInput": {
+      "reader": "JoystickVisual.update",
+      "source": "PlayerController.moveInput",
+      "target": "JoystickKnob.setPosition"
+    }
+  },
+  "invariants": [
+    "ArenaHUD must exist as direct child of Canvas in Game.scene with size 720x1280",
+    "LeaderboardPanel, TopRow1..5, Top1..5, TimerPanel, TimerValue, StatusPanel, RankValue, MassValue, KillCaption, KillValue, StatusValue, BtnPause, arrows, and Joystick are direct children of ArenaHUD in Game.scene",
+    "BtnPause has BtnPauseLabel as direct child",
+    "BotArrowLeft/Right/Top/Bottom have BotArrow*Label direct children and are inactive by default",
+    "Joystick has JoystickBase and JoystickKnob as direct children and retains JoystickVisual component",
+    "ArenaHUDController updates stats strictly from real ArenaMatchSnapshot without hardcoded values",
+    "Projection for competitor nameplates and direction arrows must use the 3D gameplay camera (Main Camera)",
+    "JoystickVisual reads input strictly from PlayerController.moveInput",
+    "No HUD UI production script may depend on QA mutation APIs"
+  ]
+}

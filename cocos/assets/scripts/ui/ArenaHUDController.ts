@@ -61,8 +61,12 @@ export class ArenaHUDController extends Component {
    * to their gameplay authority. This is intentionally UI-only: the labels
    * cannot change movement, pickup, mass, collision, combat, or ranking.
    */
+  private getGameplayCamera(): Camera | null {
+    return director.getScene()?.getChildByName('Main Camera')?.getComponent(Camera) || null;
+  }
+
   private updateCompetitorNameplates(snapshot: ArenaMatchSnapshot): void {
-    const camera = director.getScene()?.getComponentInChildren(Camera) || null;
+    const camera = this.getGameplayCamera();
     const viewport = view.getViewportRect();
     const hudTransform = this.node.getComponent(UITransform) || null;
     if (!camera || !hudTransform || viewport.width <= 0 || viewport.height <= 0) return;
@@ -177,7 +181,7 @@ export class ArenaHUDController extends Component {
       Top: false,
       Bottom: false,
     };
-    const camera = director.getScene()?.getComponentInChildren(Camera) || null;
+    const camera = this.getGameplayCamera();
     const viewport = view.getViewportRect();
     if (camera && viewport.width > 0 && viewport.height > 0) {
       for (const competitor of snapshot.leaderboard) {
