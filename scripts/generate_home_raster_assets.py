@@ -358,7 +358,7 @@ def mode_card(name, endless=False):
         ellipse(draw, (493, 57, 553, 116), "#6781d1")
         ellipse(draw, (504, 63, 542, 101), "#3f54a1")
         ellipse(draw, (112, 180, 165, 232), "#6d6c8f")
-        title, sub, callout, badge = "无尽吞噬", "生存挑战", "无限地图，挑战更高分数！", "最高分"
+        title, sub, callout, badge = "无尽探索", "生存挑战", "无限地图，挑战更高分数！", "最高分"
         hero_x, hero_y = 456, 145
     else:
         for y in range(278):
@@ -369,7 +369,7 @@ def mode_card(name, endless=False):
         line(draw, [(12, 61), (150, 13), (336, 17), (596, 170)], "#e6e4c8", 5)
         for x, y in [(72, 56), (168, 206), (530, 82), (565, 231)]:
             draw_tree(draw, x, y - 23, 19)
-        title, sub, callout, badge = "竞技吞噬", "多人竞技", "实时对战，吞噬最强对手！", "竞技功能建设中"
+        title, sub, callout, badge = "竞技乱斗", "多人竞技", "实时对战，吞噬最强对手！", "1v7 本地竞技 · 已开放"
         hero_x, hero_y = 456, 145
     # bright original vortex illustration keeps text and play affordance clear.
     for rect, c in [((hero_x-105, hero_y-82, hero_x+105, hero_y+82), "#3e22a0"), ((hero_x-94, hero_y-73, hero_x+94, hero_y+73), "#8152f3"), ((hero_x-72, hero_y-55, hero_x+72, hero_y+55), "#24136f"), ((hero_x-42, hero_y-31, hero_x+42, hero_y+31), "#02010b")]:

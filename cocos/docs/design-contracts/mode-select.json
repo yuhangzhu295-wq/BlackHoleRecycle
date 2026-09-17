@@ -1,15 +1,278 @@
 {
-  "version": 2,
+  "version": 3,
   "page": "mode_select",
-  "status": "REFERENCE_BLUEPRINT_DRAFT",
-  "reference": "../design-reference/v2-02-mode-select.png",
-  "designSpace": { "width": 720, "height": 1280, "origin": "top-left" },
+  "status": "IMPLEMENTED_PENDING_RUNTIME",
+  "reference": "../design-reference/ui-v3/mode-select-reference.png",
+  "designSpace": {
+    "width": 720,
+    "height": 1280,
+    "origin": "top-left"
+  },
   "elements": [
-    { "id": "background", "nodeName": "Background", "role": "background", "referenceBounds": { "x": 0, "y": 0, "width": 720, "height": 1280 }, "expectedComponents": ["cc.Sprite"], "required": true, "tolerance": { "x": 0, "y": 0, "width": 2, "height": 2 } },
-    { "id": "back", "nodeName": "BtnBack", "role": "navigation", "referenceBounds": { "x": 24, "y": 34, "width": 92, "height": 72 }, "expectedComponents": ["cc.Sprite", "cc.Button"], "required": true, "tolerance": { "x": 8, "y": 8, "width": 10, "height": 10 } },
-    { "id": "header", "nodeName": "Header", "role": "title", "referenceBounds": { "x": 145, "y": 52, "width": 430, "height": 100 }, "expectedComponents": ["cc.Sprite"], "required": true, "tolerance": { "x": 10, "y": 10, "width": 12, "height": 12 } },
-    { "id": "arena_card", "nodeName": "ArenaCard", "role": "mode_card", "referenceBounds": { "x": 72, "y": 218, "width": 576, "height": 258 }, "expectedComponents": ["cc.Sprite", "cc.Button"], "required": true, "tolerance": { "x": 10, "y": 10, "width": 12, "height": 12 } },
-    { "id": "endless_card", "nodeName": "EndlessCard", "role": "mode_card", "referenceBounds": { "x": 72, "y": 563, "width": 576, "height": 258 }, "expectedComponents": ["cc.Sprite", "cc.Button"], "required": true, "tolerance": { "x": 10, "y": 10, "width": 12, "height": 12 } }
+    {
+      "id": "background",
+      "nodeName": "Background",
+      "role": "background",
+      "referenceBounds": {
+        "x": 0,
+        "y": 0,
+        "width": 720,
+        "height": 1280
+      },
+      "expectedComponents": [
+        "cc.Sprite"
+      ],
+      "required": true,
+      "tolerance": {
+        "x": 0,
+        "y": 0,
+        "width": 2,
+        "height": 2
+      }
+    },
+    {
+      "id": "back",
+      "nodeName": "BtnBack",
+      "role": "navigation",
+      "referenceBounds": {
+        "x": 20,
+        "y": 32,
+        "width": 80,
+        "height": 80
+      },
+      "expectedComponents": [
+        "cc.Sprite",
+        "cc.Button"
+      ],
+      "required": true,
+      "tolerance": {
+        "x": 8,
+        "y": 8,
+        "width": 10,
+        "height": 10
+      }
+    },
+    {
+      "id": "header",
+      "nodeName": "Header",
+      "role": "title",
+      "referenceBounds": {
+        "x": 110,
+        "y": 48,
+        "width": 500,
+        "height": 116
+      },
+      "expectedComponents": [
+        "cc.Sprite"
+      ],
+      "required": true,
+      "tolerance": {
+        "x": 10,
+        "y": 10,
+        "width": 12,
+        "height": 12
+      }
+    },
+    {
+      "id": "shelf_arena",
+      "nodeName": "ShelfArena",
+      "role": "section_label",
+      "referenceBounds": {
+        "x": 60,
+        "y": 196,
+        "width": 600,
+        "height": 52
+      },
+      "expectedComponents": [
+        "cc.Sprite"
+      ],
+      "required": true,
+      "tolerance": {
+        "x": 8,
+        "y": 8,
+        "width": 10,
+        "height": 10
+      }
+    },
+    {
+      "id": "arena_card",
+      "nodeName": "BtnArena",
+      "role": "mode_card",
+      "modeRoute": "MODE_ARENA_REQUESTED",
+      "modeId": "arena",
+      "referenceBounds": {
+        "x": 55,
+        "y": 256,
+        "width": 610,
+        "height": 278
+      },
+      "expectedComponents": [
+        "cc.Sprite",
+        "cc.Button"
+      ],
+      "required": true,
+      "tolerance": {
+        "x": 10,
+        "y": 10,
+        "width": 12,
+        "height": 12
+      }
+    },
+    {
+      "id": "arena_availability",
+      "nodeName": "ArenaAvailability",
+      "role": "status_badge",
+      "referenceBounds": {
+        "x": 410,
+        "y": 476,
+        "width": 220,
+        "height": 48
+      },
+      "expectedComponents": [
+        "cc.Sprite"
+      ],
+      "required": false,
+      "tolerance": {
+        "x": 10,
+        "y": 10,
+        "width": 12,
+        "height": 12
+      }
+    },
+    {
+      "id": "arena_availability_label",
+      "nodeName": "ArenaAvailabilityLabel",
+      "role": "status_label",
+      "referenceBounds": {
+        "x": 410,
+        "y": 476,
+        "width": 220,
+        "height": 48
+      },
+      "expectedComponents": [
+        "cc.Label"
+      ],
+      "required": false,
+      "tolerance": {
+        "x": 10,
+        "y": 10,
+        "width": 12,
+        "height": 12
+      }
+    },
+    {
+      "id": "shelf_endless",
+      "nodeName": "ShelfEndless",
+      "role": "section_label",
+      "referenceBounds": {
+        "x": 60,
+        "y": 560,
+        "width": 600,
+        "height": 52
+      },
+      "expectedComponents": [
+        "cc.Sprite"
+      ],
+      "required": true,
+      "tolerance": {
+        "x": 8,
+        "y": 8,
+        "width": 10,
+        "height": 10
+      }
+    },
+    {
+      "id": "endless_card",
+      "nodeName": "BtnEndless",
+      "role": "mode_card",
+      "modeRoute": "MODE_ENDLESS_REQUESTED",
+      "modeId": "endless",
+      "referenceBounds": {
+        "x": 55,
+        "y": 620,
+        "width": 610,
+        "height": 278
+      },
+      "expectedComponents": [
+        "cc.Sprite",
+        "cc.Button"
+      ],
+      "required": true,
+      "tolerance": {
+        "x": 10,
+        "y": 10,
+        "width": 12,
+        "height": 12
+      }
+    },
+    {
+      "id": "endless_best_caption",
+      "nodeName": "EndlessBestCaption",
+      "role": "best_score_label",
+      "referenceBounds": {
+        "x": 70,
+        "y": 832,
+        "width": 240,
+        "height": 44
+      },
+      "expectedComponents": [
+        "cc.Label"
+      ],
+      "required": false,
+      "tolerance": {
+        "x": 10,
+        "y": 10,
+        "width": 12,
+        "height": 12
+      }
+    },
+    {
+      "id": "endless_best_value",
+      "nodeName": "EndlessBestValue",
+      "role": "best_score_value",
+      "referenceBounds": {
+        "x": 370,
+        "y": 832,
+        "width": 280,
+        "height": 44
+      },
+      "expectedComponents": [
+        "cc.Label"
+      ],
+      "required": false,
+      "tolerance": {
+        "x": 10,
+        "y": 10,
+        "width": 12,
+        "height": 12
+      }
+    }
   ],
-  "forbiddenElements": ["AI mode", "online mode", "friend room"]
+  "modeCards": [
+    {
+      "modeId": "arena",
+      "displayName": "竞技乱斗",
+      "nodeName": "BtnArena",
+      "eventName": "MODE_ARENA_REQUESTED",
+      "gameManagerHandler": "startArenaGame"
+    },
+    {
+      "modeId": "endless",
+      "displayName": "无尽探索",
+      "nodeName": "BtnEndless",
+      "eventName": "MODE_ENDLESS_REQUESTED",
+      "gameManagerHandler": "startEndlessGame"
+    }
+  ],
+  "forbiddenElements": [
+    "locked",
+    "coming soon",
+    "video unlock",
+    "VIP",
+    "fake room",
+    "黑洞乱斗",
+    "限时冲榜",
+    "black-hole-battle",
+    "time-limited-leaderboard"
+  ]
 }
