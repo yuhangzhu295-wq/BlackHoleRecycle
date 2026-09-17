@@ -1,0 +1,273 @@
+{
+  "contract": "endless-hud",
+  "version": "1.0.0",
+  "description": "Design contract for EndlessHUD in Game.scene (720x1280 portrait 9:16).",
+  "canvas": {
+    "width": 720,
+    "height": 1280,
+    "aspectRatio": "9:16"
+  },
+  "sceneRoot": "Canvas",
+  "hudRoot": "EndlessHUD",
+  "scenePath": "cocos/assets/scenes/Game.scene",
+  "controller": "cocos/assets/scripts/ui/EndlessHUDController.ts",
+  "hudView": "cocos/assets/scripts/ui/HUDView.ts",
+  "gameManager": "cocos/assets/scripts/gameplay/GameManager.ts",
+  "joystickVisual": "cocos/assets/scripts/ui/JoystickVisual.ts",
+  "playerController": "cocos/assets/scripts/gameplay/PlayerController.ts",
+  "blackHoleMachine": "cocos/assets/scripts/machine/BlackHoleMachine.ts",
+  "uiReference": {
+    "note": "Authoritative visual layout is defined in Game.scene under Canvas/EndlessHUD. No synthetic or prefab drift overrides Game.scene.",
+    "auditEntry": "cocos/docs/design-reference/ui-v3/ui-gap-audit.md",
+    "entry": "Endless HUD"
+  },
+  "directElements": [
+    {
+      "name": "TopShade",
+      "role": "top_shade",
+      "lpos": {
+        "x": 0,
+        "y": 483,
+        "z": 0
+      },
+      "size": {
+        "width": 720,
+        "height": 156
+      },
+      "expectedComponents": [
+        "cc.UITransform",
+        "cc.Sprite"
+      ],
+      "runtimeActive": false,
+      "exclusionReason": "Full-width top shade deactivated by EndlessHUDController.onEnable to keep portrait city visible."
+    },
+    {
+      "name": "CoinPanel",
+      "role": "coin_pill_bg",
+      "lpos": {
+        "x": -210,
+        "y": 430,
+        "z": 0
+      },
+      "size": {
+        "width": 218,
+        "height": 64
+      },
+      "expectedComponents": [
+        "cc.UITransform",
+        "cc.Sprite"
+      ],
+      "children": []
+    },
+    {
+      "name": "LevelPanel",
+      "role": "level_pill_bg",
+      "lpos": {
+        "x": 106,
+        "y": 430,
+        "z": 0
+      },
+      "size": {
+        "width": 250,
+        "height": 64
+      },
+      "expectedComponents": [
+        "cc.UITransform",
+        "cc.Sprite"
+      ],
+      "children": []
+    },
+    {
+      "name": "RegionPanel",
+      "role": "region_pill_bg",
+      "lpos": {
+        "x": 0,
+        "y": 346,
+        "z": 0
+      },
+      "size": {
+        "width": 258,
+        "height": 54
+      },
+      "expectedComponents": [
+        "cc.UITransform",
+        "cc.Sprite"
+      ],
+      "children": []
+    },
+    {
+      "name": "CoinIcon",
+      "role": "coin_icon",
+      "lpos": {
+        "x": -294,
+        "y": 430,
+        "z": 0
+      },
+      "size": {
+        "width": 46,
+        "height": 46
+      },
+      "expectedComponents": [
+        "cc.UITransform",
+        "cc.Sprite"
+      ],
+      "children": []
+    },
+    {
+      "name": "CoinValue",
+      "role": "coin_label",
+      "lpos": {
+        "x": -188,
+        "y": 430,
+        "z": 0
+      },
+      "size": {
+        "width": 132,
+        "height": 48
+      },
+      "expectedComponents": [
+        "cc.UITransform",
+        "cc.Label",
+        "cc.LabelOutline"
+      ],
+      "dataSource": "GameManager.currentCoins (authoritative)",
+      "children": []
+    },
+    {
+      "name": "LevelValue",
+      "role": "level_label",
+      "lpos": {
+        "x": 106,
+        "y": 443,
+        "z": 0
+      },
+      "size": {
+        "width": 238,
+        "height": 34
+      },
+      "expectedComponents": [
+        "cc.UITransform",
+        "cc.Label",
+        "cc.LabelOutline"
+      ],
+      "dataSource": "machine.currentLevel + machine.currentConfig.title (authoritative)",
+      "children": []
+    },
+    {
+      "name": "MassValue",
+      "role": "mass_label",
+      "lpos": {
+        "x": 106,
+        "y": 409,
+        "z": 0
+      },
+      "size": {
+        "width": 238,
+        "height": 30
+      },
+      "expectedComponents": [
+        "cc.UITransform",
+        "cc.Label",
+        "cc.LabelOutline"
+      ],
+      "dataSource": "machine.currentMass (authoritative)",
+      "children": []
+    },
+    {
+      "name": "RegionValue",
+      "role": "region_label",
+      "lpos": {
+        "x": 0,
+        "y": 346,
+        "z": 0
+      },
+      "size": {
+        "width": 240,
+        "height": 32
+      },
+      "expectedComponents": [
+        "cc.UITransform",
+        "cc.Label",
+        "cc.LabelOutline"
+      ],
+      "dataSource": "infiniteWorldManager.getCurrentRegionName() || getCurrentDistrictName() || '住宅街区' (authoritative)",
+      "children": []
+    },
+    {
+      "name": "BtnPause",
+      "role": "pause_button",
+      "lpos": {
+        "x": 274,
+        "y": 474,
+        "z": 0
+      },
+      "size": {
+        "width": 58,
+        "height": 58
+      },
+      "expectedComponents": [
+        "cc.UITransform",
+        "cc.Sprite",
+        "cc.Button"
+      ],
+      "eventEmitted": "UI_TRIGGER_PAUSE",
+      "boundBy": "EndlessHUDController.bindPause",
+      "children": [
+        "BtnPauseLabel"
+      ]
+    },
+    {
+      "name": "Joystick",
+      "role": "virtual_joystick",
+      "lpos": {
+        "x": 232,
+        "y": -470,
+        "z": 0
+      },
+      "size": {
+        "width": 196,
+        "height": 196
+      },
+      "expectedComponents": [
+        "cc.UITransform",
+        "JoystickVisual"
+      ],
+      "dataSource": "PlayerController.moveInput (authoritative)",
+      "children": [
+        "JoystickBase",
+        "JoystickKnob"
+      ]
+    }
+  ],
+  "eventWiring": {
+    "onObjectAbsorbed": {
+      "caller": "GameManager.onObjectAbsorbed",
+      "callee": "HUDView.showAbsorbFeedback -> EndlessHUDController.showAbsorbFeedback -> PickupFeedbackPresenter.emit"
+    },
+    "updateHUD": {
+      "caller": "GameManager.updateHUD",
+      "callee": "HUDView.updateStats -> EndlessHUDController.updateStats"
+    },
+    "pauseTrigger": {
+      "caller": "EndlessHUDController.bindPause",
+      "event": "UI_TRIGGER_PAUSE",
+      "handler": "GameManager (eventBus.on UI_TRIGGER_PAUSE -> togglePause)"
+    },
+    "joystickInput": {
+      "reader": "JoystickVisual.update",
+      "source": "PlayerController.moveInput",
+      "target": "JoystickKnob.setPosition"
+    }
+  },
+  "invariants": [
+    "EndlessHUD must exist as direct child of Canvas in Game.scene with size 720x1280",
+    "CoinPanel, LevelPanel, and RegionPanel are direct empty panel children of EndlessHUD in Game.scene",
+    "CoinIcon, CoinValue, LevelValue, MassValue, and RegionValue are direct children of EndlessHUD in Game.scene",
+    "BtnPause is direct child of EndlessHUD with BtnPauseLabel child in Game.scene",
+    "Joystick is direct child of EndlessHUD with JoystickBase and JoystickKnob children in Game.scene",
+    "TopShade is deactivated at runtime by EndlessHUDController.onEnable",
+    "EndlessHUDController updates stats strictly from machine.currentMass, machine.currentLevel, machine.currentConfig.title, currentCoins, and regionName",
+    "JoystickVisual reads input strictly from PlayerController.moveInput",
+    "No data label may display a hardcoded, mock, or synthetic value"
+  ]
+}
