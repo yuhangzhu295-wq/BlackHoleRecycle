@@ -158,6 +158,7 @@ export class ArenaMatchManager extends Component {
 
   public running: boolean = false;
   private elapsedSeconds: number = 0;
+  private matchPaused: boolean = false;
   private endReason: 'RUNNING' | 'TIME' | 'FORFEIT' = 'RUNNING';
   private world: InfiniteWorldManager | null = null;
   private callbacks: ArenaMatchCallbacks | null = null;
@@ -175,6 +176,7 @@ export class ArenaMatchManager extends Component {
     this.clearBots();
     this.running = true;
     this.elapsedSeconds = 0;
+    this.matchPaused = false;
     this.endReason = 'RUNNING';
     this.eliminationCount = 0;
     this.settlementReward = EMPTY_SETTLEMENT_REWARD;
@@ -245,12 +247,13 @@ export class ArenaMatchManager extends Component {
 
   /** Freeze every physical machine when the shared pause page is shown. */
   public setMatchPaused(paused: boolean): void {
+    this.matchPaused = paused;
     for (const competitor of this.competitors) competitor.machine.isPaused = paused || !competitor.alive;
   }
 
   /** Called from GameManager after streamed cells have been updated. */
   public updateMatch(dt: number): void {
-    if (!this.running || !this.world || dt <= 0) return;
+    if (!this.running || !this.world || dt <= 0 || this.matchPaused) return;
 
     this.elapsedSeconds += dt;
     for (const competitor of this.competitors) {

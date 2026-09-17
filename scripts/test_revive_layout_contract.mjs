@@ -87,4 +87,10 @@ assert.match(hudView, /showScreen.*Revive|Revive.*showScreen/s, "HUDView must sh
 assert.doesNotMatch(controller, /enterSettlement|showScreen.*Settlement/,
   'RevivePageController must not directly call settlement; only emit events handled by GameManager');
 
+// 10. ArenaMatchManager pause guard contract: setMatchPaused must stop updateMatch
+const arenaSource = read('cocos/assets/scripts/gameplay/ArenaMatchManager.ts');
+assert.match(arenaSource, /matchPaused\s*:\s*boolean/, 'ArenaMatchManager must have matchPaused state');
+assert.match(arenaSource, /setMatchPaused\(paused:\s*boolean\)[\s\S]{0,100}matchPaused\s*=\s*paused/, 'setMatchPaused must store paused state in matchPaused');
+assert.match(arenaSource, /updateMatch\(dt:\s*number\)[\s\S]{0,150}matchPaused/, 'updateMatch must check matchPaused before advancing match/respawn/bot timers');
+
 console.log('[PASS] P5 Revive page design contract assertions (NON_RUNTIME; portrait CDP acceptance remains required).');
