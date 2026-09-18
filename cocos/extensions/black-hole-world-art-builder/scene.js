@@ -11,10 +11,20 @@ const ART_DEFINITIONS = [
   { field: 'buildingCTemplate', name: 'BuildingCTemplate', url: 'db://assets/art/world/residential/building-type-c.glb' },
   { field: 'treeSmallTemplate', name: 'TreeSmallTemplate', url: 'db://assets/art/world/environment/tree-small.glb' },
   { field: 'treeLargeTemplate', name: 'TreeLargeTemplate', url: 'db://assets/art/world/environment/tree-large.glb' },
+  { field: 'parkFountainTemplate', name: 'ParkFountainTemplate', url: 'db://assets/art/world/pretty-park/fountain.gltf' },
+  { field: 'parkBenchTemplate', name: 'ParkBenchTemplate', url: 'db://assets/art/world/pretty-park/bench.gltf' },
+  { field: 'parkTrashcanTemplate', name: 'ParkTrashcanTemplate', url: 'db://assets/art/world/pretty-park/trashcan.gltf' },
+  { field: 'parkFlowerATemplate', name: 'ParkFlowerATemplate', url: 'db://assets/art/world/pretty-park/flower_A.gltf' },
+  { field: 'parkFlowerBTemplate', name: 'ParkFlowerBTemplate', url: 'db://assets/art/world/pretty-park/flower_B.gltf' },
+  { field: 'parkHedgeLongTemplate', name: 'ParkHedgeLongTemplate', url: 'db://assets/art/world/pretty-park/hedge_straight_long.gltf' },
+  { field: 'parkTreeTemplate', name: 'ParkTreeTemplate', url: 'db://assets/art/world/pretty-park/tree.gltf' },
+  { field: 'parkTreeLargeTemplate', name: 'ParkTreeLargeTemplate', url: 'db://assets/art/world/pretty-park/tree_large.gltf' },
   { field: 'pathStonesTemplate', name: 'PathStonesTemplate', url: 'db://assets/art/world/environment/path-stones-long.glb' },
   { field: 'fenceTemplate', name: 'FenceTemplate', url: 'db://assets/art/world/environment/fence.glb' },
   { field: 'commercialBuildingATemplate', name: 'CommercialBuildingATemplate', url: 'db://assets/art/world/city/commercial-building-a.glb' },
   { field: 'commercialBuildingDTemplate', name: 'CommercialBuildingDTemplate', url: 'db://assets/art/world/city/commercial-building-d.glb' },
+  { field: 'commercialBuildingFTemplate', name: 'CommercialBuildingFTemplate', url: 'db://assets/art/world/city/commercial-building-f.glb' },
+  { field: 'commercialBuildingGTemplate', name: 'CommercialBuildingGTemplate', url: 'db://assets/art/world/city/commercial-building-g.glb' },
   { field: 'streetLightTemplate', name: 'StreetLightTemplate', url: 'db://assets/art/world/roads/street-light.glb' },
   { field: 'constructionConeTemplate', name: 'ConstructionConeTemplate', url: 'db://assets/art/world/roads/construction-cone.glb' },
   { field: 'garbageTruckTemplate', name: 'GarbageTruckTemplate', url: 'db://assets/art/vehicles/garbage-truck.glb' },
@@ -256,7 +266,7 @@ module.exports = {
         }
 
         logStage('INSTANTIATE_ROADS');
-        // 2. Roads: exactly 3 visible road segments to fulfill verification
+        // 2. Roads: the crossroad plus four route points drive real runtime traffic.
         if (library.roadCrossroadTemplate) {
           const road = instantiate(library.roadCrossroadTemplate);
           road.name = 'MainCrossroad';
@@ -279,10 +289,26 @@ module.exports = {
           roadS.setPosition(new Vec3(0, 0.05, -16));
           roadS.setScale(new Vec3(12, 1, 16));
           children.Roads.addChild(roadS);
+
+          const roadW = instantiate(library.roadStraightTemplate);
+          roadW.name = 'RoadWest';
+          roadW.active = true;
+          roadW.setPosition(new Vec3(-16, 0.05, 0));
+          roadW.setRotationFromEuler(0, 90, 0);
+          roadW.setScale(new Vec3(12, 1, 16));
+          children.Roads.addChild(roadW);
+
+          const roadE = instantiate(library.roadStraightTemplate);
+          roadE.name = 'RoadEast';
+          roadE.active = true;
+          roadE.setPosition(new Vec3(16, 0.05, 0));
+          roadE.setRotationFromEuler(0, 90, 0);
+          roadE.setScale(new Vec3(12, 1, 16));
+          children.Roads.addChild(roadE);
         }
 
         logStage('INSTANTIATE_BUILDINGS');
-        // 3. Buildings: 1 residential + 1 commercial template instance
+        // 3. Buildings: fixed Creator-owned landmarks; runtime owns no product coordinates.
         if (library.buildingBTemplate) {
           const house = instantiate(library.buildingBTemplate);
           house.name = 'ResidentialHouseWest';
@@ -299,6 +325,22 @@ module.exports = {
           shop.setRotationFromEuler(0, -90, 0);
           children.Buildings.addChild(shop);
         }
+        if (library.commercialBuildingDTemplate) {
+          const hospital = instantiate(library.commercialBuildingDTemplate);
+          hospital.name = 'Hospital_ClinicNorth';
+          hospital.active = true;
+          hospital.setPosition(new Vec3(-10, 0, 10));
+          hospital.setRotationFromEuler(0, 90, 0);
+          children.Buildings.addChild(hospital);
+        }
+        if (library.commercialBuildingFTemplate) {
+          const market = instantiate(library.commercialBuildingFTemplate);
+          market.name = 'CommercialMarketSouth';
+          market.active = true;
+          market.setPosition(new Vec3(10, 0, -10));
+          market.setRotationFromEuler(0, -90, 0);
+          children.Buildings.addChild(market);
+        }
         if (stage === 'structure') {
           logStage('SAVE_STRUCTURE');
           await Editor.Message.request('scene', 'save-scene');
@@ -308,12 +350,12 @@ module.exports = {
 
         if (stage === 'park' || stage === 'full') {
         logStage('INSTANTIATE_PARK');
-        // 4. Park: twelve real authored tree instances arranged as a readable frame.
+        // 4. Park: trees frame the player without relying on a camera adjustment.
         const smallTreePositions = [
-          [-6, 6], [-7, 8], [-7, 3], [6, -6], [7, -8], [7, -3],
+          [-5, 5], [-4, 8], [-5, 2], [5, -5], [4, -8], [5, -2],
         ];
         const largeTreePositions = [
-          [-6, 9], [-7, 7], [-5, 10], [8, -10], [7, -7], [5, -10],
+          [-3, 9], [-6, 7], [-3, 6], [3, -9], [6, -7], [3, -6],
         ];
         if (library.treeSmallTemplate) {
           smallTreePositions.forEach(([x, z], index) => {
@@ -342,7 +384,7 @@ module.exports = {
 
         if (stage === 'content' || stage === 'full') {
         logStage('INSTANTIATE_PROPS');
-        // 5. Props: 3 POI semantic nodes with minimal instantiated props
+        // 5. Props: authored semantic landmarks, low enough to leave the play corridor readable.
         const poi1 = new Node('POI_RecyclingHub');
         poi1.setPosition(new Vec3(8, 0, 8));
         if (library.recyclingBoxTemplate) {
@@ -372,6 +414,37 @@ module.exports = {
           poi3.addChild(light);
         }
         children.Props.addChild(poi3);
+
+        const parkFountain = new Node('POI_ParkFountain');
+        parkFountain.setPosition(new Vec3(0, 0, 7));
+        if (library.parkFountainTemplate) {
+          const fountain = instantiate(library.parkFountainTemplate);
+          fountain.name = 'Fountain';
+          fountain.active = true;
+          parkFountain.addChild(fountain);
+        }
+        children.Props.addChild(parkFountain);
+
+        const parkDetails = [
+          ['ParkBenchWest', library.parkBenchTemplate, -6, 0, 4],
+          ['ParkBenchEast', library.parkBenchTemplate, 6, 0, 4],
+          ['ParkBinWest', library.parkTrashcanTemplate, -7, 0, -2],
+          ['ParkBinEast', library.parkTrashcanTemplate, 7, 0, -2],
+          ['FlowerbedWest', library.parkFlowerATemplate, -5, 0, 7],
+          ['FlowerbedEast', library.parkFlowerBTemplate, 5, 0, 7],
+          ['ParkHedgeNorth', library.parkHedgeLongTemplate, 0, 0, 10],
+        ];
+        for (const [name, template, x, y, z] of parkDetails) {
+          const detail = new Node(name);
+          detail.setPosition(new Vec3(x, y, z));
+          if (template) {
+            const visual = instantiate(template);
+            visual.name = name + '_Visual';
+            visual.active = true;
+            detail.addChild(visual);
+          }
+          children.Props.addChild(detail);
+        }
 
         // Low authored props break up empty grass without occupying the central gameplay corridor.
         const pathStonesWest = new Node('ParkPathStonesWest');
@@ -417,18 +490,18 @@ module.exports = {
         children.Props.addChild(fenceEast);
 
         logStage('INSTANTIATE_TRAFFIC');
-        // 6. TrafficRoutes: 3 vehicle anchors (1 instantiated sedan + 2 anchor nodes)
-        if (library.sedanTemplate) {
-          const v1 = instantiate(library.sedanTemplate);
-          v1.name = 'VehicleAnchor_Sedan';
-          v1.active = true;
-          v1.setPosition(new Vec3(-6, 0.1, -12));
-          children.TrafficRoutes.addChild(v1);
-        }
-        for (let i = children.TrafficRoutes.children.length + 1; i <= 3; i++) {
-          const vNode = new Node('VehicleAnchor_' + i);
-          vNode.setPosition(new Vec3(6 * i - 12, 0.1, 12));
-          children.TrafficRoutes.addChild(vNode);
+        // 6. TrafficRoutes: source anchors become pooled DynamicVehicles at runtime.
+        const vehicleAnchors = [
+          ['VehicleAnchor_SedanWest', -12, 0.1, 0],
+          ['VehicleAnchor_SedanNorth', 0, 0.1, 12],
+          ['VehicleAnchor_DeliveryVanEast', 12, 0.1, 0],
+          ['VehicleAnchor_GarbageTruckSouth', 0, 0.1, -12],
+          ['VehicleAnchor_SedanCenter', -4, 0.1, 0],
+        ];
+        for (const [name, x, y, z] of vehicleAnchors) {
+          const anchor = new Node(name);
+          anchor.setPosition(new Vec3(x, y, z));
+          children.TrafficRoutes.addChild(anchor);
         }
 
         logStage('BUILD_SPAWN_POINTS');
