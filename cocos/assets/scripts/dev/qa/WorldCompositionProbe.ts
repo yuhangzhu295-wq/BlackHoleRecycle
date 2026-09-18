@@ -393,7 +393,7 @@ export class WorldCompositionProbe {
   }> | null {
     if (name === 'Ground' || name === 'Roads' || name === 'Buildings' || name === 'Park' || name === 'Props'
       || name === 'TrafficRoutes' || name === 'CollectibleSpawnPoints' || name === 'CompetitorSpawnPoints'
-      || name === 'ClusterAnchors') return null;
+      || name === 'ClusterAnchors' || name.startsWith('VehicleAnchor_')) return null;
     if (name === 'DistrictGround' || name === 'GroundTile') {
       return {
         category: 'GROUND',

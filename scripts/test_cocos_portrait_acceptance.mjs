@@ -1428,11 +1428,169 @@ async function verifyUiFullFlow(cdp, page, canvasRect, homeSnapshot) {
   };
 }
 
+const goldenCityContractPath = path.join(cocosProject, 'docs', 'design-contracts', 'golden-city-composition.json');
+
 /**
- * Baseline-only Golden City probe. It starts a genuine 1-human + 7-bot arena
- * by CDP touch, reads JSON evidence from the live Cocos engine, and observes
- * a route-driven vehicle move. It does not grant mass, teleport entities, or
- * convert missing metrics into a pass.
+ * Load the declared 390x844 Golden City contract. The gate reads its thresholds
+ * from the contract instead of carrying a second, drifting copy, and a missing
+ * or malformed contract is a hard failure rather than a silent skip.
+ */
+function loadGoldenCityContract() {
+  assert(existsSync(goldenCityContractPath),
+    `FAIL_GOLDEN_CITY_CONTRACT_MISSING: ${goldenCityContractPath}`);
+  let parsed;
+  try {
+    parsed = JSON.parse(readFileSync(goldenCityContractPath, 'utf8'));
+  } catch (error) {
+    throw new Error(`FAIL_GOLDEN_CITY_CONTRACT_PARSE: ${goldenCityContractPath}: ${error instanceof Error ? error.message : String(error)}`);
+  }
+  const screen = parsed?.world?.screen;
+  const mandatory = parsed?.mandatoryComposition;
+  const camera = parsed?.cameraComposition;
+  const declaredNumbers = {
+    'world.screen.width': screen?.width,
+    'world.screen.height': screen?.height,
+    'mandatoryComposition.buildingsMin': mandatory?.buildingsMin,
+    'mandatoryComposition.treesMin': mandatory?.treesMin,
+    'mandatoryComposition.roadSegmentsMin': mandatory?.roadSegmentsMin,
+    'mandatoryComposition.poiMin': mandatory?.poiMin,
+    'mandatoryComposition.vehiclesMin': mandatory?.vehiclesMin,
+    'mandatoryComposition.competitorsMin': mandatory?.competitorsMin,
+    'mandatoryComposition.collectiblesMin': mandatory?.collectiblesMin,
+    'mandatoryComposition.resourceClustersMin': mandatory?.resourceClustersMin,
+    'mandatoryComposition.largeEmptyGroundMaxPercent': mandatory?.largeEmptyGroundMaxPercent,
+    'cameraComposition.playerWidthRatioMin': camera?.playerWidthRatioMin,
+    'cameraComposition.playerWidthRatioMax': camera?.playerWidthRatioMax,
+    'cameraComposition.playerScreenYRatioMin': camera?.playerScreenYRatioMin,
+    'cameraComposition.playerScreenYRatioMax': camera?.playerScreenYRatioMax,
+  };
+  for (const [field, value] of Object.entries(declaredNumbers)) {
+    assert(Number.isFinite(value),
+      `FAIL_GOLDEN_CITY_CONTRACT_INVALID: ${field}=${JSON.stringify(value)}`);
+  }
+  return { path: goldenCityContractPath, version: parsed.contractVersion ?? null, screen, mandatory, camera };
+}
+
+/**
+ * Score the measured composition against the declared contract. Every check
+ * reports its actual and required value, so a failure names the real deficit
+ * instead of a generic gate failure.
+ */
+function evaluateGoldenCityGate(contract, composition) {
+  if (!composition || typeof composition !== 'object') {
+    throw new Error(`FAIL_GOLDEN_CITY_COMPOSITION_MISSING: ${JSON.stringify(composition)}`);
+  }
+  if (!composition.counts || typeof composition.counts !== 'object') {
+    throw new Error(`FAIL_GOLDEN_CITY_COMPOSITION_COUNTS_MISSING: ${JSON.stringify(composition.counts)}`);
+  }
+  const player = composition.player || {};
+  const viewport = composition.viewport || {};
+  // WorldCompositionProbe.counts is the visible-only aggregate and already
+  // weights logical units, so a four-arm FourWayRoad junction counts as four
+  // road segments. Counting raw visible entry rows under-counts roads.
+  const metrics = {
+    buildings: composition.counts.BUILDING,
+    trees: composition.counts.TREE,
+    roads: composition.counts.ROAD,
+    poi: composition.counts.POI,
+    vehicles: composition.counts.VEHICLE,
+    competitors: composition.counts.COMPETITOR,
+    collectibles: composition.counts.COLLECTIBLE,
+    resourceClusters: composition.counts.RESOURCE_CLUSTER,
+    largeEmptyGroundRatio: composition.emptyGround?.largeEmptyGroundRatio ?? null,
+    playerWidthRatio: player.widthRatio ?? null,
+    playerScreenYRatio: player.screenYRatio ?? null,
+    playerVisible: player.visible === true,
+    viewportWidth: viewport.width ?? null,
+    viewportHeight: viewport.height ?? null,
+  };
+  const round = (value) => (Number.isFinite(value) ? Math.round(value * 10000) / 10000 : value);
+  const checks = [];
+  const atLeast = (id, label, actual, minimum) => {
+    const measurable = Number.isFinite(actual);
+    const pass = measurable && actual >= minimum;
+    checks.push({
+      id,
+      label,
+      relation: '>=',
+      actual: measurable ? actual : null,
+      required: minimum,
+      pass,
+      deficit: pass ? null : measurable
+        ? `${label} is ${round(actual)}, needs >= ${minimum} (short by ${round(minimum - actual)})`
+        : `${label} is unavailable, needs >= ${minimum}`,
+    });
+  };
+  const atMost = (id, label, actual, maximum) => {
+    const measurable = Number.isFinite(actual);
+    const pass = measurable && actual <= maximum;
+    checks.push({
+      id,
+      label,
+      relation: '<=',
+      actual: measurable ? actual : null,
+      required: maximum,
+      pass,
+      deficit: pass ? null : measurable
+        ? `${label} is ${round(actual)}, needs <= ${maximum} (over by ${round(actual - maximum)})`
+        : `${label} is unavailable, needs <= ${maximum}`,
+    });
+  };
+  const { mandatory, camera, screen } = contract;
+  atLeast('BUILDINGS_MIN', 'visible buildings', metrics.buildings, mandatory.buildingsMin);
+  atLeast('TREES_MIN', 'visible trees', metrics.trees, mandatory.treesMin);
+  atLeast('ROAD_SEGMENTS_MIN', 'visible road segments (logical units)', metrics.roads, mandatory.roadSegmentsMin);
+  atLeast('POI_MIN', 'visible points of interest', metrics.poi, mandatory.poiMin);
+  atLeast('VEHICLES_MIN', 'visible vehicles', metrics.vehicles, mandatory.vehiclesMin);
+  atLeast('COMPETITORS_MIN', 'visible AI competitors', metrics.competitors, mandatory.competitorsMin);
+  atLeast('COLLECTIBLES_MIN', 'visible collectibles', metrics.collectibles, mandatory.collectiblesMin);
+  atLeast('RESOURCE_CLUSTERS_MIN', 'visible resource clusters', metrics.resourceClusters, mandatory.resourceClustersMin);
+  atMost('LARGE_EMPTY_GROUND_MAX', 'large empty ground ratio', metrics.largeEmptyGroundRatio,
+    mandatory.largeEmptyGroundMaxPercent / 100);
+  atLeast('PLAYER_WIDTH_RATIO_MIN', 'player width ratio', metrics.playerWidthRatio, camera.playerWidthRatioMin);
+  atMost('PLAYER_WIDTH_RATIO_MAX', 'player width ratio', metrics.playerWidthRatio, camera.playerWidthRatioMax);
+  atLeast('PLAYER_SCREEN_Y_RATIO_MIN', 'player screen-Y ratio', metrics.playerScreenYRatio, camera.playerScreenYRatioMin);
+  atMost('PLAYER_SCREEN_Y_RATIO_MAX', 'player screen-Y ratio', metrics.playerScreenYRatio, camera.playerScreenYRatioMax);
+  // The composition thresholds are only meaningful at the declared screen size.
+  const viewportMatches = metrics.viewportWidth === screen.width && metrics.viewportHeight === screen.height;
+  checks.push({
+    id: 'VIEWPORT_DECLARED_SCREEN',
+    label: 'measured viewport equals the declared screen',
+    relation: '=',
+    actual: `${metrics.viewportWidth}x${metrics.viewportHeight}`,
+    required: `${screen.width}x${screen.height}`,
+    pass: viewportMatches,
+    deficit: viewportMatches
+      ? null
+      : `viewport is ${metrics.viewportWidth}x${metrics.viewportHeight}, contract expects ${screen.width}x${screen.height}`,
+  });
+  checks.push({
+    id: 'PLAYER_VISIBLE',
+    label: 'player projected into the gameplay view',
+    relation: '=',
+    actual: metrics.playerVisible,
+    required: true,
+    pass: metrics.playerVisible,
+    deficit: metrics.playerVisible ? null : 'player is not visible in the gameplay camera view',
+  });
+  const deficits = checks.filter((check) => !check.pass).map((check) => check.deficit);
+  return {
+    metrics,
+    checks,
+    deficits,
+    passed: deficits.length === 0,
+    verdict: deficits.length === 0 ? 'PASS' : 'FAIL',
+    contractPath: contract.path,
+    contractVersion: contract.version,
+  };
+}
+
+/**
+ * Golden City acceptance gate. It starts a genuine 1-human + 7-bot arena by CDP
+ * touch, reads JSON evidence from the live Cocos engine, asserts every declared
+ * composition threshold and camera range, and observes a route-driven vehicle
+ * move. It does not grant mass, teleport entities, or convert missing metrics
+ * into a pass.
  */
 async function collectGoldenCityBaseline(cdp, page, canvasRect, homeSnapshot) {
   const start = pointForVisibleNode(canvasRect, homeSnapshot, homeSnapshot.ui?.start, 'GOLDEN_CITY_HOME_START');
@@ -1461,22 +1619,26 @@ async function collectGoldenCityBaseline(cdp, page, canvasRect, homeSnapshot) {
   const dynamicBefore = before.world?.streaming?.dynamicVehicles || [];
   assert(dynamicBefore.length > 0,
     `FAIL_GOLDEN_CITY_DYNAMIC_VEHICLE_MISSING: ${JSON.stringify(before.world?.streaming)}`);
-  const treeEntries = composition.entries.filter((entry) => entry.category === 'TREE');
-  const visibleTrees = treeEntries.filter((entry) => entry.visible);
-  const visibleEntries = composition.entries.filter((entry) => entry.visible);
-  const compositionMetrics = {
+  // Gate the measured composition against the declared contract. The metrics
+  // file is written before asserting so a failing gate still leaves the real
+  // numbers on disk for the next fix.
+  const contract = loadGoldenCityContract();
+  const gate = evaluateGoldenCityGate(contract, composition);
+  writeFileSync(path.join(evidenceDirectory, 'golden-city-gate.json'), `${JSON.stringify({
+    scope: 'golden-city',
     currentCellSource: streaming.currentCellSource,
-    visibleTrees: visibleTrees.length,
-    visibleRoads: visibleEntries.filter((entry) => entry.category === 'ROAD').length,
-    visiblePOI: visibleEntries.filter((entry) => entry.category === 'POI').length,
-    visibleBuildings: visibleEntries.filter((entry) => entry.category === 'BUILDING').length,
-    visibleVehicles: visibleEntries.filter((entry) => entry.category === 'VEHICLE').length,
-    visibleCollectibles: visibleEntries.filter((entry) => entry.category === 'COLLECTIBLE').length,
-    resourceClusters: visibleEntries.filter((entry) => entry.category === 'RESOURCE_CLUSTER').length,
-    largeEmptyGroundRatio: composition.emptyGround?.largeEmptyGroundRatio ?? null,
-  };
-  assert(visibleTrees.length >= 10 && visibleTrees.every((entry) => entry.category === 'TREE'),
-    `FAIL_GOLDEN_CITY_TREE_GATE: ${JSON.stringify({ metrics: compositionMetrics, treeEntries, visibleTrees })}`);
+    runner: 'official-cocos-cli + Playwright CDP touch',
+    contractPath: gate.contractPath,
+    contractVersion: gate.contractVersion,
+    screen: contract.screen,
+    measuredAt: new Date().toISOString(),
+    verdict: gate.verdict,
+    metrics: gate.metrics,
+    checks: gate.checks,
+    deficits: gate.deficits,
+  }, null, 2)}\n`, 'utf8');
+  assert(gate.passed, `FAIL_GOLDEN_CITY_COMPOSITION_GATE: ${gate.deficits.length} unmet threshold(s): `
+    + `${gate.deficits.join(' | ')} :: metrics=${JSON.stringify(gate.metrics)}`);
   const openingRoad = composition.entries.find((entry) => entry.name === 'FourWayRoad' || entry.name === 'MainCrossroad')?.worldBounds;
   const openingTraffic = dynamicBefore.filter((vehicle) => vehicle.id.startsWith('traffic_0_0_'));
   const isInsideOpeningRoad = (vehicle) => openingRoad
@@ -1503,7 +1665,16 @@ async function collectGoldenCityBaseline(cdp, page, canvasRect, homeSnapshot) {
   }).find((vehicle) => vehicle && vehicle.distance > 0.2);
   assert(movingVehicle,
     `FAIL_GOLDEN_CITY_DYNAMIC_VEHICLE_NOT_MOVING: ${JSON.stringify({ dynamicBefore, dynamicAfter })}`);
-  return { start, arena, currentCellSource: streaming.currentCellSource, composition, dynamicBefore, dynamicAfter, movingVehicle };
+  return {
+    start,
+    arena,
+    currentCellSource: streaming.currentCellSource,
+    composition,
+    gate,
+    dynamicBefore,
+    dynamicAfter,
+    movingVehicle,
+  };
 }
 
 /**
@@ -2602,8 +2773,10 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
       report.camera = snapshot.camera;
       if (acceptanceScope === 'golden-city') {
         report.goldenCity = await collectGoldenCityBaseline(cdp, page, canvasRect, snapshot);
-        // A baseline can expose contract failures; that is the intended next
-        // input to a targeted fix, not permission to label Golden City PASS.
+        // Reaching this point means every declared composition threshold and
+        // camera range passed against live runtime measurements. A failing
+        // threshold throws with its exact deficit and leaves the evidence on
+        // disk, so the scope reports FAIL instead of a summary status.
         assert(runtimeErrors.length === 0,
           `Runtime console errors during Golden City baseline: ${runtimeErrors.join(' | ')}`);
         return;
@@ -3434,10 +3607,8 @@ try {
     console.log(`[acceptance:v2] Verifying ${viewport.id}...`);
     await runPortraitCase(browser, baseUrl, viewport, report);
   }
-  report.status = acceptanceScope === 'golden-city' ? 'BASELINE_COLLECTED' : 'PASS';
-  console.log(acceptanceScope === 'golden-city'
-    ? '[acceptance:v2] BASELINE_COLLECTED: real Golden City measurement and CDP touch verified.'
-    : '[acceptance:v2] PASS: real portrait Cocos runtime and CDP touch verified.');
+  report.status = 'PASS';
+  console.log('[acceptance:v2] PASS: real portrait Cocos runtime and CDP touch verified.');
 } catch (error) {
   report.status = 'FAIL';
   report.failures.push(error instanceof Error ? error.message : String(error));
