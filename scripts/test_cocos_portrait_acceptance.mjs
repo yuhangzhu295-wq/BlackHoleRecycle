@@ -31,7 +31,7 @@ const reportPath = path.join(evidenceDirectory, 'acceptance-report.json');
 const requestedAcceptanceScope = process.argv.find((argument) => argument.startsWith('--scope='))?.slice('--scope='.length)
   || process.env.BHR_ACCEPTANCE_SCOPE
   || 'full';
-const acceptanceScope = ['full', 'pages', 'arena', 'revive', 'settlement', 'ui-full-flow', 'skins', 'skin-unlock', 'arena-timer', 'network', 'regions', 'progression', 'cell-lifecycle', 'golden-city'].includes(requestedAcceptanceScope)
+const acceptanceScope = ['full', 'pages', 'arena', 'arena-ai', 'revive', 'settlement', 'ui-full-flow', 'skins', 'skin-unlock', 'arena-timer', 'network', 'regions', 'progression', 'cell-lifecycle', 'golden-city'].includes(requestedAcceptanceScope)
   ? requestedAcceptanceScope
   : 'full';
 // Preserve each independently-runnable acceptance scope. The canonical report
@@ -1287,6 +1287,173 @@ async function verifyArenaTimerExpiry(cdp, page, canvasRect) {
   return { started: started.arena, settled: settled.arena };
 }
 
+/**
+ * S8 gate: record only read-only Cocos runtime snapshots for one unshortened
+ * local Arena match. Keeping the sampler in the page avoids CDP polling gaps
+ * that can miss short CHASE/FLEE transitions, while it never changes gameplay.
+ */
+async function verifyArenaAiRuntime(cdp, page, canvasRect) {
+  const homeSnapshot = await readRuntimeSnapshot(page);
+  const homeStart = pointForVisibleNode(canvasRect, homeSnapshot, homeSnapshot.ui?.start, 'ARENA_AI_HOME_START');
+  await dispatchTouchTap(cdp, homeStart.x, homeStart.y);
+  await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'MODE_SELECT', undefined, { timeout: 5000 });
+  const modeSnapshot = await readRuntimeSnapshot(page);
+  const arenaPoint = pointForVisibleNode(canvasRect, modeSnapshot, modeSnapshot.ui?.modeArena, 'ARENA_AI_MODE_ARENA');
+  await dispatchTouchTap(cdp, arenaPoint.x, arenaPoint.y);
+  await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'ARENA', undefined, { timeout: 7000 });
+  const started = await readRuntimeSnapshot(page);
+  assert(started.arena?.running && started.arena?.durationSeconds === 180,
+    `FAIL_ARENA_AI_START: ${JSON.stringify(started.arena)}`);
+  assert(started.arena?.competitorCount === 8 && Object.keys(started.arena?.botStates || {}).length === 7,
+    `FAIL_ARENA_AI_ROSTER: ${JSON.stringify(started.arena)}`);
+  await page.screenshot({ path: path.join(evidenceDirectory, 'portrait-390x844-arena-ai-start.png') });
+
+  await page.evaluate(() => {
+    const telemetry = {
+      active: true,
+      frames: 0,
+      maxElapsedSeconds: 0,
+      maxEliminationCount: 0,
+      durationSeconds: 0,
+      competitorCounts: new Set(),
+      botIds: new Set(),
+      stateFrames: {},
+      botInitial: {},
+      botMaximum: {},
+      alive: {},
+      deathsObserved: 0,
+      eventHuntWithFragmentFrames: 0,
+    };
+    window.__BHR_ARENA_AI_TELEMETRY__ = telemetry;
+    const observe = () => {
+      if (!telemetry.active) return;
+      const snapshot = window.__BHR_QA__?.snapshot?.();
+      const arena = snapshot?.arena;
+      if (arena) {
+        telemetry.frames += 1;
+        telemetry.maxElapsedSeconds = Math.max(telemetry.maxElapsedSeconds, arena.elapsedSeconds || 0);
+        telemetry.maxEliminationCount = Math.max(telemetry.maxEliminationCount, arena.eliminationCount || 0);
+        telemetry.durationSeconds = Math.max(telemetry.durationSeconds, arena.durationSeconds || 0);
+        telemetry.competitorCounts.add(arena.competitorCount);
+        const states = arena.botStates || {};
+        const hasEventHunter = Object.values(states).includes('EVENT_HUNT');
+        if (hasEventHunter && (snapshot.objects || []).some((object) => object?.type === 'arena_mass_fragment')) {
+          telemetry.eventHuntWithFragmentFrames += 1;
+        }
+        for (const [id, state] of Object.entries(states)) {
+          telemetry.botIds.add(id);
+          telemetry.stateFrames[state] = (telemetry.stateFrames[state] || 0) + 1;
+        }
+        for (const entry of arena.leaderboard || []) {
+          if (entry.isLocal) continue;
+          if (!telemetry.botInitial[entry.id]) {
+            telemetry.botInitial[entry.id] = { mass: entry.mass, consumed: entry.consumed, kills: entry.kills };
+          }
+          const maximum = telemetry.botMaximum[entry.id] || { mass: 0, consumed: 0, kills: 0 };
+          maximum.mass = Math.max(maximum.mass, entry.mass || 0);
+          maximum.consumed = Math.max(maximum.consumed, entry.consumed || 0);
+          maximum.kills = Math.max(maximum.kills, entry.kills || 0);
+          telemetry.botMaximum[entry.id] = maximum;
+          if (telemetry.alive[entry.id] === true && entry.alive === false) telemetry.deathsObserved += 1;
+          telemetry.alive[entry.id] = entry.alive;
+        }
+      }
+      requestAnimationFrame(observe);
+    };
+    requestAnimationFrame(observe);
+  });
+
+  // An idle local player can legitimately enter the real revive flow, which
+  // pauses this offline match. Keep playing through the visible joystick and
+  // use the visible revive action when needed so the production clock, rather
+  // than a test-side timer shortcut, reaches its 180-second TIME outcome.
+  let current = started;
+  let joystick = pointForVisibleNode(canvasRect, current, current.ui?.arenaHUD?.joystick, 'ARENA_AI_JOYSTICK');
+  let touchHeld = false;
+  let reviveCount = 0;
+  const deadline = Date.now() + 210000;
+  try {
+    while (Date.now() < deadline) {
+      if (current.gameState === 'SETTLEMENT' && current.arena?.reason === 'TIME') break;
+      if (current.gameState === 'REVIVING') {
+        if (touchHeld) {
+          await releaseTouchJoystick(cdp);
+          touchHeld = false;
+        }
+        const revive = pointForVisibleNode(canvasRect, current, current.ui?.formalPages?.reviveNow, 'ARENA_AI_REVIVE_NOW');
+        await dispatchTouchTap(cdp, revive.x, revive.y);
+        reviveCount += 1;
+        await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'ARENA', undefined, { timeout: 5000 });
+        current = await readRuntimeSnapshot(page);
+        joystick = pointForVisibleNode(canvasRect, current, current.ui?.arenaHUD?.joystick, 'ARENA_AI_JOYSTICK_AFTER_REVIVE');
+      }
+      if (current.gameState === 'ARENA') {
+        const phase = (current.arena?.elapsedSeconds || 0) * 0.83;
+        const targetX = joystick.x + Math.cos(phase) * 54;
+        const targetY = joystick.y + Math.sin(phase) * 54;
+        if (touchHeld) await moveTouchJoystick(cdp, targetX, targetY);
+        else {
+          await beginTouchJoystick(cdp, joystick.x, joystick.y, targetX, targetY);
+          touchHeld = true;
+        }
+      }
+      await page.waitForTimeout(350);
+      current = await readRuntimeSnapshot(page);
+    }
+  } finally {
+    if (touchHeld) await releaseTouchJoystick(cdp);
+  }
+  assert(current.gameState === 'SETTLEMENT' && current.arena?.reason === 'TIME',
+    `FAIL_ARENA_AI_TIME_TIMEOUT: ${JSON.stringify({ gameState: current.gameState, arena: current.arena, reviveCount })}`);
+  const settled = await readRuntimeSnapshot(page);
+  assert(settled.uiScreen === 'Settlement'
+    && settled.ui?.formalPages?.settlement?.active === true
+    && settled.ui?.home?.active === false,
+  `FAIL_ARENA_AI_SETTLEMENT_VISIBILITY: ${JSON.stringify({ gameState: settled.gameState, uiScreen: settled.uiScreen, home: settled.ui?.home, settlement: settled.ui?.formalPages?.settlement })}`);
+  const telemetry = await page.evaluate(() => {
+    const current = window.__BHR_ARENA_AI_TELEMETRY__;
+    if (!current) return null;
+    current.active = false;
+    const result = {
+      frames: current.frames,
+      maxElapsedSeconds: current.maxElapsedSeconds,
+      maxEliminationCount: current.maxEliminationCount,
+      durationSeconds: current.durationSeconds,
+      competitorCounts: Array.from(current.competitorCounts),
+      botIds: Array.from(current.botIds),
+      stateFrames: current.stateFrames,
+      botInitial: current.botInitial,
+      botMaximum: current.botMaximum,
+      deathsObserved: current.deathsObserved,
+      eventHuntWithFragmentFrames: current.eventHuntWithFragmentFrames,
+    };
+    delete window.__BHR_ARENA_AI_TELEMETRY__;
+    return result;
+  });
+  assert(telemetry, 'FAIL_ARENA_AI_TELEMETRY_MISSING');
+  assert(telemetry.competitorCounts.includes(8) && telemetry.botIds.length === 7,
+    `FAIL_ARENA_AI_ROSTER_EVIDENCE: ${JSON.stringify(telemetry)}`);
+  for (const state of ['COLLECT', 'CHASE', 'FLEE', 'EVENT_HUNT']) {
+    assert(telemetry.stateFrames[state] > 0,
+      `FAIL_ARENA_AI_STATE_${state}: ${JSON.stringify(telemetry.stateFrames)}`);
+  }
+  const botProgress = Object.entries(telemetry.botMaximum).map(([id, maximum]) => ({ id, initial: telemetry.botInitial[id], maximum }));
+  assert(botProgress.some(({ initial, maximum }) => maximum.consumed > initial.consumed),
+    `FAIL_ARENA_AI_BOT_COLLECT: ${JSON.stringify(botProgress)}`);
+  assert(botProgress.some(({ initial, maximum }) => maximum.mass > initial.mass),
+    `FAIL_ARENA_AI_BOT_MASS_GROWTH: ${JSON.stringify(botProgress)}`);
+  assert(botProgress.some(({ initial, maximum }) => maximum.kills > initial.kills),
+    `FAIL_ARENA_AI_BOT_KILL: ${JSON.stringify(botProgress)}`);
+  assert(telemetry.deathsObserved > 0 && telemetry.maxEliminationCount > 0,
+    `FAIL_ARENA_AI_DEATH: ${JSON.stringify(telemetry)}`);
+  assert(telemetry.eventHuntWithFragmentFrames > 0,
+    `FAIL_ARENA_AI_EVENT_HUNT_FRAGMENT: ${JSON.stringify(telemetry)}`);
+  assert(telemetry.maxElapsedSeconds >= telemetry.durationSeconds && settled.arena?.reason === 'TIME',
+    `FAIL_ARENA_AI_DURATION: ${JSON.stringify({ telemetry, arena: settled.arena })}`);
+  await page.screenshot({ path: path.join(evidenceDirectory, 'portrait-390x844-arena-ai-time-settlement.png') });
+  return { started: started.arena, settled: settled.arena, telemetry, botProgress, reviveCount };
+}
+
 function validatePortraitSnapshot(viewport, canvasRect, runtimeSnapshot) {
   const portrait = runtimeSnapshot.ui?.portrait;
   assert(viewport.width < viewport.height, `FAIL_NOT_PORTRAIT: browser viewport ${viewport.width}x${viewport.height}`);
@@ -2194,6 +2361,11 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
         assert(runtimeErrors.length === 0, `Runtime console errors after timer expiry: ${runtimeErrors.join(' | ')}`);
         return;
       }
+      if (acceptanceScope === 'arena-ai') {
+        report.arenaAi = await verifyArenaAiRuntime(cdp, page, canvasRect);
+        assert(runtimeErrors.length === 0, `Runtime console errors after Arena AI runtime: ${runtimeErrors.join(' | ')}`);
+        return;
+      }
       if (acceptanceScope === 'arena') {
         const start = pointForVisibleNode(canvasRect, snapshot, snapshot.ui?.start, 'ARENA_HOME_START');
         await dispatchTouchTap(cdp, start.x, start.y);
@@ -2992,7 +3164,7 @@ try {
     : `http://127.0.0.1:${address.port}/?qa=1`;
   browser = await chromium.launch({ headless: true, args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-webgl'] });
 
-  const targetViewports = acceptanceScope === 'pages' || acceptanceScope === 'revive' || acceptanceScope === 'settlement' || acceptanceScope === 'ui-full-flow' || acceptanceScope === 'skins' || acceptanceScope === 'skin-unlock' || acceptanceScope === 'arena-timer' || acceptanceScope === 'network' || acceptanceScope === 'regions' || acceptanceScope === 'progression' || acceptanceScope === 'golden-city'
+  const targetViewports = acceptanceScope === 'pages' || acceptanceScope === 'revive' || acceptanceScope === 'settlement' || acceptanceScope === 'ui-full-flow' || acceptanceScope === 'skins' || acceptanceScope === 'skin-unlock' || acceptanceScope === 'arena-timer' || acceptanceScope === 'arena-ai' || acceptanceScope === 'network' || acceptanceScope === 'regions' || acceptanceScope === 'progression' || acceptanceScope === 'golden-city'
     ? requiredPortraitViewports.filter((viewport) => viewport.id === '390x844')
     : requiredPortraitViewports;
   for (const viewport of targetViewports) {

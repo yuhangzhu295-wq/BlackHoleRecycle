@@ -31,6 +31,11 @@ export class RuntimePageInputRouter extends Component {
     // visual rectangle first so full-height mobile canvas events remain
     // reliable even when the browser targets Canvas.
     this.node.on(Node.EventType.TOUCH_END, this.onCanvasTouchEnd, this, true);
+    // Record which page group is active when each touch begins so that
+    // a long-press drag which spans a page transition (e.g. Arena joystick
+    // held through TIME settlement) cannot fire a button on the new page.
+    this.node.on(Node.EventType.TOUCH_START, this.onCanvasTouchStart, this, true);
+    this.node.on(Node.EventType.TOUCH_CANCEL, this.onCanvasTouchCancel, this, true);
     // Creator's desktop Browser Preview reports a physical mouse release as
     // MOUSE_UP, not as a synthetic EventTouch. Reuse the same serialized
     // button hit regions so Preview is a real mouse-test path, rather than
@@ -40,10 +45,74 @@ export class RuntimePageInputRouter extends Component {
 
   onDisable(): void {
     this.node.off(Node.EventType.TOUCH_END, this.onCanvasTouchEnd, this, true);
+    this.node.off(Node.EventType.TOUCH_START, this.onCanvasTouchStart, this, true);
+    this.node.off(Node.EventType.TOUCH_CANCEL, this.onCanvasTouchCancel, this, true);
     input.off(Input.EventType.MOUSE_UP, this.onMouseUp, this);
   }
 
+  // ---------------------------------------------------------------------------
+  // Touch page ownership: tracks which "page group" was visible when each
+  // finger first touched down. A TOUCH_END is only routed to canvas fallback
+  // buttons if the same page group is still visible. Native Cocos Button
+  // components are not affected by this guard (they resolve in the normal
+  // target/bubble phase before this capture listener fires).
+  // ---------------------------------------------------------------------------
+
+  /** Canonical page-group names, ordered by priority matching routePointerEnd. */
+  private static readonly PAGE_GROUPS: ReadonlyArray<string> = [
+    'HomePage',
+    'SkinSelectionPage',
+    'MachineInfoPage',
+    'ModeSelectPage',
+    'EndlessHUD',
+    'ArenaHUD',
+    'RevivePage',
+    'PausePage',
+    'SettlementPage',
+  ];
+
+  /**
+   * Maps touch identifier → page-group name that was active at TOUCH_START.
+   * EventTouch identifiers are small non-negative integers recycled by the
+   * browser; clearing on TOUCH_END / TOUCH_CANCEL keeps the map small.
+   */
+  private readonly _touchPageOwner = new Map<number, string>();
+
+  private _activePageGroup(): string | null {
+    for (const name of RuntimePageInputRouter.PAGE_GROUPS) {
+      const page = this.node.getChildByName(name);
+      if (page?.activeInHierarchy) return name;
+    }
+    return null;
+  }
+
+  private onCanvasTouchStart(event: EventTouch): void {
+    const page = this._activePageGroup();
+    if (page !== null) {
+      const id = event.getID();
+      if (id !== null) this._touchPageOwner.set(id, page);
+    }
+  }
+
+  private onCanvasTouchCancel(event: EventTouch): void {
+    const id = event.getID();
+    if (id !== null) this._touchPageOwner.delete(id);
+  }
+
   private onCanvasTouchEnd(event: EventTouch): void {
+    const id = event.getID();
+    const startPage = id !== null ? this._touchPageOwner.get(id) : undefined;
+    if (id !== null) this._touchPageOwner.delete(id);
+
+    // If the touch started on a different page group, the finger slid across a
+    // page transition. Do not route this TOUCH_END to any canvas fallback
+    // button — the native Button path (target/bubble) still fires normally for
+    // true button taps that began and ended on the same button node.
+    const currentPage = this._activePageGroup();
+    if (startPage !== undefined && currentPage !== null && startPage !== currentPage) {
+      return;
+    }
+
     this.routePointerEnd(
       event,
       event.getLocation(),
