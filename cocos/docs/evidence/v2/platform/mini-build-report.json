@@ -1,14 +1,14 @@
 {
   "status": "PASS",
   "creatorExe": "C:\\ProgramData\\cocos\\editors\\Creator\\3.8.3\\CocosCreator.exe",
-  "requestedPlatform": "all",
+  "requestedPlatform": "web-mobile",
   "requireReleaseIds": false,
-  "startedAt": "2026-09-06T18:30:43.249Z",
+  "startedAt": "2026-09-18T10:10:23.010Z",
   "builds": [
     {
       "platform": "web-mobile",
       "outputDirectory": "C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\build\\web-mobile",
-      "fileCount": 186,
+      "fileCount": 187,
       "requiredFiles": [
         "index.html",
         "application.js",
@@ -16,36 +16,8 @@
       ],
       "releaseIdStatus": "not-applicable",
       "launcherExitCode": 36
-    },
-    {
-      "platform": "wechatgame",
-      "outputDirectory": "C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\build\\wechatgame",
-      "fileCount": 190,
-      "requiredFiles": [
-        "game.json",
-        "project.config.json",
-        "application.js",
-        "src/system.bundle.js"
-      ],
-      "releaseIdStatus": "configured",
-      "appId": "wx6ac3f5090a6b99c5",
-      "launcherExitCode": 36
-    },
-    {
-      "platform": "bytedance-mini-game",
-      "outputDirectory": "C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\build\\bytedance-mini-game",
-      "fileCount": 189,
-      "requiredFiles": [
-        "game.json",
-        "project.config.json",
-        "application.js",
-        "src/system.bundle.js"
-      ],
-      "releaseIdStatus": "placeholder",
-      "appId": "testappId",
-      "launcherExitCode": 36
     }
   ],
   "failures": [],
-  "finishedAt": "2026-09-06T18:32:53.572Z"
+  "finishedAt": "2026-09-18T10:11:08.084Z"
 }
