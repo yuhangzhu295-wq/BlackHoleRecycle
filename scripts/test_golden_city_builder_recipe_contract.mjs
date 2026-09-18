@@ -35,5 +35,12 @@ const vehicleAnchorCount = (source.match(/VehicleAnchor_(?:Sedan|DeliveryVan|Gar
 assert.ok(vehicleAnchorCount >= 5, 'need five authored DynamicVehicle source anchors for portrait traffic density');
 assert.match(source, /source anchors become pooled DynamicVehicles at runtime/, 'traffic must remain runtime lifecycle owned');
 assert.match(source, /trees frame the player without relying on a camera adjustment/, 'recipe must not solve composition by camera changes');
+const replacePrefabStart = source.indexOf('async function replacePrefabThroughAssetDatabase');
+const createPrefabStart = source.indexOf("Editor.Message.request('scene', 'create-prefab'", replacePrefabStart);
+assert.ok(replacePrefabStart >= 0, 'must use the Creator Asset Database for a replacement prefab');
+assert.ok(source.indexOf("Editor.Message.request('asset-db', 'query-uuid'", replacePrefabStart) > replacePrefabStart, 'must query an existing prefab before replacement');
+assert.ok(source.indexOf("Editor.Message.request('asset-db', 'delete-asset'", replacePrefabStart) > replacePrefabStart, 'must remove an existing prefab through Creator Asset Database');
+assert.ok(createPrefabStart > replacePrefabStart, 'must recreate the prefab through Creator after Asset Database deletion');
+assert.ok(source.includes("await replacePrefabThroughAssetDatabase(rootNode.uuid, 'db://assets/prefabs/world/GoldenCityCell.prefab')"), 'Golden City persist stage must use the official replacement path');
 
 console.log('[PASS] Golden City builder recipe semantic coverage (NON_RUNTIME; Creator writeback and portrait acceptance remain required).');

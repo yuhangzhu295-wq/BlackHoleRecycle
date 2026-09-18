@@ -113,6 +113,18 @@ async function getPrefabAsset(url) {
   return prefab;
 }
 
+async function replacePrefabThroughAssetDatabase(nodeUuid, prefabUrl) {
+  // Creator's scene:create-prefab does not reliably replace a same-name asset.
+  // Keep deletion and recreation inside Asset Database so its metadata stays
+  // consistent; never modify prefab files or UUIDs directly.
+  const existingUuid = await Editor.Message.request('asset-db', 'query-uuid', prefabUrl);
+  if (existingUuid) {
+    await Editor.Message.request('asset-db', 'delete-asset', prefabUrl);
+    await new Promise((resolve) => setTimeout(resolve, 150));
+  }
+  await Editor.Message.request('scene', 'create-prefab', nodeUuid, prefabUrl);
+}
+
 /**
  * Copy the imported glTF hierarchy into ordinary scene nodes. This keeps every
  * real mesh and authored transform (for example a truck body and four wheels)
@@ -238,6 +250,17 @@ module.exports = {
             if (!child) throw new Error('GoldenCityCell is missing child ' + name + '; run prepare before ' + stage);
             children[name] = child;
           }
+        }
+
+        if (stage === 'inspect') {
+          logStage('INSPECT');
+          return {
+            status: 'PASS',
+            stage,
+            root: rootNode.name,
+            childCounts: Object.fromEntries(requiredChildNames.map((name) => [name, children[name].children.length])),
+            stages: stageLog,
+          };
         }
 
         if (stage === 'prepare') {
@@ -560,7 +583,7 @@ module.exports = {
         await Editor.Message.request('scene', 'save-scene');
 
         logStage('CREATE_PREFAB');
-        await Editor.Message.request('scene', 'create-prefab', rootNode.uuid, 'db://assets/prefabs/world/GoldenCityCell.prefab');
+        await replacePrefabThroughAssetDatabase(rootNode.uuid, 'db://assets/prefabs/world/GoldenCityCell.prefab');
 
         logStage('COMPLETED');
         return {

@@ -308,7 +308,7 @@ async function runAuthoringJob(job, paths) {
   };
 
   try {
-    if (!job || (job.job !== 'BUILD_GOLDEN_CITY' && job.job !== 'BIND_GOLDEN_CITY' && job.job !== 'VERIFY_GOLDEN_CITY')) {
+    if (!job || (job.job !== 'BUILD_GOLDEN_CITY' && job.job !== 'BIND_GOLDEN_CITY' && job.job !== 'VERIFY_GOLDEN_CITY' && job.job !== 'INSPECT_GOLDEN_CITY')) {
       throw new Error('Unsupported authoring job: ' + (job ? job.job : 'null'));
     }
 
@@ -380,6 +380,22 @@ async function runAuthoringJob(job, paths) {
       throw new Error('Game.scene was not ready for authoring: ' + JSON.stringify(sceneReady));
     }
 
+    if (job.job === 'INSPECT_GOLDEN_CITY') {
+      currentStage = 'INSPECT_GOLDEN_CITY';
+      result.phase = currentStage;
+      result.lastStage = currentStage;
+      writeProgress(paths, job, pid, currentStage, startedAt);
+      updateProcessing(paths, job, pid, currentStage, startedAt);
+      result.buildSceneScriptCalled = true;
+      result.buildSceneScriptResult = await module.exports.methods.buildGoldenCityCell('inspect');
+      result.success = result.buildSceneScriptResult?.status === 'PASS';
+      result.phase = result.success ? 'COMPLETE' : 'POST_INSPECT_CHECK';
+      currentStage = result.phase;
+      result.lastStage = currentStage;
+      writeProgress(paths, job, pid, currentStage, startedAt);
+      updateProcessing(paths, job, pid, currentStage, startedAt);
+    }
+
     if (job.job === 'BUILD_GOLDEN_CITY') {
       const buildStages = ['prepare', 'structure', 'park', 'content', 'persist'];
       result.buildSceneScriptCalled = true;
@@ -416,6 +432,10 @@ async function runAuthoringJob(job, paths) {
       updateProcessing(paths, job, pid, currentStage, startedAt);
       result.bindSceneScriptCalled = true;
       result.bindSceneScriptResult = await module.exports.methods.bindGoldenCityCell();
+    }
+
+    if (job.job === 'INSPECT_GOLDEN_CITY') {
+      return;
     }
 
     currentStage = 'VERIFY_GOLDEN_CITY';
