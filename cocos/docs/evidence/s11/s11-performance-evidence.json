@@ -1,0 +1,260 @@
+{
+  "stage": "S11_PERFORMANCE",
+  "timestamp": "2026-09-18T05:47:16.195Z",
+  "runner": "scripts/test_s11_performance_benchmark.mjs",
+  "platform": "web-mobile (Cocos Creator release build, headless Chromium)",
+  "build": {
+    "path": "cocos/build/web-mobile",
+    "verifiedPresent": true
+  },
+  "viewport": {
+    "width": 390,
+    "height": 844,
+    "aspect": "9:16"
+  },
+  "measurement": {
+    "warmupFramesDiscarded": 30,
+    "sampleFramesRequired": 120,
+    "frameTimingSource": "requestAnimationFrame deltas inside the Cocos runtime",
+    "gpu": "SwiftShader software rasterizer",
+    "launchFlags": [
+      "--use-gl=angle",
+      "--use-angle=swiftshader",
+      "--enable-webgl",
+      "--disable-gpu-vsync",
+      "--disable-frame-rate-limit"
+    ],
+    "frameTimingCaveat": "Headless software rasterization can still be ceiling limited, and rAF can include rapid polling bursts. Observed fps is a scenario observation, not a GPU headroom or presentation-rate verdict.",
+    "medianRafDeltaCaveat": "Sorted rAF deltas can include rapid polling bursts in headless mode, so medianRafDeltaMs reflects that distribution rather than a render-composite median."
+  },
+  "counterSource": "read-only window.__BHR_QA__.snapshot().performance.{cocos,world}",
+  "densityTiers": {
+    "verdict": "NOT_APPLICABLE_NO_RUNTIME_DENSITY_CONTROL",
+    "detail": "InfiniteWorldManager caps streamed budgets with fixed constants (MAX_ACTIVE_COLLECTIBLES = 240, MAX_ACTIVE_VEHICLES = 24). No runtime or QA control can request a 30/60/100 object density, so scenarios are labelled by the real gameplay state they measure and report observed counts."
+  },
+  "performanceBudgetVerdict": "NOT_EVALUATED",
+  "performanceBudgetReason": "The repository defines no agreed numeric FPS or frame-time budget, so this runner records observations and enforces no threshold.",
+  "blockedMetrics": {
+    "drawCalls": "BLOCKED_UNEXPOSED",
+    "batches": "BLOCKED_UNEXPOSED",
+    "distinctMeshAssets": "BLOCKED_UNEXPOSED",
+    "gpuFrameBreakdown": "BLOCKED_UNEXPOSED",
+    "gcPauseAttribution": "BLOCKED_UNEXPOSED"
+  },
+  "notCovered": [
+    "Per-density 30/60/100 object tiers: not reachable without a fabricated density control.",
+    "Draw calls, batches, distinct mesh assets: not exposed by Cocos 3.8 in this build.",
+    "GC pause attribution: not exposed by the engine.",
+    "Long-duration soak beyond the sampled windows."
+  ],
+  "scenarios": [
+    {
+      "id": "home_ui_scene",
+      "label": "Home UI scene with the infinite world already streaming behind it",
+      "measures": "Frame timing and total object load while the Home page is displayed.",
+      "doesNotMeasure": "Isolated UI-only cost. The observed counters prove world streaming is already live on this screen, so this scenario cannot separate UI cost from world streaming cost.",
+      "note": "Recorded because it is the real state of the app, not because it isolates the UI.",
+      "gameState": "HOME",
+      "fps": 67,
+      "avgFrameTimeMs": 14.92,
+      "medianRafDeltaMs": 2.1,
+      "p95FrameTimeMs": 30.2,
+      "maxFrameTimeMs": 31.1,
+      "measuredFrameCount": 120,
+      "warmupFramesDiscarded": 30,
+      "activeCellCount": 9,
+      "observedObjectCounts": {
+        "sceneNodeCount": 4346,
+        "activeNodeCount": 2841,
+        "activeMeshRendererCount": 914,
+        "activeMeshPrimitiveCount": 984,
+        "activeObjectCount": 216,
+        "lifecycleVisibleObjectCount": 216,
+        "activeCollectibleCount": 205,
+        "activeVehicleCount": 11
+      },
+      "engineCounters": {
+        "sceneNodeCount": 4346,
+        "activeNodeCount": 2841,
+        "activeMeshRendererCount": 914,
+        "activeMeshPrimitiveCount": 984,
+        "meshAssetCount": "BLOCKED_UNEXPOSED",
+        "drawCalls": "BLOCKED_UNEXPOSED",
+        "batches": "BLOCKED_UNEXPOSED"
+      },
+      "worldCounters": {
+        "activeCellRegisteredObjectCount": 216,
+        "activeObjectCount": 216,
+        "lifecycleVisibleObjectCount": 216,
+        "activeCollectibleCount": 205,
+        "lifecycleVisibleCollectibleCount": 205,
+        "activeVehicleCount": 11,
+        "lifecycleVisibleVehicleCount": 11
+      },
+      "sceneVisuals": {
+        "invalidMeshCount": 0,
+        "spriteCount": 10
+      },
+      "machineMovementInput": {
+        "x": 0,
+        "y": 0
+      },
+      "movementMagnitude": 0,
+      "memory": {
+        "usedJSHeapSizeMB": 64.85,
+        "totalJSHeapSizeMB": 98.23,
+        "jsHeapSizeLimitMB": 3585.82
+      },
+      "drawCalls": "BLOCKED_UNEXPOSED",
+      "batches": "BLOCKED_UNEXPOSED",
+      "evidenceComplete": true,
+      "evidenceGaps": []
+    },
+    {
+      "id": "endless_gameplay_moving",
+      "label": "Endless gameplay in the opening cell with a real joystick direction held",
+      "measures": "Frame timing and streamed-object load while the machine is actually driving.",
+      "doesNotMeasure": "Cell boundary crossing, rebase cost, or arena bot load.",
+      "note": null,
+      "gameState": "PLAYING",
+      "fps": 68.6,
+      "avgFrameTimeMs": 14.58,
+      "medianRafDeltaMs": 3.7,
+      "p95FrameTimeMs": 29.9,
+      "maxFrameTimeMs": 30.2,
+      "measuredFrameCount": 120,
+      "warmupFramesDiscarded": 30,
+      "activeCellCount": 9,
+      "observedObjectCounts": {
+        "sceneNodeCount": 4350,
+        "activeNodeCount": 2819,
+        "activeMeshRendererCount": 910,
+        "activeMeshPrimitiveCount": 976,
+        "activeObjectCount": 212,
+        "lifecycleVisibleObjectCount": 212,
+        "activeCollectibleCount": 201,
+        "activeVehicleCount": 11
+      },
+      "engineCounters": {
+        "sceneNodeCount": 4350,
+        "activeNodeCount": 2819,
+        "activeMeshRendererCount": 910,
+        "activeMeshPrimitiveCount": 976,
+        "meshAssetCount": "BLOCKED_UNEXPOSED",
+        "drawCalls": "BLOCKED_UNEXPOSED",
+        "batches": "BLOCKED_UNEXPOSED"
+      },
+      "worldCounters": {
+        "activeCellRegisteredObjectCount": 212,
+        "activeObjectCount": 212,
+        "lifecycleVisibleObjectCount": 212,
+        "activeCollectibleCount": 201,
+        "lifecycleVisibleCollectibleCount": 201,
+        "activeVehicleCount": 11,
+        "lifecycleVisibleVehicleCount": 11
+      },
+      "sceneVisuals": {
+        "invalidMeshCount": 0,
+        "spriteCount": 5
+      },
+      "machineMovementInput": {
+        "x": 0.6367175634951469,
+        "y": 0.771097104349902
+      },
+      "movementMagnitude": 1,
+      "memory": {
+        "usedJSHeapSizeMB": 64.85,
+        "totalJSHeapSizeMB": 98.23,
+        "jsHeapSizeLimitMB": 3585.82
+      },
+      "drawCalls": "BLOCKED_UNEXPOSED",
+      "batches": "BLOCKED_UNEXPOSED",
+      "evidenceComplete": true,
+      "evidenceGaps": []
+    },
+    {
+      "id": "endless_gameplay_sustained_travel",
+      "label": "Endless gameplay after sustained travel from the opening cell",
+      "measures": "Frame timing and streamed-object load further into infinite-world travel.",
+      "doesNotMeasure": "Rebase threshold behaviour unless the observed cell count actually changed.",
+      "note": null,
+      "gameState": "PLAYING",
+      "fps": 67.2,
+      "avgFrameTimeMs": 14.89,
+      "medianRafDeltaMs": 2.6,
+      "p95FrameTimeMs": 30.3,
+      "maxFrameTimeMs": 31.6,
+      "measuredFrameCount": 120,
+      "warmupFramesDiscarded": 30,
+      "activeCellCount": 9,
+      "observedObjectCounts": {
+        "sceneNodeCount": 4959,
+        "activeNodeCount": 2795,
+        "activeMeshRendererCount": 906,
+        "activeMeshPrimitiveCount": 967,
+        "activeObjectCount": 208,
+        "lifecycleVisibleObjectCount": 208,
+        "activeCollectibleCount": 197,
+        "activeVehicleCount": 11
+      },
+      "engineCounters": {
+        "sceneNodeCount": 4959,
+        "activeNodeCount": 2795,
+        "activeMeshRendererCount": 906,
+        "activeMeshPrimitiveCount": 967,
+        "meshAssetCount": "BLOCKED_UNEXPOSED",
+        "drawCalls": "BLOCKED_UNEXPOSED",
+        "batches": "BLOCKED_UNEXPOSED"
+      },
+      "worldCounters": {
+        "activeCellRegisteredObjectCount": 208,
+        "activeObjectCount": 208,
+        "lifecycleVisibleObjectCount": 208,
+        "activeCollectibleCount": 197,
+        "lifecycleVisibleCollectibleCount": 197,
+        "activeVehicleCount": 11,
+        "lifecycleVisibleVehicleCount": 11
+      },
+      "sceneVisuals": {
+        "invalidMeshCount": 0,
+        "spriteCount": 5
+      },
+      "machineMovementInput": {
+        "x": 0.6367175634951469,
+        "y": 0.771097104349902
+      },
+      "movementMagnitude": 1,
+      "memory": {
+        "usedJSHeapSizeMB": 64.85,
+        "totalJSHeapSizeMB": 98.23,
+        "jsHeapSizeLimitMB": 3585.82
+      },
+      "drawCalls": "BLOCKED_UNEXPOSED",
+      "batches": "BLOCKED_UNEXPOSED",
+      "evidenceComplete": true,
+      "evidenceGaps": []
+    }
+  ],
+  "cellObservation": {
+    "verdict": "OBSERVED_NOT_GATED",
+    "activeCellCountAtHome": 9,
+    "activeCellCountWhileMoving": 9,
+    "activeCellCountAfterTravel": 9,
+    "observedCellCountChange": 0,
+    "detail": "Recorded only, never gated. activeCellCount held steady across all three scenarios, which is consistent with a bounded neighbourhood count rather than a boundary-crossing counter, so this run proves nothing about cell load, unload, or rebase cost. That needs a dedicated cell-lifecycle soak."
+  },
+  "status": "PASS",
+  "statusMeaning": "Evidence completeness only: every declared scenario produced a full frame-timing sample with read-only engine and world counters, and the run recorded no console errors. This is not a performance budget verdict.",
+  "consoleErrors": [],
+  "worldStreamingObservation": {
+    "verdict": "OBSERVED_NOT_GATED",
+    "worldStreamingWhileOnHome": true,
+    "activeObjectCountOnHome": 216,
+    "detail": "The infinite world is already streaming while the Home page is displayed, so no scenario in this run measures an isolated UI-only scene."
+  },
+  "conclusion": {
+    "declaredScenarioCount": 3,
+    "completeScenarioCount": 3,
+    "incompleteScenarios": []
+  }
+}
