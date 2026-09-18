@@ -1447,6 +1447,8 @@ function loadGoldenCityContract() {
   const screen = parsed?.world?.screen;
   const mandatory = parsed?.mandatoryComposition;
   const camera = parsed?.cameraComposition;
+  const cameraPreset = parsed?.world?.cameraPreset;
+  const requiredSemantics = parsed?.requiredSemantics;
   const declaredNumbers = {
     'world.screen.width': screen?.width,
     'world.screen.height': screen?.height,
@@ -1468,7 +1470,20 @@ function loadGoldenCityContract() {
     assert(Number.isFinite(value),
       `FAIL_GOLDEN_CITY_CONTRACT_INVALID: ${field}=${JSON.stringify(value)}`);
   }
-  return { path: goldenCityContractPath, version: parsed.contractVersion ?? null, screen, mandatory, camera };
+  assert(typeof cameraPreset === 'string' && cameraPreset.length > 0,
+    `FAIL_GOLDEN_CITY_CONTRACT_INVALID: world.cameraPreset=${JSON.stringify(cameraPreset)}`);
+  assert(Array.isArray(requiredSemantics) && requiredSemantics.length > 0
+    && requiredSemantics.every((semantic) => typeof semantic === 'string' && semantic.length > 0),
+  `FAIL_GOLDEN_CITY_CONTRACT_INVALID: requiredSemantics=${JSON.stringify(requiredSemantics)}`);
+  return {
+    path: goldenCityContractPath,
+    version: parsed.contractVersion ?? null,
+    screen,
+    mandatory,
+    camera,
+    cameraPreset,
+    requiredSemantics,
+  };
 }
 
 /**
@@ -1476,7 +1491,7 @@ function loadGoldenCityContract() {
  * reports its actual and required value, so a failure names the real deficit
  * instead of a generic gate failure.
  */
-function evaluateGoldenCityGate(contract, composition) {
+function evaluateGoldenCityGate(contract, composition, devicePixelRatio) {
   if (!composition || typeof composition !== 'object') {
     throw new Error(`FAIL_GOLDEN_CITY_COMPOSITION_MISSING: ${JSON.stringify(composition)}`);
   }
@@ -1485,6 +1500,7 @@ function evaluateGoldenCityGate(contract, composition) {
   }
   const player = composition.player || {};
   const viewport = composition.viewport || {};
+  const entries = Array.isArray(composition.entries) ? composition.entries : [];
   // WorldCompositionProbe.counts is the visible-only aggregate and already
   // weights logical units, so a four-arm FourWayRoad junction counts as four
   // road segments. Counting raw visible entry rows under-counts roads.
@@ -1503,6 +1519,7 @@ function evaluateGoldenCityGate(contract, composition) {
     playerVisible: player.visible === true,
     viewportWidth: viewport.width ?? null,
     viewportHeight: viewport.height ?? null,
+    devicePixelRatio,
   };
   const round = (value) => (Number.isFinite(value) ? Math.round(value * 10000) / 10000 : value);
   const checks = [];
@@ -1573,6 +1590,73 @@ function evaluateGoldenCityGate(contract, composition) {
     pass: metrics.playerVisible,
     deficit: metrics.playerVisible ? null : 'player is not visible in the gameplay camera view',
   });
+  checks.push({
+    id: 'TEST_DEVICE_PIXEL_RATIO',
+    label: 'acceptance device pixel ratio is explicitly pinned',
+    relation: '=',
+    actual: Number.isFinite(metrics.devicePixelRatio) ? metrics.devicePixelRatio : null,
+    required: 1,
+    pass: metrics.devicePixelRatio === 1,
+    deficit: metrics.devicePixelRatio === 1
+      ? null
+      : `acceptance device pixel ratio is ${metrics.devicePixelRatio}, expected the pinned value 1`,
+  });
+  const visibleNames = entries
+    .filter((entry) => entry?.visible === true)
+    .map((entry) => String(entry.name || ''));
+  const visibleCategory = (category) => entries.some((entry) => entry?.visible === true && entry.category === category);
+  const semanticMatchers = {
+    // A crossroads is one authored node, not three independently counted road
+    // entries. Match its runtime identity so the semantic check does not
+    // confuse the probe's aggregate road count with junction topology.
+    'road and visible junction': () => visibleNames.some((name) => /Crossroad|Junction|Intersection/.test(name)),
+    shop: () => visibleNames.some((name) => /Store|Market|Shop/.test(name)),
+    hospital: () => visibleNames.some((name) => /Clinic|Hospital/.test(name)),
+    park: () => visibleNames.some((name) => /Park|Garden/.test(name)),
+    fountain: () => visibleNames.some((name) => /Fountain/.test(name)),
+    'trees and flowerbeds': () => visibleCategory('TREE') && visibleNames.some((name) => /Flower/.test(name)),
+    streetlights: () => visibleNames.some((name) => /StreetLight|Lantern/.test(name)),
+    benches: () => visibleNames.some((name) => /Bench/.test(name)),
+    bins: () => visibleNames.some((name) => /Trashcan|Bin/.test(name)),
+    cars: () => visibleCategory('VEHICLE'),
+    'collectible resource clusters': () => visibleCategory('RESOURCE_CLUSTER'),
+    'AI competitors': () => visibleCategory('COMPETITOR'),
+  };
+  for (const semantic of contract.requiredSemantics) {
+    const matcher = semanticMatchers[semantic];
+    const pass = typeof matcher === 'function' && matcher();
+    checks.push({
+      id: `SEMANTIC_${semantic.toUpperCase().replace(/[^A-Z0-9]+/g, '_').replace(/_+$/, '')}`,
+      label: `visible required semantic: ${semantic}`,
+      relation: 'present',
+      actual: pass,
+      required: true,
+      pass,
+      deficit: pass ? null : `required semantic is absent or has no gate mapping: ${semantic}`,
+    });
+  }
+  const cameraPitchDegrees = Number.isFinite(composition.camera?.forward?.y)
+    ? Math.asin(composition.camera.forward.y) * 180 / Math.PI
+    : null;
+  const cameraPresetPass = contract.cameraPreset === 'PortraitGameplayCameraPreset'
+    && composition.camera?.fov === 44
+    && composition.camera?.fovAxis === 0
+    && Number.isFinite(cameraPitchDegrees)
+    && Math.abs(cameraPitchDegrees + 55) < 0.25;
+  checks.push({
+    id: 'CAMERA_PRESET',
+    label: `measured camera matches ${contract.cameraPreset}`,
+    relation: 'matches',
+    actual: {
+      fov: composition.camera?.fov ?? null,
+      fovAxis: composition.camera?.fovAxis ?? null,
+      pitchDegrees: Number.isFinite(cameraPitchDegrees) ? round(cameraPitchDegrees) : null,
+    },
+    required: { fov: 44, fovAxis: 0, pitchDegrees: -55 },
+    pass: cameraPresetPass,
+    deficit: cameraPresetPass ? null
+      : `camera does not match ${contract.cameraPreset}: ${JSON.stringify({ fov: composition.camera?.fov, fovAxis: composition.camera?.fovAxis, pitchDegrees: cameraPitchDegrees })}`,
+  });
   const deficits = checks.filter((check) => !check.pass).map((check) => check.deficit);
   return {
     metrics,
@@ -1623,7 +1707,8 @@ async function collectGoldenCityBaseline(cdp, page, canvasRect, homeSnapshot) {
   // file is written before asserting so a failing gate still leaves the real
   // numbers on disk for the next fix.
   const contract = loadGoldenCityContract();
-  const gate = evaluateGoldenCityGate(contract, composition);
+  const devicePixelRatio = await page.evaluate(() => window.devicePixelRatio);
+  const gate = evaluateGoldenCityGate(contract, composition, devicePixelRatio);
   writeFileSync(path.join(evidenceDirectory, 'golden-city-gate.json'), `${JSON.stringify({
     scope: 'golden-city',
     currentCellSource: streaming.currentCellSource,
@@ -1631,6 +1716,7 @@ async function collectGoldenCityBaseline(cdp, page, canvasRect, homeSnapshot) {
     contractPath: gate.contractPath,
     contractVersion: gate.contractVersion,
     screen: contract.screen,
+    devicePixelRatio,
     measuredAt: new Date().toISOString(),
     verdict: gate.verdict,
     metrics: gate.metrics,
@@ -2735,7 +2821,12 @@ async function verifyTrafficReplenishment(cdp, page, joystick) {
 }
 
 async function runPortraitCase(browser, baseUrl, viewport, report) {
-  const context = await browser.newContext({ viewport: { width: viewport.width, height: viewport.height }, hasTouch: true, isMobile: true });
+  const context = await browser.newContext({
+    viewport: { width: viewport.width, height: viewport.height },
+    deviceScaleFactor: 1,
+    hasTouch: true,
+    isMobile: true,
+  });
   const page = await context.newPage();
   const runtimeErrors = [];
   page.on('pageerror', (error) => runtimeErrors.push(error.message));
