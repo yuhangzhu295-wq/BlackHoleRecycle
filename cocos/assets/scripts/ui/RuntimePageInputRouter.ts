@@ -16,6 +16,7 @@ export interface RuntimePageInputDiagnostic {
   uiTouchX: number;
   uiTouchY: number;
   action: 'NONE' | 'HOME_START' | 'HOME_MODE' | 'HOME_SKIN' | 'HOME_MACHINE' | 'MACHINE_BACK' | 'MODE_BACK' | 'MODE_ARENA' | 'MODE_ENDLESS'
+    | 'READY_START' | 'READY_BACK'
     | 'SKIN_BACK' | 'SKIN_SELECT' | 'PAUSE' | 'RESUME' | 'SETTLE' | 'HOME' | 'RESTART' | 'REVIVE' | 'GIVE_UP';
 }
 
@@ -64,6 +65,8 @@ export class RuntimePageInputRouter extends Component {
     'SkinSelectionPage',
     'MachineInfoPage',
     'ModeSelectPage',
+    'EndlessReadyPage',
+    'ArenaReadyPage',
     'EndlessHUD',
     'ArenaHUD',
     'RevivePage',
@@ -211,6 +214,32 @@ export class RuntimePageInputRouter extends Component {
       event.propagationStopped = true;
       this.lastInputDiagnostic.action = 'MODE_ENDLESS';
       eventBus.emit('MODE_ENDLESS_REQUESTED');
+      return;
+    }
+
+    // Mode Ready 页：只有 BtnStart 才真正开局；BtnBack 返回模式选择。
+    if (this.hitVisibleButton('EndlessReadyPage', 'BtnStart', location)) {
+      event.propagationStopped = true;
+      this.lastInputDiagnostic.action = 'READY_START';
+      eventBus.emit('READY_START_REQUESTED');
+      return;
+    }
+    if (this.hitVisibleButton('ArenaReadyPage', 'BtnStart', location)) {
+      event.propagationStopped = true;
+      this.lastInputDiagnostic.action = 'READY_START';
+      eventBus.emit('READY_START_REQUESTED');
+      return;
+    }
+    if (this.hitVisibleButton('EndlessReadyPage', 'BtnBack', location)) {
+      event.propagationStopped = true;
+      this.lastInputDiagnostic.action = 'READY_BACK';
+      eventBus.emit('READY_BACK_REQUESTED');
+      return;
+    }
+    if (this.hitVisibleButton('ArenaReadyPage', 'BtnBack', location)) {
+      event.propagationStopped = true;
+      this.lastInputDiagnostic.action = 'READY_BACK';
+      eventBus.emit('READY_BACK_REQUESTED');
       return;
     }
 

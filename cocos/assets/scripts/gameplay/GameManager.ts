@@ -345,11 +345,24 @@ export class GameManager extends Component {
     });
 
     eventBus.on('MODE_ENDLESS_REQUESTED', () => {
-      this.startEndlessGame();
+      // 模式卡只进入 Ready 页，绝不直接开局。
+      this.openModeReady('ENDLESS');
     });
 
     eventBus.on('MODE_ARENA_REQUESTED', () => {
-      this.startArenaGame();
+      this.openModeReady('ARENA');
+    });
+
+    eventBus.on('READY_START_REQUESTED', () => {
+      if (this.gameState !== 'MODE_READY') return;
+      if (this.pendingReadyMode === 'ARENA') this.startArenaGame();
+      else this.startEndlessGame();
+    });
+
+    eventBus.on('READY_BACK_REQUESTED', () => {
+      if (this.gameState !== 'MODE_READY') return;
+      this.pendingReadyMode = null;
+      this.openV2ModeSelect();
     });
 
     eventBus.on('ARENA_REVIVE_REQUESTED', () => {
@@ -732,10 +745,36 @@ export class GameManager extends Component {
     const mode = canvas?.getChildByName('ModeSelectPage');
     const machineInfo = canvas?.getChildByName('MachineInfoPage');
     const skinSelection = canvas?.getChildByName('SkinSelectionPage');
+    const endlessReady = canvas?.getChildByName('EndlessReadyPage');
+    const arenaReady = canvas?.getChildByName('ArenaReadyPage');
     if (home) home.active = visible;
     if (mode) mode.active = false;
     if (machineInfo) machineInfo.active = false;
     if (skinSelection) skinSelection.active = false;
+    if (endlessReady) endlessReady.active = false;
+    if (arenaReady) arenaReady.active = false;
+  }
+
+  /** Mode Select 的模式卡只打开对应的 Ready 确认页，绝不直接开局。 */
+  private pendingReadyMode: 'ENDLESS' | 'ARENA' | null = null;
+
+  private openModeReady(mode: 'ENDLESS' | 'ARENA'): void {
+    if (this.gameState !== 'MODE_SELECT') return;
+    const canvas = director.getScene()?.getChildByName('Canvas');
+    const home = canvas?.getChildByName('HomePage') || null;
+    const modeSelect = canvas?.getChildByName('ModeSelectPage') || null;
+    const page = canvas?.getChildByName(mode === 'ARENA' ? 'ArenaReadyPage' : 'EndlessReadyPage') || null;
+    if (!page) {
+      console.error('[GameManager] Missing editor-saved ' + (mode === 'ARENA' ? 'ArenaReadyPage' : 'EndlessReadyPage') + '. Mode ready flow is unavailable.');
+      return;
+    }
+    this.pendingReadyMode = mode;
+    if (home) home.active = false;
+    if (modeSelect) modeSelect.active = false;
+    page.active = true;
+    this.setPlayerSimulationPaused(true);
+    this.hud?.hideAllScreens();
+    this.session.openModeReady(mode);
   }
 
   /** 仅显示由 Cocos Creator 保存的 V2 模式选择页，不回退到旧运行时 HUD。 */
@@ -744,6 +783,8 @@ export class GameManager extends Component {
     const home = canvas?.getChildByName('HomePage');
     const mode = canvas?.getChildByName('ModeSelectPage');
     const skinSelection = canvas?.getChildByName('SkinSelectionPage');
+    const endlessReady = canvas?.getChildByName('EndlessReadyPage');
+    const arenaReady = canvas?.getChildByName('ArenaReadyPage');
     if (!mode) {
       console.error('[GameManager] Missing editor-saved ModeSelectPage. Legacy HUD fallback is disabled.');
       return;
@@ -751,6 +792,8 @@ export class GameManager extends Component {
 
     if (home) home.active = false;
     if (skinSelection) skinSelection.active = false;
+    if (endlessReady) endlessReady.active = false;
+    if (arenaReady) arenaReady.active = false;
     mode.active = true;
     this.setPlayerSimulationPaused(true);
     this.hud?.hideAllScreens();

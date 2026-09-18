@@ -12,4 +12,8 @@ export enum UIPageId {
   MachineInfo = 8,
   /** Persisted cosmetic selection and coin-backed unlock page opened from Home. */
   SkinSelection = 9,
+  /** 无尽探索开局确认页：地图预览、最高纪录、当前机器与开始按钮。 */
+  EndlessReady = 10,
+  /** 竞技乱斗开局确认页：8 人 180 秒规则、当前机器与开始按钮。 */
+  ArenaReady = 11,
 }

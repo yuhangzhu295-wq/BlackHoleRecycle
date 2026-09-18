@@ -11,6 +11,7 @@
 export type GameSessionState =
   | 'HOME'
   | 'MODE_SELECT'
+  | 'MODE_READY'
   | 'MACHINE_INFO'
   | 'SKIN_SELECTION'
   | 'PLAYING'
@@ -41,7 +42,8 @@ export type GameSessionListener = (transition: GameSessionTransition) => void;
  */
 const ALLOWED_TRANSITIONS: Readonly<Record<GameSessionState, readonly GameSessionState[]>> = {
   HOME: ['MODE_SELECT', 'MACHINE_INFO', 'SKIN_SELECTION', 'PLAYING', 'ARENA', 'NETWORK_ARENA'],
-  MODE_SELECT: ['HOME', 'PLAYING', 'ARENA', 'NETWORK_ARENA'],
+  MODE_SELECT: ['HOME', 'MODE_READY', 'PLAYING', 'ARENA', 'NETWORK_ARENA'],
+  MODE_READY: ['MODE_SELECT', 'PLAYING', 'ARENA', 'NETWORK_ARENA', 'HOME'],
   MACHINE_INFO: ['HOME'],
   SKIN_SELECTION: ['HOME'],
   PLAYING: ['PAUSED', 'SETTLEMENT', 'HOME'],
@@ -81,6 +83,12 @@ export class GameSessionCoordinator {
 
   public openModeSelect(): boolean {
     return this.transition('MODE_SELECT', 'open-mode-select');
+  }
+
+  /** 模式卡只进入 Ready 确认态；真正的开局由 READY_START 显式触发。 */
+  public openModeReady(mode: GameSessionMode): boolean {
+    this._lastSessionMode = mode;
+    return this.transition('MODE_READY', 'open-mode-ready-' + mode.toLowerCase());
   }
 
   public openMachineInfo(): boolean {
