@@ -81,7 +81,7 @@ record('ART_REGISTRY_COVERS_T1_TO_T5', templateTypes.every((type) => artSource.i
 record('MASS_AND_TIER_GATE', objectSource.includes('this.template.tier > machineMaxTier && !isMagnetStorm')
   && objectSource.includes("this.fsm.setState('ATTRACTED')"), 'mass remains template-owned and the existing tier gate preserves the threshold.');
 record('HIGHER_TIER_DISPLAYS_REQUIRED_LEVEL', objectSource.includes('TierLockLabel')
-  && objectSource.includes("this.lockLabel.string = 'Lv.' + this.template.tier"), 'over-tier lock feedback exposes the required Lv.X.');
+  && objectSource.includes("this.lockLabel.string = '需要 LV.' + this.template.tier"), 'over-tier lock feedback exposes the required 需要 LV.X.');
 
 const theme = { id: 'S4', availableTiers: [1, 2, 3, 4, 5] };
 const district = { kind: 'UNKNOWN', resourceClusters: [] };

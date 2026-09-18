@@ -2,9 +2,9 @@
  * 可吸附回收实体：维护 IDLE -> ATTRACTED -> SUCKING -> ABSORBED -> RECYCLED
  * 状态机。正式可见物仅实例化 Cocos Creator 导入并保存的 glTF 美术模板。
  */
-import { _decorator, Component, director, Label, Node, Vec3 } from 'cc';
+import { _decorator, Color, Component, director, Label, Node, Vec3 } from 'cc';
 import { IObjectTemplate, ObjectTier, OBJECT_TEMPLATES } from '../data/GameConfig';
-import { SuctionMotionCalculator } from './SuctionMotion';
+import { getSuctionTierProfile, SuctionMotionCalculator } from './SuctionMotion';
 import { FSM } from '../core/FSM';
 import { getObjectArtBinding } from '../world/ObjectArtRegistry';
 import { WorldArtLibrary } from '../world/WorldArtLibrary';
@@ -23,6 +23,8 @@ export class CompressibleObject extends Component {
   private suckTimer: number = 0;
   private isLockAlertActive: boolean = false;
   private lockTimer: number = 0;
+  /** 锁定提示冷却：提示消失后数秒内不重复弹出，避免高 Tier 目标头顶持续闪烁。 */
+  private lockCooldownTimer: number = 0;
   private visualNode: Node | null = null;
   private lockIndicatorNode: Node | null = null;
   private lockLabel: Label | null = null;
@@ -87,24 +89,18 @@ export class CompressibleObject extends Component {
     this.visualNode = new Node('Visual');
     this.node.addChild(this.visualNode);
 
-    // 锁定反馈复用审计的锥桶模型，而不是红色 Box 占位符。
+    // 等级不足反馈是轻量文字提示，而不是 3.5 倍放大的交通锥模型。
+    // 此前的 constructionCone 警告锥会在每辆 T5 车顶形成"红色帽子"，
+    // 属于视觉污染；正式反馈只有一行短暂的 "需要 LV.X" 文字。
     this.lockIndicatorNode = new Node('TierLockWarning');
-    this.lockIndicatorNode.setPosition(0, 0.8, 0);
+    this.lockIndicatorNode.setPosition(0, 1.2, 0);
     this.node.addChild(this.lockIndicatorNode);
     const lockLabelNode = new Node('TierLockLabel');
-    lockLabelNode.setPosition(0, 1.1, 0);
     this.lockIndicatorNode.addChild(lockLabelNode);
     this.lockLabel = lockLabelNode.addComponent(Label);
     this.lockLabel.string = '';
-    this.lockLabel.fontSize = 28;
-    this.getArtLibrary().spawn(
-      'constructionCone',
-      this.lockIndicatorNode,
-      Vec3.ZERO,
-      new Vec3(3.5, 3.5, 3.5),
-      0,
-      'TierLockedWarning'
-    );
+    this.lockLabel.fontSize = 26;
+    this.lockLabel.color = new Color(255, 92, 92, 255);
     this.lockIndicatorNode.active = false;
   }
 
@@ -153,6 +149,7 @@ export class CompressibleObject extends Component {
     this.suckTimer = 0;
     this.isLockAlertActive = false;
     this.lockTimer = 0;
+    this.lockCooldownTimer = 0;
     this.captureOwnerId = null;
     this.suctionSpinDegreesPerSecond = 0;
     this.visualYawDegrees = 0;
@@ -192,11 +189,16 @@ export class CompressibleObject extends Component {
   }
 
   public showLockAlert(): void {
-    if (this.lockTimer > 0) return;
+    if (this.lockTimer > 0 || this.lockCooldownTimer > 0) return;
     this.isLockAlertActive = true;
-    this.lockTimer = 1.0;
-    if (this.lockLabel) this.lockLabel.string = 'Lv.' + this.template.tier;
-    if (this.lockIndicatorNode) this.lockIndicatorNode.active = true;
+    this.lockTimer = 1.4;
+    this.lockCooldownTimer = 1.4 + 3.5;
+    if (this.lockLabel) this.lockLabel.string = '需要 LV.' + this.template.tier;
+    // 提示文字浮在目标本体上方，目标越大浮得越高，但不遮挡远处视野。
+    if (this.lockIndicatorNode) {
+      this.lockIndicatorNode.setPosition(0, 0.9 + Math.min(1.8, this.template.radius * 0.7), 0);
+      this.lockIndicatorNode.active = true;
+    }
   }
 
   public isShowingLockAlert(): boolean {
@@ -226,14 +228,28 @@ export class CompressibleObject extends Component {
         if (this.lockIndicatorNode) this.lockIndicatorNode.active = false;
       }
     }
+    if (this.lockCooldownTimer > 0) this.lockCooldownTimer -= dt;
 
     const dx = machinePos.x - this.currentPos.x;
     const dz = machinePos.z - this.currentPos.z;
     const distSq = dx * dx + dz * dz;
+    const profile = getSuctionTierProfile(this.template.tier);
+
     if (state === 'IDLE') {
       if (distSq >= suctionRadius * suctionRadius) return false;
       if (this.template.tier > machineMaxTier && !isMagnetStorm) {
+        // 等级不足：给出明确的 LV.X 反馈，目标仅被引力轻微拉动，
+        // 绝不进入正式 ATTRACTED/SUCKING/ABSORBED 流程。
+        // 对峙距离保证锁定目标停在黑洞边缘之外，不会被拖进核心造成"已吞"错觉。
         this.showLockAlert();
+        const lockedDist = Math.sqrt(distSq);
+        const standoff = Math.max(suctionRadius * 0.45, this.template.radius * 0.5);
+        if (lockedDist > standoff) {
+          const creep = Math.min(1.1 * Math.max(0.1, suctionPullMultiplier) * dt, lockedDist - standoff);
+          this.currentPos.x += (dx / lockedDist) * creep;
+          this.currentPos.z += (dz / lockedDist) * creep;
+          this.node.setPosition(this.currentPos);
+        }
         return false;
       }
 
@@ -245,12 +261,25 @@ export class CompressibleObject extends Component {
     }
 
     if (state === 'ATTRACTED' || state === 'SUCKING') {
+      // ATTRACTED 目标被拖出引力圈后挣脱回 IDLE：T4/T5 必须主动追逐/卡位，
+      // 从黑洞边缘掠过不能完成吞噬。已进入核心 SUCKING 的目标不再挣脱。
+      if (state === 'ATTRACTED' && !isMagnetStorm) {
+        const escapeRadius = suctionRadius * profile.escapeRadiusFactor;
+        if (distSq > escapeRadius * escapeRadius) {
+          this.captureOwnerId = null;
+          this.suckTimer = 0;
+          this.node.setScale(Vec3.ONE);
+          this.fsm.setState('IDLE');
+          return false;
+        }
+      }
       if (state === 'SUCKING') this.suckTimer += dt;
       else if (Math.sqrt(distSq) < 0.6) this.fsm.setState('SUCKING');
 
       const result = SuctionMotionCalculator.computeMotion(
         this.currentPos, machinePos, suctionRadius, dt, this.suckTimer, 0.4, isMagnetStorm,
         suctionPullMultiplier,
+        this.template.tier,
       );
       this.currentPos.set(result.newPosition);
       this.node.setPosition(this.currentPos);

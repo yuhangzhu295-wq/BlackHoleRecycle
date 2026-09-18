@@ -9,6 +9,19 @@ export interface RoadRoutePoint {
   z: number;
 }
 
+/**
+ * 黑洞对仍在道路上行驶（IDLE）车辆的外圈引力影响。
+ * influenceRadius 之外车辆正常行驶；进入影响圈后车辆减速并轻微偏离道路，
+ * 等级不足时减速更明显但永远不会被真正捕获。
+ */
+export interface VehicleSuctionInfluence {
+  readonly machineX: number;
+  readonly machineZ: number;
+  readonly influenceRadius: number;
+  readonly machineMaxTier: number;
+  readonly isMagnetStorm: boolean;
+}
+
 const ROUTE_EPSILON = 0.01;
 
 /**
@@ -48,7 +61,7 @@ export class DynamicVehicle {
     this.object.setRoutePosition(position.x, position.z, this.headingDegrees);
   }
 
-  public update(dt: number): void {
+  public update(dt: number, suction: VehicleSuctionInfluence | null = null): void {
     const objectState = this.object.getState();
     if (objectState !== 'IDLE') {
       this.state = this.fromObjectState(objectState);
@@ -57,7 +70,29 @@ export class DynamicVehicle {
 
     let x = this.object.getPosition().x;
     let z = this.object.getPosition().z;
-    let remainingDistance = this.speed * Math.max(0, dt);
+
+    // 外圈引力影响：车辆尚未进入正式 ATTRACTED，但速度下降、方向开始偏离道路。
+    let speedScale = 1;
+    let driftX = 0;
+    let driftZ = 0;
+    if (suction && suction.influenceRadius > 0) {
+      const sdx = suction.machineX - x;
+      const sdz = suction.machineZ - z;
+      const sDist = Math.hypot(sdx, sdz);
+      if (sDist > 0.001 && sDist < suction.influenceRadius) {
+        const proximity = 1 - sDist / suction.influenceRadius;
+        const canCapture = suction.isMagnetStorm || this.object.template.tier <= suction.machineMaxTier;
+        // 可捕获车辆减速为黑洞争取捕获窗口；等级不足的车辆被拖得更慢，
+        // 但只会轻微偏移，不会被锁定在黑洞旁边。
+        const minSpeedScale = canCapture ? 0.4 : 0.25;
+        speedScale = Math.max(minSpeedScale, 1 - (1 - minSpeedScale) * proximity);
+        const driftSpeed = (canCapture ? 1.5 : 0.55) * proximity;
+        driftX = (sdx / sDist) * driftSpeed * dt;
+        driftZ = (sdz / sDist) * driftSpeed * dt;
+      }
+    }
+
+    let remainingDistance = this.speed * speedScale * Math.max(0, dt);
     let turnedThisFrame = false;
 
     // A low frame rate can cross a corner. Consume the residual movement on
@@ -83,7 +118,7 @@ export class DynamicVehicle {
     }
 
     this.headingDegrees = this.headingTo(x, z, this.route[this.nextRoutePoint]);
-    this.object.setRoutePosition(x, z, this.headingDegrees);
+    this.object.setRoutePosition(x + driftX, z + driftZ, this.headingDegrees);
     this.state = turnedThisFrame ? 'TURN' : 'DRIVE';
   }
 

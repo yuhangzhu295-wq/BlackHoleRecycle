@@ -10,7 +10,7 @@ import { eventBus } from '../core/EventBus';
 import { CompressibleObject } from '../gameplay/CompressibleObject';
 import { CellItemGenerator, IChunkSpawnItem } from './ChunkConfig';
 import { DistrictKind, DistrictTemplate, getDistrictTemplateForRegion } from './DistrictTemplates';
-import { DynamicVehicle, RoadRoutePoint } from './DynamicVehicle';
+import { DynamicVehicle, RoadRoutePoint, VehicleSuctionInfluence } from './DynamicVehicle';
 import { WorldArtKind, WorldArtLibrary } from './WorldArtLibrary';
 import { WorldStreamer } from './WorldStreamer';
 import { WorldCellFactory } from './WorldCellFactory';
@@ -350,8 +350,8 @@ class InfiniteWorldCell {
     return true;
   }
 
-  public updateDynamicTraffic(dt: number): void {
-    this.dynamicVehicles.forEach((vehicle) => vehicle.update(dt));
+  public updateDynamicTraffic(dt: number, suction: VehicleSuctionInfluence | null = null): void {
+    this.dynamicVehicles.forEach((vehicle) => vehicle.update(dt, suction));
   }
 
   public removeAbsorbedVehicle(object: CompressibleObject, objectPool: ObjectPool<CompressibleObject>, respawnDelaySeconds: number): boolean {
@@ -943,7 +943,14 @@ export class InfiniteWorldManager extends Component {
   ): void {
     const objectPool = this.objectPool;
     if (!objectPool) return;
-    this.updateDynamicTraffic(dt);
+    // 道路车辆先感知黑洞外圈引力（减速/偏航），再进入正式吸附状态机。
+    this.updateDynamicTraffic(dt, {
+      machineX: machinePos.x,
+      machineZ: machinePos.z,
+      influenceRadius: suctionRadius * 1.6,
+      machineMaxTier,
+      isMagnetStorm,
+    });
     let activeCollectibleCount = this.getAllObjects()
       .filter((object) => isCollectibleObject(object) && object.getState() !== 'ABSORBED' && object.getState() !== 'RECYCLED').length;
     for (const cell of this.activeCells.values()) {
@@ -990,8 +997,8 @@ export class InfiniteWorldManager extends Component {
   }
 
   /** Arena owns resource selection, while streamed traffic remains shared. */
-  public updateDynamicTraffic(dt: number): void {
-    for (const cell of this.activeCells.values()) cell.updateDynamicTraffic(dt);
+  public updateDynamicTraffic(dt: number, suction: VehicleSuctionInfluence | null = null): void {
+    for (const cell of this.activeCells.values()) cell.updateDynamicTraffic(dt, suction);
   }
 
   /**
