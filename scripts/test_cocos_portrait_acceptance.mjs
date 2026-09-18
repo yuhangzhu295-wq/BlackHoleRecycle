@@ -31,7 +31,7 @@ const reportPath = path.join(evidenceDirectory, 'acceptance-report.json');
 const requestedAcceptanceScope = process.argv.find((argument) => argument.startsWith('--scope='))?.slice('--scope='.length)
   || process.env.BHR_ACCEPTANCE_SCOPE
   || 'full';
-const acceptanceScope = ['full', 'pages', 'arena', 'arena-ai', 'revive', 'settlement', 'ui-full-flow', 'skins', 'skin-unlock', 'arena-timer', 'network', 'regions', 'progression', 'cell-lifecycle', 'golden-city'].includes(requestedAcceptanceScope)
+const acceptanceScope = ['full', 'pages', 'arena', 'arena-ai', 'revive', 'settlement', 'ui-full-flow', 'skins', 'skin-unlock', 'arena-timer', 'network', 'regions', 'progression', 'cell-lifecycle', 'golden-city', 'save-resume'].includes(requestedAcceptanceScope)
   ? requestedAcceptanceScope
   : 'full';
 // Preserve each independently-runnable acceptance scope. The canonical report
@@ -1203,6 +1203,171 @@ async function verifySettlementFlow(cdp, page, canvasRect, homeSnapshot) {
     savedCoinsBefore: coinsBeforeMatch,
     savedCoinsAfter: settled.save?.coins,
     secondMatchId: settled2.settlement?.matchId,
+  };
+}
+
+/**
+ * S10 save-resume browser acceptance.
+ *
+ * Drives a real arena match through visible touch controls, records pre-reload
+ * state, reloads the browser, and asserts every value persists exactly once.
+ * No QA setter, localStorage write, or fake reward is used.
+ */
+async function verifySaveResume(cdp, page, canvasRect, homeSnapshot) {
+  const baselineCoins = homeSnapshot.save?.coins;
+  assert(Number.isFinite(baselineCoins),
+    'FAIL_SAVE_RESUME_BASELINE_COINS: save.coins missing before match: ' + JSON.stringify(homeSnapshot.save));
+  const baselineSkinId = homeSnapshot.save?.skinId ?? null;
+
+  // Home -> Mode Select
+  const start = pointForVisibleNode(canvasRect, homeSnapshot, homeSnapshot.ui?.start, 'SR_HOME_START');
+  await dispatchTouchTap(cdp, start.x, start.y);
+  await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'MODE_SELECT', undefined, { timeout: 5000 });
+  const mode = await readRuntimeSnapshot(page);
+
+  // Mode Select -> Arena
+  const arenaBtn = pointForVisibleNode(canvasRect, mode, mode.ui?.modeArena, 'SR_MODE_ARENA');
+  await dispatchTouchTap(cdp, arenaBtn.x, arenaBtn.y);
+  try {
+    await page.waitForFunction(() => {
+      const s = window.__BHR_QA__.snapshot();
+      return s.gameState === 'ARENA' && s.ui?.arenaHUD?.root?.active === true;
+    }, undefined, { timeout: 7000 });
+  } catch (error) {
+    const actual = await readRuntimeSnapshot(page);
+    throw new Error('FAIL_SAVE_RESUME_ARENA_ENTER: ' + JSON.stringify({ arenaBtn, gameState: actual.gameState, ui: actual.ui, error: String(error) }));
+  }
+
+  // Assert arena is running and pause button is visible
+  const arenaRunning = await readRuntimeSnapshot(page);
+  assert(arenaRunning.arena?.running,
+    'FAIL_SAVE_RESUME_ARENA_NOT_RUNNING: ' + JSON.stringify(arenaRunning.arena));
+  assert(arenaRunning.ui?.arenaHUD?.pauseButton?.active,
+    'FAIL_SAVE_RESUME_PAUSE_NOT_VISIBLE: ' + JSON.stringify(arenaRunning.ui?.arenaHUD));
+
+  // Capture machine state inside the arena for the pre-reload baseline
+  const machineInArena = {
+    mass: arenaRunning.machine?.mass,
+    level: arenaRunning.machine?.level,
+  };
+
+  // Tap visible Pause button
+  const pauseBtn = pointForVisibleNode(canvasRect, arenaRunning, arenaRunning.ui?.arenaHUD?.pauseButton, 'SR_PAUSE');
+  await dispatchTouchTap(cdp, pauseBtn.x, pauseBtn.y);
+  try {
+    await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'PAUSED', undefined, { timeout: 5000 });
+  } catch (error) {
+    const actual = await readRuntimeSnapshot(page);
+    throw new Error('FAIL_SAVE_RESUME_PAUSE: ' + JSON.stringify({ pauseBtn, gameState: actual.gameState, ui: actual.ui, error: String(error) }));
+  }
+
+  // Assert Settle/Forfeit button is visible on the pause page
+  const paused = await readRuntimeSnapshot(page);
+  assert(paused.ui?.formalPages?.pauseSettle?.active,
+    'FAIL_SAVE_RESUME_SETTLE_BTN_NOT_VISIBLE: ' + JSON.stringify(paused.ui?.formalPages));
+
+  // Tap visible Settle/Forfeit button
+  const settleBtn = pointForVisibleNode(canvasRect, paused, paused.ui?.formalPages?.pauseSettle, 'SR_FORFEIT');
+  await dispatchTouchTap(cdp, settleBtn.x, settleBtn.y);
+  try {
+    await page.waitForFunction(() => {
+      const s = window.__BHR_QA__.snapshot();
+      return s.gameState === 'SETTLEMENT' && s.uiScreen === 'Settlement' && s.arena?.reason === 'FORFEIT';
+    }, undefined, { timeout: 5000 });
+  } catch (error) {
+    const actual = await readRuntimeSnapshot(page);
+    throw new Error('FAIL_SAVE_RESUME_SETTLEMENT: ' + JSON.stringify({ settleBtn, gameState: actual.gameState, uiScreen: actual.uiScreen, arena: actual.arena, error: String(error) }));
+  }
+
+  // Read settlement page diagnostics
+  const settled = await readRuntimeSnapshot(page);
+  assert(settled.ui?.formalPages?.settlement?.active,
+    'FAIL_SAVE_RESUME_SETTLE_PAGE_NOT_ACTIVE: ' + JSON.stringify(settled.ui?.formalPages));
+
+  const reward = settled.arena?.settlementReward;
+  assert(reward && Number.isFinite(reward.coins) && reward.coins >= 0,
+    'FAIL_SAVE_RESUME_REWARD_MISSING: ' + JSON.stringify(reward));
+
+  // Assert exactly one grant: coins after settlement = baseline + reward.coins
+  assert(settled.save?.coins === baselineCoins + reward.coins,
+    'FAIL_SAVE_RESUME_COINS_NOT_SAVED: ' + JSON.stringify({ baselineCoins, after: settled.save?.coins, reward }));
+
+  // Assert settlement is claimed (idempotency guard is already set)
+  assert(settled.settlement?.claimed === true,
+    'FAIL_SAVE_RESUME_NOT_CLAIMED: ' + JSON.stringify(settled.settlement));
+
+  // Capture diagnostics needed for post-reload assertions
+  const preReloadCoins = settled.save?.coins;
+  const preReloadMass = settled.machine?.mass ?? machineInArena.mass;
+  const preReloadLevel = settled.machine?.level ?? machineInArena.level;
+  const preReloadSkinId = settled.save?.skinId ?? baselineSkinId;
+  const settlementMatchId = settled.settlement?.matchId ?? settled.arena?.matchId ?? null;
+  const claimedArenaSettlementIds = settled.save?.claimedArenaSettlementIds ?? [];
+
+  // Assert the save record already includes this match ID as claimed (pre-reload)
+  if (settlementMatchId !== null) {
+    assert(claimedArenaSettlementIds.includes(settlementMatchId),
+      'FAIL_SAVE_RESUME_PRE_RELOAD_CLAIMED_ID_MISSING: ' + JSON.stringify({ settlementMatchId, claimedArenaSettlementIds }));
+  }
+
+  // Screenshot the settlement page before reload
+  await page.screenshot({ path: path.join(evidenceDirectory, 'portrait-390x844-save-resume-settlement.png') });
+
+  // Reload the browser
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  try {
+    await page.waitForFunction(() => Boolean(window.__BHR_QA__?.snapshot), undefined, { timeout: 45000 });
+  } catch (error) {
+    throw new Error('FAIL_SAVE_RESUME_QA_BRIDGE_AFTER_RELOAD: ' + String(error));
+  }
+  const afterReload = await readRuntimeSnapshot(page);
+
+  // Assert coins persisted exactly (no second grant)
+  assert(afterReload.save?.coins === preReloadCoins,
+    'FAIL_SAVE_RESUME_COINS_MISMATCH: ' + JSON.stringify({ preReload: preReloadCoins, afterReload: afterReload.save?.coins }));
+
+  // Assert machine mass persisted
+  assert(afterReload.machine?.mass === preReloadMass,
+    'FAIL_SAVE_RESUME_MASS_MISMATCH: ' + JSON.stringify({ preReload: preReloadMass, afterReload: afterReload.machine?.mass }));
+
+  // Assert machine level persisted
+  assert(afterReload.machine?.level === preReloadLevel,
+    'FAIL_SAVE_RESUME_LEVEL_MISMATCH: ' + JSON.stringify({ preReload: preReloadLevel, afterReload: afterReload.machine?.level }));
+
+  // Assert skin id persisted
+  assert((afterReload.save?.skinId ?? null) === preReloadSkinId,
+    'FAIL_SAVE_RESUME_SKIN_ID_MISMATCH: ' + JSON.stringify({ preReload: preReloadSkinId, afterReload: afterReload.save?.skinId }));
+
+  // Assert previous settlement ID remains claimed after reload (no repeat grant)
+  if (settlementMatchId !== null) {
+    const afterClaimedArenaIds = afterReload.save?.claimedArenaSettlementIds ?? [];
+    assert(afterClaimedArenaIds.includes(settlementMatchId),
+      'FAIL_SAVE_RESUME_CLAIMED_ID_LOST: ' + JSON.stringify({ settlementMatchId, afterClaimedArenaIds }));
+    // Coins must not have grown again (re-claim guard held)
+    assert(afterReload.save?.coins === preReloadCoins,
+      'FAIL_SAVE_RESUME_REPEAT_GRANT: ' + JSON.stringify({ preReloadCoins, afterReload: afterReload.save?.coins, settlementMatchId }));
+  }
+
+  return {
+    baselineCoins,
+    baselineSkinId,
+    machineInArena,
+    settlementMatchId,
+    claimedArenaSettlementIds,
+    reward,
+    preReload: {
+      coins: preReloadCoins,
+      mass: preReloadMass,
+      level: preReloadLevel,
+      skinId: preReloadSkinId,
+    },
+    afterReload: {
+      coins: afterReload.save?.coins,
+      mass: afterReload.machine?.mass,
+      level: afterReload.machine?.level,
+      skinId: afterReload.save?.skinId,
+      claimedArenaSettlementIds: afterReload.save?.claimedArenaSettlementIds ?? [],
+    },
   };
 }
 
@@ -2477,6 +2642,11 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
         assert(runtimeErrors.length === 0, 'Runtime console errors after Settlement flow: ' + runtimeErrors.join(' | '));
         return;
       }
+      if (acceptanceScope === 'save-resume') {
+        report.saveResume = await verifySaveResume(cdp, page, canvasRect, snapshot);
+        assert(runtimeErrors.length === 0, 'Runtime console errors after save-resume: ' + runtimeErrors.join(' | '));
+        return;
+      }
       if (acceptanceScope === 'ui-full-flow') {
         report.uiFullFlow = await verifyUiFullFlow(cdp, page, canvasRect, snapshot);
         assert(runtimeErrors.length === 0, 'Runtime console errors after UI full flow: ' + runtimeErrors.join(' | '));
@@ -3229,6 +3399,7 @@ const report = {
   fullProgression: null,
   trafficReplenishment: null,
   machineSaveResume: null,
+  saveResume: null,
   cellLifecycle: null,
   paidSkinUnlock: null,
   goldenCity: null,
@@ -3256,7 +3427,7 @@ try {
     : `http://127.0.0.1:${address.port}/?qa=1`;
   browser = await chromium.launch({ headless: true, args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-webgl'] });
 
-  const targetViewports = acceptanceScope === 'pages' || acceptanceScope === 'revive' || acceptanceScope === 'settlement' || acceptanceScope === 'ui-full-flow' || acceptanceScope === 'skins' || acceptanceScope === 'skin-unlock' || acceptanceScope === 'arena-timer' || acceptanceScope === 'arena-ai' || acceptanceScope === 'network' || acceptanceScope === 'regions' || acceptanceScope === 'progression' || acceptanceScope === 'golden-city'
+  const targetViewports = acceptanceScope === 'pages' || acceptanceScope === 'revive' || acceptanceScope === 'settlement' || acceptanceScope === 'ui-full-flow' || acceptanceScope === 'skins' || acceptanceScope === 'skin-unlock' || acceptanceScope === 'arena-timer' || acceptanceScope === 'arena-ai' || acceptanceScope === 'network' || acceptanceScope === 'regions' || acceptanceScope === 'progression' || acceptanceScope === 'golden-city' || acceptanceScope === 'save-resume'
     ? requiredPortraitViewports.filter((viewport) => viewport.id === '390x844')
     : requiredPortraitViewports;
   for (const viewport of targetViewports) {
