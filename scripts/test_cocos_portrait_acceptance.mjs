@@ -452,6 +452,92 @@ async function verifyNetworkProbe(cdp, page, canvasRect) {
   }, undefined, { timeout: 5_000 });
   const after = await readRuntimeSnapshot(page);
   const localAfter = after.network.snapshot.players.find((player) => player.id === after.network.snapshot.localSessionId);
+  const reconnectIdentity = after.network.snapshot.localSessionId;
+  const reconnectState = {
+    mass: localAfter.mass,
+    level: localAfter.level,
+    collected: localAfter.collected,
+    kills: localAfter.kills,
+    sequence: localAfter.lastInputSequence,
+  };
+
+  // Interrupt only the browser transport. The Colyseus process keeps running,
+  // so this verifies its actual reservation and restoration path rather than a
+  // new-room join or a fabricated state handoff.
+  let transportRestored = false;
+  try {
+    await cdp.send('Network.enable');
+    await cdp.send('Network.emulateNetworkConditions', {
+      offline: true,
+      latency: 0,
+      downloadThroughput: 0,
+      uploadThroughput: 0,
+      connectionType: 'none',
+    });
+    await page.waitForFunction(() => window.__BHR_QA__.snapshot().network?.status === 'RECONNECTING', undefined, { timeout: 8_000 });
+    const dropped = await readRuntimeSnapshot(page);
+    const droppedLocal = dropped.network?.snapshot?.players?.find((player) => player.id === reconnectIdentity);
+    assert(droppedLocal && !droppedLocal.isBot,
+      `FAIL_COCOS_COLYSEUS_RECONNECT_HUMAN_SLOT: ${JSON.stringify(dropped.network)}`);
+
+    await cdp.send('Network.emulateNetworkConditions', {
+      offline: false,
+      latency: 0,
+      downloadThroughput: -1,
+      uploadThroughput: -1,
+      connectionType: 'none',
+    });
+    transportRestored = true;
+    await page.waitForFunction((expected) => {
+      const network = window.__BHR_QA__.snapshot().network;
+      const local = network?.snapshot?.players?.find((player) => player.id === expected.sessionId);
+      return network?.status === 'CONNECTED'
+        && network?.lastError === null
+        && network?.snapshot?.localSessionId === expected.sessionId
+        && local?.isBot === false
+        && local?.mass === expected.mass
+        && local?.level === expected.level
+        && local?.collected === expected.collected
+        && local?.kills === expected.kills;
+    }, { sessionId: reconnectIdentity, ...reconnectState }, { timeout: 10_000 });
+  } catch (error) {
+    const actual = await readRuntimeSnapshot(page);
+    throw new Error(`FAIL_COCOS_COLYSEUS_RECONNECT: ${JSON.stringify({ network: actual.network, error: String(error) })}`);
+  } finally {
+    if (!transportRestored) {
+      await cdp.send('Network.emulateNetworkConditions', {
+        offline: false,
+        latency: 0,
+        downloadThroughput: -1,
+        uploadThroughput: -1,
+        connectionType: 'none',
+      });
+    }
+  }
+  const reconnected = await readRuntimeSnapshot(page);
+  const localReconnected = reconnected.network.snapshot.players.find((player) => player.id === reconnectIdentity);
+  await page.screenshot({ path: path.join(evidenceDirectory, 'portrait-390x844-network-reconnected.png') });
+  const reconnectJoystick = pointForVisibleNode(canvasRect, reconnected, reconnected.ui?.arenaHUD?.joystick, 'NETWORK_ARENA_RECONNECTED_JOYSTICK');
+  await beginTouchJoystick(cdp, reconnectJoystick.x, reconnectJoystick.y, reconnectJoystick.x - 36, reconnectJoystick.y + 20);
+  try {
+    await page.waitForFunction((before) => {
+      const current = window.__BHR_QA__.snapshot().network?.snapshot;
+      const local = current?.players?.find((player) => player.id === current.localSessionId);
+      return !!local
+        && local.lastInputSequence > before.sequence
+        && Math.hypot(local.x - before.x, local.z - before.z) > 0.35;
+    }, {
+      x: localReconnected.x,
+      z: localReconnected.z,
+      sequence: reconnectState.sequence,
+    }, { timeout: 8_000 });
+  } catch (error) {
+    const actual = await readRuntimeSnapshot(page);
+    throw new Error(`FAIL_COCOS_COLYSEUS_RECONNECT_INPUT: ${JSON.stringify({ before: localReconnected, network: actual.network, error: String(error) })}`);
+  } finally {
+    await releaseTouchJoystick(cdp);
+  }
+  const afterReconnectInput = await readRuntimeSnapshot(page);
 
   // Finish through the same visible pause/settle controls used by a player.
   // The first tap sends a real `forfeit` message; the next server snapshot
@@ -496,6 +582,12 @@ async function verifyNetworkProbe(cdp, page, canvasRect) {
   return {
     ...settled.network,
     inputForwarding: { before: localBefore, after: localAfter },
+    reconnect: {
+      sessionId: reconnectIdentity,
+      before: reconnectState,
+      after: localReconnected,
+      postReconnectInput: afterReconnectInput.network.snapshot.players.find((player) => player.id === reconnectIdentity),
+    },
     settlement: settled.arena,
     pause,
     settle,

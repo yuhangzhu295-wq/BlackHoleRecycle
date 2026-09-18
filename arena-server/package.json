@@ -6,7 +6,7 @@
   "description": "Local authoritative Colyseus arena service for BlackHoleRecycle.",
   "scripts": {
     "start": "node src/index.mjs",
-    "test": "node --test test/arena-room.integration.test.mjs"
+    "test": "node --test test/*.test.mjs"
   },
   "dependencies": {
     "@colyseus/schema": "5.0.27",

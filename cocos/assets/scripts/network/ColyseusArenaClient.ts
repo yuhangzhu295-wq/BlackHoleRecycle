@@ -10,7 +10,7 @@
  */
 import { Client, Room } from '@colyseus/sdk';
 
-export type ArenaConnectionStatus = 'IDLE' | 'CONNECTING' | 'CONNECTED' | 'FAILED' | 'LEFT';
+export type ArenaConnectionStatus = 'IDLE' | 'CONNECTING' | 'RECONNECTING' | 'CONNECTED' | 'FAILED' | 'LEFT';
 
 export interface AuthoritativeArenaPlayer {
   readonly id: string;
@@ -166,8 +166,19 @@ export class ColyseusArenaClient {
       const client = new Client(endpoint);
       const room = await client.joinOrCreate<ArenaStateLike>('black_hole_arena', { displayName });
       this.room = room;
+      room.reconnection.minUptime = 0;
+      room.reconnection.maxRetries = 5;
+      room.reconnection.maxDelay = 1_000;
       room.onStateChange((state) => {
         this.snapshot = this.readSnapshot(state, room.sessionId);
+      });
+      room.onDrop(() => {
+        this.status = 'RECONNECTING';
+        this.lastError = null;
+      });
+      room.onReconnect(() => {
+        this.status = 'CONNECTED';
+        this.lastError = null;
       });
       room.onError((code, message) => {
         this.lastError = `room error ${code}: ${message || 'unknown'}`;

@@ -17,6 +17,7 @@ const MATCH_DURATION_MILLISECONDS = 180_000;
 const CONSUME_RATIO = 1.32;
 const CONSUME_DISTANCE = 1.28;
 const BOT_NAMES = ['蓝莓', '矿石', '风暴', '火花', '雪球', '流光', '哨兵', '哨兵·零'];
+const RECONNECT_WINDOW_SECONDS = 10;
 
 function finiteNumber(value) {
   return typeof value === 'number' && Number.isFinite(value);
@@ -81,11 +82,31 @@ export class ArenaRoom extends Room {
     this.state.phase = 'RUNNING';
   }
 
+  async onDrop(client) {
+    const sessionId = client.sessionId;
+    if (!this.humanSlots.has(sessionId)) return;
+
+    const player = this.state.players.get(sessionId);
+    if (player) player.connected = false;
+    try {
+      await this.allowReconnection(client, RECONNECT_WINDOW_SECONDS);
+      const restored = this.state.players.get(sessionId);
+      if (!restored) return;
+      restored.connected = true;
+      restored.inputX = 0;
+      restored.inputY = 0;
+      this.lastInputAtMilliseconds.set(sessionId, this.state.elapsedMilliseconds);
+    } catch {
+      // Colyseus invokes onLeave after a failed or expired reconnection.
+    }
+  }
+
   onLeave(client) {
-    const slot = this.humanSlots.get(client.sessionId);
-    this.state.players.delete(client.sessionId);
-    this.lastInputAtMilliseconds.delete(client.sessionId);
-    this.humanSlots.delete(client.sessionId);
+    const sessionId = client.sessionId;
+    const slot = this.humanSlots.get(sessionId);
+    this.state.players.delete(sessionId);
+    this.lastInputAtMilliseconds.delete(sessionId);
+    this.humanSlots.delete(sessionId);
     if (slot !== undefined) this.spawnBot(slot);
     if (this.humanSlots.size === 0) this.state.phase = 'LOBBY';
   }
@@ -123,6 +144,7 @@ export class ArenaRoom extends Room {
     this.state.players.forEach((player, sessionId) => {
       // The schema deliberately does not expose transport timestamps. They are
       // authority-internal and only decide when stale directional input stops.
+      if (!player.isBot && !player.connected) return;
       const inputAge = this.state.elapsedMilliseconds - (this.lastInputAtMilliseconds.get(sessionId) || 0);
       if (!player.alive) {
         player.respawnMilliseconds = Math.max(0, player.respawnMilliseconds - deltaMilliseconds);
@@ -272,7 +294,7 @@ export class ArenaRoom extends Room {
       if (pickup.state === 'ABSORBED') return;
       let ownerId = pickup.capturedBy || null;
       let owner = ownerId ? this.state.players.get(ownerId) : null;
-      if (!owner || !owner.alive || pickup.tier > owner.maxTier) {
+      if (!owner || !owner.alive || (!owner.isBot && !owner.connected) || pickup.tier > owner.maxTier) {
         ownerId = null;
         owner = null;
         pickup.capturedBy = '';
@@ -282,7 +304,7 @@ export class ArenaRoom extends Room {
       if (!owner) {
         let bestDistance = Number.POSITIVE_INFINITY;
         this.state.players.forEach((candidate, candidateId) => {
-          if (!candidate.alive || pickup.tier > candidate.maxTier) return;
+          if (!candidate.alive || (!candidate.isBot && !candidate.connected) || pickup.tier > candidate.maxTier) return;
           const distance = Math.hypot(candidate.x - pickup.x, candidate.z - pickup.z);
           if (distance <= candidate.suctionRadius && distance < bestDistance) {
             owner = candidate;
@@ -334,7 +356,7 @@ export class ArenaRoom extends Room {
   updateCombat() {
     const active = [];
     this.state.players.forEach((player, sessionId) => {
-      if (player.alive && player.shieldMilliseconds === 0) active.push([sessionId, player]);
+      if (player.alive && (player.isBot || player.connected) && player.shieldMilliseconds === 0) active.push([sessionId, player]);
     });
     for (let left = 0; left < active.length; left++) {
       for (let right = left + 1; right < active.length; right++) {
