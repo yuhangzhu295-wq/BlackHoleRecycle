@@ -1819,14 +1819,75 @@ async function verifyArenaTimerExpiry(cdp, page, canvasRect) {
   assert(started.arena?.running && started.arena?.durationSeconds === 180,
     `FAIL_ARENA_TIMER_START: ${JSON.stringify(started.arena)}`);
 
-  // Keep the page foregrounded and wait for the native gameplay clock. The
-  // timeout only bounds a real wait; it does not manipulate the clock.
-  await page.waitForFunction(() => {
-    const snapshot = window.__BHR_QA__.snapshot();
-    return snapshot.gameState === 'SETTLEMENT' && snapshot.arena?.reason === 'TIME'
-      && snapshot.uiScreen === 'Settlement';
-  }, undefined, { timeout: 205000 });
-  const settled = await readRuntimeSnapshot(page);
+  // The native gameplay clock must reach its own 180-second TIME outcome. This
+  // wait only bounds it; it never manipulates the clock.
+  //
+  // An idle local player does NOT survive to TIME. The bots eliminate them, the
+  // real revive page appears, and its own 5-second countdown
+  // (`REVIVE_COUNTDOWN_SECONDS` in `RevivePageController`) expires into
+  // `ARENA_GIVE_UP_REQUESTED` -> `GameManager.forfeitLocal()`. That settles the
+  // match with `reason: 'FORFEIT'` at roughly 15 seconds elapsed, which is
+  // correct product behaviour, so a passive wait can never observe a TIME
+  // settlement. Keep playing through the visible joystick and use the visible
+  // revive action when the real revive flow is entered, exactly as
+  // `verifyArenaAiRuntime` does for the same reason.
+  //
+  // A bare `waitForFunction` timeout would report only that the condition was
+  // never met, which is not diagnosable; keep the last observed arena state so
+  // the failure carries the real numbers.
+  let current = started;
+  let joystick = pointForVisibleNode(canvasRect, current, current.ui?.arenaHUD?.joystick, 'ARENA_TIMER_JOYSTICK');
+  let touchHeld = false;
+  let reviveCount = 0;
+  let settledSnapshot = null;
+  let lastObserved = started;
+  const timerDeadline = Date.now() + 210_000;
+  try {
+    while (Date.now() < timerDeadline) {
+      lastObserved = current;
+      if (current.gameState === 'SETTLEMENT' && current.arena?.reason === 'TIME'
+        && current.uiScreen === 'Settlement') {
+        settledSnapshot = current;
+        break;
+      }
+      if (current.gameState === 'REVIVING') {
+        if (touchHeld) {
+          await releaseTouchJoystick(cdp);
+          touchHeld = false;
+        }
+        const revive = pointForVisibleNode(canvasRect, current, current.ui?.formalPages?.reviveNow, 'ARENA_TIMER_REVIVE_NOW');
+        await dispatchTouchTap(cdp, revive.x, revive.y);
+        reviveCount += 1;
+        await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'ARENA', undefined, { timeout: 5000 });
+        current = await readRuntimeSnapshot(page);
+        joystick = pointForVisibleNode(canvasRect, current, current.ui?.arenaHUD?.joystick, 'ARENA_TIMER_JOYSTICK_AFTER_REVIVE');
+      }
+      if (current.gameState === 'ARENA') {
+        const phase = (current.arena?.elapsedSeconds || 0) * 0.83;
+        const targetX = joystick.x + Math.cos(phase) * 54;
+        const targetY = joystick.y + Math.sin(phase) * 54;
+        if (touchHeld) await moveTouchJoystick(cdp, targetX, targetY);
+        else {
+          await beginTouchJoystick(cdp, joystick.x, joystick.y, targetX, targetY);
+          touchHeld = true;
+        }
+      }
+      await page.waitForTimeout(350);
+      current = await readRuntimeSnapshot(page);
+    }
+  } finally {
+    if (touchHeld) await releaseTouchJoystick(cdp);
+  }
+  assert(settledSnapshot,
+    `FAIL_ARENA_TIMER_NEVER_SETTLED: revives=${reviveCount} gameState=${lastObserved?.gameState} uiScreen=${lastObserved?.uiScreen} arena=${JSON.stringify({
+      running: lastObserved?.arena?.running,
+      reason: lastObserved?.arena?.reason,
+      elapsedSeconds: lastObserved?.arena?.elapsedSeconds,
+      remainingSeconds: lastObserved?.arena?.remainingSeconds,
+      durationSeconds: lastObserved?.arena?.durationSeconds,
+      combatWarmupRemainingSeconds: lastObserved?.arena?.combatWarmupRemainingSeconds,
+    })}`);
+  const settled = settledSnapshot;
   assert(!settled.arena?.running && settled.arena?.elapsedSeconds >= settled.arena?.durationSeconds,
     `FAIL_ARENA_TIMER_NOT_FINISHED: ${JSON.stringify(settled.arena)}`);
   assert(settled.arena?.settlementReward?.coins > 0,
@@ -3274,12 +3335,36 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
         'FAIL_VERTICAL_SLICE_T2_AUTHORING_TARGET_MISSING: tutorial_t2_target was not registered from the opening cell authoring data');
       const authoredT2Point = { x: authoredT2Target.x, z: authoredT2Target.z };
       await driveJoystickToLogicalPoint(cdp, page, joystick, authoredT2Point, 'T2_LOCK', 2.3);
-      await page.waitForTimeout(700);
-      const lockedT2Snapshot = await readRuntimeSnapshot(page);
+      // `CompressibleObject.showLockAlert()` is a pulse, not a latch: it holds
+      // `isLockAlertActive` for 1.4 s and then refuses to re-arm for a further
+      // 3.5 s (`lockCooldownTimer = 1.4 + 3.5`). Sampling one instant a fixed
+      // 700 ms after arrival therefore only observes the prompt when the pulse
+      // happens to have started at that moment. The player spawns inside the
+      // authored tutorial ring, so the pulse usually fires at spawn and is
+      // already in cooldown by the time the drive arrives, and how long the
+      // drive takes depends on the joystick geometry, which is viewport-sized.
+      // That made this gate viewport-dependent rather than build-dependent: the
+      // same build passed it at 375x667 and failed it at 390x844. Observe the
+      // pulse across one full period instead of sampling an instant. The gate is
+      // unchanged - the prompt must appear - it just no longer depends on where
+      // in the blink cycle the sample lands.
+      let lockedT2Snapshot = await readRuntimeSnapshot(page);
+      let lockedT2 = lockedT2Snapshot.objects.find(
+        (object) => object.runtimeId === 'tutorial_t2_target' && object.lockVisible) || null;
+      const lockObservationStart = Date.now();
+      const lockObservationDeadline = lockObservationStart + 6_000;
+      while (!lockedT2 && Date.now() < lockObservationDeadline) {
+        await page.waitForTimeout(200);
+        lockedT2Snapshot = await readRuntimeSnapshot(page);
+        lockedT2 = lockedT2Snapshot.objects.find(
+          (object) => object.runtimeId === 'tutorial_t2_target' && object.lockVisible) || null;
+      }
+      if (lockedT2) {
+        console.log(`[acceptance:v2] T2 lock pulse observed after ${Date.now() - lockObservationStart} ms`);
+      }
       // Only the approached authored tutorial target participates in this
       // interaction check. Other streamed T2 objects remain correctly idle
       // and must not display a lock while they are outside suction range.
-      const lockedT2 = lockedT2Snapshot.objects.find((object) => object.runtimeId === 'tutorial_t2_target' && object.lockVisible);
       assert(lockedT2,
         `FAIL_VERTICAL_SLICE_T2_LOCK: ${JSON.stringify({
           target: lockedT2Snapshot.objects.find((object) => object.runtimeId === 'tutorial_t2_target'),
