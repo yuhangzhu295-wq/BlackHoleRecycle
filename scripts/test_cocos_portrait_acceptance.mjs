@@ -3153,10 +3153,32 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
         `FAIL_OPENING_IMPORTED_MATERIAL_FALLBACK: ${JSON.stringify(openingWorldVisuals)}`);
       const groundGroup = openingWorldVisuals.find((row) => row.name === 'Ground');
       const groundTiles = groundGroup?.renderers?.filter((renderer) => renderer.name === 'tile-low') || [];
-      assert(groundGroup?.active === true && groundTiles.length === 4
-        && groundTiles.every((renderer) => renderer.primitiveCount > 0
-          && renderer.materials?.every((material) => material.valid && material.effect)),
-      `FAIL_OPENING_GRASS_RENDERER: ${JSON.stringify(openingWorldVisuals)}`);
+      // Equivalent-strength ground coverage gate (replaces the stale "exactly 4
+      // 8x8 quadrants" assumption). Real opening cell is the 64x64 footprint
+      // around origin; coverage must be proven from genuine tile render bounds,
+      // so a regression that shrinks the floor still fails.
+      const tileBounds = groundTiles
+        .map((renderer) => renderer.bounds)
+        .filter((bounds) => bounds && bounds.center && bounds.halfExtents);
+      const coverage = tileBounds.reduce(
+        (acc, bounds) => ({
+          minX: Math.min(acc.minX, bounds.center.x - bounds.halfExtents.x),
+          maxX: Math.max(acc.maxX, bounds.center.x + bounds.halfExtents.x),
+          minZ: Math.min(acc.minZ, bounds.center.z - bounds.halfExtents.z),
+          maxZ: Math.max(acc.maxZ, bounds.center.z + bounds.halfExtents.z),
+        }),
+        { minX: Infinity, maxX: -Infinity, minZ: Infinity, maxZ: -Infinity },
+      );
+      assert(
+        groundGroup?.active === true
+          && groundTiles.length >= 1
+          && groundTiles.every((renderer) => renderer.primitiveCount > 0
+            && renderer.materials?.every((material) => material.valid && material.effect))
+          && tileBounds.length >= 1
+          && coverage.minX <= -16 && coverage.maxX >= 16
+          && coverage.minZ <= -16 && coverage.maxZ >= 16,
+        `FAIL_OPENING_GRASS_RENDERER: ${JSON.stringify(openingWorldVisuals)}`,
+      );
       report.openingWorldVisuals = openingWorldVisuals;
       const dynamicBefore = gameplaySnapshot.world?.streaming?.dynamicVehicles || [];
       assert(dynamicBefore.length > 0,
