@@ -12,6 +12,25 @@ import { InfiniteWorldManager, WorldCellRuntimeContent } from '../../world/Infin
 
 type GoldenCityCategory = 'BUILDING' | 'TREE' | 'ROAD' | 'POI' | 'VEHICLE' | 'COMPETITOR' | 'COLLECTIBLE' | 'RESOURCE_CLUSTER' | 'GROUND';
 
+/**
+ * Real-geometry openness predicate. Samples are taken on the xz plane over the
+ * union of the actual streamed GROUND tile footprints (no hardcoded cell size),
+ * and each sample is classified from the live world bounds of the objects that
+ * the runtime actually spawned.
+ */
+const PLAYABLE_SAMPLE_SPACING_METERS = 1;
+const PLAYABLE_OPEN_AREA_PREDICATE = [
+  'sample grid on xz plane over the union of real GROUND tile worldBounds (spacing 1m, no hardcoded cell size)',
+  'groundHit = sample inside a GROUND entry footprint (tile-low / DistrictGround / GroundTile)',
+  'roadHit = sample inside a ROAD entry footprint; roads and walkways count as walkable, never as blocking',
+  'blocked = sample inside a solid occupant footprint: BUILDING, TREE, POI (bench/trashcan/fountain/fence/streetlight/...) or a *static* vehicle environment node; route-driven DynamicVehicles are excluded because they move',
+  'objectCovered = sample inside a COLLECTIBLE or RESOURCE_CLUSTER footprint, reported separately and never treated as blocking (absorbable)',
+  'openSamples = groundSamples where no solid occupant covers the sample',
+  'playableOpenAreaRatio = openSamples / groundSamples',
+].join('; ');
+const PLAYABLE_OPEN_AREA_CAVEAT =
+  'The gameplay runtime ships no Collider/RigidBody, so this ratio measures visual composition openness of the ground footprint, not a movement constraint.';
+
 interface GoldenCityWorldBounds {
   readonly min: Readonly<{ x: number; y: number; z: number }>;
   readonly max: Readonly<{ x: number; y: number; z: number }>;
@@ -51,6 +70,31 @@ interface GoldenCityEntry {
   readonly countReason: string;
 }
 
+export interface PlayableOpenAreaDiagnostics {
+  /**
+   * Real-geometry predicate used for every sample. Kept in the payload so an
+   * auditor can re-derive the ratio instead of trusting a bare number.
+   */
+  readonly predicate: string;
+  /**
+   * Honest limitation: the gameplay runtime ships no Collider/RigidBody, so
+   * this ratio describes visual composition openness, not a movement
+   * constraint.
+   */
+  readonly caveat: string;
+  readonly sampleSpacingMeters: number;
+  readonly extent: Readonly<{ minX: number; maxX: number; minZ: number; maxZ: number }> | null;
+  readonly grid: Readonly<{ columns: number; rows: number }>;
+  readonly totalSamples: number;
+  readonly groundSamples: number;
+  readonly roadSamples: number;
+  readonly blockedSamples: number;
+  readonly blockedByCategory: Readonly<Partial<Record<GoldenCityCategory, number>>>;
+  readonly objectCoveredSamples: number;
+  readonly openSamples: number;
+  readonly playableOpenAreaRatio: number | null;
+}
+
 export interface GoldenCityCompositionDiagnostics {
   readonly status: 'MEASURED' | 'UNAVAILABLE';
   readonly targetCell: Readonly<{ key: string; nodeName: string }>;
@@ -82,6 +126,7 @@ export interface GoldenCityCompositionDiagnostics {
     coverageByCategory: Readonly<Partial<Record<GoldenCityCategory, number>>>;
     largeEmptyGroundRatio: number | null;
   }>;
+  readonly playableOpenArea: PlayableOpenAreaDiagnostics;
 }
 
 /**
@@ -126,6 +171,7 @@ export class WorldCompositionProbe {
         screenYRatio: null,
       },
       emptyGround: this.emptyGround(),
+      playableOpenArea: this.emptyPlayableOpenArea(),
     });
 
     if (!targetCell || !camera || !camera.node?.isValid || viewport.width <= 0 || viewport.height <= 0) {
@@ -167,6 +213,7 @@ export class WorldCompositionProbe {
       counts,
       player,
       emptyGround: this.estimateEmptyGround(entries, viewport),
+      playableOpenArea: this.estimatePlayableOpenArea(entries),
     };
   }
 
@@ -610,6 +657,110 @@ export class WorldCompositionProbe {
       emptyGroundSamples,
       coverageByCategory,
       largeEmptyGroundRatio: groundSamples > 0 ? emptyGroundSamples / groundSamples : null,
+    };
+  }
+
+  private static emptyPlayableOpenArea(): PlayableOpenAreaDiagnostics {
+    return {
+      predicate: PLAYABLE_OPEN_AREA_PREDICATE,
+      caveat: PLAYABLE_OPEN_AREA_CAVEAT,
+      sampleSpacingMeters: PLAYABLE_SAMPLE_SPACING_METERS,
+      extent: null,
+      grid: { columns: 0, rows: 0 },
+      totalSamples: 0,
+      groundSamples: 0,
+      roadSamples: 0,
+      blockedSamples: 0,
+      blockedByCategory: {},
+      objectCoveredSamples: 0,
+      openSamples: 0,
+      playableOpenAreaRatio: null,
+    };
+  }
+
+  /**
+   * World-space companion to `estimateEmptyGround`. The screen-space estimate
+   * cannot answer "how open is the walkable ground": the flat ground plane only
+   * covers the lower half of a portrait viewport, and object coverage is judged
+   * from projected bounding quads which over-count large landmarks. This method
+   * samples the actual ground-tile footprint union and classifies every sample
+   * from live world bounds. It is a pure observer.
+   */
+  private static estimatePlayableOpenArea(entries: readonly GoldenCityEntry[]): PlayableOpenAreaDiagnostics {
+    const insideAny = (candidates: readonly GoldenCityEntry[], x: number, z: number): GoldenCityWorldBounds[] => {
+      const hits: GoldenCityWorldBounds[] = [];
+      for (const candidate of candidates) {
+        const bounds = candidate.worldBounds;
+        if (!bounds) continue;
+        if (x >= bounds.min.x && x <= bounds.max.x && z >= bounds.min.z && z <= bounds.max.z) hits.push(bounds);
+      }
+      return hits;
+    };
+
+    const groundEntries = entries.filter((entry) => entry.category === 'GROUND' && entry.worldBounds);
+    if (groundEntries.length === 0) return this.emptyPlayableOpenArea();
+    const extent = groundEntries.reduce((acc, entry) => {
+      const bounds = entry.worldBounds as GoldenCityWorldBounds;
+      return {
+        minX: Math.min(acc.minX, bounds.min.x),
+        maxX: Math.max(acc.maxX, bounds.max.x),
+        minZ: Math.min(acc.minZ, bounds.min.z),
+        maxZ: Math.max(acc.maxZ, bounds.max.z),
+      };
+    }, { minX: Number.POSITIVE_INFINITY, maxX: Number.NEGATIVE_INFINITY, minZ: Number.POSITIVE_INFINITY, maxZ: Number.NEGATIVE_INFINITY });
+
+    const roadEntries = entries.filter((entry) => entry.category === 'ROAD' && entry.worldBounds);
+    const solidEntries = entries.filter((entry) => entry.worldBounds
+      && (entry.category === 'BUILDING' || entry.category === 'TREE' || entry.category === 'POI'
+        || (entry.category === 'VEHICLE' && !entry.classificationRule.includes('DynamicVehicle'))));
+    const objectEntries = entries.filter((entry) => entry.worldBounds
+      && (entry.category === 'COLLECTIBLE' || entry.category === 'RESOURCE_CLUSTER'));
+
+    const columns = Math.max(1, Math.ceil((extent.maxX - extent.minX) / PLAYABLE_SAMPLE_SPACING_METERS));
+    const rows = Math.max(1, Math.ceil((extent.maxZ - extent.minZ) / PLAYABLE_SAMPLE_SPACING_METERS));
+    let totalSamples = 0;
+    let groundSamples = 0;
+    let roadSamples = 0;
+    let blockedSamples = 0;
+    let objectCoveredSamples = 0;
+    let openSamples = 0;
+    const blockedByCategory: Partial<Record<GoldenCityCategory, number>> = {};
+
+    for (let row = 0; row < rows; row++) {
+      const z = extent.minZ + (row + 0.5) * PLAYABLE_SAMPLE_SPACING_METERS;
+      for (let column = 0; column < columns; column++) {
+        const x = extent.minX + (column + 0.5) * PLAYABLE_SAMPLE_SPACING_METERS;
+        totalSamples++;
+        if (insideAny(groundEntries, x, z).length === 0) continue;
+        groundSamples++;
+        if (insideAny(roadEntries, x, z).length > 0) roadSamples++;
+        if (insideAny(objectEntries, x, z).length > 0) objectCoveredSamples++;
+        const blockers = solidEntries.filter((entry) => insideAny([entry], x, z).length > 0);
+        if (blockers.length === 0) {
+          openSamples++;
+          continue;
+        }
+        blockedSamples++;
+        new Set(blockers.map((entry) => entry.category)).forEach((category) => {
+          blockedByCategory[category] = (blockedByCategory[category] || 0) + 1;
+        });
+      }
+    }
+
+    return {
+      predicate: PLAYABLE_OPEN_AREA_PREDICATE,
+      caveat: PLAYABLE_OPEN_AREA_CAVEAT,
+      sampleSpacingMeters: PLAYABLE_SAMPLE_SPACING_METERS,
+      extent,
+      grid: { columns, rows },
+      totalSamples,
+      groundSamples,
+      roadSamples,
+      blockedSamples,
+      blockedByCategory,
+      objectCoveredSamples,
+      openSamples,
+      playableOpenAreaRatio: groundSamples > 0 ? openSamples / groundSamples : null,
     };
   }
 }
