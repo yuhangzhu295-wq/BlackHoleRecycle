@@ -6,7 +6,7 @@
  * 模式卡只负责进入本页，绝不直接开局；只有 BtnStart 才发出开局事件。
  * 导出 MODE_READY_LAYOUT 供契约测试在无 Cocos 运行时的情况下解析验证。
  */
-import { _decorator, Button, Component, Enum, Label, Node, UITransform } from 'cc';
+import { _decorator, Button, Component, Enum, Label, Node, Sprite, SpriteFrame, UITransform } from 'cc';
 import { eventBus } from '../core/EventBus';
 import { MACHINE_EVOLUTION_CONFIG } from '../data/GameConfig';
 import { saveService } from '../data/SaveService';
@@ -45,6 +45,7 @@ export class ModeReadyPageController extends Component {
   onEnable(): void {
     this.applyLayout();
     this.hideStaleHeaderTitle();
+    this.applyCleanStartButtonArt();
     this.refreshProfile();
     this.bind('BtnBack', () => eventBus.emit('READY_BACK_REQUESTED'));
     this.bind('BtnStart', () => eventBus.emit('READY_START_REQUESTED'));
@@ -79,6 +80,43 @@ export class ModeReadyPageController extends Component {
       return;
     }
     header.active = false;
+  }
+
+  /**
+   * The serialized Ready pages reuse the *mode card* artwork for both
+   * `MapPreview` and `BtnStart`. That art has the mode title/description baked
+   * into its pixels, so the CTA label ("开始探索" / "开始乱斗") was drawn on top
+   * of baked copy and the two collided. The Home page already ships a clean CTA
+   * frame (no baked copy) whose own label sits at (0, -40); borrow that frame at
+   * runtime instead of authoring new prefab/meta/uuid. MapPreview intentionally
+   * keeps the mode card art for now - its formal "map preview" visual belongs to
+   * the V4 design pass (06 Endless Ready / 07 Arena Ready).
+   */
+  private applyCleanStartButtonArt(): void {
+    const button = this.findNode('BtnStart');
+    const sprite = button?.getComponent(Sprite);
+    if (!button || !sprite) return;
+    const cardFrame = this.findNode('MapPreview')?.getComponent(Sprite)?.spriteFrame ?? null;
+    const cleanFrame = this.findHomeCtaFrame(cardFrame);
+    if (!cleanFrame) {
+      console.warn('[ModeReadyPageController] clean CTA frame unavailable; keeping serialized artwork.');
+      return;
+    }
+    sprite.spriteFrame = cleanFrame;
+    // BtnStartLabel is a page-level sibling (not a child of BtnStart) and is
+    // already placed by MODE_READY_LAYOUT at the button centre (0, -290);
+    // leaving it there keeps the CTA text centred on the clean frame.
+  }
+
+  /** Locates the Home page's main CTA frame; it is already loaded in this scene. */
+  private findHomeCtaFrame(rejectFrame: SpriteFrame | null): SpriteFrame | null {
+    const home = this.node.parent?.getChildByName('HomePage');
+    if (!home) return null;
+    const homeStart = home.getChildByName('SafeAreaRoot')?.getChildByName('BtnStart')
+      ?? home.getChildByName('BtnStart');
+    const frame = homeStart?.getComponent(Sprite)?.spriteFrame ?? null;
+    if (!frame || frame === rejectFrame) return null;
+    return frame;
   }
 
   private resizeAndPlace(name: string, width: number, height: number, x: number, y: number): void {
