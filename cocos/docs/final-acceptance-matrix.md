@@ -97,14 +97,15 @@ changed.
    `verifyArenaAiRuntime` already does and documents. No clock manipulation
    and no state setters.
 
-### Golden City remains an open content gap, not a test defect
+### Golden City remains an open P0, not a test defect
 
 `FAIL_GOLDEN_CITY_COMPOSITION_GATE` predates this work:
 
 - The assertion was introduced by `855b637 test(golden-city): enforce portrait
   composition gate`, not by the V4 set.
 - The committed `evidence/v2/portrait/acceptance-report-golden-city.json` is
-  `status: BASELINE_COLLECTED` with `failures: []` — it only collected numbers.
+  `status: BASELINE_COLLECTED` with `failures: []` — it only collected numbers
+  and never asserted them.
 - `v2-master-audit.md` already tracks it as open P0 **D-005** with the same
   `buildings 2` baseline, and its gate table reads
   `Golden City | NOT ESTABLISHED | PENDING_EVIDENCE`.
@@ -112,10 +113,42 @@ changed.
   vehicles 1→5, competitors 7, collectibles 3→19, empty ground 0.75→0.34) but
   is still short of the contract.
 
-Closing it needs an authoring pass on `GoldenCityCell.prefab` (more buildings,
-a hospital/clinic, less empty ground). The `hospital` mapping exists in the
-gate (`/Clinic|Hospital/` over visible names); the cell simply has no such
-building.
+### What the Golden City gate is actually measuring
+
+The gate reads `composition.entries[].visible === true`, and the probe records
+the world and screen bounds of every candidate, so the failure can be read
+precisely rather than guessed at. `GoldenCityCell.prefab` **does** contain the
+required content — including `Hospital_ClinicNorth` and `CommercialShopEast` —
+but the probe measures them as not visible from the player's real gameplay
+view:
+
+| Entry | world x | screenBounds | verdict |
+| :--- | :--- | :--- | :--- |
+| `ResidentialHouseWest` | [−11.14, −8.86] | left −8.90 | visible, clipped |
+| `CommercialMarketSouth` | [9.15, 10.85] | right 392.80 | visible, clipped |
+| `Hospital_ClinicNorth` | [−10.81, −9.19] | right **−1.14** | not visible — misses by 1.14 px |
+| `CommercialShopEast` | [9.15, 10.85] | left **390.28** | not visible — misses by 0.28 px |
+
+So `buildings 2 < 4` and the absent `hospital` semantic are the same cause: two
+buildings sit just outside the 390 px frame. One visible collectible is short
+for the same reason (19 visible of 20 entries).
+
+This is **not** fixable by re-framing. The screen mapping at that depth is
+≈29.7 px/m, so the frame spans only ≈13.1 m of world x while the hospital and
+the shop are **21.66 m** apart, on opposite sides of the cell. The frame centre
+tracks the player's x (frame centre ≈ −2.63 m against a player x of −2.78 m),
+so no player position can hold both. The camera itself is contract-compliant
+(`fov 44`, `fovAxis 0`, pitch −55°, `playerWidthRatio 0.2868` in [0.22, 0.3],
+`playerScreenYRatio 0.5864` in [0.5, 0.67]), so the camera preset is not the
+lever either.
+
+Closing the gate therefore needs a layout pass on `GoldenCityCell.prefab`: bring
+at least four buildings, including the hospital, inside the ≈13 m visible band,
+add the one missing visible collectible, and raise ground coverage
+(`largeEmptyGroundRatio 0.3406 > 0.25`). Constraint: this cell is also the
+tutorial cell, and its collectible-ring spacing is an explicitly exempted
+`INTENTIONAL_TUTORIAL_EXCEPTION` that must not be rearranged — so buildings may
+move, the collectible ring may not.
 
 ### Operational note: Creator CLI builds hang intermittently
 
