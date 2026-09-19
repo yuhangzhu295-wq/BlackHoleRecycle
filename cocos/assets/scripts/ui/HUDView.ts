@@ -4,7 +4,8 @@
  * 视觉节点、Button、Label 均由 Cocos Creator 保存的 Prefab 提供。本组件绝不
  * 在运行时创建 Node、Graphics、Label 或 Button，也不会退回到旧 HUD 作为替代品。
  */
-import { _decorator, Component, director, Node, Vec3 } from 'cc';
+import { _decorator, Camera, Component, director, Node, Vec3 } from 'cc';
+import { CompressibleObject } from '../gameplay/CompressibleObject';
 import { EndlessHUDController } from './EndlessHUDController';
 import { SettlementPageController } from './SettlementPageController';
 import { ArenaHUDController } from './ArenaHUDController';
@@ -78,6 +79,33 @@ export class HUDView extends Component {
   public getPickupFeedbackDiagnostics(): Record<string, unknown> | null {
     const endless = this.findPage('EndlessHUD')?.getComponent(EndlessHUDController)?.getPickupFeedbackDiagnostics() || null;
     const arena = this.findPage('ArenaHUD')?.getComponent(ArenaHUDController)?.getPickupFeedbackDiagnostics() || null;
+    return { endless, arena };
+  }
+
+  /** Read-only observation of the real level-up banner for V4 reference 10. */
+  public getTierUpgradeDiagnostics(): Record<string, unknown> | null {
+    const endless = this.findPage('EndlessHUD')?.getComponent(EndlessHUDController)?.getTierUpgradeDiagnostics() || null;
+    const arena = this.findPage('ArenaHUD')?.getComponent(ArenaHUDController)?.getTierUpgradeDiagnostics() || null;
+    return { endless, arena };
+  }
+
+  /**
+   * V4 reference 10 State A. Called once per gameplay frame with the live world
+   * objects; the active page projects the locked target onto the HUD. Nothing
+   * here mutates gameplay state.
+   */
+  public updateTierLock(objects: readonly CompressibleObject[], camera: Camera | null): void {
+    if (this.currentScreenName === 'Gameplay') {
+      this.findPage('EndlessHUD')?.getComponent(EndlessHUDController)?.updateTierLock(objects, camera);
+    } else if (this.currentScreenName === 'Arena') {
+      this.findPage('ArenaHUD')?.getComponent(ArenaHUDController)?.updateTierLock(objects, camera);
+    }
+  }
+
+  /** Read-only observation of the real locked-target prompt. */
+  public getTierLockDiagnostics(): Record<string, unknown> | null {
+    const endless = this.findPage('EndlessHUD')?.getComponent(EndlessHUDController)?.getTierLockDiagnostics() || null;
+    const arena = this.findPage('ArenaHUD')?.getComponent(ArenaHUDController)?.getTierLockDiagnostics() || null;
     return { endless, arena };
   }
 

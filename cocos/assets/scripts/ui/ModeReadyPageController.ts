@@ -10,6 +10,7 @@ import { _decorator, Button, Component, Enum, Label, Node, Sprite, SpriteFrame, 
 import { eventBus } from '../core/EventBus';
 import { MACHINE_EVOLUTION_CONFIG } from '../data/GameConfig';
 import { saveService } from '../data/SaveService';
+import { MapPreviewGraphic, MapPreviewKind } from './MapPreviewGraphic';
 
 const { ccclass, property } = _decorator;
 
@@ -30,7 +31,9 @@ export const MODE_READY_LAYOUT = {
   StatValue:      [280,   44,  140,  118],
   MachineCaption: [240,   44, -150,   58],
   MachineValue:   [280,   44,  140,   58],
-  IntroText:      [600,  150,    0,  -80],
+  // Tall enough for the Arena five-line rule list required by the V4 lock
+  // (design-lock.md §07) while still clearing the CTA below it.
+  IntroText:      [600,  220,    0, -105],
   BtnStart:       [480,  150,    0, -290],
   BtnStartLabel:  [440,   60,    0, -290],
 } as const;
@@ -45,6 +48,7 @@ export class ModeReadyPageController extends Component {
   onEnable(): void {
     this.applyLayout();
     this.hideStaleHeaderTitle();
+    this.applyMapPreview();
     this.applyCleanStartButtonArt();
     this.refreshProfile();
     this.bind('BtnBack', () => eventBus.emit('READY_BACK_REQUESTED'));
@@ -83,21 +87,33 @@ export class ModeReadyPageController extends Component {
   }
 
   /**
-   * The serialized Ready pages reuse the *mode card* artwork for both
-   * `MapPreview` and `BtnStart`. That art has the mode title/description baked
-   * into its pixels, so the CTA label ("开始探索" / "开始乱斗") was drawn on top
-   * of baked copy and the two collided. The Home page already ships a clean CTA
-   * frame (no baked copy) whose own label sits at (0, -40); borrow that frame at
-   * runtime instead of authoring new prefab/meta/uuid. MapPreview intentionally
-   * keeps the mode card art for now - its formal "map preview" visual belongs to
-   * the V4 design pass (06 Endless Ready / 07 Arena Ready).
+   * V4 reference 06 / 07. Give `MapPreview` a real low-poly preview instead of
+   * the mode-card artwork, whose title and description are baked into pixels.
+   * `MapPreviewGraphic` draws with the native Graphics API, so no asset import,
+   * sprite writeback, prefab edit or meta/UUID change is involved.
+   */
+  private applyMapPreview(): void {
+    const preview = this.findNode('MapPreview');
+    if (!preview) return;
+    const graphic = preview.getComponent(MapPreviewGraphic) || preview.addComponent(MapPreviewGraphic);
+    graphic.kind = this.mode === ModeReadyKind.ENDLESS ? MapPreviewKind.CITY : MapPreviewKind.ARENA;
+    graphic.redraw();
+  }
+
+  /**
+   * The serialized Ready pages reuse the *mode card* artwork for `BtnStart`.
+   * That art has the mode title/description baked into its pixels, so the CTA
+   * label ("开始探索" / "开始乱斗") was drawn on top of baked copy and the two
+   * collided. The Home page already ships a clean CTA frame (no baked copy)
+   * whose own label sits at (0, -40); borrow that frame at runtime instead of
+   * authoring new prefab/meta/uuid.
    */
   private applyCleanStartButtonArt(): void {
     const button = this.findNode('BtnStart');
     const sprite = button?.getComponent(Sprite);
     if (!button || !sprite) return;
-    const cardFrame = this.findNode('MapPreview')?.getComponent(Sprite)?.spriteFrame ?? null;
-    const cleanFrame = this.findHomeCtaFrame(cardFrame);
+    const serializedFrame = sprite.spriteFrame;
+    const cleanFrame = this.findHomeCtaFrame(serializedFrame);
     if (!cleanFrame) {
       console.warn('[ModeReadyPageController] clean CTA frame unavailable; keeping serialized artwork.');
       return;
@@ -156,13 +172,15 @@ export class ModeReadyPageController extends Component {
       this.setLabel('HeaderTitle', '无尽探索');
       this.setLabel('StatCaption', '历史最高纪录');
       this.setLabel('StatValue', Math.max(0, Math.floor(saveService.data.highScore)).toLocaleString('en-US'));
-      this.setLabel('IntroText', '吞噬 → 成长 → 解锁更大物体\n持续探索无限城市，冲击更高 Mass 纪录');
+      // V4 design-lock.md §06: exactly these two lines, nothing longer.
+      this.setLabel('IntroText', '不断吞噬 · 不断成长\n解锁更大目标');
       this.setLabel('BtnStartLabel', '开始探索');
     } else {
       this.setLabel('HeaderTitle', '竞技乱斗');
       this.setLabel('StatCaption', '对局规则');
-      this.setLabel('StatValue', '8 人 · 3:00 限时');
-      this.setLabel('IntroText', '吞噬资源成长，淘汰弱小玩家\n躲避比你更大的对手，阵亡可复活');
+      this.setLabel('StatValue', '8 人 · 3:00');
+      // V4 design-lock.md §07: the five real match rules, in this order.
+      this.setLabel('IntroText', '• 8 人\n• 3:00\n• 吞噬成长\n• 淘汰弱小玩家\n• 躲避更大玩家');
       this.setLabel('BtnStartLabel', '开始乱斗');
     }
   }

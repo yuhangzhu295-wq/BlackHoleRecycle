@@ -1,0 +1,5404 @@
+{
+  "runner": "capture_v4_design_evidence",
+  "viewport": {
+    "id": "390x844",
+    "width": 390,
+    "height": 844
+  },
+  "buildDirectory": "C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\build\\web-mobile",
+  "baseUrl": "http://127.0.0.1:63325/?qa=1",
+  "capturedAt": "2026-09-19T13:46:36.103Z",
+  "frames": {
+    "home": "C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\docs\\evidence\\v4-design\\v4-390x844-05-home.png",
+    "modeSelect": "C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\docs\\evidence\\v4-design\\v4-390x844-03-mode-select-runtime.png",
+    "endlessReady": "C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\docs\\evidence\\v4-design\\v4-390x844-06-endless-ready.png",
+    "arenaReady": "C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\docs\\evidence\\v4-design\\v4-390x844-07-arena-ready.png",
+    "endlessGameplay": "C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\docs\\evidence\\v4-design\\v4-390x844-08-endless-gameplay.png",
+    "tierLock": "C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\docs\\evidence\\v4-design\\v4-390x844-10-tier-lock.png",
+    "tierUpgrade": "C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\docs\\evidence\\v4-design\\v4-390x844-10-tier-upgrade.png",
+    "endlessGameplayMoved": "C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\docs\\evidence\\v4-design\\v4-390x844-08-endless-gameplay-moved.png"
+  },
+  "readyPages": {
+    "endless": {
+      "root": {
+        "active": true,
+        "interactable": null,
+        "x": 0,
+        "y": 0,
+        "width": 720,
+        "height": 1280,
+        "scaleX": 1,
+        "scaleY": 1,
+        "world": {
+          "x": 360,
+          "y": 640,
+          "z": 0
+        },
+        "screen": {
+          "x": 0.5,
+          "y": 0.5
+        }
+      },
+      "back": {
+        "active": true,
+        "interactable": true,
+        "x": -300,
+        "y": 568,
+        "width": 80,
+        "height": 80,
+        "scaleX": 1,
+        "scaleY": 1,
+        "world": {
+          "x": 60,
+          "y": 1208,
+          "z": 0
+        },
+        "screen": {
+          "x": -0.007211538461538547,
+          "y": 0.05624999999999991
+        }
+      },
+      "title": "无尽探索",
+      "header": {
+        "active": false,
+        "interactable": null,
+        "x": 0,
+        "y": 534,
+        "width": 430,
+        "height": 100,
+        "scaleX": 1,
+        "scaleY": 1,
+        "world": {
+          "x": 360,
+          "y": 1174,
+          "z": 0
+        },
+        "screen": {
+          "x": 0.5,
+          "y": 0.08281249999999996
+        }
+      },
+      "preview": {
+        "active": true,
+        "interactable": null,
+        "x": 0,
+        "y": 310,
+        "width": 560,
+        "height": 280,
+        "scaleX": 1,
+        "scaleY": 1,
+        "world": {
+          "x": 360,
+          "y": 950,
+          "z": 0
+        },
+        "screen": {
+          "x": 0.5,
+          "y": 0.2578125
+        }
+      },
+      "previewArt": {
+        "kind": "CITY",
+        "redrawCount": 3,
+        "drawnWidth": 560,
+        "drawnHeight": 280,
+        "bakedCardArtCleared": true,
+        "bakedSpriteFrame": null,
+        "graphicsEnabled": true,
+        "artNodeName": "PreviewArt",
+        "artLayerIsUi2d": true,
+        "spriteEnabled": false
+      },
+      "start": {
+        "active": true,
+        "interactable": true,
+        "x": 0,
+        "y": -290,
+        "width": 480,
+        "height": 150,
+        "scaleX": 1,
+        "scaleY": 1,
+        "world": {
+          "x": 360,
+          "y": 350,
+          "z": 0
+        },
+        "screen": {
+          "x": 0.5,
+          "y": 0.7265625
+        }
+      },
+      "startLabel": "开始探索",
+      "stat": "0",
+      "machine": "LV.1 初级黑洞",
+      "intro": "不断吞噬 · 不断成长\n解锁更大目标"
+    },
+    "arena": {
+      "root": {
+        "active": true,
+        "interactable": null,
+        "x": 0,
+        "y": 0,
+        "width": 720,
+        "height": 1280,
+        "scaleX": 1,
+        "scaleY": 1,
+        "world": {
+          "x": 360,
+          "y": 640,
+          "z": 0
+        },
+        "screen": {
+          "x": 0.5,
+          "y": 0.5
+        }
+      },
+      "back": {
+        "active": true,
+        "interactable": true,
+        "x": -300,
+        "y": 568,
+        "width": 80,
+        "height": 80,
+        "scaleX": 1,
+        "scaleY": 1,
+        "world": {
+          "x": 60,
+          "y": 1208,
+          "z": 0
+        },
+        "screen": {
+          "x": -0.007211538461538547,
+          "y": 0.05624999999999991
+        }
+      },
+      "title": "竞技乱斗",
+      "header": {
+        "active": false,
+        "interactable": null,
+        "x": 0,
+        "y": 534,
+        "width": 430,
+        "height": 100,
+        "scaleX": 1,
+        "scaleY": 1,
+        "world": {
+          "x": 360,
+          "y": 1174,
+          "z": 0
+        },
+        "screen": {
+          "x": 0.5,
+          "y": 0.08281249999999996
+        }
+      },
+      "preview": {
+        "active": true,
+        "interactable": null,
+        "x": 0,
+        "y": 310,
+        "width": 560,
+        "height": 280,
+        "scaleX": 1,
+        "scaleY": 1,
+        "world": {
+          "x": 360,
+          "y": 950,
+          "z": 0
+        },
+        "screen": {
+          "x": 0.5,
+          "y": 0.2578125
+        }
+      },
+      "previewArt": {
+        "kind": "ARENA",
+        "redrawCount": 3,
+        "drawnWidth": 560,
+        "drawnHeight": 280,
+        "bakedCardArtCleared": true,
+        "bakedSpriteFrame": null,
+        "graphicsEnabled": true,
+        "artNodeName": "PreviewArt",
+        "artLayerIsUi2d": true,
+        "spriteEnabled": false
+      },
+      "start": {
+        "active": true,
+        "interactable": true,
+        "x": 0,
+        "y": -290,
+        "width": 480,
+        "height": 150,
+        "scaleX": 1,
+        "scaleY": 1,
+        "world": {
+          "x": 360,
+          "y": 350,
+          "z": 0
+        },
+        "screen": {
+          "x": 0.5,
+          "y": 0.7265625
+        }
+      },
+      "startLabel": "开始乱斗",
+      "stat": "8 人 · 3:00",
+      "machine": "LV.1 初级黑洞",
+      "intro": "• 8 人\n• 3:00\n• 吞噬成长\n• 淘汰弱小玩家\n• 躲避更大玩家"
+    }
+  },
+  "gameplay": {
+    "opening": {
+      "gameState": "PLAYING",
+      "region": "bedroom",
+      "regionIndex": 0,
+      "visibleObjectCount": 231,
+      "machine": {
+        "level": 1,
+        "mass": 0,
+        "requiredMass": 900,
+        "suctionRadius": 2.4,
+        "maxTier": 1,
+        "movementInput": {
+          "x": 0,
+          "y": 0
+        },
+        "activeTouchId": null,
+        "touchDiagnostic": {
+          "phase": "NONE",
+          "id": null,
+          "x": 0,
+          "y": 0,
+          "accepted": false,
+          "joystickArea": false,
+          "paused": false
+        },
+        "controller": {
+          "enabled": true,
+          "activeInHierarchy": true,
+          "nodeName": "BlackHoleMachine"
+        },
+        "velocity": {
+          "x": 0,
+          "z": 0
+        },
+        "visualMaterials": [
+          {
+            "path": "VisualRoot/MachineVisual_LV1/CrawlerChassis/poly-google-bulldozer/Bulldozer_mesh",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": "builtin-unlit",
+                "valid": true,
+                "color": {
+                  "r": 53,
+                  "g": 168,
+                  "b": 94,
+                  "a": 255
+                }
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV2/CrawlerChassis/poly-google-bulldozer/Bulldozer_mesh",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV2/MagneticTurbineLeft/magnetic-turbine/cog-e",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV2/MagneticTurbineRight/magnetic-turbine/cog-e",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV2/MagneticPipeLeft/magnetic-pipe/machine-connection-pipe",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV2/MagneticPipeRight/magnetic-pipe/machine-connection-pipe",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV3/CrawlerChassis/poly-google-bulldozer/Bulldozer_mesh",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV3/MagneticTurbineLeft/magnetic-turbine/cog-e",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV3/MagneticTurbineRight/magnetic-turbine/cog-e",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV3/MagneticPipeLeft/magnetic-pipe/machine-connection-pipe",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV3/MagneticPipeRight/magnetic-pipe/machine-connection-pipe",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV3/CompressionChamber/compression-engine/machine",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV3/CompressionHopper/singularity-hopper/hopper-round",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV4/CrawlerChassis/poly-google-bulldozer/Bulldozer_mesh",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV4/MagneticTurbineLeft/magnetic-turbine/cog-e",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV4/MagneticTurbineRight/magnetic-turbine/cog-e",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV4/MagneticPipeLeft/magnetic-pipe/machine-connection-pipe",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV4/MagneticPipeRight/magnetic-pipe/machine-connection-pipe",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV4/CompressionChamber/compression-engine/machine",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV4/CompressionHopper/singularity-hopper/hopper-round",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV4/GravityWingLeft/gravity-wing-frame/conveyor-bars-fence",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV4/GravityWingRight/gravity-wing-frame/conveyor-bars-fence",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV4/GravityPipeLeft/magnetic-pipe/machine-connection-pipe",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV4/GravityPipeRight/magnetic-pipe/machine-connection-pipe",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV5/CrawlerChassis/poly-google-bulldozer/Bulldozer_mesh",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV5/MagneticTurbineLeft/magnetic-turbine/cog-e",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV5/MagneticTurbineRight/magnetic-turbine/cog-e",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV5/MagneticPipeLeft/magnetic-pipe/machine-connection-pipe",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV5/MagneticPipeRight/magnetic-pipe/machine-connection-pipe",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV5/CompressionChamber/compression-engine/machine",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV5/CompressionHopper/singularity-hopper/hopper-round",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV5/GravityWingLeft/gravity-wing-frame/conveyor-bars-fence",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV5/GravityWingRight/gravity-wing-frame/conveyor-bars-fence",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV5/GravityPipeLeft/magnetic-pipe/machine-connection-pipe",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV5/GravityPipeRight/magnetic-pipe/machine-connection-pipe",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV5/SingularityFrame/compression-chassis/machine-fortified",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV5/SingularityHopperLeft/singularity-hopper/hopper-round",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV5/SingularityHopperRight/singularity-hopper/hopper-round",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/CoreNode/AbyssBase",
+            "active": true,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": "builtin-unlit",
+                "valid": true,
+                "color": {
+                  "r": 40,
+                  "g": 22,
+                  "b": 96,
+                  "a": 255
+                }
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/CoreNode/HoleInner",
+            "active": true,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": "builtin-unlit",
+                "valid": true,
+                "color": {
+                  "r": 5,
+                  "g": 4,
+                  "b": 14,
+                  "a": 255
+                }
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/CoreNode/InnerSwirl",
+            "active": true,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": "builtin-unlit",
+                "valid": true,
+                "color": {
+                  "r": 224,
+                  "g": 213,
+                  "b": 255,
+                  "a": 255
+                }
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/CoreNode/MidSwirl",
+            "active": true,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": "builtin-unlit",
+                "valid": true,
+                "color": {
+                  "r": 224,
+                  "g": 213,
+                  "b": 255,
+                  "a": 255
+                }
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/CoreNode/OuterSwirl",
+            "active": true,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": "builtin-unlit",
+                "valid": true,
+                "color": {
+                  "r": 40,
+                  "g": 22,
+                  "b": 96,
+                  "a": 255
+                }
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/CoreNode/ShimmerSwirl",
+            "active": true,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": "builtin-unlit",
+                "valid": true,
+                "color": {
+                  "r": 242,
+                  "g": 235,
+                  "b": 255,
+                  "a": 255
+                }
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/CoreNode/HoleRing",
+            "active": true,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": "builtin-unlit",
+                "valid": true,
+                "color": {
+                  "r": 224,
+                  "g": 213,
+                  "b": 255,
+                  "a": 255
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "hud": {
+        "endless": {
+          "active": true,
+          "interactable": null,
+          "x": 0,
+          "y": 0,
+          "width": 720,
+          "height": 1280,
+          "scaleX": 1,
+          "scaleY": 1,
+          "world": {
+            "x": 360,
+            "y": 640,
+            "z": 0
+          },
+          "screen": {
+            "x": 0.5,
+            "y": 0.5
+          }
+        },
+        "pauseButton": {
+          "active": true,
+          "interactable": true,
+          "x": 266.7345971563981,
+          "y": 474,
+          "width": 58,
+          "height": 58,
+          "scaleX": 1,
+          "scaleY": 1,
+          "world": {
+            "x": 626.7345971563981,
+            "y": 1114,
+            "z": 0
+          },
+          "screen": {
+            "x": 0.9509695512820513,
+            "y": 0.12968749999999996
+          }
+        },
+        "joystick": {
+          "active": true,
+          "interactable": null,
+          "x": 148,
+          "y": -470,
+          "width": 196,
+          "height": 196,
+          "scaleX": 1,
+          "scaleY": 1,
+          "world": {
+            "x": 508,
+            "y": 170,
+            "z": 0
+          },
+          "screen": {
+            "x": 0.750224358974359,
+            "y": 0.8671875
+          }
+        },
+        "joystickBase": {
+          "active": true,
+          "interactable": null,
+          "x": 0,
+          "y": 0,
+          "width": 196,
+          "height": 196,
+          "scaleX": 1,
+          "scaleY": 1,
+          "world": {
+            "x": 508,
+            "y": 170,
+            "z": 0
+          },
+          "screen": {
+            "x": 0.750224358974359,
+            "y": 0.8671875
+          }
+        },
+        "joystickKnob": {
+          "active": true,
+          "interactable": null,
+          "x": 0,
+          "y": 0,
+          "width": 76,
+          "height": 76,
+          "scaleX": 1,
+          "scaleY": 1,
+          "world": {
+            "x": 508,
+            "y": 170,
+            "z": 0
+          },
+          "screen": {
+            "x": 0.750224358974359,
+            "y": 0.8671875
+          }
+        },
+        "safeArea": {
+          "designHalfWidth": 360,
+          "visibleHalfWidth": 295.7345971563981,
+          "safeHalfWidth": 295.7345971563981,
+          "scale": 0.659375,
+          "frameWidth": 390,
+          "frameHeight": 844,
+          "childCount": 11,
+          "itemCount": 10,
+          "skippedFullBleed": [
+            "TopShade"
+          ],
+          "earlyReturn": false,
+          "groups": [
+            {
+              "names": [
+                "CoinPanel",
+                "CoinIcon",
+                "CoinValue"
+              ],
+              "left": -319,
+              "right": -101,
+              "shift": 23.26540284360192
+            },
+            {
+              "names": [
+                "LevelPanel",
+                "LevelValue",
+                "MassValue"
+              ],
+              "left": -19,
+              "right": 231,
+              "shift": 0
+            },
+            {
+              "names": [
+                "RegionPanel",
+                "RegionValue"
+              ],
+              "left": -129,
+              "right": 129,
+              "shift": 0
+            },
+            {
+              "names": [
+                "BtnPause"
+              ],
+              "left": 245,
+              "right": 303,
+              "shift": -7.265402843601919
+            },
+            {
+              "names": [
+                "Joystick"
+              ],
+              "left": 50,
+              "right": 246,
+              "shift": 0
+            }
+          ]
+        },
+        "pills": {
+          "coin": {
+            "active": true,
+            "interactable": null,
+            "x": -164.73459715639808,
+            "y": 430,
+            "width": 19.572265625,
+            "height": 54.4,
+            "scaleX": 1,
+            "scaleY": 1,
+            "world": {
+              "x": 195.26540284360192,
+              "y": 1070,
+              "z": 0
+            },
+            "screen": {
+              "x": 0.2214823717948718,
+              "y": 0.1640625
+            }
+          },
+          "mass": {
+            "active": true,
+            "interactable": null,
+            "x": 106,
+            "y": 409,
+            "width": 76.017578125,
+            "height": 41.8,
+            "scaleX": 1,
+            "scaleY": 1,
+            "world": {
+              "x": 466,
+              "y": 1049,
+              "z": 0
+            },
+            "screen": {
+              "x": 0.6792147435897437,
+              "y": 0.18046874999999996
+            }
+          },
+          "level": {
+            "active": true,
+            "interactable": null,
+            "x": 106,
+            "y": 443,
+            "width": 128.47265625,
+            "height": 44.32,
+            "scaleX": 1,
+            "scaleY": 1,
+            "world": {
+              "x": 466,
+              "y": 1083,
+              "z": 0
+            },
+            "screen": {
+              "x": 0.6792147435897437,
+              "y": 0.1539062499999999
+            }
+          },
+          "region": {
+            "active": true,
+            "interactable": null,
+            "x": 0,
+            "y": 346,
+            "width": 94,
+            "height": 41.8,
+            "scaleX": 1,
+            "scaleY": 1,
+            "world": {
+              "x": 360,
+              "y": 986,
+              "z": 0
+            },
+            "screen": {
+              "x": 0.5,
+              "y": 0.22968749999999993
+            }
+          }
+        },
+        "pillPanels": {
+          "coin": {
+            "active": true,
+            "interactable": null,
+            "x": -186.73459715639808,
+            "y": 430,
+            "width": 218,
+            "height": 64,
+            "scaleX": 1,
+            "scaleY": 1,
+            "world": {
+              "x": 173.26540284360192,
+              "y": 1070,
+              "z": 0
+            },
+            "screen": {
+              "x": 0.18428685897435898,
+              "y": 0.1640625
+            }
+          },
+          "level": {
+            "active": true,
+            "interactable": null,
+            "x": 106,
+            "y": 430,
+            "width": 250,
+            "height": 64,
+            "scaleX": 1,
+            "scaleY": 1,
+            "world": {
+              "x": 466,
+              "y": 1070,
+              "z": 0
+            },
+            "screen": {
+              "x": 0.6792147435897437,
+              "y": 0.1640625
+            }
+          },
+          "region": {
+            "active": true,
+            "interactable": null,
+            "x": 0,
+            "y": 346,
+            "width": 258,
+            "height": 54,
+            "scaleX": 1,
+            "scaleY": 1,
+            "world": {
+              "x": 360,
+              "y": 986,
+              "z": 0
+            },
+            "screen": {
+              "x": 0.5,
+              "y": 0.22968749999999993
+            }
+          }
+        },
+        "pillText": {
+          "coin": "0",
+          "mass": "质量 0kg",
+          "level": "LV.1 初级黑洞",
+          "region": "卧室杂物区"
+        }
+      },
+      "gameplayComposition": {
+        "collectibles": 23,
+        "singles": 0,
+        "smallGroups": 0,
+        "hotspots": 20,
+        "aspirational": 2,
+        "unknownPlacement": 1,
+        "largestProximityGroup": 21,
+        "singleShare": 0,
+        "smallGroupShare": 0,
+        "hotspotShare": 0.8696,
+        "measurement": "MIXED",
+        "proximity": {
+          "singles": 2,
+          "smallGroups": 0,
+          "hotspots": 1
+        },
+        "tierCounts": {
+          "1": 20,
+          "2": 1,
+          "3": 0,
+          "4": 1,
+          "5": 1
+        },
+        "highestVisibleTier": 5,
+        "spacing": {
+          "nearestNeighbourMinMeters": 1,
+          "nearestNeighbourMedianMeters": 1,
+          "nearestNeighbourP90Meters": 1.48,
+          "isolatedCount": 2,
+          "isolationRadiusMeters": 12,
+          "maxObjectsWithinDenseRadius": 9,
+          "denseRadiusMeters": 6
+        }
+      }
+    },
+    "openingBudget": {
+      "status": "MEASURED",
+      "reliability": "UNRELIABLE_FOR_VISUAL_SHARE",
+      "reliabilityReason": "projected world bounding quads over-count; cluster entries and large landmarks dominate",
+      "isGate": false,
+      "method": "screen-space grid over published projected bounds, precedence-classified",
+      "precedence": "dynamic > static > environment > open",
+      "grid": {
+        "columns": 40,
+        "rows": 64
+      },
+      "hudExclusion": {
+        "topRatio": 0.16,
+        "bottomRatio": 0.18
+      },
+      "groundRegionIsMeasured": true,
+      "totalContentSamples": 2560,
+      "groundSamples": 1280,
+      "openSamples": 82,
+      "openShare": 0.0641,
+      "environmentShare": 0,
+      "staticShare": 0.6094,
+      "dynamicShare": 0.1031,
+      "otherShare": 0.2234,
+      "bucketSamples": {
+        "open": 82,
+        "environment": 0,
+        "static": 780,
+        "dynamic": 132,
+        "other": 286
+      },
+      "probeEmptyGroundRatio": 0.09375,
+      "probePlayableOpenAreaRatio": 0.9853515625,
+      "entryCountsByCategory": {
+        "BUILDING": 0,
+        "TREE": 10,
+        "ROAD": 3,
+        "POI": 3,
+        "VEHICLE": 3,
+        "COMPETITOR": 0,
+        "COLLECTIBLE": 18,
+        "RESOURCE_CLUSTER": 2,
+        "GROUND": 2
+      }
+    },
+    "openingBudgetBands": {
+      "status": "NOT_A_GATE",
+      "admissibility": "INADMISSIBLE_RUNTIME_SCREEN_SPACE",
+      "bands": {
+        "open": [
+          0.55,
+          0.65
+        ],
+        "environment": [
+          0.15,
+          0.2
+        ],
+        "static": [
+          0.1,
+          0.15
+        ],
+        "dynamic": [
+          0.05,
+          0.1
+        ]
+      },
+      "checks": [
+        {
+          "bucket": "open",
+          "min": 0.55,
+          "max": 0.65,
+          "value": 0.0641,
+          "inBand": false
+        },
+        {
+          "bucket": "environment",
+          "min": 0.15,
+          "max": 0.2,
+          "value": 0,
+          "inBand": false
+        },
+        {
+          "bucket": "static",
+          "min": 0.1,
+          "max": 0.15,
+          "value": 0.6094,
+          "inBand": false
+        },
+        {
+          "bucket": "dynamic",
+          "min": 0.05,
+          "max": 0.1,
+          "value": 0.1031,
+          "inBand": false
+        }
+      ],
+      "note": "Do not read allInBand as a pass/fail. Use probePlayableOpenAreaRatio (world space) for the runtime spatial gate, and the reference manifest references[].spaceBudget for the reference-image budget.",
+      "allInBand": false
+    },
+    "openingHudGeometry": {
+      "status": "MEASURED",
+      "viewport": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 844
+      },
+      "frame": {
+        "width": 390,
+        "height": 844
+      },
+      "uiCameraOrthoHeight": 640,
+      "designToFrameScale": 0.65938,
+      "viewViewportScale": 0.54167,
+      "usableDesignHalfWidth": 295.73,
+      "nodes": {
+        "coinPanel": {
+          "active": true,
+          "centreX": 71.87,
+          "left": 0,
+          "right": 143.74,
+          "top": 117.37,
+          "bottom": 159.57,
+          "width": 143.74,
+          "height": 42.2,
+          "overflowLeft": 0,
+          "overflowRight": 0,
+          "overflowTop": 0,
+          "overflowBottom": 0
+        },
+        "levelPanel": {
+          "active": true,
+          "centreX": 264.89,
+          "left": 182.47,
+          "right": 347.32,
+          "top": 117.37,
+          "bottom": 159.57,
+          "width": 164.84,
+          "height": 42.2,
+          "overflowLeft": 0,
+          "overflowRight": 0,
+          "overflowTop": 0,
+          "overflowBottom": 0
+        },
+        "regionPanel": {
+          "active": true,
+          "centreX": 195,
+          "left": 109.94,
+          "right": 280.06,
+          "top": 176.05,
+          "bottom": 211.66,
+          "width": 170.12,
+          "height": 35.61,
+          "overflowLeft": 0,
+          "overflowRight": 0,
+          "overflowTop": 0,
+          "overflowBottom": 0
+        },
+        "pauseButton": {
+          "active": true,
+          "centreX": 370.88,
+          "left": 351.76,
+          "right": 390,
+          "top": 90.33,
+          "bottom": 128.58,
+          "width": 38.24,
+          "height": 38.24,
+          "overflowLeft": 0,
+          "overflowRight": 0,
+          "overflowTop": 0,
+          "overflowBottom": 0
+        },
+        "joystick": {
+          "active": true,
+          "centreX": 292.59,
+          "left": 227.97,
+          "right": 357.21,
+          "top": 667.29,
+          "bottom": 796.52,
+          "width": 129.24,
+          "height": 129.24,
+          "overflowLeft": 0,
+          "overflowRight": 0,
+          "overflowTop": 0,
+          "overflowBottom": 0
+        }
+      },
+      "measuredCount": 5,
+      "offenders": [],
+      "pass": true,
+      "pillText": {
+        "coin": "0",
+        "mass": "质量 0kg",
+        "level": "LV.1 初级黑洞",
+        "region": "卧室杂物区"
+      },
+      "safeArea": {
+        "designHalfWidth": 360,
+        "visibleHalfWidth": 295.7345971563981,
+        "safeHalfWidth": 295.7345971563981,
+        "scale": 0.659375,
+        "frameWidth": 390,
+        "frameHeight": 844,
+        "childCount": 11,
+        "itemCount": 10,
+        "skippedFullBleed": [
+          "TopShade"
+        ],
+        "earlyReturn": false,
+        "groups": [
+          {
+            "names": [
+              "CoinPanel",
+              "CoinIcon",
+              "CoinValue"
+            ],
+            "left": -319,
+            "right": -101,
+            "shift": 23.26540284360192
+          },
+          {
+            "names": [
+              "LevelPanel",
+              "LevelValue",
+              "MassValue"
+            ],
+            "left": -19,
+            "right": 231,
+            "shift": 0
+          },
+          {
+            "names": [
+              "RegionPanel",
+              "RegionValue"
+            ],
+            "left": -129,
+            "right": 129,
+            "shift": 0
+          },
+          {
+            "names": [
+              "BtnPause"
+            ],
+            "left": 245,
+            "right": 303,
+            "shift": -7.265402843601919
+          },
+          {
+            "names": [
+              "Joystick"
+            ],
+            "left": 50,
+            "right": 246,
+            "shift": 0
+          }
+        ]
+      }
+    },
+    "openingTierLadder": {
+      "machineMaxTier": 1,
+      "objectCount": 231,
+      "tierCounts": {
+        "1": 149,
+        "2": 56,
+        "3": 6,
+        "4": 5,
+        "5": 15
+      },
+      "highestPresentTier": 5,
+      "exposesLockedTier": true,
+      "nearestOverTier": [
+        {
+          "runtimeId": "traffic_0_0_authored_VehicleAnchor_SedanCenter",
+          "type": "car",
+          "tier": 5,
+          "distance": 4.58
+        },
+        {
+          "runtimeId": "tutorial_t2_target",
+          "type": "book_stack",
+          "tier": 2,
+          "distance": 7.07
+        },
+        {
+          "runtimeId": "traffic_0_0_authored_VehicleAnchor_SedanWest",
+          "type": "car",
+          "tier": 5,
+          "distance": 10.33
+        },
+        {
+          "runtimeId": "traffic_0_0_authored_VehicleAnchor_SedanNorth",
+          "type": "car",
+          "tier": 5,
+          "distance": 10.33
+        },
+        {
+          "runtimeId": "traffic_0_0_authored_VehicleAnchor_DeliveryVanEast",
+          "type": "delivery_van",
+          "tier": 5,
+          "distance": 10.59
+        }
+      ],
+      "authoredAspirational": [
+        {
+          "runtimeId": "aspirational_authored_0",
+          "type": "shelf",
+          "tier": 4,
+          "distance": 19.84
+        },
+        {
+          "runtimeId": "aspirational_authored_1",
+          "type": "car",
+          "tier": 5,
+          "distance": 26.88
+        }
+      ]
+    },
+    "moved": {
+      "region": "bedroom",
+      "regionIndex": 0,
+      "machine": {
+        "level": 2,
+        "mass": 1435,
+        "requiredMass": 15000,
+        "suctionRadius": 3.4,
+        "maxTier": 2,
+        "movementInput": {
+          "x": 0,
+          "y": 0
+        },
+        "activeTouchId": null,
+        "touchDiagnostic": {
+          "phase": "END",
+          "id": 0,
+          "x": 307.8558654785156,
+          "y": 98.916015625,
+          "accepted": false,
+          "joystickArea": true,
+          "paused": false
+        },
+        "controller": {
+          "enabled": true,
+          "activeInHierarchy": true,
+          "nodeName": "BlackHoleMachine"
+        },
+        "velocity": {
+          "x": 0,
+          "z": 0
+        },
+        "visualMaterials": [
+          {
+            "path": "VisualRoot/MachineVisual_LV1/CrawlerChassis/poly-google-bulldozer/Bulldozer_mesh",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": "builtin-unlit",
+                "valid": true,
+                "color": {
+                  "r": 53,
+                  "g": 168,
+                  "b": 94,
+                  "a": 255
+                }
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV2/CrawlerChassis/poly-google-bulldozer/Bulldozer_mesh",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": "builtin-unlit",
+                "valid": true,
+                "color": {
+                  "r": 53,
+                  "g": 168,
+                  "b": 94,
+                  "a": 255
+                }
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV2/MagneticTurbineLeft/magnetic-turbine/cog-e",
+            "active": true,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": "builtin-unlit",
+                "valid": true,
+                "color": {
+                  "r": 183,
+                  "g": 232,
+                  "b": 255,
+                  "a": 255
+                }
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV2/MagneticTurbineRight/magnetic-turbine/cog-e",
+            "active": true,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": "builtin-unlit",
+                "valid": true,
+                "color": {
+                  "r": 183,
+                  "g": 232,
+                  "b": 255,
+                  "a": 255
+                }
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV2/MagneticPipeLeft/magnetic-pipe/machine-connection-pipe",
+            "active": true,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": "builtin-unlit",
+                "valid": true,
+                "color": {
+                  "r": 183,
+                  "g": 232,
+                  "b": 255,
+                  "a": 255
+                }
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV2/MagneticPipeRight/magnetic-pipe/machine-connection-pipe",
+            "active": true,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": "builtin-unlit",
+                "valid": true,
+                "color": {
+                  "r": 183,
+                  "g": 232,
+                  "b": 255,
+                  "a": 255
+                }
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV3/CrawlerChassis/poly-google-bulldozer/Bulldozer_mesh",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV3/MagneticTurbineLeft/magnetic-turbine/cog-e",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV3/MagneticTurbineRight/magnetic-turbine/cog-e",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV3/MagneticPipeLeft/magnetic-pipe/machine-connection-pipe",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV3/MagneticPipeRight/magnetic-pipe/machine-connection-pipe",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV3/CompressionChamber/compression-engine/machine",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV3/CompressionHopper/singularity-hopper/hopper-round",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV4/CrawlerChassis/poly-google-bulldozer/Bulldozer_mesh",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV4/MagneticTurbineLeft/magnetic-turbine/cog-e",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV4/MagneticTurbineRight/magnetic-turbine/cog-e",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV4/MagneticPipeLeft/magnetic-pipe/machine-connection-pipe",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV4/MagneticPipeRight/magnetic-pipe/machine-connection-pipe",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV4/CompressionChamber/compression-engine/machine",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV4/CompressionHopper/singularity-hopper/hopper-round",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV4/GravityWingLeft/gravity-wing-frame/conveyor-bars-fence",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV4/GravityWingRight/gravity-wing-frame/conveyor-bars-fence",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV4/GravityPipeLeft/magnetic-pipe/machine-connection-pipe",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV4/GravityPipeRight/magnetic-pipe/machine-connection-pipe",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV5/CrawlerChassis/poly-google-bulldozer/Bulldozer_mesh",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV5/MagneticTurbineLeft/magnetic-turbine/cog-e",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV5/MagneticTurbineRight/magnetic-turbine/cog-e",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV5/MagneticPipeLeft/magnetic-pipe/machine-connection-pipe",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV5/MagneticPipeRight/magnetic-pipe/machine-connection-pipe",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV5/CompressionChamber/compression-engine/machine",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV5/CompressionHopper/singularity-hopper/hopper-round",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV5/GravityWingLeft/gravity-wing-frame/conveyor-bars-fence",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV5/GravityWingRight/gravity-wing-frame/conveyor-bars-fence",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV5/GravityPipeLeft/magnetic-pipe/machine-connection-pipe",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV5/GravityPipeRight/magnetic-pipe/machine-connection-pipe",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV5/SingularityFrame/compression-chassis/machine-fortified",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV5/SingularityHopperLeft/singularity-hopper/hopper-round",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV5/SingularityHopperRight/singularity-hopper/hopper-round",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/CoreNode/AbyssBase",
+            "active": true,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": "builtin-unlit",
+                "valid": true,
+                "color": {
+                  "r": 40,
+                  "g": 22,
+                  "b": 96,
+                  "a": 255
+                }
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/CoreNode/HoleInner",
+            "active": true,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": "builtin-unlit",
+                "valid": true,
+                "color": {
+                  "r": 5,
+                  "g": 4,
+                  "b": 14,
+                  "a": 255
+                }
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/CoreNode/InnerSwirl",
+            "active": true,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": "builtin-unlit",
+                "valid": true,
+                "color": {
+                  "r": 224,
+                  "g": 213,
+                  "b": 255,
+                  "a": 255
+                }
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/CoreNode/MidSwirl",
+            "active": true,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": "builtin-unlit",
+                "valid": true,
+                "color": {
+                  "r": 224,
+                  "g": 213,
+                  "b": 255,
+                  "a": 255
+                }
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/CoreNode/OuterSwirl",
+            "active": true,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": "builtin-unlit",
+                "valid": true,
+                "color": {
+                  "r": 40,
+                  "g": 22,
+                  "b": 96,
+                  "a": 255
+                }
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/CoreNode/ShimmerSwirl",
+            "active": true,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": "builtin-unlit",
+                "valid": true,
+                "color": {
+                  "r": 242,
+                  "g": 235,
+                  "b": 255,
+                  "a": 255
+                }
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/CoreNode/HoleRing",
+            "active": true,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": "builtin-unlit",
+                "valid": true,
+                "color": {
+                  "r": 224,
+                  "g": 213,
+                  "b": 255,
+                  "a": 255
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gameplayComposition": {
+        "collectibles": 23,
+        "singles": 0,
+        "smallGroups": 0,
+        "hotspots": 20,
+        "aspirational": 2,
+        "unknownPlacement": 1,
+        "largestProximityGroup": 21,
+        "singleShare": 0,
+        "smallGroupShare": 0,
+        "hotspotShare": 0.8696,
+        "measurement": "MIXED",
+        "proximity": {
+          "singles": 2,
+          "smallGroups": 0,
+          "hotspots": 1
+        },
+        "tierCounts": {
+          "1": 20,
+          "2": 1,
+          "3": 0,
+          "4": 1,
+          "5": 1
+        },
+        "highestVisibleTier": 5,
+        "spacing": {
+          "nearestNeighbourMinMeters": 1,
+          "nearestNeighbourMedianMeters": 1,
+          "nearestNeighbourP90Meters": 1.48,
+          "isolatedCount": 2,
+          "isolationRadiusMeters": 12,
+          "maxObjectsWithinDenseRadius": 9,
+          "denseRadiusMeters": 6
+        }
+      },
+      "budget": {
+        "status": "MEASURED",
+        "reliability": "UNRELIABLE_FOR_VISUAL_SHARE",
+        "reliabilityReason": "projected world bounding quads over-count; cluster entries and large landmarks dominate",
+        "isGate": false,
+        "method": "screen-space grid over published projected bounds, precedence-classified",
+        "precedence": "dynamic > static > environment > open",
+        "grid": {
+          "columns": 40,
+          "rows": 64
+        },
+        "hudExclusion": {
+          "topRatio": 0.16,
+          "bottomRatio": 0.18
+        },
+        "groundRegionIsMeasured": true,
+        "totalContentSamples": 2560,
+        "groundSamples": 1560,
+        "openSamples": 778,
+        "openShare": 0.4987,
+        "environmentShare": 0.0667,
+        "staticShare": 0,
+        "dynamicShare": 0.0141,
+        "otherShare": 0.4205,
+        "bucketSamples": {
+          "open": 778,
+          "environment": 104,
+          "static": 0,
+          "dynamic": 22,
+          "other": 656
+        },
+        "probeEmptyGroundRatio": 0.4987179487179487,
+        "probePlayableOpenAreaRatio": 0.9853515625,
+        "entryCountsByCategory": {
+          "BUILDING": 2,
+          "TREE": 0,
+          "ROAD": 2,
+          "POI": 0,
+          "VEHICLE": 3,
+          "COMPETITOR": 0,
+          "COLLECTIBLE": 1,
+          "RESOURCE_CLUSTER": 0,
+          "GROUND": 1
+        }
+      },
+      "budgetBands": {
+        "status": "NOT_A_GATE",
+        "admissibility": "INADMISSIBLE_RUNTIME_SCREEN_SPACE",
+        "bands": {
+          "open": [
+            0.55,
+            0.65
+          ],
+          "environment": [
+            0.15,
+            0.2
+          ],
+          "static": [
+            0.1,
+            0.15
+          ],
+          "dynamic": [
+            0.05,
+            0.1
+          ]
+        },
+        "checks": [
+          {
+            "bucket": "open",
+            "min": 0.55,
+            "max": 0.65,
+            "value": 0.4987,
+            "inBand": false
+          },
+          {
+            "bucket": "environment",
+            "min": 0.15,
+            "max": 0.2,
+            "value": 0.0667,
+            "inBand": false
+          },
+          {
+            "bucket": "static",
+            "min": 0.1,
+            "max": 0.15,
+            "value": 0,
+            "inBand": false
+          },
+          {
+            "bucket": "dynamic",
+            "min": 0.05,
+            "max": 0.1,
+            "value": 0.0141,
+            "inBand": false
+          }
+        ],
+        "note": "Do not read allInBand as a pass/fail. Use probePlayableOpenAreaRatio (world space) for the runtime spatial gate, and the reference manifest references[].spaceBudget for the reference-image budget.",
+        "allInBand": false
+      }
+    },
+    "final": {
+      "gameState": "PLAYING",
+      "machine": {
+        "level": 2,
+        "mass": 1435,
+        "requiredMass": 15000,
+        "suctionRadius": 3.4,
+        "maxTier": 2,
+        "movementInput": {
+          "x": 0,
+          "y": 0
+        },
+        "activeTouchId": null,
+        "touchDiagnostic": {
+          "phase": "END",
+          "id": 0,
+          "x": 307.8558654785156,
+          "y": 98.916015625,
+          "accepted": false,
+          "joystickArea": true,
+          "paused": false
+        },
+        "controller": {
+          "enabled": true,
+          "activeInHierarchy": true,
+          "nodeName": "BlackHoleMachine"
+        },
+        "velocity": {
+          "x": 0,
+          "z": 0
+        },
+        "visualMaterials": [
+          {
+            "path": "VisualRoot/MachineVisual_LV1/CrawlerChassis/poly-google-bulldozer/Bulldozer_mesh",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": "builtin-unlit",
+                "valid": true,
+                "color": {
+                  "r": 53,
+                  "g": 168,
+                  "b": 94,
+                  "a": 255
+                }
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV2/CrawlerChassis/poly-google-bulldozer/Bulldozer_mesh",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": "builtin-unlit",
+                "valid": true,
+                "color": {
+                  "r": 53,
+                  "g": 168,
+                  "b": 94,
+                  "a": 255
+                }
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV2/MagneticTurbineLeft/magnetic-turbine/cog-e",
+            "active": true,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": "builtin-unlit",
+                "valid": true,
+                "color": {
+                  "r": 183,
+                  "g": 232,
+                  "b": 255,
+                  "a": 255
+                }
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV2/MagneticTurbineRight/magnetic-turbine/cog-e",
+            "active": true,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": "builtin-unlit",
+                "valid": true,
+                "color": {
+                  "r": 183,
+                  "g": 232,
+                  "b": 255,
+                  "a": 255
+                }
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV2/MagneticPipeLeft/magnetic-pipe/machine-connection-pipe",
+            "active": true,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": "builtin-unlit",
+                "valid": true,
+                "color": {
+                  "r": 183,
+                  "g": 232,
+                  "b": 255,
+                  "a": 255
+                }
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV2/MagneticPipeRight/magnetic-pipe/machine-connection-pipe",
+            "active": true,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": "builtin-unlit",
+                "valid": true,
+                "color": {
+                  "r": 183,
+                  "g": 232,
+                  "b": 255,
+                  "a": 255
+                }
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV3/CrawlerChassis/poly-google-bulldozer/Bulldozer_mesh",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV3/MagneticTurbineLeft/magnetic-turbine/cog-e",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV3/MagneticTurbineRight/magnetic-turbine/cog-e",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV3/MagneticPipeLeft/magnetic-pipe/machine-connection-pipe",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV3/MagneticPipeRight/magnetic-pipe/machine-connection-pipe",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV3/CompressionChamber/compression-engine/machine",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV3/CompressionHopper/singularity-hopper/hopper-round",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV4/CrawlerChassis/poly-google-bulldozer/Bulldozer_mesh",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV4/MagneticTurbineLeft/magnetic-turbine/cog-e",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV4/MagneticTurbineRight/magnetic-turbine/cog-e",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV4/MagneticPipeLeft/magnetic-pipe/machine-connection-pipe",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV4/MagneticPipeRight/magnetic-pipe/machine-connection-pipe",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV4/CompressionChamber/compression-engine/machine",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV4/CompressionHopper/singularity-hopper/hopper-round",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV4/GravityWingLeft/gravity-wing-frame/conveyor-bars-fence",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV4/GravityWingRight/gravity-wing-frame/conveyor-bars-fence",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV4/GravityPipeLeft/magnetic-pipe/machine-connection-pipe",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV4/GravityPipeRight/magnetic-pipe/machine-connection-pipe",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV5/CrawlerChassis/poly-google-bulldozer/Bulldozer_mesh",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV5/MagneticTurbineLeft/magnetic-turbine/cog-e",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV5/MagneticTurbineRight/magnetic-turbine/cog-e",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV5/MagneticPipeLeft/magnetic-pipe/machine-connection-pipe",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV5/MagneticPipeRight/magnetic-pipe/machine-connection-pipe",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV5/CompressionChamber/compression-engine/machine",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV5/CompressionHopper/singularity-hopper/hopper-round",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV5/GravityWingLeft/gravity-wing-frame/conveyor-bars-fence",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV5/GravityWingRight/gravity-wing-frame/conveyor-bars-fence",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV5/GravityPipeLeft/magnetic-pipe/machine-connection-pipe",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV5/GravityPipeRight/magnetic-pipe/machine-connection-pipe",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV5/SingularityFrame/compression-chassis/machine-fortified",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV5/SingularityHopperLeft/singularity-hopper/hopper-round",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV5/SingularityHopperRight/singularity-hopper/hopper-round",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/CoreNode/AbyssBase",
+            "active": true,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": "builtin-unlit",
+                "valid": true,
+                "color": {
+                  "r": 40,
+                  "g": 22,
+                  "b": 96,
+                  "a": 255
+                }
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/CoreNode/HoleInner",
+            "active": true,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": "builtin-unlit",
+                "valid": true,
+                "color": {
+                  "r": 5,
+                  "g": 4,
+                  "b": 14,
+                  "a": 255
+                }
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/CoreNode/InnerSwirl",
+            "active": true,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": "builtin-unlit",
+                "valid": true,
+                "color": {
+                  "r": 224,
+                  "g": 213,
+                  "b": 255,
+                  "a": 255
+                }
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/CoreNode/MidSwirl",
+            "active": true,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": "builtin-unlit",
+                "valid": true,
+                "color": {
+                  "r": 224,
+                  "g": 213,
+                  "b": 255,
+                  "a": 255
+                }
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/CoreNode/OuterSwirl",
+            "active": true,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": "builtin-unlit",
+                "valid": true,
+                "color": {
+                  "r": 40,
+                  "g": 22,
+                  "b": 96,
+                  "a": 255
+                }
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/CoreNode/ShimmerSwirl",
+            "active": true,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": "builtin-unlit",
+                "valid": true,
+                "color": {
+                  "r": 242,
+                  "g": 235,
+                  "b": 255,
+                  "a": 255
+                }
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/CoreNode/HoleRing",
+            "active": true,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": "builtin-unlit",
+                "valid": true,
+                "color": {
+                  "r": 224,
+                  "g": 213,
+                  "b": 255,
+                  "a": 255
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "tierUpgrade": {
+        "endless": {
+          "emittedCount": 1,
+          "activeCount": 0,
+          "lastLevel": 2,
+          "lastTitle": "磁力黑洞",
+          "lastText": "升级！\nLV.2 磁力黑洞\n解锁更大型目标"
+        },
+        "arena": null
+      },
+      "hud": {
+        "endless": {
+          "active": true,
+          "interactable": null,
+          "x": 0,
+          "y": 0,
+          "width": 720,
+          "height": 1280,
+          "scaleX": 1,
+          "scaleY": 1,
+          "world": {
+            "x": 360,
+            "y": 640,
+            "z": 0
+          },
+          "screen": {
+            "x": 0.5,
+            "y": 0.5
+          }
+        },
+        "pauseButton": {
+          "active": true,
+          "interactable": true,
+          "x": 266.7345971563981,
+          "y": 474,
+          "width": 58,
+          "height": 58,
+          "scaleX": 1,
+          "scaleY": 1,
+          "world": {
+            "x": 626.7345971563981,
+            "y": 1114,
+            "z": 0
+          },
+          "screen": {
+            "x": 0.9509695512820513,
+            "y": 0.12968749999999996
+          }
+        },
+        "joystick": {
+          "active": true,
+          "interactable": null,
+          "x": 148,
+          "y": -470,
+          "width": 196,
+          "height": 196,
+          "scaleX": 1,
+          "scaleY": 1,
+          "world": {
+            "x": 508,
+            "y": 170,
+            "z": 0
+          },
+          "screen": {
+            "x": 0.750224358974359,
+            "y": 0.8671875
+          }
+        },
+        "joystickBase": {
+          "active": true,
+          "interactable": null,
+          "x": 0,
+          "y": 0,
+          "width": 196,
+          "height": 196,
+          "scaleX": 1,
+          "scaleY": 1,
+          "world": {
+            "x": 508,
+            "y": 170,
+            "z": 0
+          },
+          "screen": {
+            "x": 0.750224358974359,
+            "y": 0.8671875
+          }
+        },
+        "joystickKnob": {
+          "active": true,
+          "interactable": null,
+          "x": 0,
+          "y": 0,
+          "width": 76,
+          "height": 76,
+          "scaleX": 1,
+          "scaleY": 1,
+          "world": {
+            "x": 508,
+            "y": 170,
+            "z": 0
+          },
+          "screen": {
+            "x": 0.750224358974359,
+            "y": 0.8671875
+          }
+        },
+        "safeArea": {
+          "designHalfWidth": 360,
+          "visibleHalfWidth": 295.7345971563981,
+          "safeHalfWidth": 295.7345971563981,
+          "scale": 0.659375,
+          "frameWidth": 390,
+          "frameHeight": 844,
+          "childCount": 12,
+          "itemCount": 11,
+          "skippedFullBleed": [
+            "TopShade"
+          ],
+          "earlyReturn": false,
+          "groups": [
+            {
+              "names": [
+                "CoinPanel",
+                "CoinIcon",
+                "CoinValue"
+              ],
+              "left": -319,
+              "right": -101,
+              "shift": 23.26540284360192
+            },
+            {
+              "names": [
+                "LevelPanel",
+                "LevelValue",
+                "MassValue"
+              ],
+              "left": -19,
+              "right": 231,
+              "shift": 0
+            },
+            {
+              "names": [
+                "RegionPanel",
+                "RegionValue"
+              ],
+              "left": -129,
+              "right": 129,
+              "shift": 0
+            },
+            {
+              "names": [
+                "BtnPause"
+              ],
+              "left": 245,
+              "right": 303,
+              "shift": -7.265402843601919
+            },
+            {
+              "names": [
+                "Joystick"
+              ],
+              "left": 50,
+              "right": 246,
+              "shift": 0
+            },
+            {
+              "names": [
+                "TierLockChip"
+              ],
+              "left": -130.81533182448945,
+              "right": 3.893652550510552,
+              "shift": 0
+            }
+          ]
+        },
+        "pills": {
+          "coin": {
+            "active": true,
+            "interactable": null,
+            "x": -164.73459715639808,
+            "y": 430,
+            "width": 50.716796875,
+            "height": 54.4,
+            "scaleX": 1,
+            "scaleY": 1,
+            "world": {
+              "x": 195.26540284360192,
+              "y": 1070,
+              "z": 0
+            },
+            "screen": {
+              "x": 0.2214823717948718,
+              "y": 0.1640625
+            }
+          },
+          "mass": {
+            "active": true,
+            "interactable": null,
+            "x": 106,
+            "y": 409,
+            "width": 106.0498046875,
+            "height": 41.8,
+            "scaleX": 1,
+            "scaleY": 1,
+            "world": {
+              "x": 466,
+              "y": 1049,
+              "z": 0
+            },
+            "screen": {
+              "x": 0.6792147435897437,
+              "y": 0.18046874999999996
+            }
+          },
+          "level": {
+            "active": true,
+            "interactable": null,
+            "x": 106,
+            "y": 443,
+            "width": 128.47265625,
+            "height": 44.32,
+            "scaleX": 1,
+            "scaleY": 1,
+            "world": {
+              "x": 466,
+              "y": 1083,
+              "z": 0
+            },
+            "screen": {
+              "x": 0.6792147435897437,
+              "y": 0.1539062499999999
+            }
+          },
+          "region": {
+            "active": true,
+            "interactable": null,
+            "x": 0,
+            "y": 346,
+            "width": 94,
+            "height": 41.8,
+            "scaleX": 1,
+            "scaleY": 1,
+            "world": {
+              "x": 360,
+              "y": 986,
+              "z": 0
+            },
+            "screen": {
+              "x": 0.5,
+              "y": 0.22968749999999993
+            }
+          }
+        },
+        "pillPanels": {
+          "coin": {
+            "active": true,
+            "interactable": null,
+            "x": -186.73459715639808,
+            "y": 430,
+            "width": 218,
+            "height": 64,
+            "scaleX": 1,
+            "scaleY": 1,
+            "world": {
+              "x": 173.26540284360192,
+              "y": 1070,
+              "z": 0
+            },
+            "screen": {
+              "x": 0.18428685897435898,
+              "y": 0.1640625
+            }
+          },
+          "level": {
+            "active": true,
+            "interactable": null,
+            "x": 106,
+            "y": 430,
+            "width": 250,
+            "height": 64,
+            "scaleX": 1,
+            "scaleY": 1,
+            "world": {
+              "x": 466,
+              "y": 1070,
+              "z": 0
+            },
+            "screen": {
+              "x": 0.6792147435897437,
+              "y": 0.1640625
+            }
+          },
+          "region": {
+            "active": true,
+            "interactable": null,
+            "x": 0,
+            "y": 346,
+            "width": 258,
+            "height": 54,
+            "scaleX": 1,
+            "scaleY": 1,
+            "world": {
+              "x": 360,
+              "y": 986,
+              "z": 0
+            },
+            "screen": {
+              "x": 0.5,
+              "y": 0.22968749999999993
+            }
+          }
+        },
+        "pillText": {
+          "coin": "163",
+          "mass": "质量 1435kg",
+          "level": "LV.2 磁力黑洞",
+          "region": "卧室杂物区"
+        }
+      },
+      "pickupFeedback": {
+        "endless": {
+          "emittedCount": 25,
+          "activeCount": 0,
+          "lastText": "+250",
+          "lastPosition": {
+            "x": -12.876678755307381,
+            "y": -112.44374468568816
+          },
+          "lastOpacity": 0
+        },
+        "arena": null
+      }
+    },
+    "finalAfterGrowth": {
+      "gameState": "PLAYING",
+      "machine": {
+        "level": 2,
+        "mass": 1435,
+        "requiredMass": 15000,
+        "suctionRadius": 3.4,
+        "maxTier": 2,
+        "movementInput": {
+          "x": 0,
+          "y": 0
+        },
+        "activeTouchId": null,
+        "touchDiagnostic": {
+          "phase": "END",
+          "id": 0,
+          "x": 307.8558654785156,
+          "y": 98.916015625,
+          "accepted": false,
+          "joystickArea": true,
+          "paused": false
+        },
+        "controller": {
+          "enabled": true,
+          "activeInHierarchy": true,
+          "nodeName": "BlackHoleMachine"
+        },
+        "velocity": {
+          "x": 0,
+          "z": 0
+        },
+        "visualMaterials": [
+          {
+            "path": "VisualRoot/MachineVisual_LV1/CrawlerChassis/poly-google-bulldozer/Bulldozer_mesh",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": "builtin-unlit",
+                "valid": true,
+                "color": {
+                  "r": 53,
+                  "g": 168,
+                  "b": 94,
+                  "a": 255
+                }
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV2/CrawlerChassis/poly-google-bulldozer/Bulldozer_mesh",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": "builtin-unlit",
+                "valid": true,
+                "color": {
+                  "r": 53,
+                  "g": 168,
+                  "b": 94,
+                  "a": 255
+                }
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV2/MagneticTurbineLeft/magnetic-turbine/cog-e",
+            "active": true,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": "builtin-unlit",
+                "valid": true,
+                "color": {
+                  "r": 183,
+                  "g": 232,
+                  "b": 255,
+                  "a": 255
+                }
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV2/MagneticTurbineRight/magnetic-turbine/cog-e",
+            "active": true,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": "builtin-unlit",
+                "valid": true,
+                "color": {
+                  "r": 183,
+                  "g": 232,
+                  "b": 255,
+                  "a": 255
+                }
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV2/MagneticPipeLeft/magnetic-pipe/machine-connection-pipe",
+            "active": true,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": "builtin-unlit",
+                "valid": true,
+                "color": {
+                  "r": 183,
+                  "g": 232,
+                  "b": 255,
+                  "a": 255
+                }
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV2/MagneticPipeRight/magnetic-pipe/machine-connection-pipe",
+            "active": true,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": "builtin-unlit",
+                "valid": true,
+                "color": {
+                  "r": 183,
+                  "g": 232,
+                  "b": 255,
+                  "a": 255
+                }
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV3/CrawlerChassis/poly-google-bulldozer/Bulldozer_mesh",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV3/MagneticTurbineLeft/magnetic-turbine/cog-e",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV3/MagneticTurbineRight/magnetic-turbine/cog-e",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV3/MagneticPipeLeft/magnetic-pipe/machine-connection-pipe",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV3/MagneticPipeRight/magnetic-pipe/machine-connection-pipe",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV3/CompressionChamber/compression-engine/machine",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV3/CompressionHopper/singularity-hopper/hopper-round",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV4/CrawlerChassis/poly-google-bulldozer/Bulldozer_mesh",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV4/MagneticTurbineLeft/magnetic-turbine/cog-e",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV4/MagneticTurbineRight/magnetic-turbine/cog-e",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV4/MagneticPipeLeft/magnetic-pipe/machine-connection-pipe",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV4/MagneticPipeRight/magnetic-pipe/machine-connection-pipe",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV4/CompressionChamber/compression-engine/machine",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV4/CompressionHopper/singularity-hopper/hopper-round",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV4/GravityWingLeft/gravity-wing-frame/conveyor-bars-fence",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV4/GravityWingRight/gravity-wing-frame/conveyor-bars-fence",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV4/GravityPipeLeft/magnetic-pipe/machine-connection-pipe",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV4/GravityPipeRight/magnetic-pipe/machine-connection-pipe",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV5/CrawlerChassis/poly-google-bulldozer/Bulldozer_mesh",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV5/MagneticTurbineLeft/magnetic-turbine/cog-e",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV5/MagneticTurbineRight/magnetic-turbine/cog-e",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV5/MagneticPipeLeft/magnetic-pipe/machine-connection-pipe",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV5/MagneticPipeRight/magnetic-pipe/machine-connection-pipe",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV5/CompressionChamber/compression-engine/machine",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV5/CompressionHopper/singularity-hopper/hopper-round",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV5/GravityWingLeft/gravity-wing-frame/conveyor-bars-fence",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV5/GravityWingRight/gravity-wing-frame/conveyor-bars-fence",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV5/GravityPipeLeft/magnetic-pipe/machine-connection-pipe",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV5/GravityPipeRight/magnetic-pipe/machine-connection-pipe",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV5/SingularityFrame/compression-chassis/machine-fortified",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV5/SingularityHopperLeft/singularity-hopper/hopper-round",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/MachineVisual_LV5/SingularityHopperRight/singularity-hopper/hopper-round",
+            "active": false,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": null,
+                "valid": false,
+                "color": null
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/CoreNode/AbyssBase",
+            "active": true,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": "builtin-unlit",
+                "valid": true,
+                "color": {
+                  "r": 40,
+                  "g": 22,
+                  "b": 96,
+                  "a": 255
+                }
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/CoreNode/HoleInner",
+            "active": true,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": "builtin-unlit",
+                "valid": true,
+                "color": {
+                  "r": 5,
+                  "g": 4,
+                  "b": 14,
+                  "a": 255
+                }
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/CoreNode/InnerSwirl",
+            "active": true,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": "builtin-unlit",
+                "valid": true,
+                "color": {
+                  "r": 224,
+                  "g": 213,
+                  "b": 255,
+                  "a": 255
+                }
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/CoreNode/MidSwirl",
+            "active": true,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": "builtin-unlit",
+                "valid": true,
+                "color": {
+                  "r": 224,
+                  "g": 213,
+                  "b": 255,
+                  "a": 255
+                }
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/CoreNode/OuterSwirl",
+            "active": true,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": "builtin-unlit",
+                "valid": true,
+                "color": {
+                  "r": 40,
+                  "g": 22,
+                  "b": 96,
+                  "a": 255
+                }
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/CoreNode/ShimmerSwirl",
+            "active": true,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": "builtin-unlit",
+                "valid": true,
+                "color": {
+                  "r": 242,
+                  "g": 235,
+                  "b": 255,
+                  "a": 255
+                }
+              }
+            ]
+          },
+          {
+            "path": "VisualRoot/CoreNode/HoleRing",
+            "active": true,
+            "primitiveCount": 1,
+            "slots": [
+              {
+                "index": 0,
+                "effect": "builtin-unlit",
+                "valid": true,
+                "color": {
+                  "r": 224,
+                  "g": 213,
+                  "b": 255,
+                  "a": 255
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "tierUpgrade": {
+        "endless": {
+          "emittedCount": 1,
+          "activeCount": 0,
+          "lastLevel": 2,
+          "lastTitle": "磁力黑洞",
+          "lastText": "升级！\nLV.2 磁力黑洞\n解锁更大型目标"
+        },
+        "arena": null
+      },
+      "hud": {
+        "endless": {
+          "active": true,
+          "interactable": null,
+          "x": 0,
+          "y": 0,
+          "width": 720,
+          "height": 1280,
+          "scaleX": 1,
+          "scaleY": 1,
+          "world": {
+            "x": 360,
+            "y": 640,
+            "z": 0
+          },
+          "screen": {
+            "x": 0.5,
+            "y": 0.5
+          }
+        },
+        "pauseButton": {
+          "active": true,
+          "interactable": true,
+          "x": 266.7345971563981,
+          "y": 474,
+          "width": 58,
+          "height": 58,
+          "scaleX": 1,
+          "scaleY": 1,
+          "world": {
+            "x": 626.7345971563981,
+            "y": 1114,
+            "z": 0
+          },
+          "screen": {
+            "x": 0.9509695512820513,
+            "y": 0.12968749999999996
+          }
+        },
+        "joystick": {
+          "active": true,
+          "interactable": null,
+          "x": 148,
+          "y": -470,
+          "width": 196,
+          "height": 196,
+          "scaleX": 1,
+          "scaleY": 1,
+          "world": {
+            "x": 508,
+            "y": 170,
+            "z": 0
+          },
+          "screen": {
+            "x": 0.750224358974359,
+            "y": 0.8671875
+          }
+        },
+        "joystickBase": {
+          "active": true,
+          "interactable": null,
+          "x": 0,
+          "y": 0,
+          "width": 196,
+          "height": 196,
+          "scaleX": 1,
+          "scaleY": 1,
+          "world": {
+            "x": 508,
+            "y": 170,
+            "z": 0
+          },
+          "screen": {
+            "x": 0.750224358974359,
+            "y": 0.8671875
+          }
+        },
+        "joystickKnob": {
+          "active": true,
+          "interactable": null,
+          "x": 0,
+          "y": 0,
+          "width": 76,
+          "height": 76,
+          "scaleX": 1,
+          "scaleY": 1,
+          "world": {
+            "x": 508,
+            "y": 170,
+            "z": 0
+          },
+          "screen": {
+            "x": 0.750224358974359,
+            "y": 0.8671875
+          }
+        },
+        "safeArea": {
+          "designHalfWidth": 360,
+          "visibleHalfWidth": 295.7345971563981,
+          "safeHalfWidth": 295.7345971563981,
+          "scale": 0.659375,
+          "frameWidth": 390,
+          "frameHeight": 844,
+          "childCount": 12,
+          "itemCount": 11,
+          "skippedFullBleed": [
+            "TopShade"
+          ],
+          "earlyReturn": false,
+          "groups": [
+            {
+              "names": [
+                "CoinPanel",
+                "CoinIcon",
+                "CoinValue"
+              ],
+              "left": -319,
+              "right": -101,
+              "shift": 23.26540284360192
+            },
+            {
+              "names": [
+                "LevelPanel",
+                "LevelValue",
+                "MassValue"
+              ],
+              "left": -19,
+              "right": 231,
+              "shift": 0
+            },
+            {
+              "names": [
+                "RegionPanel",
+                "RegionValue"
+              ],
+              "left": -129,
+              "right": 129,
+              "shift": 0
+            },
+            {
+              "names": [
+                "BtnPause"
+              ],
+              "left": 245,
+              "right": 303,
+              "shift": -7.265402843601919
+            },
+            {
+              "names": [
+                "Joystick"
+              ],
+              "left": 50,
+              "right": 246,
+              "shift": 0
+            },
+            {
+              "names": [
+                "TierLockChip"
+              ],
+              "left": -130.81533182448945,
+              "right": 3.893652550510552,
+              "shift": 0
+            }
+          ]
+        },
+        "pills": {
+          "coin": {
+            "active": true,
+            "interactable": null,
+            "x": -164.73459715639808,
+            "y": 430,
+            "width": 50.716796875,
+            "height": 54.4,
+            "scaleX": 1,
+            "scaleY": 1,
+            "world": {
+              "x": 195.26540284360192,
+              "y": 1070,
+              "z": 0
+            },
+            "screen": {
+              "x": 0.2214823717948718,
+              "y": 0.1640625
+            }
+          },
+          "mass": {
+            "active": true,
+            "interactable": null,
+            "x": 106,
+            "y": 409,
+            "width": 106.0498046875,
+            "height": 41.8,
+            "scaleX": 1,
+            "scaleY": 1,
+            "world": {
+              "x": 466,
+              "y": 1049,
+              "z": 0
+            },
+            "screen": {
+              "x": 0.6792147435897437,
+              "y": 0.18046874999999996
+            }
+          },
+          "level": {
+            "active": true,
+            "interactable": null,
+            "x": 106,
+            "y": 443,
+            "width": 128.47265625,
+            "height": 44.32,
+            "scaleX": 1,
+            "scaleY": 1,
+            "world": {
+              "x": 466,
+              "y": 1083,
+              "z": 0
+            },
+            "screen": {
+              "x": 0.6792147435897437,
+              "y": 0.1539062499999999
+            }
+          },
+          "region": {
+            "active": true,
+            "interactable": null,
+            "x": 0,
+            "y": 346,
+            "width": 94,
+            "height": 41.8,
+            "scaleX": 1,
+            "scaleY": 1,
+            "world": {
+              "x": 360,
+              "y": 986,
+              "z": 0
+            },
+            "screen": {
+              "x": 0.5,
+              "y": 0.22968749999999993
+            }
+          }
+        },
+        "pillPanels": {
+          "coin": {
+            "active": true,
+            "interactable": null,
+            "x": -186.73459715639808,
+            "y": 430,
+            "width": 218,
+            "height": 64,
+            "scaleX": 1,
+            "scaleY": 1,
+            "world": {
+              "x": 173.26540284360192,
+              "y": 1070,
+              "z": 0
+            },
+            "screen": {
+              "x": 0.18428685897435898,
+              "y": 0.1640625
+            }
+          },
+          "level": {
+            "active": true,
+            "interactable": null,
+            "x": 106,
+            "y": 430,
+            "width": 250,
+            "height": 64,
+            "scaleX": 1,
+            "scaleY": 1,
+            "world": {
+              "x": 466,
+              "y": 1070,
+              "z": 0
+            },
+            "screen": {
+              "x": 0.6792147435897437,
+              "y": 0.1640625
+            }
+          },
+          "region": {
+            "active": true,
+            "interactable": null,
+            "x": 0,
+            "y": 346,
+            "width": 258,
+            "height": 54,
+            "scaleX": 1,
+            "scaleY": 1,
+            "world": {
+              "x": 360,
+              "y": 986,
+              "z": 0
+            },
+            "screen": {
+              "x": 0.5,
+              "y": 0.22968749999999993
+            }
+          }
+        },
+        "pillText": {
+          "coin": "163",
+          "mass": "质量 1435kg",
+          "level": "LV.2 磁力黑洞",
+          "region": "卧室杂物区"
+        }
+      },
+      "pickupFeedback": {
+        "endless": {
+          "emittedCount": 25,
+          "activeCount": 0,
+          "lastText": "+250",
+          "lastPosition": {
+            "x": -12.876678755307381,
+            "y": -112.44374468568816
+          },
+          "lastOpacity": 0
+        },
+        "arena": null
+      }
+    }
+  },
+  "screens": [
+    {
+      "screen": "Home",
+      "snapshot": "Home"
+    },
+    {
+      "screen": "EndlessReady",
+      "snapshot": "Home"
+    }
+  ],
+  "targets": {
+    "drive": {
+      "startedAt": "2026-09-19T13:46:49.627Z",
+      "budgetMs": 150000,
+      "sweeps": 85,
+      "steers": 85,
+      "seekTarget": {
+        "runtimeId": "traffic_0_0_authored_VehicleAnchor_SedanWest",
+        "tier": 5,
+        "type": "car",
+        "distance": 2.18
+      },
+      "directionSign": -1,
+      "tierLock": {
+        "status": "CAPTURED",
+        "presenter": {
+          "emittedCount": 1,
+          "activeCount": 1,
+          "lastText": "需要 LV.2",
+          "lastPosition": {
+            "x": -33.67238288328596,
+            "y": -3.385743221399693
+          },
+          "lastTier": 2
+        },
+        "lockedObjects": [
+          {
+            "runtimeId": "tutorial_t2_target",
+            "type": "book_stack",
+            "tier": 2,
+            "state": "IDLE",
+            "x": -4.783569541606062,
+            "z": -4.382035741715271,
+            "lockVisible": true
+          }
+        ],
+        "machineMaxTier": 1,
+        "machineLevel": 1
+      },
+      "largeTarget": {
+        "status": "NOT_REACHED"
+      },
+      "tierUpgrade": {
+        "status": "CAPTURED",
+        "diagnostics": {
+          "emittedCount": 1,
+          "activeCount": 1,
+          "lastLevel": 2,
+          "lastTitle": "磁力黑洞",
+          "lastText": "升级！\nLV.2 磁力黑洞\n解锁更大型目标"
+        },
+        "machineLevel": 2
+      },
+      "samples": [
+        {
+          "atMs": 309,
+          "level": 1,
+          "mass": 0,
+          "maxTier": 1,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 5.13
+        },
+        {
+          "atMs": 2122,
+          "level": 1,
+          "mass": 0,
+          "maxTier": 1,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 7.24
+        },
+        {
+          "atMs": 3879,
+          "level": 1,
+          "mass": 0,
+          "maxTier": 1,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 5.99
+        },
+        {
+          "atMs": 5866,
+          "level": 1,
+          "mass": 0,
+          "maxTier": 1,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 4.43
+        },
+        {
+          "atMs": 7817,
+          "level": 1,
+          "mass": 0,
+          "maxTier": 1,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 3.11
+        },
+        {
+          "atMs": 10290,
+          "level": 1,
+          "mass": 135,
+          "maxTier": 1,
+          "region": "bedroom",
+          "lockedVisible": 1,
+          "tierLockActive": 1,
+          "targetDistance": 1.25
+        },
+        {
+          "atMs": 12118,
+          "level": 1,
+          "mass": 135,
+          "maxTier": 1,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 0.88
+        },
+        {
+          "atMs": 13913,
+          "level": 1,
+          "mass": 135,
+          "maxTier": 1,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 0.39
+        },
+        {
+          "atMs": 15766,
+          "level": 1,
+          "mass": 255,
+          "maxTier": 1,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 0.21
+        },
+        {
+          "atMs": 17533,
+          "level": 1,
+          "mass": 255,
+          "maxTier": 1,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 0.94
+        },
+        {
+          "atMs": 19257,
+          "level": 1,
+          "mass": 255,
+          "maxTier": 1,
+          "region": "bedroom",
+          "lockedVisible": 1,
+          "tierLockActive": 1,
+          "targetDistance": 0.06
+        },
+        {
+          "atMs": 21062,
+          "level": 1,
+          "mass": 375,
+          "maxTier": 1,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 0.53
+        },
+        {
+          "atMs": 22801,
+          "level": 1,
+          "mass": 375,
+          "maxTier": 1,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 0.9
+        },
+        {
+          "atMs": 24534,
+          "level": 1,
+          "mass": 375,
+          "maxTier": 1,
+          "region": "bedroom",
+          "lockedVisible": 1,
+          "tierLockActive": 1,
+          "targetDistance": 0.2
+        },
+        {
+          "atMs": 26247,
+          "level": 1,
+          "mass": 515,
+          "maxTier": 1,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 1.23
+        },
+        {
+          "atMs": 28011,
+          "level": 1,
+          "mass": 515,
+          "maxTier": 1,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 0.6
+        },
+        {
+          "atMs": 29788,
+          "level": 1,
+          "mass": 655,
+          "maxTier": 1,
+          "region": "bedroom",
+          "lockedVisible": 1,
+          "tierLockActive": 1,
+          "targetDistance": 0.6
+        },
+        {
+          "atMs": 31527,
+          "level": 1,
+          "mass": 655,
+          "maxTier": 1,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 0.88
+        },
+        {
+          "atMs": 33273,
+          "level": 1,
+          "mass": 655,
+          "maxTier": 1,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 0.22
+        },
+        {
+          "atMs": 35742,
+          "level": 2,
+          "mass": 915,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 4.96
+        },
+        {
+          "atMs": 37604,
+          "level": 2,
+          "mass": 1135,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 2,
+          "tierLockActive": 1,
+          "targetDistance": 2.99
+        },
+        {
+          "atMs": 39371,
+          "level": 2,
+          "mass": 1135,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 1.76
+        },
+        {
+          "atMs": 41193,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 1,
+          "tierLockActive": 1,
+          "targetDistance": 0.4
+        },
+        {
+          "atMs": 42993,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 2,
+          "tierLockActive": 1,
+          "targetDistance": 0.69
+        },
+        {
+          "atMs": 44622,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 1,
+          "tierLockActive": 1,
+          "targetDistance": 1.89
+        },
+        {
+          "atMs": 46357,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 1,
+          "tierLockActive": 1,
+          "targetDistance": 1.73
+        },
+        {
+          "atMs": 48133,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 2,
+          "tierLockActive": 1,
+          "targetDistance": 1.33
+        },
+        {
+          "atMs": 49790,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 1,
+          "tierLockActive": 1,
+          "targetDistance": 3.16
+        },
+        {
+          "atMs": 51741,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 7.62
+        },
+        {
+          "atMs": 53542,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 11.51
+        },
+        {
+          "atMs": 55335,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 13.4
+        },
+        {
+          "atMs": 57140,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 4.85
+        },
+        {
+          "atMs": 59014,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 1.22
+        },
+        {
+          "atMs": 60904,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 1.73
+        },
+        {
+          "atMs": 62730,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 1,
+          "tierLockActive": 1,
+          "targetDistance": 1.73
+        },
+        {
+          "atMs": 64519,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 1.73
+        },
+        {
+          "atMs": 66323,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 1.73
+        },
+        {
+          "atMs": 68299,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 1,
+          "tierLockActive": 1,
+          "targetDistance": 1.73
+        },
+        {
+          "atMs": 70116,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 1.74
+        },
+        {
+          "atMs": 71952,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 2,
+          "tierLockActive": 1,
+          "targetDistance": 1.73
+        },
+        {
+          "atMs": 73655,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 1.49
+        },
+        {
+          "atMs": 75526,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 2.19
+        },
+        {
+          "atMs": 77355,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 2,
+          "tierLockActive": 1,
+          "targetDistance": 3.07
+        },
+        {
+          "atMs": 79245,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 3.68
+        },
+        {
+          "atMs": 81066,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 0.89
+        },
+        {
+          "atMs": 82833,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 4.46
+        },
+        {
+          "atMs": 84560,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 3.96
+        },
+        {
+          "atMs": 86239,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 1,
+          "tierLockActive": 1,
+          "targetDistance": 2.18
+        },
+        {
+          "atMs": 87938,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 4.91
+        },
+        {
+          "atMs": 89622,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 11.21
+        },
+        {
+          "atMs": 91271,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 13.82
+        },
+        {
+          "atMs": 92972,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 15.97
+        },
+        {
+          "atMs": 94656,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 10
+        },
+        {
+          "atMs": 96339,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 7.51
+        },
+        {
+          "atMs": 98022,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 14.85
+        },
+        {
+          "atMs": 99755,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 11.3
+        },
+        {
+          "atMs": 101472,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 14.82
+        },
+        {
+          "atMs": 103205,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 18.72
+        },
+        {
+          "atMs": 104889,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 19.12
+        },
+        {
+          "atMs": 106571,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 15.33
+        },
+        {
+          "atMs": 108321,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 12.02
+        },
+        {
+          "atMs": 110004,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 12.27
+        },
+        {
+          "atMs": 111672,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 17.73
+        },
+        {
+          "atMs": 113355,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 24.12
+        },
+        {
+          "atMs": 115090,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 30.86
+        },
+        {
+          "atMs": 116754,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 23.7
+        },
+        {
+          "atMs": 118438,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 15.19
+        },
+        {
+          "atMs": 120113,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 15.14
+        },
+        {
+          "atMs": 121771,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 10.82
+        },
+        {
+          "atMs": 123436,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 9.26
+        },
+        {
+          "atMs": 125121,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 10.11
+        },
+        {
+          "atMs": 126821,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 11.71
+        },
+        {
+          "atMs": 128504,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 13.71
+        },
+        {
+          "atMs": 130237,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 19.5
+        },
+        {
+          "atMs": 131887,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 22.11
+        },
+        {
+          "atMs": 133537,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 15.25
+        },
+        {
+          "atMs": 135220,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 8.11
+        },
+        {
+          "atMs": 136953,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 1,
+          "tierLockActive": 1,
+          "targetDistance": 1.24
+        },
+        {
+          "atMs": 138670,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 2.1
+        },
+        {
+          "atMs": 140337,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 1,
+          "tierLockActive": 1,
+          "targetDistance": 1.41
+        },
+        {
+          "atMs": 142071,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 1,
+          "tierLockActive": 1,
+          "targetDistance": 0.42
+        },
+        {
+          "atMs": 143803,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 2.16
+        },
+        {
+          "atMs": 145522,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 3,
+          "tierLockActive": 1,
+          "targetDistance": 0.58
+        },
+        {
+          "atMs": 147203,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 2.25
+        },
+        {
+          "atMs": 148887,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 2.18
+        }
+      ],
+      "endedAt": "2026-09-19T13:49:20.032Z",
+      "growth": {
+        "status": "BUDGET_EXHAUSTED",
+        "reason": null,
+        "budgetMs": 0,
+        "targetMaxTier": 4,
+        "steerRadiusRatio": 0.18,
+        "method": "real joystick play only (CDP touch events); no setter, no save edit, no QA hook",
+        "entryLevel": 2,
+        "entryMass": 1435,
+        "entryMaxTier": 2,
+        "finalLevel": 2,
+        "finalMass": 1435,
+        "finalMaxTier": 2,
+        "elapsedMs": 439,
+        "reachedTargetMaxTier": false,
+        "targetsPursued": 0,
+        "absorbedCount": 0,
+        "stalledTargets": 0,
+        "absorbedByTier": {},
+        "absorbed": [],
+        "levelTimeline": [
+          {
+            "level": 2,
+            "mass": 1435,
+            "maxTier": 2,
+            "atMs": 0
+          }
+        ],
+        "progressLog": [],
+        "startedAt": "2026-09-19T13:49:21.633Z",
+        "endedAt": "2026-09-19T13:49:22.072Z",
+        "exitReason": "BUDGET_EXHAUSTED"
+      },
+      "largeSeek": {
+        "status": "SKIPPED",
+        "reason": "MAX_TIER_2_BELOW_4",
+        "budgetMs": 0,
+        "predicate": "object.tier >= 4 && (object.state === \"SUCKING\" || object.state === \"ATTRACTED\")",
+        "entryLevel": null,
+        "entryMass": null,
+        "entryMaxTier": null,
+        "target": null,
+        "elapsedMs": 0,
+        "startedAt": null,
+        "endedAt": null,
+        "exitReason": null
+      }
+    }
+  },
+  "consoleErrors": [
+    "Ignored attempt to cancel a touchstart event with cancelable=false, for example because scrolling is in progress and cannot be interrupted.",
+    "Ignored attempt to cancel a touchstart event with cancelable=false, for example because scrolling is in progress and cannot be interrupted."
+  ],
+  "canvasRect": {
+    "left": 0,
+    "top": 0,
+    "width": 390,
+    "height": 844
+  },
+  "consoleErrorsHarness": [
+    "Ignored attempt to cancel a touchstart event with cancelable=false, for example because scrolling is in progress and cannot be interrupted.",
+    "Ignored attempt to cancel a touchstart event with cancelable=false, for example because scrolling is in progress and cannot be interrupted."
+  ],
+  "consoleErrorsApp": [],
+  "status": "COMPLETE"
+}

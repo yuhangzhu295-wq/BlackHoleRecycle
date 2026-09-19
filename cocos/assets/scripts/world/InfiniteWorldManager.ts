@@ -74,6 +74,210 @@ function isVehicleObject(object: CompressibleObject): boolean {
   return object.runtimeId.startsWith('traffic_');
 }
 
+/**
+ * Resource-distribution buckets required by
+ * `cocos/docs/design-reference/ui-v4-expanded/gameplay-composition-contract.md` §4.
+ *
+ * Shares are measured over *placed collectibles*, not over groups:
+ *   singles    50%-60%   isolated object, no neighbour inside its spacing floor
+ *   smallGroups 25%-35%  2-3 objects, grouped
+ *   hotspots   10%-15%   an explicit, legible resource point
+ *
+ * Two independent measurements are reported so neither can hide a regression:
+ *  - `byTag` uses the generator's own placement tags, which is what actually
+ *    decided the distribution (`cluster_*` / `group_*` / `scatter` /
+ *    `aspirational`).
+ *  - `byProximity` unions objects closer than GROUP_LINK_METERS and buckets the
+ *    resulting group sizes. It also works on authored cells, which carry
+ *    `cluster_<name>_<n>` ids and no generator tags.
+ */
+const GROUP_LINK_METERS = 4.0;
+
+type PlacementBucket = 'single' | 'smallGroup' | 'hotspot' | 'aspirational' | 'unknown';
+
+/**
+ * A 6m disc is the scale at which objects start to read as "a pile" on a
+ * 390x844 portrait frame at the gameplay camera distance.
+ */
+const DENSE_RADIUS_METERS = 6.0;
+/** An object with no neighbour inside 12m reads as a genuine lone pickup. */
+const ISOLATION_RADIUS_METERS = 12.0;
+
+function classifyPlacement(runtimeId: string): PlacementBucket {
+  if (runtimeId.startsWith('cluster_')) return 'hotspot';
+  if (runtimeId.startsWith('group_')) return 'smallGroup';
+  if (runtimeId.startsWith('scatter')) return 'single';
+  if (runtimeId.startsWith('aspirational')) return 'aspirational';
+  return 'unknown';
+}
+
+interface ICompositionBuckets {
+  readonly collectibles: number;
+  readonly singles: number;
+  readonly smallGroups: number;
+  readonly hotspots: number;
+  readonly aspirational: number;
+  readonly unknownPlacement: number;
+  readonly largestProximityGroup: number;
+  readonly singleShare: number;
+  readonly smallGroupShare: number;
+  readonly hotspotShare: number;
+  readonly measurement: 'PLACEMENT_TAGS' | 'PROXIMITY_FALLBACK' | 'MIXED';
+  readonly proximity: Readonly<{ singles: number; smallGroups: number; hotspots: number }>;
+  readonly tierCounts: Readonly<Record<number, number>>;
+  readonly highestVisibleTier: number;
+  /**
+   * Real crowding geometry, independent of both the placement tags and the
+   * 4m-linkage grouping. `largestProximityGroup` alone cannot distinguish "a
+   * dozen objects piled on one point" from "objects spread across the cell but
+   * chained by 4m hops", so the nearest-neighbour distances are published too.
+   */
+  readonly spacing: Readonly<{
+    nearestNeighbourMinMeters: number | null;
+    nearestNeighbourMedianMeters: number | null;
+    nearestNeighbourP90Meters: number | null;
+    /** Objects with no other object within `ISOLATION_RADIUS_METERS`. */
+    isolatedCount: number;
+    isolationRadiusMeters: number;
+    /** Largest number of objects sharing one 6m disc: the real crowding signal. */
+    maxObjectsWithinDenseRadius: number;
+    denseRadiusMeters: number;
+  }>;
+}
+
+function computeCompositionBuckets(objects: readonly CompressibleObject[]): ICompositionBuckets {
+  const points = objects.map((object) => ({
+    x: object.getPosition().x,
+    z: object.getPosition().z,
+    tier: object.template.tier as number,
+    placement: classifyPlacement(object.runtimeId),
+  }));
+
+  let singles = 0;
+  let smallGroups = 0;
+  let hotspots = 0;
+  let aspirational = 0;
+  let unknownPlacement = 0;
+  for (const point of points) {
+    if (point.placement === 'single') singles++;
+    else if (point.placement === 'smallGroup') smallGroups++;
+    else if (point.placement === 'hotspot') hotspots++;
+    else if (point.placement === 'aspirational') aspirational++;
+    else unknownPlacement++;
+  }
+
+  // Proximity measurement, independent of the generator's tags.
+  const parent = points.map((_, index) => index);
+  const find = (index: number): number => {
+    let root = index;
+    while (parent[root] !== root) root = parent[root];
+    while (parent[index] !== root) {
+      const next = parent[index];
+      parent[index] = root;
+      index = next;
+    }
+    return root;
+  };
+  const linkSq = GROUP_LINK_METERS * GROUP_LINK_METERS;
+  for (let i = 0; i < points.length; i++) {
+    for (let j = i + 1; j < points.length; j++) {
+      const dx = points[i].x - points[j].x;
+      const dz = points[i].z - points[j].z;
+      if (dx * dx + dz * dz <= linkSq) {
+        const rootA = find(i);
+        const rootB = find(j);
+        if (rootA !== rootB) parent[rootB] = rootA;
+      }
+    }
+  }
+  const groupSizes = new Map<number, number>();
+  for (let i = 0; i < points.length; i++) {
+    const root = find(i);
+    groupSizes.set(root, (groupSizes.get(root) || 0) + 1);
+  }
+  let proximitySingles = 0;
+  let proximitySmallGroups = 0;
+  let proximityHotspots = 0;
+  let largestProximityGroup = 0;
+  for (const size of groupSizes.values()) {
+    if (size === 1) proximitySingles++;
+    else if (size <= 3) proximitySmallGroups++;
+    else proximityHotspots++;
+    if (size > largestProximityGroup) largestProximityGroup = size;
+  }
+
+  const tierCounts: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+  let highestVisibleTier = 0;
+  for (const point of points) {
+    tierCounts[point.tier] = (tierCounts[point.tier] || 0) + 1;
+    if (point.tier > highestVisibleTier) highestVisibleTier = point.tier;
+  }
+
+  // Nearest-neighbour spacing and a dense-disc census. These answer the
+  // question the contract actually asks ("is anything piled on one point?")
+  // without depending on how the cell happened to name its runtimeIds.
+  const nearestNeighbour: number[] = [];
+  let maxObjectsWithinDenseRadius = 0;
+  for (let i = 0; i < points.length; i++) {
+    let nearest = Number.POSITIVE_INFINITY;
+    let withinDenseRadius = 0;
+    for (let j = 0; j < points.length; j++) {
+      if (i === j) continue;
+      const distance = Math.hypot(points[i].x - points[j].x, points[i].z - points[j].z);
+      if (distance < nearest) nearest = distance;
+      if (distance <= DENSE_RADIUS_METERS) withinDenseRadius++;
+    }
+    if (Number.isFinite(nearest)) nearestNeighbour.push(nearest);
+    // +1 counts the object itself, so the census reads as "objects in this disc".
+    if (withinDenseRadius + 1 > maxObjectsWithinDenseRadius) maxObjectsWithinDenseRadius = withinDenseRadius + 1;
+  }
+  nearestNeighbour.sort((a, b) => a - b);
+  const at = (fraction: number): number | null => nearestNeighbour.length === 0
+    ? null
+    : Number(nearestNeighbour[Math.min(nearestNeighbour.length - 1, Math.floor(fraction * nearestNeighbour.length))].toFixed(2));
+  const spacing: ICompositionBuckets['spacing'] = {
+    nearestNeighbourMinMeters: nearestNeighbour.length === 0 ? null : Number(nearestNeighbour[0].toFixed(2)),
+    nearestNeighbourMedianMeters: at(0.5),
+    nearestNeighbourP90Meters: at(0.9),
+    isolatedCount: nearestNeighbour.filter((distance) => distance > ISOLATION_RADIUS_METERS).length,
+    isolationRadiusMeters: ISOLATION_RADIUS_METERS,
+    maxObjectsWithinDenseRadius,
+    denseRadiusMeters: DENSE_RADIUS_METERS,
+  };
+
+  // Placement tags are authoritative only when every object carries one.
+  const tagged = singles + smallGroups + hotspots + aspirational;
+  const measurement: ICompositionBuckets['measurement'] = unknownPlacement === 0
+    ? 'PLACEMENT_TAGS'
+    : tagged === 0
+      ? 'PROXIMITY_FALLBACK'
+      : 'MIXED';
+
+  const total = Math.max(1, points.length);
+  const round4 = (value: number): number => Math.round(value * 10000) / 10000;
+  return {
+    collectibles: points.length,
+    singles,
+    smallGroups,
+    hotspots,
+    aspirational,
+    unknownPlacement,
+    largestProximityGroup,
+    singleShare: round4(singles / total),
+    smallGroupShare: round4(smallGroups / total),
+    hotspotShare: round4(hotspots / total),
+    measurement,
+    proximity: {
+      singles: proximitySingles,
+      smallGroups: proximitySmallGroups,
+      hotspots: proximityHotspots,
+    },
+    tierCounts,
+    highestVisibleTier,
+    spacing,
+  };
+}
+
 /** One generated cell with its own Creator-imported environment and pooled loot. */
 class InfiniteWorldCell {
   public readonly objects: CompressibleObject[] = [];
@@ -219,6 +423,69 @@ class InfiniteWorldCell {
         }
       }
     }
+
+    // V4 gameplay-composition contract §5/§6. The authored prefab ships only
+    // T1/T2 anchors, so without this the opening cell contains no T4/T5
+    // collectible at all and "a low-level player must still SEE T4/T5 and be
+    // unable to swallow them" cannot be satisfied.
+    this.populateAuthoredAspirational(objectPool, logicalOrigin);
+  }
+
+  /**
+   * V4 gameplay-composition contract §5/§6.
+   *
+   * Adds exactly one T4-class and one T5-class target on the authored cell's
+   * outer band. The band radius (0.62–0.84 of the half-cell, i.e. ≈20–27 m) is
+   * deliberately far outside the authored tutorial ring (radius ≤ 6 m) and
+   * outside every authored anchor (±8 m), so **no Creator-authored object
+   * moves** and the adjudicated `INTENTIONAL_TUTORIAL_EXCEPTION` spacing is
+   * untouched. The bearings point away from the authored park lane (+z) and the
+   * authored construction lane (−z) so neither target lands on a main road.
+   *
+   * Deterministic: the same cell always yields the same two targets, so runtime
+   * evidence and screenshot review stay reproducible.
+   */
+  private populateAuthoredAspirational(
+    objectPool: ObjectPool<CompressibleObject>,
+    logicalOrigin: Readonly<Vec3>,
+  ): void {
+    const maxRegionTier = this.theme.availableTiers.reduce(
+      (max, tier) => Math.max(max, tier),
+      ObjectTier.T1,
+    );
+    const aspirational = OBJECT_TEMPLATES.filter((template) => template.tier > maxRegionTier);
+    if (aspirational.length === 0) return;
+
+    const half = this.cellSize * 0.5;
+    // Bearings run down the outer band's free lanes. The four authored corner
+    // buildings sit on the diagonals at (±10, ±10), the authored park occupies
+    // +z up to z = 10, and the construction site sits at (−8, −8); 78°/258° stays
+    // clear of all of them (nearest authored prop ≈ 10 m away).
+    const bearings = [(78 / 180) * Math.PI, (258 / 180) * Math.PI];
+    const distances = [half * 0.62, half * 0.84];
+    const tiers = [ObjectTier.T4, ObjectTier.T5];
+
+    tiers.forEach((tier, index) => {
+      const pool = aspirational.filter((template) => template.tier === tier);
+      const template = pool[0] || aspirational[Math.min(index, aspirational.length - 1)];
+      if (!template) return;
+      const angle = bearings[index % bearings.length];
+      const distance = distances[index % distances.length];
+      const worldX = this.coord.x * this.cellSize + Math.cos(angle) * distance;
+      const worldZ = this.coord.z * this.cellSize + Math.sin(angle) * distance;
+      const customId = `aspirational_authored_${index}`;
+      const object = objectPool.get();
+      object.spawn(template, worldX - logicalOrigin.x, worldZ - logicalOrigin.z, 0.35, customId);
+      this.objects.push(object);
+      this.collectibleSlots.push({
+        template,
+        x: worldX,
+        z: worldZ,
+        customId,
+        availableAt: 0,
+        active: true,
+      });
+    });
   }
 
   public populateAuthoredTraffic(
@@ -1137,6 +1404,14 @@ export class InfiniteWorldManager extends Component {
          clusters: clusterSet.size,
          vehicles: openingCell?.dynamicVehicles.length || 0,
        };
+     })(),
+     // V4 gameplay-composition contract §4/§5. Measured on the opening cell
+     // only, from real object footprints. Read-only: it never writes gameplay
+     // state and never influences spawning.
+     gameplayComposition: (() => {
+       const openingCell = this.activeCells.get(cellKey({ x: 0, z: 0 }));
+       const collectibles = (openingCell?.objects || []).filter(isCollectibleObject);
+       return computeCompositionBuckets(collectibles);
      })(),
       authoredClusterAnchors: (() => {
         const openingCell = this.activeCells.get(cellKey({ x: 0, z: 0 }));

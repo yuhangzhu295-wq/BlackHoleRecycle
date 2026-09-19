@@ -30,10 +30,17 @@ const compiled = transformSync(`${extracted}\n;globalThis.__InfiniteWorldCell = 
   target: 'es2022',
   format: 'iife',
 }).code;
-globalThis.ObjectTier = { T1: 1, T2: 2 };
+// The production `ObjectTier` enum and `OBJECT_TEMPLATES` cover T1..T5 (pinned by
+// test_collectible_production_contract.mjs). The authored cell now also runs the
+// V4 aspirational pass, so the stub must expose the full ladder or that code path
+// silently no-ops and cannot be covered.
+globalThis.ObjectTier = { T1: 1, T2: 2, T3: 3, T4: 4, T5: 5 };
 globalThis.OBJECT_TEMPLATES = [
   { type: 'test-cardboard', tier: 1, mass: 10, value: 1, radius: 0.3 },
   { type: 'test-bin', tier: 2, mass: 20, value: 2, radius: 0.4 },
+  { type: 'test-chair', tier: 3, mass: 60, value: 6, radius: 0.7 },
+  { type: 'test-sofa', tier: 4, mass: 160, value: 16, radius: 1.2 },
+  { type: 'test-car', tier: 5, mass: 400, value: 40, radius: 2.0 },
 ];
 new Function(compiled)();
 const InfiniteWorldCell = globalThis.__InfiniteWorldCell;
@@ -159,7 +166,21 @@ record('AUTHORED_SLOTS_RESPAWN', authored.objects.some((object) => object.runtim
 authored.recycle(authoredPool);
 record('UNLOAD_CLEARS_OBJECTS_AND_SLOTS', authored.objects.length === 0 && authoredPool.getActiveCount() === 0, 'unload releases active objects and clears slot state');
 authored.populateAuthoredContent(authoredPool, origin);
-record('RELOAD_DOES_NOT_DUPLICATE', authored.objects.length === 4 && authoredPool.getActiveCount() === 4, 'reload recreates each authored slot once');
+// V4 gameplay-composition contract §5/§6. The authored prefab ships only T1/T2
+// anchors, so the opening cell used to contain no T4/T5 collectible at all and
+// "a low-level player must still SEE T4/T5 and be unable to swallow them" could
+// not be satisfied. The authored cell now also exposes one T4-class and one
+// T5-class aspirational target on its outer band.
+const authoredAspirational = authored.objects.filter((object) => object.runtimeId.startsWith('aspirational_authored_'));
+record('AUTHORED_CELL_EXPOSES_T4_T5_ASPIRATIONAL',
+  authoredAspirational.length === 2
+  && authoredAspirational.some((object) => object.template.tier === 4)
+  && authoredAspirational.some((object) => object.template.tier === 5),
+  'authored opening cell exposes exactly one T4 and one T5 aspirational target');
+record('AUTHORED_ASPIRATIONAL_STAYS_OUTSIDE_TUTORIAL_RING',
+  authoredAspirational.every((object) => Math.hypot(object.position.x, object.position.z) >= 12),
+  'aspirational targets sit on the outer band, clear of the authored tutorial ring (radius <= 6m)');
+record('RELOAD_DOES_NOT_DUPLICATE', authored.objects.length === 6 && authoredPool.getActiveCount() === 6, 'reload recreates each authored slot once (4 authored + 2 aspirational)');
 
 const fallbackAnchor = new FakeNode('ClusterAnchor_RecyclingSquare', [], { x: 22, y: 0, z: 23 });
 const deferredAuthored = makeCell(true, new FakeNode('Cell', [

@@ -195,11 +195,41 @@ export class CellItemGenerator {
     }
 
     // 4. 远景大目标：让低等级视野里始终存在"将来能吃"的 T4/T5。
+    // V4 gameplay-composition contract §5: the ladder must read T3 > T4 > T5 and
+    // T5 must be 0–1 per frame. Uniform sampling over the aspirational pool made
+    // T3 and T5 equally likely and allowed two T5 in one cell, which broke the
+    // "0–1 obvious large target" rule.
     const maxRegionTier = theme.availableTiers.reduce((max, tier) => Math.max(max, tier), ObjectTier.T1);
     const aspirational = OBJECT_TEMPLATES.filter((template) => template.tier > maxRegionTier);
     const aspirationalCount = Math.min(aspirational.length > 0 ? 1 + positive(seed >>> 3, 2) : 0, 2);
+    const aspirationalWeights: ReadonlyArray<readonly [ObjectTier, number]> = [
+      [ObjectTier.T3, 4],
+      [ObjectTier.T4, 3],
+      [ObjectTier.T5, 1],
+    ];
+    let aspirationalT5Placed = 0;
+    const pickAspirational = (): IObjectTemplate | null => {
+      const entries = aspirationalWeights
+        .map(([tier, weight]) => ({
+          weight,
+          candidates: aspirational.filter((template) => template.tier === tier
+            && !(tier === ObjectTier.T5 && aspirationalT5Placed >= 1)),
+        }))
+        .filter((entry) => entry.candidates.length > 0);
+      if (entries.length === 0) return null;
+      const total = entries.reduce((sum, entry) => sum + entry.weight, 0);
+      let roll = random() * total;
+      for (const entry of entries) {
+        roll -= entry.weight;
+        if (roll <= 0) return entry.candidates[Math.floor(random() * entry.candidates.length)];
+      }
+      const last = entries[entries.length - 1];
+      return last.candidates[Math.floor(random() * last.candidates.length)];
+    };
     for (let i = 0; i < aspirationalCount; i++) {
-      const template = aspirational[Math.floor(random() * aspirational.length)];
+      const template = pickAspirational();
+      if (!template) break;
+      if (template.tier === ObjectTier.T5) aspirationalT5Placed += 1;
       // 放在离 cell 中心较远的边缘带，避免堵住出生点主路。
       const angle = random() * Math.PI * 2;
       const distance = half * (0.55 + random() * 0.4);

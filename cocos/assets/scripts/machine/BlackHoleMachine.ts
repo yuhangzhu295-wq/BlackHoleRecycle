@@ -365,6 +365,16 @@ export class BlackHoleMachine extends Component {
   }
 
   /**
+   * Read-only identity check for presentation-layer listeners. A match can
+   * contain several real BlackHoleMachine instances, so MACHINE_EVOLVED
+   * consumers must be able to tell a bot apart from the local player without
+   * reading private state.
+   */
+  public isBotPresentation(): boolean {
+    return this.presentation === 'BOT';
+  }
+
+  /**
    * Gives an arena competitor a distinct visual identity without changing the
    * shared glTF geometry, gameplay mass, collision radius or material of any
    * other world vehicle. Each renderer receives a cloned native Material.

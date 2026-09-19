@@ -1020,6 +1020,15 @@ export class GameManager extends Component {
         }
       }
       if (this.gameState === 'PLAYING') this.updateHUD();
+      // V4 reference 10 State A. The locked-target prompt is a HUD projection of
+      // a real body that is being pulled but not swallowed, so it has to be
+      // refreshed every gameplay frame from the live world objects.
+      if (this.gameState === 'PLAYING' || this.gameState === 'ARENA') {
+        this.hud?.updateTierLock(
+          this.infiniteWorldManager?.getAllObjects() || [],
+          this.mainCamera,
+        );
+      }
     }
 
     // The already scene-saved camera remains the concrete dependency; the

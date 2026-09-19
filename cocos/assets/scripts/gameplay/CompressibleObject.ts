@@ -34,6 +34,12 @@ export class CompressibleObject extends Component {
   private suctionSpinDegreesPerSecond: number = 0;
   private visualYawDegrees: number = 0;
   private visualRollDegrees: number = 0;
+  /**
+   * V4 reference 09 legibility clock. How long this body has visibly been
+   * fighting the pull. Read-only presentation state; it never affects motion,
+   * mass, tier or the suction profile.
+   */
+  private strainSeconds: number = 0;
 
   public getPosition(): Vec3 {
     return this.currentPos;
@@ -110,6 +116,10 @@ export class CompressibleObject extends Component {
         enter: () => {
           this.suckTimer = 0;
           this.node.setScale(Vec3.ONE);
+          // A target that escaped the pull must read as normal traffic again.
+          this.strainSeconds = 0;
+          this.visualRollDegrees = 0;
+          this.visualNode?.setRotationFromEuler(0, this.visualYawDegrees, this.visualRollDegrees);
           if (this.lockIndicatorNode) this.lockIndicatorNode.active = false;
         }
       })
@@ -154,6 +164,7 @@ export class CompressibleObject extends Component {
     this.suctionSpinDegreesPerSecond = 0;
     this.visualYawDegrees = 0;
     this.visualRollDegrees = 0;
+    this.strainSeconds = 0;
 
     this.buildVisibleNode();
     this.applyTemplateArt();
@@ -203,6 +214,32 @@ export class CompressibleObject extends Component {
 
   public isShowingLockAlert(): boolean {
     return this.isLockAlertActive;
+  }
+
+  /**
+   * Single source of truth for the prompt text. The HUD-side `TierLockPresenter`
+   * renders this, because a Label on a code-built node is never batched in a
+   * built player (no RenderRoot2D ancestor, wrong layer).
+   */
+  public getLockAlertText(): string {
+    return this.isLockAlertActive ? `需要 LV.${this.template.tier}` : '';
+  }
+
+  /**
+   * V4 reference 09 / 10 runtime evidence. A single readable phase name for the
+   * current suction state, so runtime captures and contract tests can assert
+   * the real chain instead of inferring it. Read-only: it never advances or
+   * rewrites the FSM.
+   */
+  public getSuctionPhase(): string {
+    const state = this.fsm.getState();
+    if (state === 'IDLE') return this.isLockAlertActive ? 'LOCKED_LEVEL' : 'IDLE';
+    return state;
+  }
+
+  /** Seconds this body has visibly been fighting the pull (V4 reference 09). */
+  public getStrainSeconds(): number {
+    return this.strainSeconds;
   }
 
   public updateMotion(
@@ -276,6 +313,17 @@ export class CompressibleObject extends Component {
       if (state === 'SUCKING') this.suckTimer += dt;
       else if (Math.sqrt(distSq) < 0.6) this.fsm.setState('SUCKING');
 
+      // V4 reference 09 legibility: a large target must visibly fight the pull
+      // instead of looking like it is passing by. Tier 4/5 gains a slow,
+      // readable strain roll while it is being dragged. This is additive
+      // presentation only: no new mesh, no particles, no change to motion,
+      // mass, tier or the per-tier suction profile.
+      if (this.template.tier >= 4) {
+        this.strainSeconds += dt;
+        const strain = Math.min(1, this.strainSeconds / 1.6);
+        this.visualRollDegrees = Math.sin(this.strainSeconds * 3.4) * 14 * strain;
+      }
+
       const result = SuctionMotionCalculator.computeMotion(
         this.currentPos, machinePos, suctionRadius, dt, this.suckTimer, 0.4, isMagnetStorm,
         suctionPullMultiplier,
@@ -288,6 +336,8 @@ export class CompressibleObject extends Component {
         const spinMultiplier = state === 'SUCKING' ? 2.5 : 1;
         this.visualYawDegrees += this.suctionSpinDegreesPerSecond * spinMultiplier * dt;
         this.visualRollDegrees += this.suctionSpinDegreesPerSecond * 0.35 * spinMultiplier * dt;
+      }
+      if (this.suctionSpinDegreesPerSecond > 0 || this.template.tier >= 4) {
         this.visualNode?.setRotationFromEuler(0, this.visualYawDegrees, this.visualRollDegrees);
       }
       if (result.isAbsorbed) {

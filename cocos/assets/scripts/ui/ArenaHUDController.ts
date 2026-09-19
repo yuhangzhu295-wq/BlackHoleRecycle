@@ -2,7 +2,11 @@
 import { _decorator, Button, Camera, Color, Component, director, instantiate, Label, LabelOutline, Node, UITransform, Vec3, view } from 'cc';
 import { eventBus } from '../core/EventBus';
 import { ArenaMatchSnapshot } from '../gameplay/ArenaMatchManager';
+import { CompressibleObject } from '../gameplay/CompressibleObject';
+import { applyHudSafeAreaInset } from './HudSafeAreaInset';
 import { PickupFeedbackDiagnostics, PickupFeedbackPresenter } from './PickupFeedbackPresenter';
+import { TierLockDiagnostics, TierLockPresenter } from './TierLockPresenter';
+import { TierUpgradeDiagnostics, TierUpgradePresenter } from './TierUpgradePresenter';
 
 const { ccclass } = _decorator;
 
@@ -22,9 +26,23 @@ export class ArenaHUDController extends Component {
    */
   private readonly competitorNameplates = new Map<string, Node>();
   private pickupFeedback: PickupFeedbackPresenter | null = null;
+  /**
+   * V4 reference 10 State B. Short, non-blocking upgrade banner driven by the
+   * existing MACHINE_EVOLVED event. Bot evolutions are filtered out inside the
+   * presenter, so a 1v7 match never announces an opponent's upgrade.
+   */
+  private tierUpgrade: TierUpgradePresenter | null = null;
+  /**
+   * V4 reference 10 State A. Readable "需要 LV.X" prompt, projected onto the HUD
+   * because a Label on a code-built node never renders in a built player.
+   */
+  private tierLock: TierLockPresenter | null = null;
 
   onEnable(): void {
     this.pickupFeedback ||= new PickupFeedbackPresenter(this.node, 'Top1');
+    this.tierUpgrade ||= new TierUpgradePresenter(this.node, 'MassValue');
+    this.tierUpgrade.enable();
+    this.tierLock ||= new TierLockPresenter(this.node, 'TimerValue');
     this.bind('BtnPause', () => eventBus.emit('UI_TRIGGER_PAUSE'));
   }
 
@@ -34,12 +52,19 @@ export class ArenaHUDController extends Component {
     for (const nameplate of this.competitorNameplates.values()) nameplate.destroy();
     this.competitorNameplates.clear();
     this.pickupFeedback?.clear();
+    this.tierUpgrade?.disable();
+    this.tierLock?.clear();
   }
 
   public updateMatch(snapshot: ArenaMatchSnapshot): void {
+    // A 390x844 device crops ~64 design px from each side of the 720x1280
+    // design, which cut the leaderboard, the status panel and the pause button.
+    applyHudSafeAreaInset(this.node);
     this.setLabel('TimerValue', formatClock(snapshot.remainingSeconds));
     this.setLabel('RankValue', `第 ${snapshot.localRank || '-'} / ${snapshot.competitorCount}`);
-    this.setLabel('MassValue', `${Math.round(snapshot.localMass)} kg`);
+    // No space before the unit: the serialized LabelOutline bridges the space at
+    // this font size and renders it as a hyphen, which reads like a negative mass.
+    this.setLabel('MassValue', `${Math.round(snapshot.localMass)}kg`);
     this.setLabel('KillValue', `${snapshot.localKills}`);
     const warmup = Math.max(0, snapshot.combatWarmupRemainingSeconds);
     this.setLabel('StatusValue', warmup > 0
@@ -165,8 +190,22 @@ export class ArenaHUDController extends Component {
     return this.pickupFeedback?.getDiagnostics() || null;
   }
 
+  public getTierUpgradeDiagnostics(): TierUpgradeDiagnostics | null {
+    return this.tierUpgrade?.getDiagnostics() || null;
+  }
+
+  /** Driven once per gameplay frame by HUDView; reads the FSM, never drives it. */
+  public updateTierLock(objects: readonly CompressibleObject[], camera: Camera | null): void {
+    this.tierLock?.update(objects, camera);
+  }
+
+  public getTierLockDiagnostics(): TierLockDiagnostics | null {
+    return this.tierLock?.getDiagnostics() || null;
+  }
+
   update(dt: number): void {
     this.pickupFeedback?.update(dt);
+    this.tierUpgrade?.update(dt);
   }
 
   /**

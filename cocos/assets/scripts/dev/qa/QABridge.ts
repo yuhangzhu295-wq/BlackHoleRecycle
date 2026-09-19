@@ -30,7 +30,9 @@ import { BlackHoleMachine } from '../../machine/BlackHoleMachine';
 import { AuthoritativeArenaSnapshot, ColyseusArenaClient } from '../../network/ColyseusArenaClient';
 import { NetworkArenaReplica } from '../../network/NetworkArenaReplica';
 import { ArenaHUDController } from '../../ui/ArenaHUDController';
+import { getHudSafeAreaPass } from '../../ui/HudSafeAreaInset';
 import { HUDView } from '../../ui/HUDView';
+import { MapPreviewGraphic } from '../../ui/MapPreviewGraphic';
 import { RuntimePageInputRouter } from '../../ui/RuntimePageInputRouter';
 import { InfiniteWorldManager } from '../../world/InfiniteWorldManager';
 import { WorldCompositionProbe } from './WorldCompositionProbe';
@@ -232,6 +234,8 @@ export class QABridge {
     const revivePage = canvas?.getChildByName('RevivePage') || null;
     const pausePage = canvas?.getChildByName('PausePage') || null;
     const settlementPage = canvas?.getChildByName('SettlementPage') || null;
+    const endlessReadyPage = canvas?.getChildByName('EndlessReadyPage') || null;
+    const arenaReadyPage = canvas?.getChildByName('ArenaReadyPage') || null;
     const machineInfoPage = canvas?.getChildByName('MachineInfoPage') || null;
     const skinSelectionPage = canvas?.getChildByName('SkinSelectionPage') || null;
     const joystick = endlessHud?.getChildByName('Joystick') || null;
@@ -263,6 +267,29 @@ export class QABridge {
       };
     };
     const labelText = (node: Node | null): string | null => node?.getComponent(Label)?.string || null;
+    /**
+     * V4 references 06 / 07. The Ready pages are the only formal screens that
+     * are not HUDView pages, so they need their own read-only projection: the
+     * gate must prove the real map preview replaced the baked mode-card art and
+     * that the per-mode copy is the locked copy.
+     */
+    const readyPage = (node: Node | null): Record<string, unknown> | null => {
+      if (!node) return null;
+      const previewNode = node.getChildByName('MapPreview') || null;
+      return {
+        root: describe(node),
+        back: describe(node.getChildByName('BtnBack') || null),
+        title: labelText(node.getChildByName('HeaderTitle') || null),
+        header: describe(node.getChildByName('Header') || null),
+        preview: describe(previewNode),
+        previewArt: previewNode?.getComponent(MapPreviewGraphic)?.getDiagnostics() || null,
+        start: describe(node.getChildByName('BtnStart') || null),
+        startLabel: labelText(node.getChildByName('BtnStartLabel') || null),
+        stat: labelText(node.getChildByName('StatValue') || null),
+        machine: labelText(node.getChildByName('MachineValue') || null),
+        intro: labelText(node.getChildByName('IntroText') || null),
+      };
+    };
     const design = view.getDesignResolutionSize();
     const visible = view.getVisibleSize();
     const frame = view.getFrameSize();
@@ -322,8 +349,53 @@ export class QABridge {
         joystick: describe(joystick),
         joystickBase: describe(joystick?.getChildByName('JoystickBase') || null),
         joystickKnob: describe(joystick?.getChildByName('JoystickKnob') || null),
+        /**
+         * Why the clamp did or did not move anything. The clamp can be a silent
+         * no-op from the frame's point of view — a wrong frame size, an early
+         * return, or a full-bleed backdrop merging the whole row into one
+         * unshiftable group all look identical on screen ("the pills are still
+         * clipped"). This reports the pass's own inputs and per-group shifts.
+         */
+        safeArea: endlessHud ? getHudSafeAreaPass(endlessHud) : null,
+        /**
+         * V4 defect RT-08-HUD-CLIP. `describe(endlessHud)` returns the HUD
+         * *container*, which is 720 design px wide by construction and is
+         * therefore always wider than the 390 px fit-height viewport — a clip
+         * assertion against the container can never pass and can never fail
+         * meaningfully. The clipped nodes are the individual top-bar pills, so
+         * they are projected one by one here and the on-screen rect is derived
+         * from these records by the capture runner.
+         */
+        pills: {
+          coin: describe(endlessHud?.getChildByName('CoinValue') || null),
+          mass: describe(endlessHud?.getChildByName('MassValue') || null),
+          level: describe(endlessHud?.getChildByName('LevelValue') || null),
+          region: describe(endlessHud?.getChildByName('RegionValue') || null),
+        },
+        /**
+         * The `*Value` children above are Labels, so their UITransform width is
+         * the laid-out *text* width — not the pill background. The clipped node
+         * named in the defect is the pill container (`CoinPanel` left edge −319
+         * against a usable design x-range of ≈[−296, +296]), so the containers
+         * are projected separately and are the ones the clip gate asserts on.
+         */
+        pillPanels: {
+          coin: describe(endlessHud?.getChildByName('CoinPanel') || null),
+          level: describe(endlessHud?.getChildByName('LevelPanel') || null),
+          region: describe(endlessHud?.getChildByName('RegionPanel') || null),
+        },
+        pillText: {
+          coin: labelText(endlessHud?.getChildByName('CoinValue') || null),
+          mass: labelText(endlessHud?.getChildByName('MassValue') || null),
+          level: labelText(endlessHud?.getChildByName('LevelValue') || null),
+          region: labelText(endlessHud?.getChildByName('RegionValue') || null),
+        },
       },
       pickupFeedback: this.read.getHUD()?.getPickupFeedbackDiagnostics() || null,
+      tierUpgrade: this.read.getHUD()?.getTierUpgradeDiagnostics() || null,
+      tierLock: this.read.getHUD()?.getTierLockDiagnostics() || null,
+      endlessReady: readyPage(endlessReadyPage),
+      arenaReady: readyPage(arenaReadyPage),
       arenaHUD: {
         root: describe(arenaHud),
         pauseButton: describe(arenaHud?.getChildByName('BtnPause') || null),
