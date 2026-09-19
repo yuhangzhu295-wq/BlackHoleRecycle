@@ -30,3 +30,101 @@
 | AC-029 | 375分辨率 | Viewport 375x667 | UI与3D画面正常适配 | Normal | 01-home.png | PASS |
 | AC-027 | 控制台错误 | Error Listener | Console Error == 0 | Errors: 0 | - | PASS |
 | AC-028 | 只读QA | Bridge Code Check | Mutation == 0 | STRICT READ-ONLY | - | PASS |
+
+---
+
+## V4 RC gate chain — `acceptance:v2` scopes
+
+`npm run acceptance:v2 -- --scope=<scope>`. Each scope rebuilds
+`cocos/build/web-mobile` through the Creator CLI (the script has no skip-build
+switch) and reads the same directory, so the scopes must run serially.
+
+| Scope | Result | Evidence |
+| :--- | :--- | :--- |
+| `full` | **PASS** (375x667 + 390x844) | `acceptance-report-full.json` |
+| `arena-ai` | **PASS** | `acceptance-report-arena-ai.json` |
+| `arena-timer` | **PASS** | `acceptance-report-arena-timer.json` |
+| `golden-city` | **FAIL** | `acceptance-report-golden-city.json` |
+
+`verifyArenaAiRuntime` and `collectGoldenCityBaseline` are each reachable from
+only one scope, so `--scope=full` does **not** substitute for them.
+
+### Measured results
+
+- `full`: real portrait runtime and CDP touch verified on both viewports,
+  `consoleErrors: []`. Includes `V4_HUD_SAFE_AREA_INSET` (see below).
+- `arena-ai`: unshortened local match reached `reason: TIME` at
+  `elapsedSeconds 180.01` with 8 competitors and 8968 observed frames
+  (≈50 fps), across the four real bot states, with the visible revive action.
+- `arena-timer`: production clock reached `reason: TIME` at
+  `elapsedSeconds 180.008`, `remainingSeconds 0`, and paid a real
+  `settlementReward {coins 15, survivalCoins 12, placementCoins 3}`,
+  `consoleErrors: []`.
+- `golden-city`: `FAIL_GOLDEN_CITY_COMPOSITION_GATE`, 4 unmet thresholds
+  against `design-contracts/golden-city-composition.json`:
+  `buildings 2 < 4`, `collectibles 19 < 20`,
+  `largeEmptyGroundRatio 0.3406 > 0.25`, and the required `hospital`
+  semantic is absent.
+
+### Two harness defects found and fixed (`2c3f595`)
+
+Both were gates that could not express what they measured. No product code
+changed.
+
+1. **`FAIL_VERTICAL_SLICE_T2_LOCK`** — `lockVisible` is
+   `CompressibleObject.isShowingLockAlert()`, and `showLockAlert()` is a pulse,
+   not a latch: 1.4 s visible then a further 3.5 s during which it refuses to
+   re-arm. The check sampled one instant 700 ms after arrival, so it only
+   passed when the pulse happened to start at that moment. The player spawns
+   inside the authored tutorial ring, so the pulse usually fires at spawn and
+   is already in cooldown on arrival, and the drive duration depends on the
+   viewport-sized joystick geometry. The gate was therefore viewport-dependent:
+   the same build passed at 375x667 and failed at 390x844 (confirmed there is
+   no viewport guard around the vertical slice). The check now observes the
+   pulse across one full period (6 s window, 200 ms polling). The gate is
+   unchanged — the prompt must still appear.
+
+2. **`--scope=arena-timer`** — the check tapped start and then waited
+   passively, which can never reach `TIME`: an idle player is eliminated, the
+   real revive page appears, and its own 5 s countdown
+   (`REVIVE_COUNTDOWN_SECONDS`) expires into `ARENA_GIVE_UP_REQUESTED` →
+   `forfeitLocal()`, settling as `FORFEIT` at ~15 s. That is correct product
+   behaviour. The bare `waitForFunction` reported only
+   `Timeout 205000ms exceeded`, which cannot distinguish "still running" from
+   "ended for another reason" from "the clock stopped". The wait now polls,
+   reports the last observed arena state, and keeps playing through the
+   visible joystick plus the visible revive action — what
+   `verifyArenaAiRuntime` already does and documents. No clock manipulation
+   and no state setters.
+
+### Golden City remains an open content gap, not a test defect
+
+`FAIL_GOLDEN_CITY_COMPOSITION_GATE` predates this work:
+
+- The assertion was introduced by `855b637 test(golden-city): enforce portrait
+  composition gate`, not by the V4 set.
+- The committed `evidence/v2/portrait/acceptance-report-golden-city.json` is
+  `status: BASELINE_COLLECTED` with `failures: []` — it only collected numbers.
+- `v2-master-audit.md` already tracks it as open P0 **D-005** with the same
+  `buildings 2` baseline, and its gate table reads
+  `Golden City | NOT ESTABLISHED | PENDING_EVIDENCE`.
+- The cell improved substantially against that baseline (trees 0→12, POI→14,
+  vehicles 1→5, competitors 7, collectibles 3→19, empty ground 0.75→0.34) but
+  is still short of the contract.
+
+Closing it needs an authoring pass on `GoldenCityCell.prefab` (more buildings,
+a hospital/clinic, less empty ground). The `hospital` mapping exists in the
+gate (`/Clinic|Hospital/` over visible names); the cell simply has no such
+building.
+
+### Operational note: Creator CLI builds hang intermittently
+
+2 of 4 builds stalled immediately after `Build with Cocos Creator 3.8.3` with
+no further output and no writes anywhere under `cocos/temp`, `cocos/library` or
+`cocos/build/web-mobile`, while 6 `CocosCreator.exe` processes stayed alive. In
+both cases the stall followed a scope that had just **failed**. Diagnose with
+the last line of `cocos/temp/builder/log/web-mobile<date>.log` plus
+`find <dir> -type f -newermt "-3 minutes"`; do **not** rely on the npm log
+mtime, which is static for the whole build because output is buffered. Clear it
+with `taskkill /F /IM CocosCreator.exe`.
+
