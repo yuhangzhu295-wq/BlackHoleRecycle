@@ -376,6 +376,7 @@ async function verifyNetworkProbe(cdp, page, canvasRect) {
   const mode = await readRuntimeSnapshot(page);
   const arena = pointForVisibleNode(canvasRect, mode, mode.ui?.modeArena, 'NETWORK_MODE_ARENA');
   await dispatchTouchTap(cdp, arena.x, arena.y);
+  await tapReadyStartButton(cdp, page, canvasRect);
   try {
     await page.waitForFunction(() => {
       const actual = window.__BHR_QA__.snapshot();
@@ -614,6 +615,33 @@ function pointForVisibleNode(canvasRect, snapshot, node, name) {
     x: canvasRect.left + canvasRect.width * node.screen.x,
     y: canvasRect.top + canvasRect.height * node.screen.y,
   };
+}
+
+/**
+ * Mode Ready flow (product rule): tapping a mode card opens that mode's
+ * Ready page (gameState MODE_READY); only the Ready page's explicit
+ * BtnStart may enter gameplay. The FIXED_WIDTH canvas is taller than the
+ * nominal 720x1280 design space on modern phones, so BtnStart's layout
+ * centre (0, -290) maps to the screen through the visible canvas height:
+ *   visibleHeight = 720 * (canvasHeight / canvasWidth)
+ *   yFraction     = 0.5 + 290 / visibleHeight
+ * Neighbouring fallback points keep the helper robust against safe-area
+ * shifts; every candidate is a real touch on the saved BtnStart region and
+ * the helper fails loudly when none of them starts the transition.
+ */
+async function tapReadyStartButton(cdp, page, canvasRect) {
+  await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'MODE_READY', undefined, { timeout: 5000 });
+  const visibleHeight = 720 * (canvasRect.height / canvasRect.width);
+  const baseFraction = 0.5 + 290 / visibleHeight;
+  const fractions = [baseFraction, baseFraction + 0.04, baseFraction - 0.04];
+  for (const fraction of fractions) {
+    await dispatchTouchTap(cdp, canvasRect.left + canvasRect.width * 0.5, canvasRect.top + canvasRect.height * fraction);
+    await page.waitForTimeout(400);
+    const state = await page.evaluate(() => window.__BHR_QA__.snapshot().gameState);
+    if (state !== 'MODE_READY') return;
+  }
+  const actual = await readRuntimeSnapshot(page);
+  throw new Error(`FAIL_READY_START_TOUCH: ${JSON.stringify({ gameState: actual.gameState, router: actual.ui?.runtimePageInput })}`);
 }
 
 /**
@@ -889,6 +917,7 @@ async function verifyArenaFlow(cdp, page, canvasRect, modeSnapshot) {
   const arenaButton = modeSnapshot.ui?.modeArena;
   const arenaPoint = pointForVisibleNode(canvasRect, modeSnapshot, arenaButton, 'MODE_ARENA');
   await dispatchTouchTap(cdp, arenaPoint.x, arenaPoint.y);
+  await tapReadyStartButton(cdp, page, canvasRect);
   try {
     await page.waitForFunction(() => {
       const snapshot = window.__BHR_QA__.snapshot();
@@ -1058,6 +1087,7 @@ async function verifyReviveFlow(cdp, page, canvasRect, homeSnapshot) {
   const mode = await readRuntimeSnapshot(page);
   const arena = pointForVisibleNode(canvasRect, mode, mode.ui?.modeArena, 'REVIVE_MODE_ARENA');
   await dispatchTouchTap(cdp, arena.x, arena.y);
+  await tapReadyStartButton(cdp, page, canvasRect);
   await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'ARENA', undefined, { timeout: 7000 });
 
   const defeated = await waitForLocalArenaDefeat(page);
@@ -1114,6 +1144,7 @@ async function verifySettlementFlow(cdp, page, canvasRect, homeSnapshot) {
   const mode = await readRuntimeSnapshot(page);
   const arena = pointForVisibleNode(canvasRect, mode, mode.ui?.modeArena, 'SETTLE_MODE_ARENA');
   await dispatchTouchTap(cdp, arena.x, arena.y);
+  await tapReadyStartButton(cdp, page, canvasRect);
   await page.waitForFunction(() => {
     const s = window.__BHR_QA__.snapshot();
     return s.gameState === 'ARENA' && s.ui?.arenaHUD?.root?.active === true;
@@ -1228,6 +1259,7 @@ async function verifySaveResume(cdp, page, canvasRect, homeSnapshot) {
   // Mode Select -> Arena
   const arenaBtn = pointForVisibleNode(canvasRect, mode, mode.ui?.modeArena, 'SR_MODE_ARENA');
   await dispatchTouchTap(cdp, arenaBtn.x, arenaBtn.y);
+  await tapReadyStartButton(cdp, page, canvasRect);
   try {
     await page.waitForFunction(() => {
       const s = window.__BHR_QA__.snapshot();
@@ -1379,6 +1411,7 @@ async function verifyUiFullFlow(cdp, page, canvasRect, homeSnapshot) {
   const modeForEndless = await readRuntimeSnapshot(page);
   const endless = pointForVisibleNode(canvasRect, modeForEndless, modeForEndless.ui?.modeEndless, 'UI_FLOW_MODE_ENDLESS');
   await dispatchTouchTap(cdp, endless.x, endless.y);
+  await tapReadyStartButton(cdp, page, canvasRect);
   await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'PLAYING', undefined, { timeout: 5000 });
   const endlessPlaying = await readRuntimeSnapshot(page);
   const endlessPause = pointForVisibleNode(canvasRect, endlessPlaying, endlessPlaying.ui?.runtimeHUD?.pauseButton, 'UI_FLOW_ENDLESS_PAUSE');
@@ -1404,6 +1437,7 @@ async function verifyUiFullFlow(cdp, page, canvasRect, homeSnapshot) {
   const modeForArena = await readRuntimeSnapshot(page);
   const arena = pointForVisibleNode(canvasRect, modeForArena, modeForArena.ui?.modeArena, 'UI_FLOW_MODE_ARENA');
   await dispatchTouchTap(cdp, arena.x, arena.y);
+  await tapReadyStartButton(cdp, page, canvasRect);
   await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'ARENA', undefined, { timeout: 7000 });
   const defeat = await waitForLocalArenaDefeat(page);
   assert(defeat.ui?.formalPages?.revive?.active && defeat.uiScreen === 'Revive',
@@ -1683,6 +1717,7 @@ async function collectGoldenCityBaseline(cdp, page, canvasRect, homeSnapshot) {
   const mode = await readRuntimeSnapshot(page);
   const arena = pointForVisibleNode(canvasRect, mode, mode.ui?.modeArena, 'GOLDEN_CITY_MODE_ARENA');
   await dispatchTouchTap(cdp, arena.x, arena.y);
+  await tapReadyStartButton(cdp, page, canvasRect);
   await page.waitForFunction(() => {
     const snapshot = window.__BHR_QA__.snapshot();
     return snapshot.gameState === 'ARENA' && snapshot.ui?.arenaHUD?.root?.active === true;
@@ -1778,6 +1813,7 @@ async function verifyArenaTimerExpiry(cdp, page, canvasRect) {
   const arenaButton = modeSnapshot.ui?.modeArena;
   const arenaPoint = pointForVisibleNode(canvasRect, modeSnapshot, arenaButton, 'ARENA_TIMER_MODE_ARENA');
   await dispatchTouchTap(cdp, arenaPoint.x, arenaPoint.y);
+  await tapReadyStartButton(cdp, page, canvasRect);
   await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'ARENA', undefined, { timeout: 7000 });
   const started = await readRuntimeSnapshot(page);
   assert(started.arena?.running && started.arena?.durationSeconds === 180,
@@ -1814,6 +1850,7 @@ async function verifyArenaAiRuntime(cdp, page, canvasRect) {
   const modeSnapshot = await readRuntimeSnapshot(page);
   const arenaPoint = pointForVisibleNode(canvasRect, modeSnapshot, modeSnapshot.ui?.modeArena, 'ARENA_AI_MODE_ARENA');
   await dispatchTouchTap(cdp, arenaPoint.x, arenaPoint.y);
+  await tapReadyStartButton(cdp, page, canvasRect);
   await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'ARENA', undefined, { timeout: 7000 });
   const started = await readRuntimeSnapshot(page);
   assert(started.arena?.running && started.arena?.durationSeconds === 180,
@@ -2924,6 +2961,7 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
         const mode = await readRuntimeSnapshot(page);
         const endless = pointForVisibleNode(canvasRect, mode, mode.ui?.modeEndless, 'REGION_MODE_ENDLESS');
         await dispatchTouchTap(cdp, endless.x, endless.y);
+        await tapReadyStartButton(cdp, page, canvasRect);
         await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'PLAYING', undefined, { timeout: 5000 });
         report.regions = await verifyProgressionRegions(cdp, page, canvasRect);
         assert(runtimeErrors.length === 0, `Runtime console errors after six-region touch traversal: ${runtimeErrors.join(' | ')}`);
@@ -2937,6 +2975,7 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
         const mode = await readRuntimeSnapshot(page);
         const endless = pointForVisibleNode(canvasRect, mode, mode.ui?.modeEndless, 'FULL_PROGRESSION_MODE_ENDLESS');
         await dispatchTouchTap(cdp, endless.x, endless.y);
+        await tapReadyStartButton(cdp, page, canvasRect);
         await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'PLAYING', undefined, { timeout: 5000 });
         const gameplay = await readRuntimeSnapshot(page);
         const joystickCenter = pointForVisibleNode(canvasRect, gameplay, gameplay.ui?.runtimeHUD?.joystick, 'FULL_PROGRESSION_JOYSTICK');
@@ -2981,6 +3020,7 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
         const mode = await readRuntimeSnapshot(page);
         const endless = pointForVisibleNode(canvasRect, mode, mode.ui?.modeEndless, 'CELL_LIFECYCLE_MODE_ENDLESS');
         await dispatchTouchTap(cdp, endless.x, endless.y);
+        await tapReadyStartButton(cdp, page, canvasRect);
         await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'PLAYING', undefined, { timeout: 5000 });
         const gameplay = await readRuntimeSnapshot(page);
         const joystickCenter = pointForVisibleNode(canvasRect, gameplay, gameplay.ui?.runtimeHUD?.joystick, 'CELL_LIFECYCLE_JOYSTICK');
@@ -3007,6 +3047,7 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
         const mode = await readRuntimeSnapshot(page);
         const endless = pointForVisibleNode(canvasRect, mode, mode.ui?.modeEndless, 'SKIN_UNLOCK_MODE_ENDLESS');
         await dispatchTouchTap(cdp, endless.x, endless.y);
+        await tapReadyStartButton(cdp, page, canvasRect);
         try {
           await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'PLAYING', undefined, { timeout: 5000 });
         } catch (error) {
@@ -3063,6 +3104,7 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
       const endlessModeButton = modeSnapshot.ui?.modeEndless;
       const endless = pointForVisibleNode(canvasRect, modeSnapshot, endlessModeButton, 'MODE_ENDLESS');
       await dispatchTouchTap(cdp, endless.x, endless.y);
+      await tapReadyStartButton(cdp, page, canvasRect);
       try {
         await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'PLAYING', undefined, { timeout: 5000 });
       } catch (error) {

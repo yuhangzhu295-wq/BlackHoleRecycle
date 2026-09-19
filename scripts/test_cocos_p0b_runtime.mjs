@@ -78,6 +78,32 @@ function pointForVisibleNode(canvasRect, snapshot, node, name) {
   };
 }
 
+/**
+ * Mode Ready flow (product rule): tapping a mode card opens that mode's
+ * Ready page (gameState MODE_READY); only the Ready page's explicit
+ * BtnStart may enter gameplay. The FIXED_WIDTH canvas is taller than the
+ * nominal 720x1280 design space on modern phones, so BtnStart's layout
+ * centre (0, -290) maps to the screen through the visible canvas height:
+ *   visibleHeight = 720 * (canvasHeight / canvasWidth)
+ *   yFraction     = 0.5 + 290 / visibleHeight
+ * Neighbouring fallback points keep the helper robust against safe-area
+ * shifts; the helper fails loudly when none of them starts the transition.
+ */
+async function tapReadyStartButton(cdp, page, canvasRect) {
+  await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'MODE_READY', undefined, { timeout: 5000 });
+  const visibleHeight = 720 * (canvasRect.height / canvasRect.width);
+  const baseFraction = 0.5 + 290 / visibleHeight;
+  const fractions = [baseFraction, baseFraction + 0.04, baseFraction - 0.04];
+  for (const fraction of fractions) {
+    await dispatchTouchTap(cdp, canvasRect.left + canvasRect.width * 0.5, canvasRect.top + canvasRect.height * fraction);
+    await page.waitForTimeout(400);
+    const state = await page.evaluate(() => window.__BHR_QA__.snapshot().gameState);
+    if (state !== 'MODE_READY') return;
+  }
+  const actual = await page.evaluate(() => window.__BHR_QA__.snapshot());
+  throw new Error('FAIL_READY_START_TOUCH: ' + JSON.stringify({ gameState: actual.gameState, router: actual.ui?.runtimePageInput }));
+}
+
 async function run() {
   const server = await createStaticServer(buildDirectory);
   const port = server.address().port;
@@ -119,6 +145,7 @@ async function run() {
     const mode = await page.evaluate(() => window.__BHR_QA__.snapshot());
     const endlessPoint = pointForVisibleNode(canvasRect, mode, mode.ui?.modeEndless, 'MODE_ENDLESS');
     await dispatchTouchTap(cdp, endlessPoint.x, endlessPoint.y);
+    await tapReadyStartButton(cdp, page, canvasRect);
     await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'PLAYING', undefined, { timeout: 5000 });
 
     // Step 1: Initial Opening source and authored counts
