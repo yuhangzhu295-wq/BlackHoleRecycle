@@ -53,7 +53,7 @@ interface GoldenCityEntry {
 
 export interface GoldenCityCompositionDiagnostics {
   readonly status: 'MEASURED' | 'UNAVAILABLE';
-  readonly targetCell: Readonly<{ key: '0:0'; nodeName: string }>;
+  readonly targetCell: Readonly<{ key: string; nodeName: string }>;
   readonly viewport: Readonly<{ x: number; y: number; width: number; height: number }>;
   readonly camera: Readonly<{
     preset: 'PortraitGameplayCameraPreset';
@@ -98,11 +98,22 @@ export class WorldCompositionProbe {
   ): GoldenCityCompositionDiagnostics | null {
     if (!world) return null;
     const viewport = view.getViewportRect();
-    const targetCell = world.getCellRuntimeContent({ x: 0, z: 0 });
+    // Measure the cell the player is actually standing in, not a hardcoded
+    // authored coordinate. The golden-city gate still runs at the opening
+    // authored cell (currentCell 0:0), so its numbers are unchanged; this also
+    // lets the probe report composition for any streamed cell (e.g. 0:-1).
+    const targetCellCoords = {
+      x: Math.round(world.currentCell.x),
+      z: Math.round(world.currentCell.z),
+    };
+    const targetCell = world.getCellRuntimeContent(targetCellCoords);
     const emptyCounts = this.emptyCounts();
     const unavailable = (): GoldenCityCompositionDiagnostics => ({
       status: 'UNAVAILABLE',
-      targetCell: { key: '0:0', nodeName: targetCell?.node.name || 'WorldCell_0_0_UNAVAILABLE' },
+      targetCell: {
+        key: `${targetCellCoords.x}:${targetCellCoords.z}`,
+        nodeName: targetCell?.node.name || `WorldCell_${targetCellCoords.x}_${targetCellCoords.z}_UNAVAILABLE`,
+      },
       viewport: { x: viewport.x, y: viewport.y, width: viewport.width, height: viewport.height },
       camera: this.serializeCamera(camera),
       entries: [],
@@ -394,10 +405,10 @@ export class WorldCompositionProbe {
     if (name === 'Ground' || name === 'Roads' || name === 'Buildings' || name === 'Park' || name === 'Props'
       || name === 'TrafficRoutes' || name === 'CollectibleSpawnPoints' || name === 'CompetitorSpawnPoints'
       || name === 'ClusterAnchors' || name.startsWith('VehicleAnchor_')) return null;
-    if (name === 'DistrictGround' || name === 'GroundTile') {
+    if (name === 'DistrictGround' || name === 'GroundTile' || name === 'tile-low') {
       return {
         category: 'GROUND',
-        rule: 'Opening-cell actual DistrictGround terrain tile',
+        rule: 'Opening-cell actual terrain tile (DistrictGround / GroundTile / tile-low)',
         logicalUnits: 1,
         reason: 'One actual streamed terrain tile, used only for the transparent empty-ground estimate.',
       };
