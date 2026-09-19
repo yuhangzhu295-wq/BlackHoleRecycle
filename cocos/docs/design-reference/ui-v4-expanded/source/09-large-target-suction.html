@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="_shared.css">
+<title>09 Large Target Suction</title>
+<style>
+  /* Gameplay Mechanic Reference.
+     ONE real scene, ONE camera. The same car is shown at successive beats of
+     the existing IDLE -> ATTRACTED -> SUCKING -> ABSORBED chain, along one
+     continuous pull trajectory. This is not a montage of independent pages.
+     The numbered markers carry the beat number; the chips carry the phase
+     name. At the ABSORBED beat the car is genuinely gone. */
+
+  .sky { position:absolute; left:0; top:0; width:720px; height:320px;
+    background: linear-gradient(180deg,#9BDCF7 0%,#C6EBFA 60%,#DCEFD2 100%); }
+  .ground { position:absolute; left:0; top:320px; width:720px; height:960px;
+    background:
+      repeating-linear-gradient(0deg, rgba(0,0,0,.032) 0 2px, transparent 2px 54px),
+      repeating-linear-gradient(90deg, rgba(0,0,0,.032) 0 2px, transparent 2px 54px),
+      linear-gradient(180deg,#EFE9DA 0%,#E9E2D0 48%,#DED6C2 100%); }
+
+  .backrow { position:absolute; left:0; top:150px; width:720px; height:170px; }
+  .bld { position:absolute; bottom:0; border:6px solid var(--ink); border-radius:10px; }
+  .bld .win { position:absolute; inset:12px; border-radius:6px; opacity:.5;
+    background: repeating-linear-gradient(0deg,#FFF 0 14px,transparent 14px 30px),
+                repeating-linear-gradient(90deg,#FFF 0 14px,transparent 14px 30px); }
+
+  .road-v { position:absolute; left:520px; top:320px; width:120px; height:340px;
+    background:#6E7480; border-left:6px solid #575C66; border-right:6px solid #575C66; }
+  .road-v .dash { position:absolute; left:55px; top:0; width:10px; height:340px;
+    background: repeating-linear-gradient(180deg,#F2E9C8 0 46px,transparent 46px 92px); }
+  .road-h { position:absolute; left:0; top:660px; width:720px; height:104px;
+    background:#6E7480; border-top:6px solid #575C66; border-bottom:6px solid #575C66; }
+  .road-h .dash { position:absolute; top:48px; left:0; width:720px; height:10px;
+    background: repeating-linear-gradient(90deg,#F2E9C8 0 46px,transparent 46px 92px); }
+
+  /* the outer pull boundary: crossing it is what starts SLOW. Kept to a
+     readable radius and opacity so it is never the largest graphic on screen.
+     It uses the inherited cyan info colour, not --alert-crimson: crimson marks
+     lock-warning context (see reference 10's State A), and a pull-range boundary
+     is a different meaning. The two thresholds separate by weight + alpha, not
+     by a third hue: the outer boundary is the thinner, crisper primary threshold
+     (5px, .72) and the inner is the softer secondary (6px, .55). */
+  .bh { position:absolute; left:120px; top:920px; width:186px; height:186px; }
+  .bh .pullring { position:absolute; inset:-120px; border-radius:50%;
+    border:5px dashed rgba(0,192,255,.72); }
+  .bh .inner { position:absolute; inset:-56px; border-radius:50%;
+    border:6px dashed rgba(46,123,255,.55); }
+  .bh .disc { position:absolute; inset:0; border-radius:50%; border:7px solid var(--ink);
+    background: radial-gradient(circle at 50% 50%,#04060D 0%,#04060D 42%,#16255F 58%,#2E7BFF 74%,#5FE9FF 88%,rgba(95,233,255,0) 100%); }
+  .bh .core { position:absolute; left:50%; top:50%; width:58px; height:58px;
+    margin:-29px 0 0 -29px; border-radius:50%;
+    background: radial-gradient(circle,#FFF 0%,#BFF3FF 46%,rgba(191,243,255,0) 76%); }
+
+  /* one car beat: the pose (shadow + car) transforms, the marker does not,
+     so every beat number stays legible at every scale. */
+  .p { position:absolute; width:76px; height:140px; }
+  .p .pose { position:absolute; left:0; top:0; width:76px; height:140px;
+    transform-origin:50% 50%; }
+  .p .sh { position:absolute; left:-4px; top:128px; width:84px; height:20px;
+    border-radius:50%; background: rgba(16,24,39,.20); filter: blur(2px); }
+
+  .marker { position:absolute; width:44px; height:44px;
+    border-radius:50%; background:#FFD000; border:5px solid var(--ink);
+    display:flex; align-items:center; justify-content:center;
+    font-size:24px; color:#4A2E00; }
+
+  .speedline { position:absolute; width:6px; border-radius:3px; background:#2E90FA; opacity:.8; }
+
+  .chip.phase { background: rgba(15,23,42,.94); border-color:#00C0FF; color:#CFF3FF; }
+  /* Master 01 ships flat dark HUD pills with cream ink; this reference inherits
+     the shared opaque `--panel-pill` token from _shared.css rather than
+     overriding it, so no second HUD language appears. Pause uses the shared gold
+     chrome from _shared.css, matching master 01. */
+
+  .ghost { position:absolute; left:120px; top:920px; width:186px; height:186px;
+    border-radius:50%; border:6px dashed rgba(16,24,39,.42); }
+
+  /* The allow/forbid treatment lists for this mechanic live in design-lock.md
+     §09. They must never be painted into the reference itself. */
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="sky"></div>
+  <div class="ground"></div>
+
+  <div class="backrow">
+    <div class="bld" style="left:0px;width:132px;height:150px;background:#7FB4E8"><div class="win"></div></div>
+    <div class="bld" style="left:142px;width:96px;height:116px;background:#F0B27A"><div class="win"></div></div>
+    <div class="bld" style="left:250px;width:118px;height:160px;background:#9AD6A0"><div class="win"></div></div>
+    <div class="bld" style="left:588px;width:132px;height:152px;background:#F2A6A6"><div class="win"></div></div>
+  </div>
+
+  <div class="tree" style="left:614px;top:470px"><div class="canopy"></div><div class="trunk"></div></div>
+  <div class="tree" style="left:628px;top:812px"><div class="canopy"></div><div class="trunk"></div></div>
+  <div class="tree" style="left:600px;top:900px"><div class="canopy"></div><div class="trunk"></div></div>
+
+  <div class="road-v"><div class="dash"></div></div>
+  <div class="road-h"><div class="dash"></div></div>
+
+  <!-- one continuous pull trajectory, drawn as a dashed guide -->
+  <svg style="position:absolute;left:0;top:0;width:720px;height:1280px" viewBox="0 0 720 1280">
+    <path d="M580 270 C 584 400, 588 580, 548 728
+             C 508 866, 424 1010, 300 1082"
+          fill="none" stroke="#2E90FA" stroke-width="9"
+          stroke-dasharray="20 16" stroke-linecap="round" opacity="0.9"/>
+  </svg>
+
+  <!-- 1 DRIVE : a long three-streak motion trail behind the car -->
+  <div class="speedline" style="left:552px;top:124px;height:60px"></div>
+  <div class="speedline" style="left:574px;top:136px;height:46px"></div>
+  <div class="speedline" style="left:596px;top:148px;height:32px"></div>
+  <div class="p" style="left:542px;top:200px">
+    <div class="pose">
+      <div class="sh"></div>
+      <div class="obj car"><div class="glass"></div><div class="glass2"></div></div>
+    </div>
+  </div>
+
+  <!-- 2 ATTRACT : crossing the outer pull boundary. The same car, but the trail
+       is now a single short dash, the body is smaller and canted, and the gap
+       to the next beat collapses — the car has visibly slowed. -->
+  <div class="speedline" style="left:566px;top:344px;height:20px"></div>
+  <div class="p" style="left:542px;top:382px">
+    <div class="pose" style="transform:rotate(-6deg) scale(.90)">
+      <div class="sh"></div>
+      <div class="obj car" style="background:linear-gradient(180deg,#F58A8A 0%,#C62828 100%)">
+        <div class="glass"></div><div class="glass2"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3 SLOW -->
+  <div class="p" style="left:536px;top:534px">
+    <div class="pose" style="transform:rotate(-16deg) scale(.81)">
+      <div class="sh"></div>
+      <div class="obj car" style="background:linear-gradient(180deg,#F58A8A 0%,#C62828 100%)">
+        <div class="glass"></div><div class="glass2"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4 DEFLECT -->
+  <div class="p" style="left:510px;top:658px">
+    <div class="pose" style="transform:rotate(-30deg) scale(.72)">
+      <div class="sh"></div>
+      <div class="obj car" style="background:linear-gradient(180deg,#F58A8A 0%,#C62828 100%)">
+        <div class="glass"></div><div class="glass2"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5 DEPART -->
+  <div class="p" style="left:462px;top:760px">
+    <div class="pose" style="transform:rotate(-48deg) scale(.62)">
+      <div class="sh"></div>
+      <div class="obj car" style="background:linear-gradient(180deg,#F58A8A 0%,#C62828 100%)">
+        <div class="glass"></div><div class="glass2"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6 TUMBLE -->
+  <div class="p" style="left:408px;top:846px">
+    <div class="pose" style="transform:rotate(-70deg) scale(.52)">
+      <div class="sh"></div>
+      <div class="obj car" style="background:linear-gradient(180deg,#F58A8A 0%,#C62828 100%)">
+        <div class="glass"></div><div class="glass2"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7 APPROACH -->
+  <div class="p" style="left:354px;top:920px">
+    <div class="pose" style="transform:rotate(-96deg) scale(.42)">
+      <div class="sh"></div>
+      <div class="obj car" style="background:linear-gradient(180deg,#F58A8A 0%,#C62828 100%)">
+        <div class="glass"></div><div class="glass2"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8 SHRINK -->
+  <div class="p" style="left:306px;top:976px">
+    <div class="pose" style="transform:rotate(-126deg) scale(.33)">
+      <div class="sh"></div>
+      <div class="obj car" style="background:linear-gradient(180deg,#F58A8A 0%,#C62828 100%)">
+        <div class="glass"></div><div class="glass2"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 9 SINK : drawn before the hole, so the rim swallows most of the body -->
+  <div class="p" style="left:262px;top:1012px">
+    <div class="pose" style="transform:rotate(-152deg) scale(.25)">
+      <div class="sh"></div>
+      <div class="obj car" style="background:linear-gradient(180deg,#F7ABAB 0%,#A31515 100%)">
+        <div class="glass"></div><div class="glass2"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 10 ABSORBED : no car is drawn at this beat. Nothing remains. -->
+
+  <div class="ghost"></div>
+
+  <div class="bh">
+    <div class="pullring"></div>
+    <div class="inner"></div>
+    <div class="disc"></div>
+    <div class="core"></div>
+  </div>
+
+  <!-- beat numbers, drawn above the hole so every one stays legible -->
+  <div class="marker" style="left:496px;top:198px">1</div>
+  <div class="marker" style="left:496px;top:380px">2</div>
+  <div class="marker" style="left:490px;top:532px">3</div>
+  <div class="marker" style="left:464px;top:656px">4</div>
+  <div class="marker" style="left:416px;top:758px">5</div>
+  <div class="marker" style="left:362px;top:844px">6</div>
+  <div class="marker" style="left:308px;top:918px">7</div>
+  <div class="marker" style="left:260px;top:974px">8</div>
+  <div class="marker" style="left:240px;top:1044px">9</div>
+
+  <!-- phase chain : APPROACH / SHRINK / SINK each carry their own beat -->
+  <div class="chip phase" style="left:24px;top:176px">1 · DRIVE 正常行驶</div>
+  <div class="chip phase" style="left:24px;top:254px">2 · 进入吸力范围 · 减速</div>
+  <div class="chip phase" style="left:24px;top:332px">3 · 方向偏移 · 脱离道路</div>
+  <div class="chip phase" style="left:24px;top:410px">4 · TUMBLE 旋转拉扯</div>
+  <div class="chip phase" style="left:24px;top:488px">5 · APPROACH 靠近核心</div>
+  <div class="chip phase" style="left:24px;top:566px">6 · SHRINK 体积缩小</div>
+  <div class="chip phase" style="left:24px;top:644px">7 · SINK 沉入地面</div>
+  <div class="chip phase" style="left:24px;top:722px">8 · ABSORBED 已吞入</div>
+
+  <div class="hud-row">
+    <div class="hud-pill"><span class="coin-dot"></span><span>6,480</span></div>
+    <div class="hud-pill"><span class="lbl">LV.</span><span>5</span><span class="lbl">质量</span><span>28.6t</span></div>
+    <div class="hud-pill"><span class="lbl">区域</span><span>主干道</span></div>
+    <div class="btn-pause">❚❚</div>
+  </div>
+
+  <div class="joystick" style="right:32px;bottom:40px;width:170px;height:170px">
+    <div class="stick" style="width:78px;height:78px;margin:-39px 0 0 -39px"></div>
+  </div>
+</div>
+</body>
+</html>

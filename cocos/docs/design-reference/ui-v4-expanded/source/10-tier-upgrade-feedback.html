@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="_shared.css">
+<title>10 Tier Lock / Upgrade Feedback</title>
+<style>
+  /* Gameplay Mechanic Reference. ONE real scene showing both states of the
+     level feedback: A) insufficient level, B) the short upgrade banner. */
+
+  .sky { position:absolute; left:0; top:0; width:720px; height:320px;
+    background: linear-gradient(180deg,#9BDCF7 0%,#C6EBFA 60%,#DCEFD2 100%); }
+  .ground { position:absolute; left:0; top:320px; width:720px; height:960px;
+    background:
+      repeating-linear-gradient(0deg, rgba(0,0,0,.032) 0 2px, transparent 2px 54px),
+      repeating-linear-gradient(90deg, rgba(0,0,0,.032) 0 2px, transparent 2px 54px),
+      linear-gradient(180deg,#EFE9DA 0%,#E9E2D0 48%,#DED6C2 100%); }
+
+  .backrow { position:absolute; left:0; top:150px; width:720px; height:170px; }
+  .bld { position:absolute; bottom:0; border:6px solid var(--ink); border-radius:10px; }
+  .bld .win { position:absolute; inset:12px; border-radius:6px; opacity:.5;
+    background: repeating-linear-gradient(0deg,#FFF 0 14px,transparent 14px 30px),
+                repeating-linear-gradient(90deg,#FFF 0 14px,transparent 14px 30px); }
+
+  .road-h { position:absolute; left:0; top:700px; width:720px; height:104px;
+    background:#6E7480; border-top:6px solid #575C66; border-bottom:6px solid #575C66; }
+  .road-h .dash { position:absolute; top:48px; left:0; width:720px; height:10px;
+    background: repeating-linear-gradient(90deg,#F2E9C8 0 46px,transparent 46px 92px); }
+
+  .bh { position:absolute; left:96px; top:930px; width:172px; height:172px; }
+  .bh .pull { position:absolute; inset:-40px; border-radius:50%;
+    border:6px dashed rgba(46,123,255,.42); }
+  .bh .disc { position:absolute; inset:0; border-radius:50%; border:7px solid var(--ink);
+    background: radial-gradient(circle at 50% 50%,#04060D 0%,#04060D 42%,#16255F 58%,#2E7BFF 74%,#5FE9FF 88%,rgba(95,233,255,0) 100%); }
+  .bh .core { position:absolute; left:50%; top:50%; width:54px; height:54px;
+    margin:-27px 0 0 -27px; border-radius:50%;
+    background: radial-gradient(circle,#FFF 0%,#BFF3FF 46%,rgba(191,243,255,0) 76%); }
+
+  .sh { position:absolute; border-radius:50%; background: rgba(16,24,39,.20); filter: blur(2px); }
+
+  /* ---- STATE A : insufficient level ---- */
+  .creep { position:absolute; left:520px; top:820px; width:330px; height:330px;
+    margin-left:-165px; margin-top:-165px; border-radius:50%;
+    border:7px dashed rgba(239,68,68,.62); }
+  .standoff { position:absolute; left:520px; top:820px; width:250px; height:250px;
+    margin-left:-125px; margin-top:-125px; border-radius:50%;
+    border:6px dotted rgba(255,255,255,.85); }
+  /* Master 01 ships flat dark HUD pills with cream ink; this reference inherits
+     the shared opaque `--panel-pill` token from _shared.css rather than
+     overriding it, so no second HUD language appears. */
+
+  .lockmark { position:absolute; left:520px; top:676px; transform:translateX(-50%);
+    display:flex; align-items:center; gap:10px; white-space:nowrap;
+    padding:8px 20px; border-radius:22px;
+    background: rgba(90,16,24,.94); border:6px solid var(--crimson);
+    font-size:36px; color:#FFE1E1;
+    -webkit-text-stroke: var(--stroke-w) var(--ink); paint-order: stroke fill; }
+  .lockcar { position:absolute; left:482px; top:760px; }
+
+  /* ---- STATE B : the short upgrade banner ---- */
+  .upgrade {
+    position:absolute; left:80px; top:238px; width:560px;
+    border-radius:var(--radius);
+    background: linear-gradient(180deg, rgba(124,58,237,.95) 0%, rgba(91,33,182,.95) 100%);
+    border:6px solid var(--ink);
+    box-shadow: 0 12px 0 rgba(11,18,32,.42);
+    padding:18px 24px 22px; text-align:center;
+  }
+  /* One gold accent only: the 升级！ lockup. */
+  .upgrade .h { font-size:54px; line-height:1.05; color:#FFD000; }
+  .upgrade .l1 { margin-top:10px; font-size:38px; line-height:1.2; }
+  .upgrade .l2 { margin-top:8px; font-size:29px; color:#E3ECF7; }
+
+
+  /* The allow/forbid treatment lists for this mechanic live in design-lock.md
+     §10. They must never be painted into the reference itself. */
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="sky"></div>
+  <div class="ground"></div>
+
+  <div class="backrow">
+    <div class="bld" style="left:0px;width:140px;height:150px;background:#7FB4E8"><div class="win"></div></div>
+    <div class="bld" style="left:152px;width:104px;height:120px;background:#F0B27A"><div class="win"></div></div>
+    <div class="bld" style="left:600px;width:120px;height:152px;background:#9AD6A0"><div class="win"></div></div>
+  </div>
+
+  <div class="tree" style="left:34px;top:430px"><div class="canopy"></div><div class="trunk"></div></div>
+  <div class="tree" style="left:616px;top:900px"><div class="canopy"></div><div class="trunk"></div></div>
+
+  <div class="road-h"><div class="dash"></div></div>
+
+  <!-- ===== STATE B : upgrade banner, same real scene ===== -->
+  <div class="upgrade">
+    <div class="h outlined">升级！</div>
+    <div class="l1 outlined-sm">LV.5 奇点黑洞</div>
+    <div class="l2 outlined-sm">解锁更大型目标</div>
+  </div>
+
+  <!-- ===== STATE A : locked large target ===== -->
+  <div class="creep"></div>
+  <div class="standoff"></div>
+
+  <div class="sh" style="left:486px;top:896px;width:86px;height:22px"></div>
+  <div class="lockcar">
+    <div class="obj car"><div class="glass"></div><div class="glass2"></div></div>
+  </div>
+  <div class="lockmark"><span>🔒</span><span>需要 LV.5</span></div>
+
+  <!-- an ordinary dynamic vehicle further along the road, unaffected -->
+  <div class="sh" style="left:146px;top:890px;width:80px;height:20px"></div>
+  <div class="obj car" style="position:absolute;left:148px;top:754px;transform:scale(.92)">
+    <div class="glass"></div><div class="glass2"></div>
+  </div>
+
+  <div class="bh">
+    <div class="pull"></div>
+    <div class="disc"></div>
+    <div class="core"></div>
+  </div>
+
+  <div class="hud-row">
+    <div class="hud-pill"><span class="coin-dot"></span><span>3,960</span></div>
+    <div class="hud-pill"><span class="lbl">LV.</span><span>4</span><span class="lbl">质量</span><span>9,180 kg</span></div>
+    <div class="hud-pill"><span class="lbl">区域</span><span>主干道</span></div>
+    <div class="btn-pause">❚❚</div>
+  </div>
+
+  <div class="joystick" style="right:36px;bottom:44px;width:170px;height:170px">
+    <div class="stick" style="width:78px;height:78px;margin:-39px 0 0 -39px"></div>
+  </div>
+</div>
+</body>
+</html>

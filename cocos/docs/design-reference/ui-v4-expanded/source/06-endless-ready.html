@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="_shared.css">
+<title>06 Endless Ready</title>
+<style>
+  .bg { position:absolute; inset:0;
+    background: linear-gradient(180deg,#2E90FA 0%,#00C0FF 46%,#0E7490 100%); }
+  .bg .grid { position:absolute; inset:0;
+    background:
+      repeating-linear-gradient(0deg, rgba(255,255,255,.09) 0 2px, transparent 2px 64px),
+      repeating-linear-gradient(90deg, rgba(255,255,255,.09) 0 2px, transparent 2px 64px); }
+  .back { position:absolute; left:36px; top:48px; }
+
+  .preview { position:absolute; left:80px; top:200px; width:560px; height:340px;
+    border-radius:var(--radius); overflow:hidden; border:6px solid var(--ink);
+    background:#CFE3F2; box-shadow:0 12px 0 rgba(11,18,32,.35); }
+  .preview .g { position:absolute; inset:0;
+    background: linear-gradient(180deg,#B9DDF2 0%,#CDE8F5 38%,#E6DFCC 38%,#D8D0BB 100%); }
+  .preview .rd1 { position:absolute; left:-20px; top:186px; width:600px; height:52px;
+    background:#6E7480; border-top:5px solid #575C66; border-bottom:5px solid #575C66; }
+  .preview .rd2 { position:absolute; left:250px; top:150px; width:56px; height:210px;
+    background:#6E7480; border-left:5px solid #575C66; border-right:5px solid #575C66; }
+  .preview .b1 { position:absolute; left:40px; top:120px; width:110px; height:90px;
+    background:#7FB4E8; border:5px solid var(--ink); border-radius:8px; }
+  .preview .b2 { position:absolute; left:400px; top:104px; width:120px; height:106px;
+    background:#F0B27A; border:5px solid var(--ink); border-radius:8px; }
+  .preview .b3 { position:absolute; left:170px; top:246px; width:96px; height:76px;
+    background:#9AD6A0; border:5px solid var(--ink); border-radius:8px; }
+  .preview .tr { position:absolute; width:52px; height:52px; border-radius:50%;
+    background: radial-gradient(circle at 34% 30%,#8FE07A 0%,#46B34A 62%,#2E8A38 100%);
+    border:5px solid var(--ink); }
+  .preview .bh { position:absolute; left:250px; top:236px; width:80px; height:80px;
+    margin-left:-40px; border-radius:50%; border:6px solid var(--ink);
+    background: radial-gradient(circle at 50% 50%,#04060D 0%,#04060D 44%,#16255F 58%,#2E7BFF 74%,#5FE9FF 88%,rgba(95,233,255,0) 100%); }
+
+  /* caption sits under the card, never over the map artwork */
+  .preview-cap { position:absolute; left:80px; top:552px; width:560px;
+    text-align:center; font-size:26px; color:#D6E9FA; }
+
+  .stats { position:absolute; left:80px; top:616px; width:560px; display:flex; gap:24px; }
+  .stat { flex:1; height:170px; border-radius:var(--radius);
+    background: rgba(15,23,42,.6); border:5px solid rgba(255,255,255,.24);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; }
+  .stat .cap { font-size:24px; opacity:.86; }
+  .stat .val { font-size:46px; }
+  .stat .val.sm { font-size:34px; }
+
+  .intro { position:absolute; left:60px; top:820px; width:600px; text-align:center; }
+  .intro .l1 { font-size:36px; line-height:1.5; }
+  /* Second copy line must not compete with the single gold CTA below it. */
+  .intro .l2 { font-size:36px; line-height:1.5; color:#E3ECF7; }
+
+  .cta { position:absolute; left:120px; top:1020px; width:480px; height:126px; font-size:52px; }
+  .cta .tri { margin-left:16px; font-size:44px; }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="bg"><div class="grid"></div></div>
+
+  <div class="btn-back back">←</div>
+  <div class="title outlined">无尽探索</div>
+
+  <div class="preview">
+    <div class="g"></div>
+    <div class="rd1"></div>
+    <div class="rd2"></div>
+    <div class="b1"></div>
+    <div class="b2"></div>
+    <div class="b3"></div>
+    <div class="tr" style="left:64px;top:236px"></div>
+    <div class="tr" style="left:150px;top:150px"></div>
+    <div class="tr" style="right:56px;top:250px"></div>
+    <div class="tr" style="right:150px;top:120px"></div>
+    <div class="bh"></div>
+  </div>
+  <div class="preview-cap outlined-sm">地图预览</div>
+
+  <div class="stats">
+    <div class="stat"><div class="cap outlined-sm">历史最高纪录</div><div class="val">38,420</div></div>
+    <div class="stat"><div class="cap outlined-sm">当前机器</div><div class="val sm">LV.3 重力黑洞</div></div>
+  </div>
+
+  <div class="intro">
+    <div class="l1 outlined-sm">不断吞噬 · 不断成长</div>
+    <div class="l2 outlined-sm">解锁更大目标</div>
+  </div>
+
+  <div class="btn btn-primary cta"><span>开始探索</span><span class="tri">▶</span></div>
+</div>
+</body>
+</html>

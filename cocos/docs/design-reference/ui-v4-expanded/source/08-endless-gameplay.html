@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="_shared.css">
+<title>08 Endless Gameplay</title>
+<style>
+  /* Reference 08 is a single real gameplay frame, not a diagram of one.
+     Every element below is something a player would actually see. Spec
+     commentary, tier labels and the space-budget legend live in
+     design-lock.md §08 and gameplay-composition-contract.md, never in the PNG.
+     `data-bucket` is inert markup used only by the renderer's measurement pass. */
+
+  /* ---- top-down low-poly city ground (no sky band: matches master 01) ---- */
+  .grass { position:absolute; inset:0;
+    background:
+      repeating-linear-gradient(90deg, rgba(0,0,0,.045) 0 2px, transparent 2px 72px),
+      linear-gradient(180deg,#9BDC78 0%,#8ED36B 46%,#7FC65A 100%); }
+
+  .road-h { position:absolute; left:0; top:596px; width:720px; height:104px;
+    background:#6E7480; border-top:6px solid #575C66; border-bottom:6px solid #575C66; }
+  .road-v { position:absolute; left:268px; top:0; width:104px; height:1280px;
+    background:#6E7480; border-left:6px solid #575C66; border-right:6px solid #575C66; }
+  .road-h .dash { position:absolute; top:48px; left:0; width:720px; height:10px;
+    background: repeating-linear-gradient(90deg,#F2E9C8 0 46px,transparent 46px 92px); }
+  .road-v .dash { position:absolute; left:47px; top:0; width:10px; height:1280px;
+    background: repeating-linear-gradient(180deg,#F2E9C8 0 46px,transparent 46px 92px); }
+  .zebra { position:absolute; background:#F2E9C8; }
+  .pave { position:absolute; background:#CFE7B4; border:5px solid rgba(16,24,39,.18); border-radius:14px; }
+
+  /* ---- low-poly 2.5D block: roof face on top of a wall face ---- */
+  .b3d { position:absolute; }
+  .b3d .wall { position:absolute; left:0; bottom:0; width:100%;
+    border:6px solid var(--ink); border-radius:0 0 10px 10px; }
+  .b3d .roof { position:absolute; left:-9px; top:0; width:calc(100% + 18px); height:44px;
+    border:6px solid var(--ink); border-radius:12px; transform:skewX(-14deg); }
+  .b3d .win { position:absolute; border-radius:6px; background:#BFE6FF;
+    border:5px solid var(--ink); opacity:.92; }
+  .b3d .door { position:absolute; bottom:0; border-radius:8px 8px 0 0;
+    background:#5B4636; border:5px solid var(--ink); }
+
+  .sh { position:absolute; border-radius:50%; background: rgba(16,24,39,.22); filter: blur(2px); }
+
+  /* ---- black hole (player) ---- */
+  .bh { position:absolute; left:238px; top:806px; width:168px; height:168px; }
+  .bh .pull { position:absolute; inset:-52px; border-radius:50%;
+    border:7px dashed rgba(46,123,255,.42); }
+  .bh .disc { position:absolute; inset:0; border-radius:50%; border:7px solid var(--ink);
+    background: radial-gradient(circle at 50% 50%,#04060D 0%,#04060D 42%,#16255F 58%,#2E7BFF 74%,#5FE9FF 88%,rgba(95,233,255,0) 100%); }
+  .bh .core { position:absolute; left:50%; top:50%; width:52px; height:52px;
+    margin:-26px 0 0 -26px; border-radius:50%;
+    background: radial-gradient(circle,#FFF 0%,#BFF3FF 46%,rgba(191,243,255,0) 76%); }
+
+  /* Master 01 ships flat dark HUD pills with cream ink; this page inherits the
+     shared opaque `--panel-pill` token from _shared.css rather than overriding
+     it. Pause uses the shared gold chrome from _shared.css, matching master 01. */
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="grass" data-bucket="open"></div>
+
+  <!-- ================= environment : 5 separate low-poly blocks ================= -->
+  <div class="b3d" data-bucket="environment" style="left:16px;top:26px;width:172px;height:150px">
+    <div class="wall" style="height:106px;background:#7FB4E8"></div>
+    <div class="roof" style="background:#A9CEF2"></div>
+    <div class="win" style="left:22px;top:60px;width:44px;height:38px"></div>
+    <div class="win" style="left:104px;top:60px;width:44px;height:38px"></div>
+  </div>
+  <div class="b3d" data-bucket="environment" style="left:432px;top:14px;width:196px;height:172px">
+    <div class="wall" style="height:124px;background:#F0B27A"></div>
+    <div class="roof" style="background:#F7CD9E"></div>
+    <div class="win" style="left:26px;top:70px;width:52px;height:44px"></div>
+    <div class="win" style="left:118px;top:70px;width:52px;height:44px"></div>
+  </div>
+  <div class="b3d" data-bucket="environment" style="left:512px;top:770px;width:180px;height:158px">
+    <div class="wall" style="height:112px;background:#C7A8E8"></div>
+    <div class="roof" style="background:#DCC7F2"></div>
+    <div class="win" style="left:24px;top:64px;width:48px;height:40px"></div>
+    <div class="win" style="left:112px;top:64px;width:48px;height:40px"></div>
+    <div class="door" style="left:72px;width:36px;height:46px"></div>
+  </div>
+  <div class="b3d" data-bucket="environment" style="left:8px;top:1052px;width:190px;height:170px">
+    <div class="wall" style="height:122px;background:#F2A6A6"></div>
+    <div class="roof" style="background:#F8C9C9"></div>
+    <div class="win" style="left:26px;top:70px;width:50px;height:42px"></div>
+    <div class="win" style="left:114px;top:70px;width:50px;height:42px"></div>
+  </div>
+  <div class="b3d" data-bucket="environment" style="left:10px;top:436px;width:150px;height:142px">
+    <div class="wall" style="height:100px;background:#9AD6A0"></div>
+    <div class="roof" style="background:#BEE6C2"></div>
+    <div class="win" style="left:22px;top:56px;width:42px;height:36px"></div>
+    <div class="win" style="left:88px;top:56px;width:42px;height:36px"></div>
+  </div>
+
+  <!-- ================= roads + pavement ================= -->
+  <div class="road-h" data-bucket="open"><div class="dash"></div></div>
+  <div class="road-v" data-bucket="open"><div class="dash"></div></div>
+  <div class="zebra" data-bucket="open" style="left:0px;top:560px;width:104px;height:22px"></div>
+  <div class="zebra" data-bucket="open" style="left:0px;top:588px;width:104px;height:22px"></div>
+  <div class="zebra" data-bucket="open" style="left:0px;top:616px;width:104px;height:22px"></div>
+  <div class="zebra" data-bucket="open" style="left:0px;top:644px;width:104px;height:22px"></div>
+  <div class="zebra" data-bucket="open" style="left:392px;top:560px;width:104px;height:22px"></div>
+  <div class="zebra" data-bucket="open" style="left:392px;top:588px;width:104px;height:22px"></div>
+  <div class="zebra" data-bucket="open" style="left:392px;top:616px;width:104px;height:22px"></div>
+  <div class="zebra" data-bucket="open" style="left:392px;top:644px;width:104px;height:22px"></div>
+  <div class="pave" data-bucket="open" style="left:410px;top:742px;width:286px;height:36px"></div>
+  <div class="pave" data-bucket="open" style="left:24px;top:742px;width:214px;height:36px"></div>
+
+  <!-- ================= environment : trees ================= -->
+  <div class="tree" data-bucket="environment" style="left:404px;top:452px"><div class="canopy"></div><div class="trunk"></div></div>
+  <div class="tree" data-bucket="environment" style="left:626px;top:352px"><div class="canopy"></div><div class="trunk"></div></div>
+  <div class="tree" data-bucket="environment" style="left:196px;top:322px"><div class="canopy"></div><div class="trunk"></div></div>
+  <div class="tree" data-bucket="environment" style="left:648px;top:960px"><div class="canopy"></div><div class="trunk"></div></div>
+  <div class="tree" data-bucket="environment" style="left:216px;top:1150px"><div class="canopy"></div><div class="trunk"></div></div>
+  <div class="tree" data-bucket="environment" style="left:82px;top:892px"><div class="canopy"></div><div class="trunk"></div></div>
+  <div class="tree" data-bucket="environment" style="left:540px;top:1180px"><div class="canopy"></div><div class="trunk"></div></div>
+
+  <!-- ================= dynamic : traffic on the roads ================= -->
+  <div class="sh" data-bucket="dynamic" style="left:118px;top:706px;width:84px;height:20px"></div>
+  <div class="obj car" data-bucket="dynamic" style="left:150px;top:580px;transform:rotate(90deg)">
+    <div class="glass"></div><div class="glass2"></div>
+  </div>
+
+  <div class="sh" data-bucket="dynamic" style="left:508px;top:706px;width:84px;height:20px"></div>
+  <div class="obj car" data-bucket="dynamic" style="left:540px;top:580px;transform:rotate(90deg)">
+    <div class="glass"></div><div class="glass2"></div>
+  </div>
+
+  <!-- T5 : the one obvious large target. Real product UI, not annotation. -->
+  <div class="sh" data-bucket="dynamic" style="left:298px;top:442px;width:84px;height:22px"></div>
+  <div class="obj car" data-bucket="dynamic" style="left:300px;top:300px">
+    <div class="glass"></div><div class="glass2"></div>
+  </div>
+  <div class="lockmark" data-bucket="dynamic" style="left:270px;top:196px">🔒 需要 LV.5</div>
+
+  <!-- ================= static : T1, spread far apart ================= -->
+  <div class="sh" data-bucket="static" style="left:512px;top:452px;width:34px;height:12px"></div>
+  <div class="obj can" data-bucket="static" style="left:516px;top:408px"></div>
+
+  <div class="sh" data-bucket="static" style="left:150px;top:392px;width:30px;height:11px"></div>
+  <div class="obj bottle" data-bucket="static" style="left:152px;top:340px"></div>
+
+  <div class="sh" data-bucket="static" style="left:604px;top:640px;width:34px;height:12px"></div>
+  <div class="obj can" data-bucket="static" style="left:608px;top:596px"></div>
+
+  <div class="sh" data-bucket="static" style="left:470px;top:1000px;width:30px;height:11px"></div>
+  <div class="obj bottle" data-bucket="static" style="left:474px;top:948px"></div>
+
+  <div class="sh" data-bucket="static" style="left:24px;top:644px;width:34px;height:12px"></div>
+  <div class="obj can" data-bucket="static" style="left:28px;top:600px"></div>
+
+  <div class="sh" data-bucket="static" style="left:178px;top:960px;width:34px;height:12px"></div>
+  <div class="obj can" data-bucket="static" style="left:182px;top:916px"></div>
+
+  <!-- static : one 2-3 object group, kept clear of the joystick zone -->
+  <div class="sh" data-bucket="static" style="left:396px;top:1134px;width:34px;height:12px"></div>
+  <div class="obj can" data-bucket="static" style="left:400px;top:1090px"></div>
+  <div class="sh" data-bucket="static" style="left:442px;top:1162px;width:30px;height:11px"></div>
+  <div class="obj bottle" data-bucket="static" style="left:446px;top:1118px"></div>
+  <div class="sh" data-bucket="static" style="left:420px;top:1204px;width:34px;height:12px"></div>
+  <div class="obj can" data-bucket="static" style="left:424px;top:1160px"></div>
+
+  <!-- static : T2, fewer -->
+  <div class="sh" data-bucket="static" style="left:406px;top:214px;width:64px;height:16px"></div>
+  <div class="obj box" data-bucket="static" style="left:410px;top:160px;width:58px;height:58px"></div>
+
+  <div class="sh" data-bucket="static" style="left:416px;top:1264px;width:64px;height:16px"></div>
+  <div class="obj box" data-bucket="static" style="left:420px;top:1210px;width:58px;height:58px"></div>
+
+  <div class="sh" data-bucket="static" style="left:18px;top:268px;width:112px;height:18px"></div>
+  <div class="obj" data-bucket="static" style="left:20px;top:194px;width:108px;height:78px;border-radius:8px;background:linear-gradient(180deg,#D7E3EA 0%,#A8BCC8 100%);border:5px solid var(--ink)"></div>
+
+  <!-- static : T3, fewer again -->
+  <div class="sh" data-bucket="static" style="left:398px;top:346px;width:90px;height:18px"></div>
+  <div class="obj tire" data-bucket="static" style="left:400px;top:270px;width:84px;height:84px"></div>
+
+  <div class="sh" data-bucket="static" style="left:300px;top:1192px;width:74px;height:18px"></div>
+  <div class="obj chair" data-bucket="static" style="left:300px;top:1120px;width:68px;height:76px"></div>
+
+  <div class="sh" data-bucket="static" style="left:214px;top:226px;width:136px;height:20px"></div>
+  <div class="obj" data-bucket="static" style="left:210px;top:122px;width:132px;height:100px;border-radius:10px;background:linear-gradient(180deg,#C9A26B 0%,#9C7B45 100%);border:5px solid var(--ink)"></div>
+
+  <!-- static : T4, a small number of obvious targets -->
+  <div class="sh" data-bucket="static" style="left:92px;top:864px;width:136px;height:22px"></div>
+  <div class="obj sofa" data-bucket="static" style="left:92px;top:790px;width:132px;height:80px"></div>
+
+  <div class="sh" data-bucket="static" style="left:520px;top:526px;width:136px;height:22px"></div>
+  <div class="obj sofa" data-bucket="static" style="left:520px;top:452px;width:132px;height:80px"></div>
+
+  <div class="sh" data-bucket="static" style="left:372px;top:1086px;width:108px;height:20px"></div>
+  <div class="obj" data-bucket="static" style="left:376px;top:1006px;width:100px;height:76px;border-radius:12px;background:linear-gradient(180deg,#F0A6C0 0%,#D9739A 100%);border:5px solid var(--ink)"></div>
+
+  <!-- ================= player ================= -->
+  <div class="bh" data-bucket="player">
+    <div class="pull"></div>
+    <div class="disc"></div>
+    <div class="core"></div>
+  </div>
+
+  <!-- ================= HUD : the complete allowed set, nothing else ================= -->
+  <div class="hud-row">
+    <div class="hud-pill"><span class="coin-dot"></span><span>1,240</span></div>
+    <div class="hud-pill"><span class="lbl">LV.</span><span>1</span><span class="lbl">质量</span><span>320 kg</span></div>
+    <div class="hud-pill"><span class="lbl">区域</span><span>回收广场</span></div>
+    <div class="btn-pause">❚❚</div>
+  </div>
+
+  <div class="joystick" style="right:44px;bottom:120px"><div class="stick"></div></div>
+
+  <!-- transient absorb feedback, allowed -->
+  <div class="chip chip-gold" style="left:420px;top:864px">+40</div>
+</div>
+</body>
+</html>

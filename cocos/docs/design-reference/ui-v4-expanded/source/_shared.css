@@ -1,0 +1,426 @@
+/* UI V4 Expanded — shared design tokens and primitives.
+   Canvas: 720 x 1280 (9:16). Cartoon low-poly casual mini-game language.
+   Tokens are the inheritance contract from design-lineage.md §4.1. */
+
+:root {
+  --cta-1: #FFD000;
+  --cta-2: #FFA000;
+  --cyan: #00C0FF;
+  --cyan-2: #2E90FA;
+  --violet: #8B5CF6;
+  --violet-2: #7C3AED;
+  --crimson: #EF4444;
+  --crimson-2: #F43F5E;
+  --cream: #FFFDF5;
+  --ink: #101827;
+  --ink-2: #1F2937;
+  --panel: rgba(15, 23, 42, 0.62);
+  /* Opaque HUD pill fill. Master 01's pills are flat, not frosted: a pixel
+     scanline across them is uniform to within 3 px, and their measured fills
+     are rgb(63,64,67) and rgb(82,87,96). #454B57 = rgb(69,75,87) sits inside
+     that range. Used only by .hud-pill (pages 05/08/09/10). --panel is
+     unchanged and still backs .panel, .pill and .btn-back. */
+  --panel-pill: #454B57;
+  --gold-ink: #4A2E00;
+  --radius: 16px;
+  /* One outline weight for the whole 05-10 extension set (design-lineage §4.2:
+     "Outline weight is uniform across the ten pages"). Every stroked glyph in
+     pages 05-10 uses this single value; pages 01-04 are inherited V3 masters
+     and are exempt because they are copied byte-for-byte, never re-authored. */
+  --stroke-w: 6px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  width: 720px;
+  height: 1280px;
+  overflow: hidden;
+  background: #0B1220;
+}
+
+body {
+  font-family: "Microsoft YaHei", "PingFang SC", "Segoe UI", system-ui, sans-serif;
+  font-weight: 900;
+  color: #fff;
+  -webkit-font-smoothing: antialiased;
+}
+
+.page {
+  position: relative;
+  width: 720px;
+  height: 1280px;
+  overflow: hidden;
+}
+
+/* ---------- text treatment ---------- */
+
+.outlined {
+  -webkit-text-stroke: var(--stroke-w) var(--ink);
+  paint-order: stroke fill;
+  letter-spacing: 0.02em;
+}
+
+.outlined-sm {
+  -webkit-text-stroke: var(--stroke-w) var(--ink);
+  paint-order: stroke fill;
+}
+
+/* ---------- surfaces ---------- */
+
+.panel {
+  background: var(--panel);
+  border: 4px solid rgba(255, 255, 255, 0.14);
+  border-radius: var(--radius);
+  backdrop-filter: blur(2px);
+}
+
+.pill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 64px;
+  padding: 0 20px;
+  border-radius: 32px;
+  background: var(--panel);
+  border: 4px solid rgba(255, 255, 255, 0.16);
+}
+
+.card {
+  background: var(--cream);
+  border: 5px solid var(--ink);
+  border-radius: var(--radius);
+  color: var(--ink-2);
+}
+
+/* ---------- buttons ---------- */
+
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius);
+  font-weight: 900;
+}
+
+.btn-primary {
+  background: linear-gradient(180deg, var(--cta-1) 0%, var(--cta-2) 100%);
+  border: 6px solid var(--ink);
+  color: var(--gold-ink);
+  box-shadow: 0 10px 0 rgba(11, 18, 32, 0.45);
+}
+
+.btn-secondary {
+  background: rgba(15, 23, 42, 0.55);
+  border: 5px solid rgba(255, 255, 255, 0.28);
+  color: #fff;
+}
+
+.btn-back {
+  width: 80px;
+  height: 80px;
+  border-radius: 20px;
+  background: var(--panel);
+  border: 5px solid rgba(255, 255, 255, 0.22);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40px;
+}
+
+/* Pause chrome. Master 01 renders its pause control as a gold rounded square
+   with dark ink glyphs, the same treatment as its gold back button. Pages
+   08/09/10 inherit that treatment so no second HUD chrome appears. */
+.btn-pause {
+  width: 62px;
+  height: 62px;
+  border-radius: 18px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, var(--cta-1) 0%, var(--cta-2) 100%);
+  border: 5px solid var(--ink);
+  color: var(--gold-ink);
+  font-size: 26px;
+  box-shadow: 0 5px 0 rgba(11, 18, 32, 0.28);
+}
+
+/* ---------- shared chrome ---------- */
+
+.safe-top { position: absolute; top: 48px; left: 0; width: 100%; }
+
+.title {
+  position: absolute;
+  top: 56px;
+  left: 0;
+  width: 100%;
+  text-align: center;
+  font-size: 62px;
+}
+
+.hud-row {
+  position: absolute;
+  top: 48px;
+  left: 24px;
+  width: 672px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.hud-pill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 62px;
+  padding: 0 18px;
+  border-radius: 31px;
+  background: var(--panel-pill);
+  border: 4px solid rgba(255, 255, 255, 0.18);
+  font-size: 26px;
+  white-space: nowrap;
+  flex: none;
+}
+
+.hud-pill .lbl { font-size: 20px; opacity: 0.82; }
+
+.coin-dot {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #FFE873 0%, var(--cta-1) 45%, #C97B00 100%);
+  border: 4px solid var(--ink);
+}
+
+/* ---------- low-poly world ---------- */
+
+.world { position: absolute; inset: 0; }
+
+.ground {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, #BFE3F5 0%, #D9EEF9 26%, #E8E2D2 26%, #E8E2D2 100%);
+}
+
+/* pavement / open playable ground */
+.open-ground {
+  position: absolute;
+  left: -60px;
+  right: -60px;
+  top: 300px;
+  height: 900px;
+  background:
+    repeating-linear-gradient(0deg, rgba(0,0,0,.045) 0 2px, transparent 2px 46px),
+    repeating-linear-gradient(90deg, rgba(0,0,0,.045) 0 2px, transparent 2px 46px),
+    linear-gradient(180deg, #EDE7D8 0%, #E4DDCB 55%, #DCD4C0 100%);
+  transform: perspective(900px) rotateX(16deg);
+  transform-origin: top center;
+}
+
+.road {
+  position: absolute;
+  background: #6E7480;
+  border-top: 5px solid #575C66;
+  border-bottom: 5px solid #575C66;
+}
+
+.road-dash {
+  position: absolute;
+  background: #F2E9C8;
+}
+
+/* building blocks */
+.bld {
+  position: absolute;
+  border: 5px solid var(--ink);
+  border-radius: 10px;
+}
+
+.roof { position: absolute; height: 26px; border: 5px solid var(--ink); border-radius: 8px; }
+
+.tree {
+  position: absolute;
+  width: 74px;
+  height: 74px;
+}
+
+.tree .canopy {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 34% 30%, #8FE07A 0%, #46B34A 60%, #2E8A38 100%);
+  border: 5px solid var(--ink);
+}
+
+.tree .trunk {
+  position: absolute;
+  left: 30px;
+  top: 56px;
+  width: 14px;
+  height: 26px;
+  background: #8A5A2B;
+  border: 4px solid var(--ink);
+  border-radius: 4px;
+}
+
+/* black hole */
+.blackhole { position: absolute; }
+
+.bh-disc {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 50%, #05070E 0%, #05070E 46%, #1B2A6B 60%, #2E7BFF 74%, #5FE9FF 88%, rgba(95,233,255,0) 100%);
+  border: 6px solid var(--ink);
+}
+
+.bh-rim {
+  position: absolute;
+  border-radius: 50%;
+  border: 6px dashed rgba(95, 233, 255, 0.85);
+}
+
+/* collectible glyphs */
+.obj { position: absolute; }
+
+.can {
+  width: 30px; height: 44px; border-radius: 8px;
+  background: linear-gradient(180deg, #F25C54 0%, #C62828 100%);
+  border: 4px solid var(--ink);
+}
+
+.bottle {
+  width: 26px; height: 52px; border-radius: 8px;
+  background: linear-gradient(180deg, #7FD8FF 0%, #29B6F6 100%);
+  border: 4px solid var(--ink);
+}
+
+.box {
+  width: 46px; height: 46px; border-radius: 6px;
+  background: linear-gradient(180deg, #E4D5C3 0%, #C9B49B 100%);
+  border: 4px solid var(--ink);
+}
+
+.cone {
+  width: 0; height: 0;
+  border-left: 22px solid transparent;
+  border-right: 22px solid transparent;
+  border-bottom: 46px solid #FF6F00;
+  filter: drop-shadow(0 0 0 var(--ink));
+}
+
+.chair {
+  width: 52px; height: 58px; border-radius: 6px;
+  background: linear-gradient(180deg, #6B7A88 0%, #455A64 100%);
+  border: 4px solid var(--ink);
+}
+
+.tire {
+  width: 56px; height: 56px; border-radius: 50%;
+  background: radial-gradient(circle at 50% 50%, #4A5560 0 34%, #263238 36% 100%);
+  border: 5px solid var(--ink);
+}
+
+.sofa {
+  width: 104px; height: 62px; border-radius: 12px;
+  background: linear-gradient(180deg, #B08968 0%, #8D6E63 100%);
+  border: 5px solid var(--ink);
+}
+
+.car {
+  width: 76px; height: 140px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #F26B6B 0%, #D32F2F 100%);
+  border: 6px solid var(--ink);
+  position: relative;
+}
+.car .glass {
+  position: absolute;
+  left: 10px; top: 22px; width: 44px; height: 34px;
+  border-radius: 8px;
+  background: #9FE3FF;
+  border: 4px solid var(--ink);
+}
+.car .glass2 {
+  position: absolute;
+  left: 10px; top: 82px; width: 44px; height: 30px;
+  border-radius: 8px;
+  background: #9FE3FF;
+  border: 4px solid var(--ink);
+}
+
+.truck {
+  width: 92px; height: 190px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #7ED957 0%, #22C55E 100%);
+  border: 6px solid var(--ink);
+}
+
+/* ground shadow under every object so it reads as standing on the street */
+.shadow {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(16, 24, 39, 0.22);
+  filter: blur(2px);
+}
+
+/* ---------- joystick ---------- */
+
+/* Shown here as it appears on touch: present but never dominating the frame. */
+.joystick {
+  position: absolute;
+  right: 44px;
+  bottom: 96px;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  border: 6px solid rgba(255, 255, 255, 0.34);
+  background: rgba(15, 23, 42, 0.16);
+}
+
+.joystick .stick {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 92px;
+  height: 92px;
+  margin: -46px 0 0 -46px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.55);
+  border: 6px solid rgba(16, 24, 39, 0.7);
+}
+
+/* ---------- annotation chips used only by mechanic references ---------- */
+
+.chip {
+  position: absolute;
+  padding: 6px 16px;
+  border-radius: 20px;
+  background: rgba(15, 23, 42, 0.82);
+  border: 4px solid rgba(255, 255, 255, 0.3);
+  font-size: 24px;
+  white-space: nowrap;
+}
+
+.chip-gold {
+  background: rgba(74, 46, 0, 0.9);
+  border-color: var(--cta-1);
+  color: #FFE9A8;
+}
+
+/* lock marker above a target */
+.lockmark {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 18px;
+  background: rgba(90, 16, 24, 0.92);
+  border: 5px solid var(--crimson);
+  font-size: 30px;
+  color: #FFE1E1;
+  -webkit-text-stroke: var(--stroke-w) var(--ink);
+  paint-order: stroke fill;
+}

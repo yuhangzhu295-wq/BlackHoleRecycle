@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="_shared.css">
+<title>05 Home</title>
+<style>
+  .bg { position:absolute; inset:0;
+    background: linear-gradient(180deg,#2E90FA 0%,#00C0FF 34%,#22B573 34%,#0F7A4E 100%); }
+  .bg .sun { position:absolute; right:-60px; top:60px; width:280px; height:280px;
+    border-radius:50%; background: radial-gradient(circle,#FFF6C2 0%,rgba(255,246,194,0) 70%); }
+  .bg .grid { position:absolute; left:0; top:435px; width:720px; height:845px;
+    background:
+      repeating-linear-gradient(0deg, rgba(255,255,255,.07) 0 2px, transparent 2px 58px),
+      repeating-linear-gradient(90deg, rgba(255,255,255,.07) 0 2px, transparent 2px 58px); }
+
+  /* park backdrop */
+  .skyline { position:absolute; left:0; top:300px; width:720px; height:140px; }
+  .skyline div { position:absolute; bottom:0; border:5px solid var(--ink); border-radius:8px; }
+  .park { position:absolute; left:0; top:436px; width:720px; height:844px; }
+  .tree2 { position:absolute; width:88px; height:88px; }
+  .tree2 .c { position:absolute; inset:0; border-radius:50%;
+    background: radial-gradient(circle at 34% 30%,#9BEE84 0%,#46B34A 62%,#2E8A38 100%);
+    border:5px solid var(--ink); }
+  .tree2 .t { position:absolute; left:36px; top:68px; width:16px; height:30px;
+    background:#8A5A2B; border:4px solid var(--ink); border-radius:4px; }
+
+  /* top bar */
+  .topbar { position:absolute; left:24px; top:48px; width:672px;
+    display:flex; align-items:center; justify-content:space-between; }
+
+  .logo { position:absolute; left:0; top:136px; width:720px; text-align:center;
+    font-size:72px; letter-spacing:.04em; }
+
+  /* hero */
+  .hero { position:absolute; left:50%; top:600px; width:400px; height:400px;
+    margin-left:-200px; margin-top:-200px; }
+  .hero .halo { position:absolute; inset:-30px; border-radius:50%;
+    background: radial-gradient(circle,rgba(95,233,255,.34) 0%,rgba(95,233,255,0) 68%); }
+  .hero .ring { position:absolute; inset:16px; border-radius:50%;
+    border:8px dashed rgba(95,233,255,.75); }
+  .hero .disc { position:absolute; left:50%; top:50%; width:280px; height:280px;
+    margin:-140px 0 0 -140px; border-radius:50%; border:9px solid var(--ink);
+    background: radial-gradient(circle at 50% 50%,#04060D 0%,#04060D 40%,#16255F 56%,#2E7BFF 72%,#5FE9FF 86%,rgba(95,233,255,0) 100%); }
+  .hero .core { position:absolute; left:50%; top:50%; width:96px; height:96px;
+    margin:-48px 0 0 -48px; border-radius:50%;
+    background: radial-gradient(circle,#FFF 0%,#BFF3FF 44%,rgba(191,243,255,0) 76%); }
+  .hero .module { position:absolute; width:64px; height:64px; border-radius:14px;
+    background: linear-gradient(180deg,#B9C6D6 0%,#7E8FA6 100%); border:6px solid var(--ink); }
+  .hero .m1 { left:16px; top:150px; }
+  .hero .m2 { right:16px; top:150px; }
+  .hero .m3 { left:168px; bottom:-6px; }
+
+  .cta { position:absolute; left:110px; top:836px; width:500px; height:120px; font-size:56px; }
+  .cta .tri { margin-left:18px; font-size:46px; }
+
+  /* Secondary row — design-lock §05 specifies "outlined style", so the three
+     items are an outline plus a light wash, not filled dark-navy cards. */
+  .row { position:absolute; left:64px; top:972px; width:520px; display:flex; gap:24px; }
+  .row .item { flex:1; height:116px; border-radius:var(--radius);
+    background: rgba(11,18,32,.20); border:6px solid rgba(255,255,255,.82);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; }
+  .row .item .ic { font-size:38px; }
+  .row .item .tx { font-size:26px; }
+
+  .gear { position:absolute; right:28px; bottom:44px; width:76px; height:76px;
+    border-radius:20px; background: rgba(15,23,42,.55);
+    border:5px solid rgba(255,255,255,.28);
+    display:flex; align-items:center; justify-content:center; font-size:36px; }
+
+  /* The forbidden-systems list for this page lives in design-lock.md §05.
+     It must never be painted into the reference itself. */
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="bg">
+    <div class="sun"></div>
+    <div class="grid"></div>
+  </div>
+
+  <div class="skyline">
+    <div style="left:-10px;width:120px;height:96px;background:#7FB4E8"></div>
+    <div style="left:120px;width:88px;height:70px;background:#F0B27A"></div>
+    <div style="left:520px;width:96px;height:84px;background:#9AD6A0"></div>
+    <div style="left:626px;width:120px;height:104px;background:#F2A6A6"></div>
+  </div>
+
+  <div class="park">
+    <div class="tree2" style="left:24px;top:120px"><div class="c"></div><div class="t"></div></div>
+    <div class="tree2" style="left:608px;top:96px"><div class="c"></div><div class="t"></div></div>
+    <!-- kept clear of the 模式 card and of the bottom safe margin -->
+    <div class="tree2" style="left:16px;top:700px"><div class="c"></div><div class="t"></div></div>
+    <div class="tree2" style="left:620px;top:560px"><div class="c"></div><div class="t"></div></div>
+  </div>
+
+  <div class="topbar">
+    <div class="hud-pill"><span class="coin-dot"></span><span>1,240</span></div>
+    <div class="hud-pill"><span class="lbl">LV.</span><span>3</span><span class="lbl">重力黑洞</span></div>
+  </div>
+
+  <div class="logo outlined">黑洞回收站</div>
+
+  <div class="hero">
+    <div class="halo"></div>
+    <div class="ring"></div>
+    <div class="module m1"></div>
+    <div class="module m2"></div>
+    <div class="module m3"></div>
+    <div class="disc"></div>
+    <div class="core"></div>
+  </div>
+
+  <div class="btn btn-primary cta"><span>开始吞噬</span><span class="tri">▶</span></div>
+
+  <div class="row">
+    <div class="item"><span class="ic">🎮</span><span class="tx outlined-sm">模式</span></div>
+    <div class="item"><span class="ic">⚙</span><span class="tx outlined-sm">机器</span></div>
+    <div class="item"><span class="ic">🎨</span><span class="tx outlined-sm">皮肤</span></div>
+  </div>
+
+  <div class="gear">⚙</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="_shared.css">
+<title>07 Arena Ready</title>
+<style>
+  .bg { position:absolute; inset:0;
+    background: linear-gradient(180deg,#2E90FA 0%,#00C0FF 46%,#0E7490 100%); }
+  .bg .grid { position:absolute; inset:0;
+    background:
+      repeating-linear-gradient(0deg, rgba(255,255,255,.08) 0 2px, transparent 2px 64px),
+      repeating-linear-gradient(90deg, rgba(255,255,255,.08) 0 2px, transparent 2px 64px); }
+  .back { position:absolute; left:36px; top:48px; }
+
+  .preview { position:absolute; left:80px; top:176px; width:560px; height:320px;
+    border-radius:var(--radius); overflow:hidden; border:6px solid var(--ink);
+    background:#3B2A66; box-shadow:0 12px 0 rgba(11,18,32,.35); }
+  .preview .g { position:absolute; inset:0;
+    background: linear-gradient(180deg,#4C3A82 0%,#3B2A66 40%,#2A1F4E 100%); }
+  .preview .ring { position:absolute; left:50%; top:52%; width:400px; height:400px;
+    margin:-200px 0 0 -200px; border-radius:50%;
+    border:6px dashed rgba(255,255,255,.28); }
+  .preview .ring2 { position:absolute; left:50%; top:52%; width:260px; height:260px;
+    margin:-130px 0 0 -130px; border-radius:50%;
+    border:6px dashed rgba(255,208,0,.35); }
+  .preview .core { position:absolute; left:50%; top:52%; width:120px; height:120px;
+    margin:-60px 0 0 -60px; border-radius:50%; border:6px solid var(--ink);
+    background: radial-gradient(circle at 50% 50%,#04060D 0%,#04060D 42%,#16255F 58%,#2E7BFF 74%,#5FE9FF 88%,rgba(95,233,255,0) 100%); }
+  .preview .bot { position:absolute; width:58px; height:58px; border-radius:50%;
+    border:5px solid var(--ink);
+    background: radial-gradient(circle at 50% 50%,#04060D 0%,#04060D 44%,#3A2A6B 60%,#8B5CF6 80%,rgba(139,92,246,0) 100%); }
+
+  /* caption row sits under the card, never over the arena artwork */
+  .caprow { position:absolute; left:80px; top:508px; width:560px;
+    display:flex; align-items:center; justify-content:space-between; }
+  .caprow .cap { font-size:26px; color:#D6E9FA; }
+  .caprow .vs { padding:4px 16px; border-radius:16px; font-size:24px;
+    background:rgba(124,58,237,.9); border:4px solid rgba(255,255,255,.35); }
+
+  .rulehead { position:absolute; left:80px; top:586px; font-size:34px; }
+  .rules { position:absolute; left:80px; top:636px; width:560px;
+    border-radius:var(--radius); background: rgba(15,23,42,.6);
+    border:5px solid rgba(255,255,255,.24); padding:18px 26px; }
+  .rules li { list-style:none; font-size:32px; line-height:1.62; display:flex; gap:12px; }
+  .rules li .b { color:#FFD000; }
+
+  .machine { position:absolute; left:80px; top:950px; width:560px; height:96px;
+    border-radius:var(--radius); background: rgba(15,23,42,.6);
+    border:5px solid rgba(255,255,255,.24); display:flex; align-items:center;
+    justify-content:space-between; padding:0 28px; }
+  .machine .cap { font-size:26px; opacity:.86; }
+  .machine .val { font-size:34px; }
+
+  .cta { position:absolute; left:120px; top:1066px; width:480px; height:126px; font-size:52px; }
+  .cta .tri { margin-left:16px; font-size:44px; }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="bg"><div class="grid"></div></div>
+
+  <div class="btn-back back">←</div>
+  <div class="title outlined">竞技乱斗</div>
+
+  <div class="preview">
+    <div class="g"></div>
+    <div class="ring"></div>
+    <div class="ring2"></div>
+    <div class="bot" style="left:96px;top:96px"></div>
+    <div class="bot" style="right:96px;top:110px;background:radial-gradient(circle at 50% 50%,#04060D 0%,#04060D 44%,#5A2A2A 60%,#F43F5E 80%,rgba(244,63,94,0) 100%)"></div>
+    <div class="bot" style="left:120px;bottom:56px;background:radial-gradient(circle at 50% 50%,#04060D 0%,#04060D 44%,#1F4A3A 60%,#10B981 80%,rgba(16,185,129,0) 100%)"></div>
+    <div class="bot" style="right:120px;bottom:70px;background:radial-gradient(circle at 50% 50%,#04060D 0%,#04060D 44%,#4A3A1F 60%,#FFA000 80%,rgba(255,160,0,0) 100%)"></div>
+    <div class="core"></div>
+  </div>
+  <div class="caprow">
+    <span class="cap outlined-sm">竞技场预览</span>
+    <span class="vs">1 v 7</span>
+  </div>
+
+  <div class="rulehead outlined">规则</div>
+  <ul class="rules">
+    <li><span class="b">•</span><span>8 人</span></li>
+    <li><span class="b">•</span><span>3:00</span></li>
+    <li><span class="b">•</span><span>吞噬成长</span></li>
+    <li><span class="b">•</span><span>淘汰弱小玩家</span></li>
+    <li><span class="b">•</span><span>躲避更大玩家</span></li>
+  </ul>
+
+  <div class="machine">
+    <span class="cap outlined-sm">当前机器</span>
+    <span class="val outlined-sm">LV.3 重力黑洞</span>
+  </div>
+
+  <div class="btn btn-primary cta"><span>开始乱斗</span><span class="tri">▶</span></div>
+</div>
+</body>
+</html>

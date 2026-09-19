@@ -1,0 +1,172 @@
+{
+  "contract": "ui-v4-expanded-reference-set",
+  "version": 1,
+  "canvas": {
+    "width": 720,
+    "height": 1280
+  },
+  "generatedAt": "2026-09-19T13:51:15.086Z",
+  "imageGenerationModel": "NONE",
+  "note": "Pages 01-04 are byte-identical copies of the V3 masters. Pages 05-10 are deterministic layout renders of the locked HTML design sources, not AI-generated concept art.",
+  "references": [
+    {
+      "file": "01-arena-gameplay.png",
+      "provenance": "V3_MASTER_COPY",
+      "source": "ui-v3/arena-hud-reference.png",
+      "sha256": "001609aef3ce8be798504b89226685821a3d5531ef9f508b44d57c7567a3cf65",
+      "bytes": 903856,
+      "byteIdenticalToSource": true
+    },
+    {
+      "file": "02-revive.png",
+      "provenance": "V3_MASTER_COPY",
+      "source": "ui-v3/revive-reference.png",
+      "sha256": "7893895d86d315c767b91b76d41c9cc7f091d788941746999b6600ae917afb34",
+      "bytes": 730226,
+      "byteIdenticalToSource": true
+    },
+    {
+      "file": "03-mode-select.png",
+      "provenance": "V3_MASTER_COPY",
+      "source": "ui-v3/mode-select-reference.png",
+      "sha256": "d9dadb61cb974f4c780bdec1f0fd0c27aa176bedc4ee516b72d25c77e9a4dc5d",
+      "bytes": 816534,
+      "byteIdenticalToSource": true
+    },
+    {
+      "file": "04-settlement.png",
+      "provenance": "V3_MASTER_COPY",
+      "source": "ui-v3/settlement-reference.png",
+      "sha256": "c11e14b061e4adaea713f69bf8571b3196b78c87380e153d038c7070b8327c7a",
+      "bytes": 745370,
+      "byteIdenticalToSource": true
+    },
+    {
+      "file": "05-home.png",
+      "provenance": "DETERMINISTIC_LAYOUT_RENDER",
+      "source": "ui-v4-expanded/source/05-home.html",
+      "sha256": "d88b670595d07eb0ba499c731c549eb1b442b923a7f63be9a0bce4b30d320b1d",
+      "bytes": 272974,
+      "width": 720,
+      "height": 1280
+    },
+    {
+      "file": "06-endless-ready.png",
+      "provenance": "DETERMINISTIC_LAYOUT_RENDER",
+      "source": "ui-v4-expanded/source/06-endless-ready.html",
+      "sha256": "7a6d5703a9d1e69a0c8c19b3f81ec2923a6a7a4f394820c5324047b7706969ce",
+      "bytes": 136759,
+      "width": 720,
+      "height": 1280
+    },
+    {
+      "file": "07-arena-ready.png",
+      "provenance": "DETERMINISTIC_LAYOUT_RENDER",
+      "source": "ui-v4-expanded/source/07-arena-ready.html",
+      "sha256": "4198606e41b44eac20edd2223357baf5444008c61ffe1a4cdf888cb8b1624c85",
+      "bytes": 159886,
+      "width": 720,
+      "height": 1280
+    },
+    {
+      "file": "08-endless-gameplay.png",
+      "provenance": "DETERMINISTIC_LAYOUT_RENDER",
+      "source": "ui-v4-expanded/source/08-endless-gameplay.html",
+      "sha256": "ab137857b1550d2855d1ea1a60a1c505bb1a07ba58b428f9d70ff619d4a48013",
+      "bytes": 215160,
+      "width": 720,
+      "height": 1280,
+      "spaceBudget": {
+        "method": "DOM box rasterisation with declared bucket precedence",
+        "precedence": "dynamic > static > environment > open",
+        "grid": {
+          "columns": 72,
+          "rows": 128
+        },
+        "totalSamples": 9216,
+        "playerSamples": 272,
+        "budgetSamples": 8944,
+        "bucketSamples": {
+          "dynamic": 516,
+          "static": 934,
+          "environment": 1727,
+          "open": 5767
+        },
+        "openShare": 0.6448,
+        "environmentShare": 0.1931,
+        "staticShare": 0.1044,
+        "dynamicShare": 0.0577,
+        "declaredElements": 69
+      },
+      "spaceBudgetBands": {
+        "bands": {
+          "open": [
+            0.55,
+            0.65
+          ],
+          "environment": [
+            0.15,
+            0.2
+          ],
+          "static": [
+            0.1,
+            0.15
+          ],
+          "dynamic": [
+            0.05,
+            0.1
+          ]
+        },
+        "checks": [
+          {
+            "bucket": "open",
+            "min": 0.55,
+            "max": 0.65,
+            "value": 0.6448,
+            "inBand": true
+          },
+          {
+            "bucket": "environment",
+            "min": 0.15,
+            "max": 0.2,
+            "value": 0.1931,
+            "inBand": true
+          },
+          {
+            "bucket": "static",
+            "min": 0.1,
+            "max": 0.15,
+            "value": 0.1044,
+            "inBand": true
+          },
+          {
+            "bucket": "dynamic",
+            "min": 0.05,
+            "max": 0.1,
+            "value": 0.0577,
+            "inBand": true
+          }
+        ],
+        "allInBand": true
+      }
+    },
+    {
+      "file": "09-large-target-suction.png",
+      "provenance": "DETERMINISTIC_LAYOUT_RENDER",
+      "source": "ui-v4-expanded/source/09-large-target-suction.html",
+      "sha256": "c7e2ffd7579df858767a7033bb8737b733a7ad88f1a1677bb42e7c608841ad9f",
+      "bytes": 257249,
+      "width": 720,
+      "height": 1280
+    },
+    {
+      "file": "10-tier-upgrade-feedback.png",
+      "provenance": "DETERMINISTIC_LAYOUT_RENDER",
+      "source": "ui-v4-expanded/source/10-tier-upgrade-feedback.html",
+      "sha256": "659e1b8ef4a3dd79dc85d3856fbae0b256a61ed0a9dd3306c59f56e6d8b8824a",
+      "bytes": 173422,
+      "width": 720,
+      "height": 1280
+    }
+  ]
+}
