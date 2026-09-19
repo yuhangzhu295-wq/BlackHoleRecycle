@@ -44,6 +44,7 @@ export class ModeReadyPageController extends Component {
 
   onEnable(): void {
     this.applyLayout();
+    this.hideStaleHeaderTitle();
     this.refreshProfile();
     this.bind('BtnBack', () => eventBus.emit('READY_BACK_REQUESTED'));
     this.bind('BtnStart', () => eventBus.emit('READY_START_REQUESTED'));
@@ -61,6 +62,23 @@ export class ModeReadyPageController extends Component {
     for (const [name, [width, height, x, y]] of Object.entries(MODE_READY_LAYOUT)) {
       this.resizeAndPlace(name, width, height, x, y);
     }
+  }
+
+  /**
+   * The Ready page reuses old serialized UI where a large "模式选择" title node
+   * still sits at the top. It overlaps the per-mode HeaderTitle ("无尽探索" /
+   * "竞技乱斗"). Clear its label or hide the whole node so only the correct
+   * mode title is visible. Does not change prefab/meta/UUID/session architecture.
+   */
+  private hideStaleHeaderTitle(): void {
+    const header = this.findNode('Header');
+    if (!header) return;
+    const label = header.getComponent(Label) ?? header.getComponentInChildren(Label);
+    if (label) {
+      label.string = '';
+      return;
+    }
+    header.active = false;
   }
 
   private resizeAndPlace(name: string, width: number, height: number, x: number, y: number): void {
