@@ -53,14 +53,24 @@ export class EndlessHUDController extends Component {
   }
 
   public updateStats(mass: number, level: number, levelTitle: string, coins: number, regionName: string): void {
-    // A 390x844 device crops ~64 design px from each side of the 720x1280
-    // design, which cut the coin pill and the pause button with the frame edge.
+    // The UI layer renders fit-height, not fit-width: `UICamera` is orthographic
+    // with `orthoHeight = 640` (= designHeight / 2), so at 390x844 the usable
+    // design half-width is `640 * (390/844) = 295.75` rather than 360. The row
+    // is authored 622 design px wide, so it is clamped by
+    // `applyHudSafeAreaInset` below. (This is not a viewport crop: the global
+    // policy is `ResolutionPolicy.FIXED_WIDTH`, under which the viewport returns
+    // the full design width and takes the surplus vertically.)
     applyHudSafeAreaInset(this.node);
     this.setLabel('LevelValue', `LV.${level} ${levelTitle}`);
-    // No space before the unit: at fontSize 18 the serialized LabelOutline
-    // (default width 2) bridges the ~4px space between `56150` and `kg`, which
-    // renders as a hyphen and reads like a negative number in the real frame.
-    this.setLabel('MassValue', `质量 ${Math.round(mass)}kg`);
+    // No space anywhere in the mass readout. At fontSize 18 the serialized
+    // `cc.LabelOutline` carries no `_width`, so it uses the default 2 and each
+    // glyph's outline grows 2px into an adjacent ~4px space and fills it. Both
+    // spaces did this: `质量 56150 kg` rendered as `质量-56150-kg`, and after
+    // only the unit space was removed the remaining one still rendered
+    // `质量-3715kg`, which reads like a negative mass in the real frame. The
+    // unit is already bare, so drop this space too and keep the authored
+    // outline style rather than weakening it.
+    this.setLabel('MassValue', `质量${Math.round(mass)}kg`);
     this.setLabel('CoinValue', Math.max(0, Math.floor(coins)).toLocaleString('en-US'));
     this.setLabel('RegionValue', regionName);
   }

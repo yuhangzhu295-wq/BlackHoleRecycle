@@ -286,6 +286,29 @@ record('V4_HUD_SAFE_AREA_INSET',
   && readFile('cocos/assets/scripts/ui/ArenaHUDController.ts').includes('applyHudSafeAreaInset(this.node)'),
   'both HUDs clamp their edge chrome using the UI camera visible width, not view.getVisibleSize()');
 
+// The mass readout must not contain a space character. `MassValue` is fontSize
+// 18 and its serialized `cc.LabelOutline` carries no `_width`, so it uses the
+// default 2 and each glyph's outline grows 2px into an adjacent ~4px space and
+// fills it. Both spaces did this: `质量 56150 kg` rendered as `质量-56150-kg`,
+// and after only the unit space was removed the remaining one still rendered
+// `质量-3715kg`, which reads like a negative mass in the real 390x844 frame
+// (verified by cropping the reference-08 PNG). Asserted on the template literal
+// itself rather than on a rendered string, so the guard cannot be satisfied by
+// a comment, and on both HUDs because both render a mass readout.
+const massLabelOffenders = [];
+for (const [hudName, hudSource] of [
+  ['EndlessHUDController', readFile('cocos/assets/scripts/ui/EndlessHUDController.ts')],
+  ['ArenaHUDController', readFile('cocos/assets/scripts/ui/ArenaHUDController.ts')],
+]) {
+  const massTemplate = /setLabel\(\s*'MassValue'\s*,\s*`([^`]*)`/.exec(hudSource);
+  if (!massTemplate) massLabelOffenders.push(`${hudName}: no MassValue template literal`);
+  else if (/ /.test(massTemplate[1])) massLabelOffenders.push(`${hudName}: ${JSON.stringify(massTemplate[1])}`);
+}
+record('V4_MASS_LABEL_NO_BRIDGED_SPACE', massLabelOffenders.length === 0,
+  massLabelOffenders.length === 0
+    ? 'neither HUD mass readout contains a space the outline can bridge into a hyphen'
+    : `the outline would bridge the space in ${massLabelOffenders.join('; ')}`);
+
 // The clamp's grouping must not use an iterator spread. `cocos/tsconfig.json`
 // declares `target: ES2022`, so `tsc --noEmit` is happy — but the Creator
 // pipeline downlevels to ES5, where `[...map.values()]` becomes
