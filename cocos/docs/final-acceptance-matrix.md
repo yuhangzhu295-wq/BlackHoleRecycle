@@ -39,7 +39,7 @@
 `cocos/build/web-mobile` through the Creator CLI (the script has no skip-build
 switch) and reads the same directory, so the scopes must run serially.
 
-The runner declares **16** scopes. Four are verified by a re-run alone on the
+The runner declares **16** scopes. Six are verified by a re-run alone on the
 slot and carry `bundleProvenance`. The rest hold older reports that predate both
 the provenance guard and the fixes recorded below, so they are **not** evidence
 of the current build.
@@ -50,23 +50,21 @@ of the current build.
 | `arena-ai` | **PASS** — real 180 s match, all four bot states | `BUNDLE_STABLE` `333e265f` | `09-20 19:18` |
 | `arena-timer` | **PASS** — 180.0057 s, `reason: TIME`, reward paid | `BUNDLE_STABLE` | `09-20 19:23` |
 | `golden-city` | **PASS** — 31/31, `deficits: []` | none (pre-guard; evidence committed `413b1e9`) | `09-20 18:32` |
-| `cell-lifecycle` | re-run in flight — see below | — | `09-16 13:30` **stale** |
-| `regions` | **FAIL**, unverified since | none | `09-12 23:19` **stale** |
+| `cell-lifecycle` | **PASS** — 375x667 + 390x844 + 430x932, 6/6 checkpoints | `BUNDLE_STABLE` | `09-20 19:36` |
+| `regions` | **PASS** — all six regions over the 940 m route | `BUNDLE_STABLE` | `09-20 23:28` |
 | `arena`, `network`, `pages`, `progression`, `revive`, `save-resume`, `settlement`, `ui-full-flow` | **PASS**, never re-run | none | `09-16` – `09-18` **stale** |
 | `skins`, `skin-unlock` | **no report at all** | — | — |
 
-**"The chain is green" is therefore not yet a true statement.** Four scopes are
-defensible; nine carry stale passes, one carries a stale failure, and two have
-never produced a report. The four above are what this session actually verified.
+**"The chain is green" is therefore not yet a true statement.** Six scopes are
+defensible; eight carry stale passes and two have never produced a report. The
+six above are what this session actually verified.
 
-`regions` deserves its own note because it is the only recorded failure:
-`FAIL_REGION_LANDMARK_BEDROOM: expected ResidentialHouseWest`. That report is
-from `09-12`, and `7661123` subsequently **repositioned** `ResidentialHouseWest`
-as part of the Golden City layout pass, so the check most likely tests a
-projection that no longer exists. "Probably superseded" is not "passing" — it
-needs a re-run before it can be called anything.
+`regions` was the one recorded failure and is now resolved — but only after the
+re-run disproved the diagnosis. It failed reproducibly (`BUNDLE_STABLE`,
+`consoleErrors: []`), and the guess that `7661123` had superseded it by moving
+`ResidentialHouseWest` was **wrong**. See below.
 
-Measured for the four verified scopes:
+Measured for the six verified scopes:
 
 - `full`: `failures: []` across all three viewports; digest `fe685340`.
 - `arena-ai`: `reason: TIME` at `elapsedSeconds 180.014`, 8 competitors,
@@ -77,6 +75,16 @@ Measured for the four verified scopes:
   `settlementReward {coins 15, survivalCoins 12, placementCoins 3}`,
   `consoleErrors: []`.
 - `golden-city`: 31 checks, `deficits: []`.
+- `cell-lifecycle`: `failures: []` across all three viewports, 6/6 checkpoints
+  reached (`EAST`, `NORTH`, `WEST`, `SOUTH`, `RETURN_X`, `OPENING`), `rebaseCount`
+  advancing `1 → 6`, `consoleErrors: []`. The opening census recorded **23**
+  collectibles (`Cluster_Park` 10, `Cluster_CitySquare` 10, `tutorial_t2_target`,
+  `aspirational_authored_0/1`) and 5 authored vehicles — the authored population,
+  present at the very first snapshot.
+- `regions`: `failures: []`, all six checkpoints reached over the 940 m route —
+  `bedroom` 0 m, `warehouse` 175.5, `supermarket` 367.4, `parking` 557.5,
+  `construction` 751.2, `city` 941.4 — each with its district and landmark
+  confirmed, `rebaseCount` 4, `consoleErrors: []`.
 
 That clean `BUNDLE_STABLE` observation licensed promoting a clobber from a
 warning to a failure, which `f39f689` did — see below.
@@ -405,6 +413,43 @@ empty still fails.
 `--scope=cell-lifecycle` is the only scope that runs this path — the reports for
 `full`, `arena-ai` and `arena-timer` all carry `cellLifecycle: null` — so this
 fix is verified by a dedicated re-run of that scope, not by the four above.
+**Verified:** that run passes at all three viewports with `failures: []`,
+`BUNDLE_STABLE` and `consoleErrors: []`, and it exercises all six checkpoints
+with `rebaseCount` advancing `1 → 6`. The same run is also the first clean
+observation of the newly-fatal clobber guard, which stayed silent as it should.
+
+### `FAIL_REGION_LANDMARK_BEDROOM` — the landmark was never missing (`d87d10f`)
+
+The only recorded failure in the chain, and the record was wrong about it twice.
+
+**First wrong claim:** that it was stale. The 09-12 report predates `7661123`,
+which repositioned `ResidentialHouseWest`, so the failure looked superseded. The
+re-run disproved it: `BUNDLE_STABLE`, `consoleErrors: []`, and the **same**
+failure. A stale-looking failure is only stale if you re-run it.
+
+**Second wrong claim:** that a landmark was missing. It was not. The prefab nests
+it — `GoldenCityCell → Buildings → ResidentialHouseWest → building-type-b` —
+while `getCurrentCellVisualDiagnostics` maps `cell.node.children`, so it emits
+only group names (`Ground`, `Roads`, `Buildings`, `Park`, `Props`, …), and its
+`visit()` records only nodes carrying a `MeshRenderer`, which a group node does
+not. The check compared `checkpoint.landmark` against that top-level list, so a
+landmark one level down was structurally invisible to it.
+
+The baseline report shows it used to work: `visualDiagnostics` was a **flat** list
+of semantic names (`ResidentialHouseWest`, `ArenaSkylineWest`,
+`NeighbourhoodClinic`, …) produced by the *procedural* opening cell. The authored
+Golden City cell replaced that shape and the check was never updated, so it had
+been failing for a reason unrelated to the landmark since the authored cell
+landed. Procedural region cells still spawn landmarks as direct children
+(`spawn()` → `art.spawn(kind, this.node, …)`), which is why only the first
+checkpoint failed and the other five passed — a signature worth remembering:
+**one checkpoint failing while its siblings pass points at a structural
+difference in that one cell, not at the thing being asserted.**
+
+The probe now also emits `descendantNames` per group and the check searches the
+subtree, so it answers for both cell shapes. The failure message was also
+trimmed: it dumped the full renderer diagnostics, about 6 KB, which is unreadable
+exactly when it matters.
 
 ### The aspirational T4/T5 are genuinely visible at LV.1 (N2 closed)
 

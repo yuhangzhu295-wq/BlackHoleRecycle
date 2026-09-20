@@ -3,7 +3,7 @@
 ## V4 (current)
 
 Date: 2026-09-20
-Local HEAD: `f39f689`. **Nothing is pushed.**
+Local HEAD: `d87d10f`. **Nothing is pushed.**
 `git push origin HEAD:main` is **BLOCKED_EXTERNAL_NETWORK** (`CONNECT tunnel failed,
 502`; `OpenSSL SSL_read: unexpected eof`; `github.com` returns `000` while
 `api.github.com` returns `200`). Retrying is not worth the time until the network
@@ -11,7 +11,7 @@ path is restored. All commits are safe locally; `origin/main` is far behind.
 
 ### Gate chain state — read this before trusting any PASS
 
-The runner declares **16** scopes. Only these four were re-run alone on the slot:
+The runner declares **16** scopes. Only these six were re-run alone on the slot:
 
 | Scope | State | Provenance |
 | :--- | :--- | :--- |
@@ -19,22 +19,28 @@ The runner declares **16** scopes. Only these four were re-run alone on the slot
 | `arena-ai` | **PASS** — 180.014 s, `reason: TIME`, all four bot states | `BUNDLE_STABLE` `333e265f` |
 | `arena-timer` | **PASS** — 180.0057 s, `reason: TIME`, reward paid | `BUNDLE_STABLE` |
 | `golden-city` | **PASS** 31/31, `deficits: []` | evidence committed `413b1e9` |
+| `cell-lifecycle` | **PASS** — 375x667 + 390x844 + 430x932, 6/6 checkpoints | `BUNDLE_STABLE` |
+| `regions` | **PASS** — all six regions over the 940 m route | `BUNDLE_STABLE` |
 
-**Do not read that as "the chain is green".** The remaining twelve scopes hold
+**Do not read that as "the chain is green".** The remaining ten scopes hold
 reports from `09-16`–`09-18` that predate both the provenance guard and the fixes
-below, so they say nothing about the current build. Two of them are worse than
-stale:
+below, so they say nothing about the current build, and **`skins` and
+`skin-unlock` have no report at all.**
 
-- **`regions` is a recorded FAIL** (`09-12`): `FAIL_REGION_LANDMARK_BEDROOM:
-  expected ResidentialHouseWest`. `7661123` later **repositioned**
-  `ResidentialHouseWest` in the Golden City layout pass, so the check probably
-  tests a projection that no longer exists — but "probably superseded" is not
-  "passing". Re-run it.
-- **`skins` and `skin-unlock` have no report at all.**
+`regions` is resolved (`d87d10f`) but worth reading, because it was misdiagnosed
+twice. It was a **live** failure, not a stale one, and the landmark was never
+missing: the prefab nests it (`GoldenCityCell → Buildings → ResidentialHouseWest`)
+while `getCurrentCellVisualDiagnostics` emits only top-level group names and only
+nodes carrying a `MeshRenderer`. The check compared the landmark against that
+list, so a nested landmark was structurally invisible. Procedural region cells
+still spawn theirs flat, which is why only the first checkpoint failed.
 
 `cell-lifecycle` is the only scope that runs `verifyCellLifecycle` (the other
 reports carry `cellLifecycle: null`), so the reload fix below is verified by a
-dedicated re-run of that scope.
+dedicated re-run of that scope — which passes at all three viewports with
+`failures: []`, `BUNDLE_STABLE` and `consoleErrors: []`. That same run is the
+first clean observation of the now-fatal clobber guard, which correctly stayed
+silent.
 
 `arena-ai` and `arena-timer` previously read PASS and were **not**. Three lanes
 built concurrently; a Cocos build **deletes `cocos/build/web-mobile` wholesale and
@@ -90,17 +96,17 @@ an unverified census is only the absence of evidence.
    guarantee. A pickup can no longer break it; an empty reload still fails it.
 4. **The ROAD divergence is now a contract assertion** — see
    `scripts/test_open_ground_instrument_divergence_contract.mjs` in
-   `test:contracts`. Mutation-tested, not assumed.
-4. **Assert the ROAD divergence in a contract test.**
-   `estimateEmptyGround` must keep ROAD as an occupant; `computeScreenSpaceBudget`
-   must not. Unifying them fails `LARGE_EMPTY_GROUND_MAX` at **0.858**. Today this
-   is protected only by a comment.
+   `test:contracts`. Mutation-tested, not assumed: removing ROAD from the probe's
+   occupants makes it exit 1. Unifying the two instruments fails
+   `LARGE_EMPTY_GROUND_MAX` at **0.858**, which is why they must stay different.
 5. **`largeEmptyGroundRatio` drifts** ≤0.010 against a 0.077 margin because
    COLLECTIBLE/VEHICLE/COMPETITOR count as occupants. Quantified residual; the
    proven fix (exclude those three → 0.1828) is deliberately deferred because it
    invalidates committed evidence for a 0.010 gain.
-6. **Arena Final gaps** (arena-audit, TaskList #13): no scope asserts that bots
-   actually move, and the TIME path has no duplicate-reward coverage.
+6. **Arena duplicate-reward coverage still open.** The "bots do not move" half of
+   this gap is **closed** — the bot-movement gate added in `9fa1c1f` did exactly
+   its job and caught the `BOT_TELEPORT_CLAMP_METERS` `ReferenceError` in
+   `arena-ai`. No scope yet asserts the TIME path cannot pay a reward twice.
 7. **Golden City requirement 1 is PARTIAL.** The band predicate is *intersects*,
    not *contains*, so three of four buildings are only partly on screen, and the
    "~13 m band" has no code predicate at all.
