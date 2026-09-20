@@ -72,8 +72,12 @@ Two harness changes are committed: the player silhouette now merges only
 `machineSuctionRadius` beside the ratio. **The remaining gap is a decision, not
 a defect** — either pin which node *is* the silhouette, so the check stops
 reading whichever decorative mesh happens to be widest, or move the band: a
-~0.7% nudge (`coreScale 1.85 → ~1.863`) clears the floor at every level, and the
-alternative is to lower the floor to the documented 18–23% band.
+~0.4–0.7% nudge, i.e. **`coreScale` in `[1.856592, 1.863226]`** (`1.86` is the
+clean midpoint: LV1 `0.220404`, LV5 `0.299481`), clears the band at every level,
+and the alternative is to lower the floor to the documented 18–23% band. The
+window assumes the ratio scales linearly with `coreScale`, which holds for the
+two runs whose `player.contributors` are recorded; re-measure both ends before
+relying on it.
 
 `arena-ai` and `arena-timer` previously read PASS and were **not**. Three lanes
 built concurrently; a Cocos build **deletes `cocos/build/web-mobile` wholesale and

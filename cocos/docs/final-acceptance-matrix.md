@@ -370,11 +370,16 @@ misread as a framing change.
 **What remains is a decision, not a defect.** Either the measured subject must
 be pinned — declare which node *is* the silhouette, so the check stops reading
 whichever decorative mesh happens to be widest — or the band must move. The
-body-only reading is `0.2192` and misses the floor by `0.0008`, so a ~0.7%
-increase in the player's on-screen width (`coreScale 1.85 → ~1.863`) would clear
-it at every level; the alternative is to lower the floor to the documented
-18–23% readability band. The contract is `LOCKED` and the value is
-player-facing, so nothing was changed here.
+body-only reading is `0.2192` and misses the floor by `0.0008`. The ratio scales
+linearly with `coreScale` (every member of the merged subtree is a child of
+`coreNode`, which carries the x/z scale), so the feasible window is exactly
+**`coreScale` in `[1.856592, 1.863226]`** — a 0.36% window. Below it the LV1
+reading stays under `0.22`; above it the LV5 reading crosses `0.30`. The clean
+midpoint is **`1.86`**, giving LV1 `0.220404` and LV5 `0.299481`. The
+alternative is to lower the floor to the documented 18–23% readability band.
+The contract is `LOCKED` and the value is player-facing, so nothing was changed
+here, and the window assumes linearity — it should be re-measured with
+`player.contributors` present at both ends before it is relied on.
 
 ### Operational note: Creator CLI builds hang intermittently
 
