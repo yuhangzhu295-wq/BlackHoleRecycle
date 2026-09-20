@@ -3003,14 +3003,33 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
   });
   const page = await context.newPage();
   const runtimeErrors = [];
+  const failedResponses = [];
   page.on('pageerror', (error) => runtimeErrors.push(error.message));
   page.on('console', (message) => {
     if (message.type() === 'error') runtimeErrors.push(message.text());
   });
+  // A resource that fails during boot only reaches the console as
+  // "Failed to load resource: the server responded with a status of 404",
+  // with no URL, so a boot failure could only report a bare
+  // "Timeout 45000ms exceeded". Record the URL with the status so the failure
+  // names the missing resource.
+  page.on('response', (response) => {
+    if (response.status() >= 400) failedResponses.push(`${response.status()} ${response.url()}`);
+  });
 
   try {
     await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
-    await page.waitForFunction(() => Boolean(window.__BHR_QA__?.snapshot), undefined, { timeout: 45000 });
+    try {
+      await page.waitForFunction(() => Boolean(window.__BHR_QA__?.snapshot), undefined, { timeout: 45000 });
+    } catch (error) {
+      throw new Error(`FAIL_PORTRAIT_BOOT: ${JSON.stringify({
+        viewport: viewport.id,
+        url: baseUrl,
+        failedResponses,
+        runtimeErrors,
+        error: error instanceof Error ? error.message : String(error),
+      })}`);
+    }
     const canvasRect = await page.locator('#GameCanvas').evaluate((canvas) => {
       const rect = canvas.getBoundingClientRect();
       return { left: rect.left, top: rect.top, width: rect.width, height: rect.height };
