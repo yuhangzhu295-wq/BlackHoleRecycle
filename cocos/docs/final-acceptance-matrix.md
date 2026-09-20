@@ -41,10 +41,16 @@ switch) and reads the same directory, so the scopes must run serially.
 
 | Scope | Result | Evidence |
 | :--- | :--- | :--- |
-| `full` | **PENDING** — clean re-run in flight | `acceptance-report-full.json` |
-| `arena-ai` | **VOID** — must re-run | `acceptance-report-arena-ai.json` |
+| `full` | **PASS** — 375x667 + 390x844 + 430x932, `failures: []` | `acceptance-report-full.json` |
+| `arena-ai` | **VOID** — re-run in flight | `acceptance-report-arena-ai.json` |
 | `arena-timer` | **VOID** — must re-run | `acceptance-report-arena-timer.json` |
 | `golden-city` | **PASS** — 31/31, `deficits: []` | `evidence/v2/portrait/golden-city-gate.json` |
+
+`full` is the first scope re-run alone on the slot, and its report is the first
+carrying the provenance guard. It reports `BUNDLE_STABLE`: `censusDigest`
+`fe685340` identical at start and end, 187 files, untruncated. That is the clean
+observation that licenses promoting a clobber from a warning to a failure —
+do that in a follow-up, not silently.
 
 `verifyArenaAiRuntime` and `collectGoldenCityBaseline` are each reachable from
 only one scope, so `--scope=full` does **not** substitute for them.
@@ -77,6 +83,11 @@ built tree changes mid-run, so the next collision self-labels as
 a false one and a false FATAL would block the chain.
 
 ### Measured results
+
+**Caveat:** `full` and `golden-city` are now defensible — `full` was re-run alone
+and reported `BUNDLE_STABLE`, and `golden-city`'s evidence predates the collision
+window. The `arena-ai` and `arena-timer` figures below were recorded during that
+window and remain **indicative only** until each is re-run alone.
 
 - `full`: real portrait runtime and CDP touch verified on both viewports,
   `consoleErrors: []`. Includes `V4_HUD_SAFE_AREA_INSET` (see below).
