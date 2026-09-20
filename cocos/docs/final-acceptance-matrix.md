@@ -39,17 +39,34 @@
 `cocos/build/web-mobile` through the Creator CLI (the script has no skip-build
 switch) and reads the same directory, so the scopes must run serially.
 
-| Scope | Result | Evidence |
-| :--- | :--- | :--- |
-| `full` | **PASS** — 375x667 + 390x844 + 430x932, `failures: []` | `acceptance-report-full.json` |
-| `arena-ai` | **PASS** — real 180 s match, all four bot states | `acceptance-report-arena-ai.json` |
-| `arena-timer` | **PASS** — 180.0057 s, `reason: TIME`, reward paid | `acceptance-report-arena-timer.json` |
-| `golden-city` | **PASS** — 31/31, `deficits: []` | `evidence/v2/portrait/golden-city-gate.json` |
+The runner declares **16** scopes. Four are verified by a re-run alone on the
+slot and carry `bundleProvenance`. The rest hold older reports that predate both
+the provenance guard and the fixes recorded below, so they are **not** evidence
+of the current build.
 
-**All four scopes PASS, and each was re-run alone on the slot.** Every re-run
-report carries `bundleProvenance: BUNDLE_STABLE` with identical start/end
-digests, which is what makes these passes defensible where the earlier three
-were not. Measured:
+| Scope | State | Provenance | Report |
+| :--- | :--- | :--- | :--- |
+| `full` | **PASS** — 375x667 + 390x844 + 430x932, `failures: []` | `BUNDLE_STABLE` `fe685340` | `09-20 19:08` |
+| `arena-ai` | **PASS** — real 180 s match, all four bot states | `BUNDLE_STABLE` `333e265f` | `09-20 19:18` |
+| `arena-timer` | **PASS** — 180.0057 s, `reason: TIME`, reward paid | `BUNDLE_STABLE` | `09-20 19:23` |
+| `golden-city` | **PASS** — 31/31, `deficits: []` | none (pre-guard; evidence committed `413b1e9`) | `09-20 18:32` |
+| `cell-lifecycle` | re-run in flight — see below | — | `09-16 13:30` **stale** |
+| `regions` | **FAIL**, unverified since | none | `09-12 23:19` **stale** |
+| `arena`, `network`, `pages`, `progression`, `revive`, `save-resume`, `settlement`, `ui-full-flow` | **PASS**, never re-run | none | `09-16` – `09-18` **stale** |
+| `skins`, `skin-unlock` | **no report at all** | — | — |
+
+**"The chain is green" is therefore not yet a true statement.** Four scopes are
+defensible; nine carry stale passes, one carries a stale failure, and two have
+never produced a report. The four above are what this session actually verified.
+
+`regions` deserves its own note because it is the only recorded failure:
+`FAIL_REGION_LANDMARK_BEDROOM: expected ResidentialHouseWest`. That report is
+from `09-12`, and `7661123` subsequently **repositioned** `ResidentialHouseWest`
+as part of the Golden City layout pass, so the check most likely tests a
+projection that no longer exists. "Probably superseded" is not "passing" — it
+needs a re-run before it can be called anything.
+
+Measured for the four verified scopes:
 
 - `full`: `failures: []` across all three viewports; digest `fe685340`.
 - `arena-ai`: `reason: TIME` at `elapsedSeconds 180.014`, 8 competitors,
@@ -61,8 +78,8 @@ were not. Measured:
   `consoleErrors: []`.
 - `golden-city`: 31 checks, `deficits: []`.
 
-That clean `BUNDLE_STABLE` observation licenses promoting a clobber from a
-warning to a failure — do that in a follow-up, not silently.
+That clean `BUNDLE_STABLE` observation licensed promoting a clobber from a
+warning to a failure, which `f39f689` did — see below.
 
 ### The bot-movement gate found a real bug, and it was mine to fix (`edcc8fd`)
 
@@ -114,12 +131,16 @@ The scopes are serial and must be run **alone**. `golden-city` is unaffected
 because its evidence was committed at `413b1e9`, before the collision window.
 
 A bundle-provenance guard now stamps every report with
-`bundleProvenance {status, start, end, comparisonWindow}` and warns when the
-built tree changes mid-run, so the next collision self-labels as
-`BUNDLE_CLOBBERED` instead of reading as a product failure. It is
-**report-only** (exit code is deliberately unchanged) until a clean run shows
-`BUNDLE_STABLE`, because no observation yet distinguishes a true positive from
-a false one and a false FATAL would block the chain.
+`bundleProvenance {status, start, end, comparisonWindow}` and, since `f39f689`,
+**fails the run** when the built tree changes mid-run, so the next collision
+self-labels as `FAIL_BUNDLE_CLOBBERED` instead of reading as a product failure.
+The promotion waited for the observation it needed: three scopes re-run alone all
+reported `BUNDLE_STABLE` with identical start/end digests, which is the clean
+case the guard had to be able to recognise before a clobber could be called
+fatal. `BUNDLE_UNVERIFIED` is deliberately **not** fatal — a clobber is positive
+evidence the report is incoherent, whereas an unverified census is only the
+absence of evidence, and failing on it would turn healthy runs red for reasons
+unrelated to the product.
 
 ### Measured results
 
@@ -344,21 +365,46 @@ Two consequences, and the second is an **invariant**:
   `computeScreenSpaceBudget` must not** (the latter changed to walkable/open in
   `95d5816`). ROAD covers 990/1280 samples and is the only reason the ratio is
   low. Anyone who "unifies" the two instruments fails this gate at **0.858**.
-  The divergence needs a contract assertion, not just a code comment.
+  The divergence was a code comment and is now a contract assertion:
+  `scripts/test_open_ground_instrument_divergence_contract.mjs` (`f39f689`, wired
+  into `test:contracts`) lifts both implementations out of their sources, runs
+  them on identical synthetic scenes, and asserts the identity
+  `openSamples − emptyGroundSamples === road samples` so that road is the *only*
+  permitted difference. It is mutation-tested rather than assumed: removing
+  `ROAD` from the probe's occupants makes it exit 1 with
+  `PROBE_COUNTS_ROAD_AS_OCCUPANT`. The same file locks a second, independent
+  asymmetry — the probe drops `RESOURCE_CLUSTER` from its occupants while the
+  budget buckets clusters as `static` — so neither can be "tidied" into the
+  other by accident.
 
 ### `FAIL_CELL_LIFECYCLE_OPENING_RELOAD` — live census compared to live census
 
-Both sides of the comparison are live, so neither is the authored contract.
-`openingObjects` is `openingCell.collectibleRuntimeIds`
-(`test_cocos_portrait_acceptance.mjs:2419`) which comes from the **live**
-`cell.objects` (`InfiniteWorldManager.ts:1447`); `reload.collectibleCount` comes
-from `recordCellLifecycle` (`InfiniteWorldManager.ts:1597`) as
+Both sides of the comparison were live, so neither was the authored contract.
+`openingObjects` is `openingCell.collectibleRuntimeIds`, which comes from the
+**live** `cell.objects` (`InfiniteWorldManager.ts:1447`); `reload.collectibleCount`
+comes from `recordCellLifecycle` (`InfiniteWorldManager.ts:1597`) as
 `cell.objects.filter((object) => !isVehicleObject(object)).length`, also the
 **live** list, sampled at LOAD. If the player eats an opening-cell collectible
 before the scenario's first snapshot, the reload rebuilds all authored slots and
-can never match. This is the same live-census-vs-authored-contract category
-error as `7744f91`, not a timing race. **Not yet fixed** — it needs the authored
-slot count.
+can never match. The same live-census-vs-authored-contract category error as
+`7744f91`, not a timing race.
+
+**Fixed in `f39f689`.** The obvious repair — compare against the authored slot
+count — is not available here: `getSnapshot().activeCells` serializes only live
+`cell.objects`/`cell.dynamicVehicles`, and the authored `collectibleSlots`/
+`trafficSlots` reach the golden-city diagnostics rather than this snapshot. So
+the assertion now compares the cell's **own UNLOAD event** against its reload
+event and requires the round trip to restore at least what it took away and never
+to come back empty. That is the engine's actual guarantee:
+`populateAuthoredContent` and `populateAuthoredTraffic` re-register every authored
+spawn point unconditionally (`InfiniteWorldManager.ts:416-426`, `:564`), while
+the UNLOAD count is whatever remained at departure and can only be smaller. The
+pickup that used to break the old assertion now cannot, and a cell that reloads
+empty still fails.
+
+`--scope=cell-lifecycle` is the only scope that runs this path — the reports for
+`full`, `arena-ai` and `arena-timer` all carry `cellLifecycle: null` — so this
+fix is verified by a dedicated re-run of that scope, not by the four above.
 
 ### The aspirational T4/T5 are genuinely visible at LV.1 (N2 closed)
 

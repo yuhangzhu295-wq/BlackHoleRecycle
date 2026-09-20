@@ -3,7 +3,7 @@
 ## V4 (current)
 
 Date: 2026-09-20
-Local HEAD: `aff8867` plus uncommitted working-tree changes. **Nothing is pushed.**
+Local HEAD: `f39f689`. **Nothing is pushed.**
 `git push origin HEAD:main` is **BLOCKED_EXTERNAL_NETWORK** (`CONNECT tunnel failed,
 502`; `OpenSSL SSL_read: unexpected eof`; `github.com` returns `000` while
 `api.github.com` returns `200`). Retrying is not worth the time until the network
@@ -11,15 +11,30 @@ path is restored. All commits are safe locally; `origin/main` is far behind.
 
 ### Gate chain state — read this before trusting any PASS
 
-| Scope | State |
-| :--- | :--- |
-| `golden-city` | **PASS** 31/31, `deficits: []`. Evidence committed `413b1e9`. Solid. |
-| `full` | **PASS** — 375x667 + 390x844 + 430x932, `failures: []`, `BUNDLE_STABLE`. |
-| `arena-ai` | **PASS** — 180.014 s, `reason: TIME`, all four bot states, `BUNDLE_STABLE`. |
-| `arena-timer` | **PASS** — 180.0057 s, `reason: TIME`, reward paid, `BUNDLE_STABLE`. |
+The runner declares **16** scopes. Only these four were re-run alone on the slot:
 
-All four were re-run alone on the slot and each reported `BUNDLE_STABLE` with
-identical start/end digests. The chain is green as of `718fa16`.
+| Scope | State | Provenance |
+| :--- | :--- | :--- |
+| `full` | **PASS** — 375x667 + 390x844 + 430x932, `failures: []` | `BUNDLE_STABLE` `fe685340` |
+| `arena-ai` | **PASS** — 180.014 s, `reason: TIME`, all four bot states | `BUNDLE_STABLE` `333e265f` |
+| `arena-timer` | **PASS** — 180.0057 s, `reason: TIME`, reward paid | `BUNDLE_STABLE` |
+| `golden-city` | **PASS** 31/31, `deficits: []` | evidence committed `413b1e9` |
+
+**Do not read that as "the chain is green".** The remaining twelve scopes hold
+reports from `09-16`–`09-18` that predate both the provenance guard and the fixes
+below, so they say nothing about the current build. Two of them are worse than
+stale:
+
+- **`regions` is a recorded FAIL** (`09-12`): `FAIL_REGION_LANDMARK_BEDROOM:
+  expected ResidentialHouseWest`. `7661123` later **repositioned**
+  `ResidentialHouseWest` in the Golden City layout pass, so the check probably
+  tests a projection that no longer exists — but "probably superseded" is not
+  "passing". Re-run it.
+- **`skins` and `skin-unlock` have no report at all.**
+
+`cell-lifecycle` is the only scope that runs `verifyCellLifecycle` (the other
+reports carry `cellLifecycle: null`), so the reload fix below is verified by a
+dedicated re-run of that scope.
 
 `arena-ai` and `arena-timer` previously read PASS and were **not**. Three lanes
 built concurrently; a Cocos build **deletes `cocos/build/web-mobile` wholesale and
@@ -47,11 +62,12 @@ last 3 minutes, someone else is mid-run. A build that is progressing **deletes**
 `scripts/capture_v4_design_evidence.mjs` is safe to run in parallel — it never
 spawns a build and binds an ephemeral port.
 
-Reports now carry `bundleProvenance {status, start, end, comparisonWindow}` and
-warn on `BUNDLE_CLOBBERED`. It is **report-only** on purpose (exit code
-unchanged); make it fatal once a clean run has been observed to report
-`BUNDLE_STABLE`, since no observation yet separates a true positive from a false
-one.
+Reports carry `bundleProvenance {status, start, end, comparisonWindow}` and, since
+`f39f689`, a clobber **fails the run** (`FAIL_BUNDLE_CLOBBERED`, exit 1). The
+promotion waited for its precondition: three scopes re-run alone all reported
+`BUNDLE_STABLE` with identical start/end digests. `BUNDLE_UNVERIFIED` is
+deliberately non-fatal — a clobber is positive evidence the report is incoherent,
+an unverified census is only the absence of evidence.
 
 ### Open items, in priority order
 
@@ -65,10 +81,16 @@ one.
    `413b1e9`, destroying the baseline. Only `ce30274` (`0.505078125`) survives in
    git; the brief's `0.34` exists **only as prose**. Make `-before` evidence
    write-once.
-3. **`FAIL_CELL_LIFECYCLE_OPENING_RELOAD`** compares live-vs-live
-   (`test_cocos_portrait_acceptance.mjs:2419` ← `InfiniteWorldManager.ts:1447`,
-   against `recordCellLifecycle` at `:1597`). Same category error as `7744f91`.
-   Fix by comparing against the authored slot count.
+3. **`FAIL_CELL_LIFECYCLE_OPENING_RELOAD` — FIXED** in `f39f689`. The authored
+   slot count is not reachable from this snapshot (`getSnapshot().activeCells`
+   serializes only live `cell.objects`/`cell.dynamicVehicles`), so the assertion
+   now compares the cell's own UNLOAD event against its reload event: the round
+   trip must restore at least what it took away and never come back empty, which
+   is what `populateAuthoredContent`/`populateAuthoredTraffic` actually
+   guarantee. A pickup can no longer break it; an empty reload still fails it.
+4. **The ROAD divergence is now a contract assertion** — see
+   `scripts/test_open_ground_instrument_divergence_contract.mjs` in
+   `test:contracts`. Mutation-tested, not assumed.
 4. **Assert the ROAD divergence in a contract test.**
    `estimateEmptyGround` must keep ROAD as an occupant; `computeScreenSpaceBudget`
    must not. Unifying them fails `LARGE_EMPTY_GROUND_MAX` at **0.858**. Today this
