@@ -529,13 +529,29 @@ class InfiniteWorldCell {
 
     const routesRoot = findNodeByName(this.node, 'TrafficRoutes');
     if (!routesRoot) return;
+    // The route is a closed diamond joining the four road arms, and a vehicle
+    // drives straight from its spawn point to the next waypoint, so the chord
+    // between two adjacent vertices has to stay on the pavement by itself. The
+    // arms are 12 wide and the junction is 16 across, so a chord from (R, 0) to
+    // (0, R) only stays paved while R is at most 14 (measured on the authored
+    // cell: R=15 leaves 13.3% of the loop off-road, R=16 leaves 24.95%). The
+    // arm node origins sit at radius 16, which drove the corners near (7, 9)
+    // and (9, 7) outside both the junction and the arms. Clamp the vertices to
+    // 12, keeping 2m of margin. Anchors are deliberately not used here: they
+    // are spawn points named per vehicle kind, not road geometry.
+    const TRAFFIC_ROUTE_RADIUS = 12;
     const roadRouteNames = ['RoadWest', 'RoadNorth', 'RoadEast', 'RoadSouth'];
     const roadRoute = roadRouteNames
       .map((name) => findNodeByName(this.node, name))
       .filter((node): node is Node => Boolean(node))
       .map((node) => {
         const position = node.worldPosition;
-        return { x: position.x - logicalOrigin.x, z: position.z - logicalOrigin.z };
+        const x = position.x - logicalOrigin.x;
+        const z = position.z - logicalOrigin.z;
+        const radius = Math.hypot(x, z);
+        if (radius <= TRAFFIC_ROUTE_RADIUS) return { x, z };
+        const inset = TRAFFIC_ROUTE_RADIUS / radius;
+        return { x: x * inset, z: z * inset };
       });
     if (roadRoute.length < 4) return;
     for (const anchor of routesRoot.children.filter((child) => child.name.startsWith('VehicleAnchor_'))) {

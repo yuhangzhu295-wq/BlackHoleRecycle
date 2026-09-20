@@ -1822,13 +1822,27 @@ async function collectGoldenCityBaseline(cdp, page, canvasRect, homeSnapshot) {
   }, null, 2)}\n`, 'utf8');
   assert(gate.passed, `FAIL_GOLDEN_CITY_COMPOSITION_GATE: ${gate.deficits.length} unmet threshold(s): `
     + `${gate.deficits.join(' | ')} :: metrics=${JSON.stringify(gate.metrics)}`);
-  const openingRoad = composition.entries.find((entry) => entry.name === 'FourWayRoad' || entry.name === 'MainCrossroad')?.worldBounds;
+  // "Traffic stays on the road" means inside the road *network*, not inside the
+  // junction node alone. `MainCrossroad` is only the 16x16 junction, while the
+  // four authored arms run out to |24|, so testing the junction bounds alone
+  // reported a vehicle as off-road merely for being on an arm. Test the union
+  // of every visible ROAD footprint instead. `FourWayRoad` is the junction
+  // entry's pre-rename name, kept in the payload so an older probe build is
+  // still diagnosable.
+  const openingRoad = composition.entries
+    .find((entry) => entry.name === 'FourWayRoad' || entry.name === 'MainCrossroad')?.worldBounds;
+  const openingRoads = composition.entries
+    .filter((entry) => entry.category === 'ROAD' && entry.visible === true && entry.worldBounds)
+    .map((entry) => entry.worldBounds);
   const openingTraffic = dynamicBefore.filter((vehicle) => vehicle.id.startsWith('traffic_0_0_'));
-  const isInsideOpeningRoad = (vehicle) => openingRoad
-    && vehicle.x >= openingRoad.min.x && vehicle.x <= openingRoad.max.x
-    && vehicle.z >= openingRoad.min.z && vehicle.z <= openingRoad.max.z;
-  assert(openingTraffic.length > 0 && openingTraffic.every(isInsideOpeningRoad),
-    `FAIL_GOLDEN_CITY_TRAFFIC_OFF_ROAD: ${JSON.stringify({ openingRoad, openingTraffic })}`);
+  const isInsideOpeningRoad = (vehicle) => openingRoads.some((bounds) => vehicle.x >= bounds.min.x
+    && vehicle.x <= bounds.max.x && vehicle.z >= bounds.min.z && vehicle.z <= bounds.max.z);
+  assert(openingRoads.length > 0 && openingTraffic.length > 0 && openingTraffic.every(isInsideOpeningRoad),
+    `FAIL_GOLDEN_CITY_TRAFFIC_OFF_ROAD: ${JSON.stringify({
+      openingRoad,
+      openingRoads,
+      offRoad: openingTraffic.filter((vehicle) => !isInsideOpeningRoad(vehicle)),
+    })}`);
   await page.waitForTimeout(1200);
   const after = await readRuntimeSnapshot(page);
   const dynamicAfter = after.world?.streaming?.dynamicVehicles || [];
