@@ -1545,8 +1545,24 @@ function evaluateGoldenCityGate(contract, composition, devicePixelRatio) {
     poi: composition.counts.POI,
     vehicles: composition.counts.VEHICLE,
     competitors: composition.counts.COMPETITOR,
-    collectibles: composition.counts.COLLECTIBLE,
-    resourceClusters: composition.counts.RESOURCE_CLUSTER,
+    // The cell presents authored collectible *slots*; the live census falls as
+    // the player absorbs the opening rings (the player spawns at their centre
+    // and one absorption takes several seconds), so it is not a property of the
+    // composition. Read the authored population, which the probe derives by
+    // projecting each slot position through the same gameplay camera. The live
+    // number is kept in the report purely as a drift diagnostic.
+    collectibles: composition.authoredCollectibleSlots?.visible ?? composition.counts.COLLECTIBLE,
+    liveCollectibles: composition.counts.COLLECTIBLE,
+    authoredCollectibleSlotTotal: composition.authoredCollectibleSlots?.total ?? null,
+    // Same reason as `collectibles`: the probe groups live RESOURCE_CLUSTER
+    // entries out of objects still in IDLE/ATTRACTED/SUCKING, so a cluster
+    // leaves the census as soon as the player has absorbed all of its members
+    // (the opening rings are centred on the player spawn). Group the authored
+    // slot ids by the same cluster-id rule instead, and treat a cluster as
+    // visible when at least one of its authored slots is in frame.
+    resourceClusters: composition.authoredResourceClusters?.visible ?? composition.counts.RESOURCE_CLUSTER,
+    liveResourceClusters: composition.counts.RESOURCE_CLUSTER,
+    authoredResourceClusterTotal: composition.authoredResourceClusters?.total ?? null,
     largeEmptyGroundRatio: composition.emptyGround?.largeEmptyGroundRatio ?? null,
     playerWidthRatio: player.widthRatio ?? null,
     playerScreenYRatio: player.screenYRatio ?? null,
@@ -1594,8 +1610,8 @@ function evaluateGoldenCityGate(contract, composition, devicePixelRatio) {
   atLeast('POI_MIN', 'visible points of interest', metrics.poi, mandatory.poiMin);
   atLeast('VEHICLES_MIN', 'visible vehicles', metrics.vehicles, mandatory.vehiclesMin);
   atLeast('COMPETITORS_MIN', 'visible AI competitors', metrics.competitors, mandatory.competitorsMin);
-  atLeast('COLLECTIBLES_MIN', 'visible collectibles', metrics.collectibles, mandatory.collectiblesMin);
-  atLeast('RESOURCE_CLUSTERS_MIN', 'visible resource clusters', metrics.resourceClusters, mandatory.resourceClustersMin);
+  atLeast('COLLECTIBLES_MIN', 'visible authored collectible slots', metrics.collectibles, mandatory.collectiblesMin);
+  atLeast('RESOURCE_CLUSTERS_MIN', 'visible authored resource clusters', metrics.resourceClusters, mandatory.resourceClustersMin);
   atMost('LARGE_EMPTY_GROUND_MAX', 'large empty ground ratio', metrics.largeEmptyGroundRatio,
     mandatory.largeEmptyGroundMaxPercent / 100);
   atLeast('PLAYER_WIDTH_RATIO_MIN', 'player width ratio', metrics.playerWidthRatio, camera.playerWidthRatioMin);
@@ -1653,7 +1669,14 @@ function evaluateGoldenCityGate(contract, composition, devicePixelRatio) {
     benches: () => visibleNames.some((name) => /Bench/.test(name)),
     bins: () => visibleNames.some((name) => /Trashcan|Bin/.test(name)),
     cars: () => visibleCategory('VEHICLE'),
-    'collectible resource clusters': () => visibleCategory('RESOURCE_CLUSTER'),
+    // Reads the authored cluster grouping for the same reason the threshold
+    // does: the live RESOURCE_CLUSTER entries vanish from the census once the
+    // player absorbs the opening rings, and the cell is what is being gated.
+    'collectible resource clusters': () => {
+      const authored = composition.authoredResourceClusters;
+      if (authored && Number.isFinite(authored.visible)) return authored.visible > 0;
+      return visibleCategory('RESOURCE_CLUSTER');
+    },
     'AI competitors': () => visibleCategory('COMPETITOR'),
   };
   for (const semantic of contract.requiredSemantics) {
@@ -1704,6 +1727,40 @@ function evaluateGoldenCityGate(contract, composition, devicePixelRatio) {
 }
 
 /**
+ * Wait until the gameplay camera stops moving.
+ *
+ * `PortraitGameplayCameraController.updateFollow` eases the camera towards
+ * `playerPosition + preset.offset` with `lerp(current, target, dt * 5)` and never
+ * lands exactly on it, so a composition read taken right after ARENA starts
+ * samples a transient pose rather than the declared preset view. Three runs
+ * measured camera distances of 53.5 / 54.4 / 56.6 m against a settled 53.0 m,
+ * which alone moved the empty-ground ratio between 0.14 and 0.25. Poll the live
+ * camera position until consecutive samples agree, then measure.
+ */
+async function waitForCameraSettle(page, { toleranceMeters = 0.01, pollMs = 120, timeoutMs = 8000 } = {}) {
+  const started = Date.now();
+  let previous = null;
+  let residualMeters = null;
+  const readCamera = async () => {
+    const snapshot = await readRuntimeSnapshot(page);
+    const position = snapshot.world?.streaming?.goldenCityComposition?.camera?.position;
+    return position && Number.isFinite(position.x) ? position : null;
+  };
+  while (Date.now() - started < timeoutMs) {
+    const current = await readCamera();
+    if (current && previous) {
+      residualMeters = Math.hypot(current.x - previous.x, current.y - previous.y, current.z - previous.z);
+      if (residualMeters <= toleranceMeters) {
+        return { settled: true, elapsedMs: Date.now() - started, residualMeters };
+      }
+    }
+    previous = current;
+    await page.waitForTimeout(pollMs);
+  }
+  return { settled: false, elapsedMs: Date.now() - started, residualMeters };
+}
+
+/**
  * Golden City acceptance gate. It starts a genuine 1-human + 7-bot arena by CDP
  * touch, reads JSON evidence from the live Cocos engine, asserts every declared
  * composition threshold and camera range, and observes a route-driven vehicle
@@ -1722,6 +1779,11 @@ async function collectGoldenCityBaseline(cdp, page, canvasRect, homeSnapshot) {
     const snapshot = window.__BHR_QA__.snapshot();
     return snapshot.gameState === 'ARENA' && snapshot.ui?.arenaHUD?.root?.active === true;
   }, undefined, { timeout: 7000 });
+
+  const cameraSettle = await waitForCameraSettle(page);
+  console.log(`[acceptance:v2] gameplay camera ${cameraSettle.settled ? 'settled' : 'DID NOT SETTLE'} `
+    + `after ${cameraSettle.elapsedMs} ms (residual ${cameraSettle.residualMeters === null
+      ? 'n/a' : `${cameraSettle.residualMeters.toFixed(4)} m`})`);
 
   const before = await readRuntimeSnapshot(page);
   const streaming = before.world?.streaming;

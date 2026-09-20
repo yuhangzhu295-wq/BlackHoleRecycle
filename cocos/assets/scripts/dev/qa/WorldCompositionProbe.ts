@@ -8,7 +8,11 @@
 import { Camera, Color, MeshRenderer, Node, Vec3, view } from 'cc';
 import type { CompositionCompetitor } from '../../gameplay/ArenaMatchManager';
 import { CompressibleObject } from '../../gameplay/CompressibleObject';
-import { InfiniteWorldManager, WorldCellRuntimeContent } from '../../world/InfiniteWorldManager';
+import {
+  InfiniteWorldManager,
+  WorldCellAuthoredCollectibleSlot,
+  WorldCellRuntimeContent,
+} from '../../world/InfiniteWorldManager';
 
 type GoldenCityCategory = 'BUILDING' | 'TREE' | 'ROAD' | 'POI' | 'VEHICLE' | 'COMPETITOR' | 'COLLECTIBLE' | 'RESOURCE_CLUSTER' | 'GROUND';
 
@@ -108,6 +112,42 @@ export interface GoldenCityCompositionDiagnostics {
   }>;
   readonly entries: readonly GoldenCityEntry[];
   readonly counts: Readonly<Record<GoldenCityCategory, number>>;
+  /**
+   * Composition of the cell's *authored* collectible placements, measured
+   * independently of live suction state. `counts.COLLECTIBLE` is a live census
+   * of objects in IDLE/ATTRACTED/SUCKING, so it falls as the player absorbs the
+   * opening rings and is not a property of the cell. This block is: the
+   * authored slot population is fixed, and visibility is derived by projecting
+   * each authored slot position through the same gameplay camera. Contract
+   * checks that describe what the cell presents must read this, not the live
+   * census.
+   */
+  readonly authoredCollectibleSlots: Readonly<{
+    method: 'authored slot positions projected through the gameplay camera';
+    nominalHalfExtentMeters: number;
+    total: number;
+    visible: number;
+    /** Live countable objects at the same instant, for drift diagnostics only. */
+    liveCountable: number;
+  }>;
+  /**
+   * The authored resource clusters, for the same reason as
+   * `authoredCollectibleSlots`: the live `RESOURCE_CLUSTER` entries are grouped
+   * from objects still in IDLE/ATTRACTED/SUCKING, so a cluster disappears from
+   * the census as soon as the player has absorbed every one of its members.
+   * A cluster is visible when at least one of its authored slots is visible.
+   */
+  readonly authoredResourceClusters: Readonly<{
+    method: 'authored cluster slots grouped by authored cluster id';
+    total: number;
+    visible: number;
+    clusters: readonly Readonly<{
+      id: string;
+      slots: number;
+      visibleSlots: number;
+      visible: boolean;
+    }>[];
+  }>;
   readonly player: Readonly<{
     worldBounds: GoldenCityWorldBounds | null;
     screenBounds: GoldenCityScreenBounds | null;
@@ -128,6 +168,14 @@ export interface GoldenCityCompositionDiagnostics {
   }>;
   readonly playableOpenArea: PlayableOpenAreaDiagnostics;
 }
+
+/**
+ * Authored slots carry only x/z. Projecting a bare point makes visibility
+ * knife-edge at the frame border, so give each slot a small nominal box. This is
+ * a visibility tolerance, not a claim about the art's true size.
+ */
+const AUTHORED_SLOT_HALF_EXTENT = 0.25;
+const AUTHORED_SLOT_CENTER_Y = 0.35;
 
 /**
  * The only code allowed to turn a live WorldCellRuntimeContent into visual
@@ -172,6 +220,8 @@ export class WorldCompositionProbe {
       },
       emptyGround: this.emptyGround(),
       playableOpenArea: this.emptyPlayableOpenArea(),
+      authoredCollectibleSlots: this.emptyAuthoredCollectibleSlots(),
+      authoredResourceClusters: this.emptyAuthoredResourceClusters(),
     });
 
     if (!targetCell || !camera || !camera.node?.isValid || viewport.width <= 0 || viewport.height <= 0) {
@@ -214,6 +264,8 @@ export class WorldCompositionProbe {
       player,
       emptyGround: this.estimateEmptyGround(entries, viewport),
       playableOpenArea: this.estimatePlayableOpenArea(entries),
+      authoredCollectibleSlots: this.collectAuthoredCollectibleSlots(targetCell, camera, viewport, collectibles.length),
+      authoredResourceClusters: this.collectAuthoredResourceClusters(targetCell, camera, viewport),
     };
   }
 
@@ -351,6 +403,73 @@ export class WorldCompositionProbe {
       ));
     }
     return validCollectibles;
+  }
+
+  /**
+   * Measure the authored collectible population rather than the live one.
+   *
+   * The player spawns at the centre of the two authored opening rings (5 m and
+   * 6 m) and begins attracting them immediately, and one absorption takes
+   * several seconds, so `collectCollectibleEntries` returns a different number
+   * depending on how long the arena has been running. A composition contract
+   * describes what the cell presents, so project the authored slot positions
+   * instead. Slots carry only x/z, so give each a small nominal box; the value
+   * is a visibility tolerance, not a claim about the art's true size.
+   */
+  private static collectAuthoredCollectibleSlots(
+    cell: WorldCellRuntimeContent,
+    camera: Camera,
+    viewport: Readonly<{ x: number; y: number; width: number; height: number }>,
+    liveCountable: number,
+  ): GoldenCityCompositionDiagnostics['authoredCollectibleSlots'] {
+    let visible = 0;
+    for (const slot of cell.collectibleSlots) {
+      if (this.projectAuthoredSlot(camera, viewport, slot).visible) visible++;
+    }
+    return {
+      method: 'authored slot positions projected through the gameplay camera',
+      nominalHalfExtentMeters: AUTHORED_SLOT_HALF_EXTENT,
+      total: cell.collectibleSlots.length,
+      visible,
+      liveCountable,
+    };
+  }
+
+  /** Authored clusters grouped by the same id rule the live census uses. */
+  private static collectAuthoredResourceClusters(
+    cell: WorldCellRuntimeContent,
+    camera: Camera,
+    viewport: Readonly<{ x: number; y: number; width: number; height: number }>,
+  ): GoldenCityCompositionDiagnostics['authoredResourceClusters'] {
+    const groups = new Map<string, { slots: number; visibleSlots: number }>();
+    for (const slot of cell.collectibleSlots) {
+      const clusterId = this.getClusterId(slot.customId);
+      if (!clusterId) continue;
+      const group = groups.get(clusterId) || { slots: 0, visibleSlots: 0 };
+      group.slots++;
+      if (this.projectAuthoredSlot(camera, viewport, slot).visible) group.visibleSlots++;
+      groups.set(clusterId, group);
+    }
+    // Do not spread this Map. Cocos Creator's Web Mobile Babel output rewrites
+    // `[...map]` as `[].concat(map)`, which produces a one-element array holding
+    // the Map itself rather than its entries (see GameSessionCoordinator for the
+    // same trap on a Set). Map.forEach is native in every supported runtime and
+    // preserves the grouping contract.
+    const clusters: Array<{ id: string; slots: number; visibleSlots: number; visible: boolean }> = [];
+    groups.forEach((group, id) => {
+      clusters.push({
+        id,
+        slots: group.slots,
+        visibleSlots: group.visibleSlots,
+        visible: group.visibleSlots > 0,
+      });
+    });
+    return {
+      method: 'authored cluster slots grouped by authored cluster id',
+      total: clusters.length,
+      visible: clusters.filter((cluster) => cluster.visible).length,
+      clusters,
+    };
   }
 
   private static collectClusterEntries(
@@ -509,6 +628,44 @@ export class WorldCompositionProbe {
       };
     }
     return null;
+  }
+
+  private static emptyAuthoredCollectibleSlots(): GoldenCityCompositionDiagnostics['authoredCollectibleSlots'] {
+    return {
+      method: 'authored slot positions projected through the gameplay camera',
+      nominalHalfExtentMeters: AUTHORED_SLOT_HALF_EXTENT,
+      total: 0,
+      visible: 0,
+      liveCountable: 0,
+    };
+  }
+
+  private static emptyAuthoredResourceClusters(): GoldenCityCompositionDiagnostics['authoredResourceClusters'] {
+    return {
+      method: 'authored cluster slots grouped by authored cluster id',
+      total: 0,
+      visible: 0,
+      clusters: [],
+    };
+  }
+
+  private static projectAuthoredSlot(
+    camera: Camera,
+    viewport: Readonly<{ x: number; y: number; width: number; height: number }>,
+    slot: WorldCellAuthoredCollectibleSlot,
+  ): GoldenCityProjection {
+    return this.projectBounds(camera, viewport, {
+      min: new Vec3(
+        slot.x - AUTHORED_SLOT_HALF_EXTENT,
+        AUTHORED_SLOT_CENTER_Y - AUTHORED_SLOT_HALF_EXTENT,
+        slot.z - AUTHORED_SLOT_HALF_EXTENT,
+      ),
+      max: new Vec3(
+        slot.x + AUTHORED_SLOT_HALF_EXTENT,
+        AUTHORED_SLOT_CENTER_Y + AUTHORED_SLOT_HALF_EXTENT,
+        slot.z + AUTHORED_SLOT_HALF_EXTENT,
+      ),
+    });
   }
 
   private static getClusterId(runtimeId: string): string | null {

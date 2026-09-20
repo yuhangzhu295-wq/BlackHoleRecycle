@@ -27,11 +27,26 @@ export type WorldCellCoord = SharedWorldCellCoord;
  * to engine-side systems such as traffic and development diagnostics, but is
  * never serialized through the browser-facing QA bridge.
  */
+/**
+ * One authored collectible placement, reported independently of the live
+ * consumption state of the pooled object that currently occupies it. A slot is
+ * where the cell *presents* a collectible; the object is whatever the player
+ * has not swallowed yet. Composition contracts are about the former, so the QA
+ * probe must be able to read it without racing the suction FSM.
+ */
+export interface WorldCellAuthoredCollectibleSlot {
+  readonly customId: string;
+  readonly x: number;
+  readonly z: number;
+  readonly active: boolean;
+}
+
 export interface WorldCellRuntimeContent {
   readonly coord: WorldCellCoord;
   readonly node: Node;
   readonly objects: readonly CompressibleObject[];
   readonly dynamicVehicles: readonly DynamicVehicle[];
+  readonly collectibleSlots: readonly WorldCellAuthoredCollectibleSlot[];
 }
 
 export type WorldRebase = SharedWorldRebase;
@@ -282,7 +297,7 @@ function computeCompositionBuckets(objects: readonly CompressibleObject[]): ICom
 class InfiniteWorldCell {
   public readonly objects: CompressibleObject[] = [];
   public readonly dynamicVehicles: DynamicVehicle[] = [];
-  private readonly collectibleSlots: CollectibleRespawnSlot[] = [];
+  public readonly collectibleSlots: CollectibleRespawnSlot[] = [];
   private readonly trafficSlots: TrafficRespawnSlot[] = [];
   private respawnClock = 0;
   public readonly district: DistrictTemplate;
@@ -1343,6 +1358,12 @@ export class InfiniteWorldManager extends Component {
       node: cell.node,
       objects: cell.objects,
       dynamicVehicles: cell.dynamicVehicles,
+      collectibleSlots: cell.collectibleSlots.map((slot) => ({
+        customId: slot.customId,
+        x: slot.x,
+        z: slot.z,
+        active: slot.active,
+      })),
     } : null;
   }
 

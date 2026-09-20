@@ -299,6 +299,14 @@ const iteratorSpread = [
   /\[\.\.\.[^\][()]*\.(?:values|keys|entries)\(\)\]/,
   /\[\.\.\.new (?:Set|Map)\(/,
 ];
+// The two patterns above only cover `[...x.values()]` and `[...new Set()]`. A
+// bare `[...groups]` where `groups` is a locally declared Map/Set is the same
+// defect — `[].concat(groups)` appends the Map itself as one element — and it
+// slipped past this guard once. So also collect every name the file binds to
+// (or annotates as) a Map/Set and flag a direct spread of that name. Array
+// spreads stay legal, which is why this cannot be a blanket identifier rule.
+const iterableBinding = /\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)[^=;\n]*=\s*new\s+(?:Map|Set)\s*[<(]/g;
+const iterableAnnotation = /([A-Za-z_$][\w$]*)\s*:\s*(?:readonly\s+)?(?:Readonly)?(?:Map|Set)\s*</g;
 const spreadOffenders = [];
 const scanSpread = (directory) => {
   for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
@@ -308,7 +316,12 @@ const scanSpread = (directory) => {
     const text = fs.readFileSync(full, 'utf8')
       .replace(/\/\*[\s\S]*?\*\//g, '')
       .replace(/\/\/[^\n]*/g, '');
-    if (iteratorSpread.some((pattern) => pattern.test(text))) {
+    const iterableNames = new Set();
+    for (const match of text.matchAll(iterableBinding)) iterableNames.add(match[1]);
+    for (const match of text.matchAll(iterableAnnotation)) iterableNames.add(match[1]);
+    const spreadsIterable = iteratorSpread.some((pattern) => pattern.test(text))
+      || [...iterableNames].some((name) => new RegExp(`\\[\\.\\.\\.(?:this\\.)?${name}\\]`).test(text));
+    if (spreadsIterable) {
       spreadOffenders.push(path.relative(rootDirectory, full));
     }
   }
