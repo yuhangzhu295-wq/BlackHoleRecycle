@@ -457,11 +457,22 @@ class InfiniteWorldCell {
     if (aspirational.length === 0) return;
 
     const half = this.cellSize * 0.5;
-    // Bearings run down the outer band's free lanes. The four authored corner
-    // buildings sit on the diagonals at (±10, ±10), the authored park occupies
-    // +z up to z = 10, and the construction site sits at (−8, −8); 78°/258° stays
-    // clear of all of them (nearest authored prop ≈ 10 m away).
-    const bearings = [(78 / 180) * Math.PI, (258 / 180) * Math.PI];
+    // Bearings must satisfy three constraints at once:
+    //   1. inside the 390x844 gameplay frame. The camera sits at z = +27.9 m
+    //      looking down -z, so the visible ground trapezoid is widest towards
+    //      -z and clips at the bottom of the frame towards +z. The previous
+    //      +78 deg bearing put the T4 target at z = +19.4 m, which projects to
+    //      screen-top ~853 px and therefore fell below the 844 px frame.
+    //   2. clear of the main roads, so traffic does not drive through a target.
+    //      RoadSouth/RoadNorth occupy x from -6 to 6; at these radii a bearing
+    //      between ~252 deg and ~288 deg would drop the target onto that lane.
+    //   3. outside the authored tutorial ring (radius <= 6 m) and every
+    //      authored anchor, so no Creator-authored object moves and the
+    //      adjudicated INTENTIONAL_TUTORIAL_EXCEPTION spacing is untouched.
+    // 250 deg / 290 deg is the symmetric pair that satisfies all three: it
+    // straddles the camera-facing lane, keeps the two radii (19.8 m / 26.9 m)
+    // authored by `distances`, and leaves both targets on open ground.
+    const bearings = [(250 / 180) * Math.PI, (290 / 180) * Math.PI];
     const distances = [half * 0.62, half * 0.84];
     const tiers = [ObjectTier.T4, ObjectTier.T5];
 

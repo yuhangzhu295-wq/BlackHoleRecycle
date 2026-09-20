@@ -290,12 +290,16 @@ module.exports = {
 
         logStage('INSTANTIATE_ROADS');
         // 2. Roads: the crossroad plus four route points drive real runtime traffic.
+        // The crossroad is 16x16 so that it abuts all four 16-long arms exactly.
+        // At 12x12 it left a 2m unpaved gap ring around the junction (arms start
+        // at |8|), which read as a hole in the road network and pushed the
+        // measured `largeEmptyGroundRatio` above the 25% composition ceiling.
         if (library.roadCrossroadTemplate) {
           const road = instantiate(library.roadCrossroadTemplate);
           road.name = 'MainCrossroad';
           road.active = true;
           road.setPosition(new Vec3(0, 0.05, 0));
-          road.setScale(new Vec3(12, 1, 12));
+          road.setScale(new Vec3(16, 1, 16));
           children.Roads.addChild(road);
         }
         if (library.roadStraightTemplate) {
@@ -332,6 +336,12 @@ module.exports = {
 
         logStage('INSTANTIATE_BUILDINGS');
         // 3. Buildings: fixed Creator-owned landmarks; runtime owns no product coordinates.
+        // The two +z ("north") landmarks sit at x = +-7.5 rather than +-10. The
+        // camera is at z ~ +27.9 looking down -z, so these are the nearest pair
+        // and are magnified; at +-10 their footprints projected just outside the
+        // 390px-wide portrait frame (screen-left 390.28px / screen-right
+        // -1.14px), which left only 2 of 4 buildings visible and dropped the
+        // required `hospital` semantic out of the composition gate.
         if (library.buildingBTemplate) {
           const house = instantiate(library.buildingBTemplate);
           house.name = 'ResidentialHouseWest';
@@ -344,7 +354,7 @@ module.exports = {
           const shop = instantiate(library.commercialBuildingATemplate);
           shop.name = 'CommercialShopEast';
           shop.active = true;
-          shop.setPosition(new Vec3(10, 0, 10));
+          shop.setPosition(new Vec3(7.5, 0, 10));
           shop.setRotationFromEuler(0, -90, 0);
           children.Buildings.addChild(shop);
         }
@@ -352,7 +362,7 @@ module.exports = {
           const hospital = instantiate(library.commercialBuildingDTemplate);
           hospital.name = 'Hospital_ClinicNorth';
           hospital.active = true;
-          hospital.setPosition(new Vec3(-10, 0, 10));
+          hospital.setPosition(new Vec3(-7.5, 0, 10));
           hospital.setRotationFromEuler(0, 90, 0);
           children.Buildings.addChild(hospital);
         }
