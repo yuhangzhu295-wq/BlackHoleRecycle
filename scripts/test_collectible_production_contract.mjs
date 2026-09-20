@@ -135,5 +135,48 @@ record('TEMPLATE_MASS_STAYS_AUTHORED', templateTypes.every((type) => {
   return template && template.mass > 0 && template.radius > 0 && template.type === type;
 }), 'mass, radius and identity remain authored template data.');
 
+/**
+ * The generated procedural id is `<tag>_<DISTRICT>_<cellX>_<cellZ>_<n>`, and the
+ * progression acceptance checks locate their targets by the district inside it.
+ * `23906d0` swapped the two leading fields — `cluster_<DISTRICT>_<clusterId>_…`
+ * became `cluster_<clusterId>_<DISTRICT>_…` — which silently made two of those
+ * checks unsatisfiable. It went unnoticed for three days because `progression`
+ * was never re-run (its stale PASS predated the swap) and `skin-unlock` had no
+ * report at all; the failure only surfaced when `skin-unlock` was first run.
+ *
+ * Pin both ends of that coupling here: the generator's field order, and the
+ * callers' assumption that the district is a prefix. A future swap then fails in
+ * one second instead of costing a build and a full progression run to discover.
+ */
+const chunkSource = read('cocos/assets/scripts/world/ChunkConfig.ts');
+record('PROCEDURAL_ID_FIELD_ORDER', chunkSource.includes('${tag}_${district.kind}_${cellX}_${cellZ}_${items.length}')
+  && chunkSource.includes('`cluster_${cluster.id}`'),
+  'procedural collectible ids keep the district as the second field, which the progression checks depend on.');
+
+const runnerSource = read('scripts/test_cocos_portrait_acceptance.mjs');
+const staleDistrictPrefixes = runnerSource.match(/startsWith\('cluster_[A-Z][A-Z_]*_'\)/g) || [];
+record('NO_DISTRICT_USED_AS_CLUSTER_PREFIX', staleDistrictPrefixes.length === 0,
+  staleDistrictPrefixes.length === 0
+    ? 'no caller assumes the district is the first field of a cluster id.'
+    : 'caller assumes the district is a cluster-id prefix: ' + staleDistrictPrefixes.join(', '));
+
+/**
+ * The same re-weighting that broke the id prefix also outgrew the progression
+ * stage budget. A flat 240 s (set 09-05, `bfd4afc`) had to cover a mass deficit
+ * that `23906d0` made roughly five times more expensive — 50% T1 at mean 65 mass
+ * instead of a denser mix — so the stage expired mid-grind at exactly the cap
+ * while still absorbing. A budget that must track the world's mass density
+ * cannot be a constant; the loop has to end on a stall instead. Pin that it can
+ * still run until progress stops, so a fixed wall clock cannot creep back in.
+ */
+const collectUntilBody = (runnerSource.match(/const collectUntil = async \(stage\) => \{[\s\S]*?\n  \};/) || [''])[0];
+// Assert on the loop *condition*, not the body: the body also mentions
+// `lastProgressAt` when it records progress, so a body-wide match would pass
+// even if the stall term were dropped from the exit condition.
+const stageLoopCondition = (collectUntilBody.match(/while \(latest\.machine\.level < stage\.level[\s\S]*?\) \{/) || [''])[0];
+record('PROGRESSION_STAGE_BUDGET_TRACKS_PROGRESS',
+  stageLoopCondition.includes('Date.now() - lastProgressAt'),
+  'the progression stage loop ends on a mass stall, not on a fixed wall clock the world can outgrow.');
+
 console.log('[PASS] S4 collectible productionization contract (implementation-level, non-renderer).');
 console.log('[NOTE] Renderer and browser console evidence remain covered by acceptance:p0b.');

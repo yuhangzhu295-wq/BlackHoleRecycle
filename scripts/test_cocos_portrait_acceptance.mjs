@@ -5,7 +5,7 @@
  * emitted Web Mobile package, then drives the actual WebGL runtime with CDP
  * touch events. It never imports game code or mutates a running scene.
  */
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { createServer } from 'node:http';
 import { mkdirSync, existsSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
@@ -133,6 +133,20 @@ function assertNoLargeHotMagentaSurface(pngPath) {
   return inspection;
 }
 
+/**
+ * A build that never returns must fail, not hang. Observed 09-21: the editor
+ * started, logged two network errors, ran the build task to three lines, and
+ * then stopped writing anything at all — no builder-log growth, no `temp`
+ * writes, no exit — while a healthy build of this same project finishes in
+ * 25-60 s. The runner sat on `close` for over eight minutes producing no output
+ * and no diagnostic, which is indistinguishable from a slow build and burns the
+ * whole slot. The builder log under `cocos/temp/builder/log/` is the progress
+ * signal: a healthy build grows it to roughly 80 KB, a stalled one sits at a
+ * few lines. Generous by default because the point is to catch a hang, not to
+ * police a slow machine.
+ */
+const cocosBuildTimeoutMs = Number(process.env.BHR_COCOS_BUILD_TIMEOUT_MS || 15 * 60 * 1000);
+
 function buildCocosWebMobile() {
   return new Promise((resolve, reject) => {
     if (!existsSync(creatorExe)) {
@@ -145,18 +159,44 @@ function buildCocosWebMobile() {
       '--build', 'platform=web-mobile;debug=false;orientation=portrait;'
     ], { cwd: cocosProject, windowsHide: true });
     let output = '';
+    let settled = false;
+    let timeout = null;
+    const finish = (settle, value) => {
+      if (settled) return;
+      settled = true;
+      if (timeout) clearTimeout(timeout);
+      settle(value);
+    };
     child.stdout.on('data', (chunk) => { output += chunk.toString(); });
     child.stderr.on('data', (chunk) => { output += chunk.toString(); });
-    child.on('error', reject);
+    child.on('error', (error) => finish(reject, error));
     child.on('close', (code) => {
       // Cocos documents 36 as the command-line build-success code; some
       // Windows installations return the conventional 0 instead.
       if (code === 0 || code === 36) {
-        resolve(output);
+        finish(resolve, output);
         return;
       }
-      reject(new Error(`Cocos CLI build failed with exit code ${code}.\n${output}`));
+      finish(reject, new Error(`Cocos CLI build failed with exit code ${code}.\n${output}`));
     });
+    timeout = setTimeout(() => {
+      // Kill the tree, not just the launcher: the editor is six processes, and
+      // killing only the parent leaves the rest holding the project, which
+      // breaks the next run as well.
+      try {
+        if (process.platform === 'win32') {
+          spawnSync('taskkill', ['/PID', String(child.pid), '/T', '/F'], { windowsHide: true });
+        } else {
+          child.kill('SIGKILL');
+        }
+      } catch {}
+      finish(reject, new Error(
+        `Cocos CLI build produced no exit within ${Math.round(cocosBuildTimeoutMs / 1000)} s and was killed. `
+        + `A healthy build finishes in under a minute; check `
+        + `${path.join(cocosProject, 'temp', 'builder', 'log')} — a stalled build stops growing there `
+        + `while the editor process stays alive, which is what a degraded network looked like on 09-21.\n${output}`,
+      ));
+    }, cocosBuildTimeoutMs);
   });
 }
 
@@ -2846,6 +2886,29 @@ async function verifyProgressionRegions(cdp, page, canvasRect) {
  * cells in the intended district, so the record proves the progression
  * resource semantics instead of merely crossing a themed border.
  */
+
+/**
+ * `23906d0` swapped the two fields of the generated collectible id:
+ *   before  cluster_<DISTRICT>_<clusterId>_<cellX>_<cellZ>_<n>
+ *   after   cluster_<clusterId>_<DISTRICT>_<cellX>_<cellZ>_<n>
+ * so the district stopped being a prefix and `startsWith('cluster_<DISTRICT>_')`
+ * can no longer match any cluster that exists. Progression checks were keyed to
+ * the old shape, so they had been unsatisfiable since that commit — for a reason
+ * unrelated to progression. Measured against the real ids: the old predicate
+ * matched 0 of 216 objects where this one matches 28.
+ *
+ * Match the district as its own segment. The `cluster_` part is kept on purpose:
+ * `ChunkConfig` calls clusters the region's 明显资源点 ("obvious resource points",
+ * about 15% of items, 2~3 each), so they are the collectibles the progression
+ * check is meant to consume — only the field order was wrong. Cluster ids are
+ * lowercase and hyphenated (`pallet-boxes`, `loading-bay`, `shelf-spill`,
+ * `container-yard`), so an uppercase district cannot collide with one.
+ */
+function isDistrictCluster(runtimeId, district) {
+  const id = String(runtimeId || '');
+  return id.startsWith('cluster_') && id.includes(`_${district}_`);
+}
+
 async function verifyFiveLevelProgression(cdp, page, joystick) {
   const stages = [
     { level: 3, region: 'warehouse', district: 'WAREHOUSE', point: { x: 0, z: -235 }, part: 'CompressionChamber' },
@@ -2875,45 +2938,109 @@ async function verifyFiveLevelProgression(cdp, page, joystick) {
   };
 
   const collectUntil = async (stage) => {
-    // High-tier regions intentionally require several ordinary T1/T2
-    // compressions before the next machine level. Keep this a generous wall
-    // clock for real WebGL + touch input, rather than failing just after the
-    // machine reaches 95% of the threshold while a final target is in flight.
-    const deadline = Date.now() + 240_000;
+    // Budget derived from progress, not guessed. The flat 240 s this replaced
+    // was set on 09-05 (`bfd4afc`), thirteen days before `23906d0` re-weighted
+    // placement to 50% T1 (mean 65 mass) and cut clusters to about 15% of items.
+    // The same mass deficit now needs roughly five times the absorbs, and the
+    // run that exposed this converted 11145 required mass into 7285 at 6.3 s per
+    // absorb — expiring at exactly the 240 s cap, i.e. budget-limited rather than
+    // blocked. Fail on a *stall* (no mass progress at all) and keep an absolute
+    // ceiling so a genuinely wedged run still terminates.
+    const stageStartedAt = Date.now();
     const absorbed = [];
     let latest = await readRuntimeSnapshot(page);
     observeCompression(latest);
-    while (latest.machine.level < stage.level && Date.now() < deadline) {
+    let lastProgressAt = Date.now();
+    let lastMass = latest.machine.mass;
+    while (latest.machine.level < stage.level
+      && Date.now() - stageStartedAt < 900_000
+      && Date.now() - lastProgressAt < 120_000) {
       const streaming = validateInfiniteWorldSnapshot(latest);
-      const prefix = `cluster_${stage.district}_`;
       const origin = streaming.logicalOrigin;
       const player = getLogicalPlayerPosition(latest);
-      const candidates = latest.objects
-        .filter((object) => object.state === 'IDLE'
-          && object.tier <= latest.machine.maxTier
-          && String(object.runtimeId || '').startsWith(prefix))
+      const districtClusters = latest.objects.filter((object) => isDistrictCluster(object.runtimeId, stage.district));
+      const eligibleClusters = districtClusters.filter((object) => object.state === 'IDLE'
+        && object.tier <= latest.machine.maxTier);
+      // Heaviest edible tier first, then the shortest trip. Nearest-first
+      // ping-pongs on whatever respawns beside the machine:
+      // `COLLECTIBLE_RESPAWN_DELAY_SECONDS` is 4 s, shorter than one 6.3 s round
+      // trip, so the observed run alternated one T1 `battery` (80 mass) with one
+      // T2 `paint_bucket` (300) for 192 mass per trip — while 81% of the world's
+      // mass sat in T4/T5 and every T3 (mean 1162) stayed out of reach at
+      // `maxTier` 2. Tier is the mass proxy the snapshot actually carries (mean
+      // 65 / 294 / 1162 / 6667 / 33500 for T1..T5 — the projection has no mass
+      // field), so ordering by it is what a player does: eat the biggest thing
+      // you can reach.
+      const candidates = eligibleClusters
         .map((object) => ({
           ...object,
           logicalX: object.x + origin.x,
           logicalZ: object.z + origin.z,
         }))
-        .sort((a, b) => Math.hypot(a.logicalX - player.x, a.logicalZ - player.z)
-          - Math.hypot(b.logicalX - player.x, b.logicalZ - player.z));
+        .sort((a, b) => (b.tier - a.tier)
+          || (Math.hypot(a.logicalX - player.x, a.logicalZ - player.z)
+            - Math.hypot(b.logicalX - player.x, b.logicalZ - player.z)));
+      // Summarise rather than dump `objects`: that array is the whole streamed
+      // world (about 80 KB across nine cells), which is unreadable exactly when
+      // it matters. These counts separate "the district has no clusters" from
+      // "every cluster is the wrong tier", which is the actual question.
       assert(candidates.length > 0,
-        `FAIL_FULL_PROGRESSION_NO_ELIGIBLE_${stage.region.toUpperCase()}: ${JSON.stringify({ machine: latest.machine, player, streaming, objects: latest.objects })}`);
+        `FAIL_FULL_PROGRESSION_NO_ELIGIBLE_${stage.region.toUpperCase()}: `
+        + JSON.stringify({
+          machine: {
+            level: latest.machine.level,
+            mass: latest.machine.mass,
+            requiredMass: latest.machine.requiredMass,
+            maxTier: latest.machine.maxTier,
+          },
+          player,
+          streaming,
+          objectCount: latest.objects.length,
+          clustersInDistrict: districtClusters.length,
+          idleClustersInDistrict: districtClusters.filter((object) => object.state === 'IDLE').length,
+          eligibleClusters: eligibleClusters.length,
+          districtClusterTiers: [...new Set(districtClusters.map((object) => object.tier))].sort(),
+        }));
       const target = candidates[0];
       const massBefore = latest.machine.mass;
-      await driveJoystickToLogicalPoint(cdp, page, joystick, { x: target.logicalX, z: target.logicalZ }, `LV${stage.level}_${target.type}`, Math.max(1.0, latest.machine.suctionRadius * 0.62));
+      // `timeoutMs` is explicit because tier-first can pick a heavier cluster in
+      // an adjacent cell rather than the nearest one; the default 30 s would
+      // abort that legitimate trip as FAIL_VERTICAL_SLICE_ROUTE_. The route
+      // still has to arrive — `allowMiss` stays false.
+      await driveJoystickToLogicalPoint(cdp, page, joystick, { x: target.logicalX, z: target.logicalZ }, `LV${stage.level}_${target.type}`, Math.max(1.0, latest.machine.suctionRadius * 0.62), 60_000);
       await page.waitForTimeout(900);
       latest = await readRuntimeSnapshot(page);
       observeCompression(latest);
+      if (latest.machine.mass > lastMass) {
+        lastMass = latest.machine.mass;
+        lastProgressAt = Date.now();
+      }
       const disappeared = !latest.objects.some((object) => object.runtimeId === target.runtimeId && object.state === 'IDLE');
       assert(disappeared || latest.machine.mass > massBefore,
-        `FAIL_FULL_PROGRESSION_NO_ABSORPTION_${stage.region.toUpperCase()}: ${JSON.stringify({ target, massBefore, latest: latest.machine })}`);
+        `FAIL_FULL_PROGRESSION_NO_ABSORPTION_${stage.region.toUpperCase()}: ${JSON.stringify({ target, massBefore, machine: { level: latest.machine.level, mass: latest.machine.mass } })}`);
       absorbed.push({ runtimeId: target.runtimeId, type: target.type, tier: target.tier, massBefore, massAfter: latest.machine.mass });
     }
+    // Summarise the machine instead of dumping it: `visualMaterials` alone is
+    // dozens of renderer entries, which is unreadable exactly when it matters.
     assert(latest.machine.level >= stage.level,
-      `FAIL_FULL_PROGRESSION_LEVEL_${stage.level}: ${JSON.stringify({ stage, machine: latest.machine, absorbed })}`);
+      `FAIL_FULL_PROGRESSION_LEVEL_${stage.level}: `
+      + JSON.stringify({
+        stage,
+        machine: {
+          level: latest.machine.level,
+          mass: latest.machine.mass,
+          requiredMass: latest.machine.requiredMass,
+          maxTier: latest.machine.maxTier,
+        },
+        elapsedMs: Date.now() - stageStartedAt,
+        stalledForMs: Date.now() - lastProgressAt,
+        absorbedCount: absorbed.length,
+        absorbedByType: absorbed.reduce((counts, entry) => {
+          counts[entry.type] = (counts[entry.type] || 0) + 1;
+          return counts;
+        }, {}),
+        absorbed,
+      }));
     const activeParts = latest.machine.visualMaterials
       .filter((renderer) => renderer.active && String(renderer.path).includes(`MachineVisual_LV${stage.level}/`));
     assert(activeParts.some((renderer) => String(renderer.path).includes(stage.part)
@@ -3048,18 +3175,57 @@ async function verifyFiveLevelProgression(cdp, page, joystick) {
   const tier5Before = latest.session.absorbedTiers?.[5] || 0;
   const cityOrigin = cityStream.logicalOrigin;
   const cityPlayer = getLogicalPlayerPosition(latest);
-  const tier5 = latest.objects
-    .filter((object) => object.state === 'IDLE' && object.tier === 5 && String(object.runtimeId || '').startsWith('cluster_DOWNTOWN_'))
+  const cityClusters = latest.objects.filter((object) => isDistrictCluster(object.runtimeId, 'DOWNTOWN'));
+  const idleTier5CityClusters = cityClusters.filter((object) => object.state === 'IDLE' && object.tier === 5);
+  const tier5 = idleTier5CityClusters
     .map((object) => ({ ...object, logicalX: object.x + cityOrigin.x, logicalZ: object.z + cityOrigin.z }))
     .sort((a, b) => Math.hypot(a.logicalX - cityPlayer.x, a.logicalZ - cityPlayer.z)
       - Math.hypot(b.logicalX - cityPlayer.x, b.logicalZ - cityPlayer.z))[0];
-  assert(tier5, `FAIL_FULL_PROGRESSION_CITY_T5_MISSING: ${JSON.stringify(latest.objects)}`);
-  await driveJoystickToLogicalPoint(cdp, page, joystick, { x: tier5.logicalX, z: tier5.logicalZ }, `FULL_PROGRESSION_T5_${tier5.type}`, Math.max(1.5, latest.machine.suctionRadius * 0.62));
-  await page.waitForTimeout(1500);
-  latest = await readRuntimeSnapshot(page);
-  observeCompression(latest);
-  assert((latest.session.absorbedTiers?.[5] || 0) > tier5Before,
-    `FAIL_FULL_PROGRESSION_T5_ABSORPTION: ${JSON.stringify({ tier5, before: tier5Before, after: latest.session?.absorbedTiers, machine: latest.machine })}`);
+  // Summarise rather than dump `objects` (about 80 KB): the question is whether
+  // DOWNTOWN carries clusters at all and which tiers they landed on. All four
+  // DOWNTOWN clusters prefer a T5 type (delivery_van / car / container), so an
+  // empty list means the roll went to a lower-tier fallback, not that T5
+  // clusters cannot exist.
+  assert(tier5, `FAIL_FULL_PROGRESSION_CITY_T5_MISSING: `
+    + JSON.stringify({
+      machine: {
+        level: latest.machine.level,
+        mass: latest.machine.mass,
+        maxTier: latest.machine.maxTier,
+      },
+      player: cityPlayer,
+      objectCount: latest.objects.length,
+      cityClusters: cityClusters.length,
+      idleCityClusters: cityClusters.filter((object) => object.state === 'IDLE').length,
+      cityClusterTiers: [...new Set(cityClusters.map((object) => object.tier))].sort(),
+      idleTier5CityClusters: idleTier5CityClusters.length,
+    }));
+  // The production FSM only enters SUCKING below 0.6 m — `CompressibleObject`
+  // does `else if (Math.sqrt(distSq) < 0.6) this.transitionTo('SUCKING')` — and a
+  // T5 target then needs `suckDuration` 3.2 s to finish (`SUCTION_TIER_PROFILES[5]`
+  // is `{ pullResistance: 3.6, suckDuration: 3.2 }`). The `suctionRadius * 0.62`
+  // arrival radius used here is 4.96 m at LV.5, eight times that gate, and the
+  // 1500 ms wait was under half the suck. It only ever passed because the nearest
+  // T5 happened to be a moving `car` that drove into the core by itself; this run
+  // found a static `container` (radius 4.5) and the distance never closed, so
+  // `absorbedTiers[5]` stayed at 6. Drive into the core and trace the tier
+  // counter, the same way the opening T1 loop already does for this exact reason.
+  // `allowMiss` is true because the target is ATTRACTED and creeping toward the
+  // machine while the machine drives at its last known point, so a 0.45 m arrival
+  // is not always reachable before the object has moved. The claim being checked
+  // is the absorption, not the route, and the assertion below reports the target
+  // and the player position either way.
+  await driveJoystickToLogicalPoint(cdp, page, joystick, { x: tier5.logicalX, z: tier5.logicalZ }, `FULL_PROGRESSION_T5_${tier5.type}`, 0.45, 60_000, true);
+  const tier5AbsorptionDeadline = Date.now() + 12_000;
+  let tier5Absorbed = false;
+  while (Date.now() < tier5AbsorptionDeadline && !tier5Absorbed) {
+    await page.waitForTimeout(200);
+    latest = await readRuntimeSnapshot(page);
+    observeCompression(latest);
+    tier5Absorbed = (latest.session.absorbedTiers?.[5] || 0) > tier5Before;
+  }
+  assert(tier5Absorbed,
+    `FAIL_FULL_PROGRESSION_T5_ABSORPTION: ${JSON.stringify({ tier5, before: tier5Before, after: latest.session?.absorbedTiers, player: getLogicalPlayerPosition(latest), target: { logicalX: tier5.logicalX, logicalZ: tier5.logicalZ }, machine: { level: latest.machine.level, mass: latest.machine.mass, maxTier: latest.machine.maxTier } })}`);
   record.finalTier5Absorption = { runtimeId: tier5.runtimeId, type: tier5.type, mass: latest.machine.mass, absorbedTiers: latest.session.absorbedTiers };
   const requiredCompressionStates = ['BUFFERING', 'READY', 'COMPRESSING', 'EJECTING', 'COLLECTING'];
   const observedCompressionStates = requiredCompressionStates.filter((state) => compressionStates.has(state));
