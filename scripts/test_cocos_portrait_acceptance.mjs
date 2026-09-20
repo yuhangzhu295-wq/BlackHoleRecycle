@@ -2808,9 +2808,18 @@ async function verifyProgressionRegions(cdp, page, canvasRect) {
       `FAIL_REGION_NAME_${checkpoint.id.toUpperCase()}: ${JSON.stringify(streaming)}`);
     assert(streaming.currentDistrictKind === checkpoint.district,
       `FAIL_REGION_DISTRICT_${checkpoint.id.toUpperCase()}: ${JSON.stringify(streaming)}`);
-    assert(Array.isArray(streaming.visualDiagnostics)
-      && streaming.visualDiagnostics.some((entry) => entry?.name === checkpoint.landmark),
-    `FAIL_REGION_LANDMARK_${checkpoint.id.toUpperCase()}: expected ${checkpoint.landmark}, actual=${JSON.stringify(streaming.visualDiagnostics)}`);
+    // Search the subtree, not just the top-level group names. The authored
+    // Golden City cell nests its landmarks under groups (`Buildings/
+    // ResidentialHouseWest`) while the procedural region cells expose them
+    // flat, so a top-level-only comparison passes for five regions and fails
+    // for the first one regardless of whether the landmark is actually there.
+    const landmarkPresent = Array.isArray(streaming.visualDiagnostics)
+      && streaming.visualDiagnostics.some((entry) => entry?.name === checkpoint.landmark
+        || (entry?.descendantNames || []).includes(checkpoint.landmark));
+    assert(landmarkPresent,
+    `FAIL_REGION_LANDMARK_${checkpoint.id.toUpperCase()}: expected ${checkpoint.landmark}, actual groups=${JSON.stringify(
+      (streaming.visualDiagnostics || []).map((entry) => ({ name: entry?.name, descendantNames: entry?.descendantNames })),
+    )}`);
     const directory = path.join(evidenceDirectory, 'regions');
     mkdirSync(directory, { recursive: true });
     const screenshot = path.join(directory, `region-${checkpoint.id}.png`);

@@ -280,7 +280,16 @@ export class WorldCompositionProbe {
 
     return cell.node.children.map((child) => {
       const renderers: Array<Record<string, unknown>> = [];
+      // Every node name in this subtree, not only the ones carrying a renderer.
+      // A group node such as `Buildings` has no MeshRenderer of its own, so a
+      // landmark one level down (`Buildings/ResidentialHouseWest`) appears in
+      // neither `renderers` nor a top-level name list. The authored Golden City
+      // cell is grouped while the procedural region cells are flat, so anything
+      // asking "is landmark X present" has to search the subtree to answer for
+      // both shapes.
+      const descendantNames: string[] = [];
       const visit = (node: Node): void => {
+        descendantNames.push(node.name);
         const renderer = node.getComponent(MeshRenderer);
         if (renderer) {
           const primitiveCount = renderer.mesh?.struct.primitives.length || 0;
@@ -315,6 +324,7 @@ export class WorldCompositionProbe {
       return {
         name: child.name,
         active: child.activeInHierarchy,
+        descendantNames,
         meshRendererCount: renderers.length,
         worldPosition: { x: child.worldPosition.x, y: child.worldPosition.y, z: child.worldPosition.z },
         renderers,
