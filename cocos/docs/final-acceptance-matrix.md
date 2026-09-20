@@ -175,9 +175,17 @@ invalidating a passing run — will recur the moment two lanes share the slot.
   devicePixelRatio 1, and all 12 required semantics present including
   `hospital`. Evidence: `evidence/v2/portrait/golden-city-gate.json`
   (`verdict: PASS`) plus the composition and screenshot beside it.
-  `PLAYER_WIDTH_RATIO_MAX` is the tightest check at 0.00065 of headroom, but
-  the ratio scales as 1/distance from a camera that is now sampled only after
-  it settles, so it is deterministic rather than flaky.
+  `PLAYER_WIDTH_RATIO_MAX` is the tightest check, and an earlier revision of
+  this document called the ratio "deterministic rather than flaky" because it
+  scales as `1/distance` from a camera that is now sampled only after it
+  settles. **That claim is withdrawn — it was wrong.** Four runs on the same
+  build measured **0.2192**, **0.2337**, **0.2622** and **0.2979** with a camera
+  pose that spans `6e-4` m and a **byte-identical rendered player** (the violet
+  ring measures `x 154..235` = 82 px at every scanline in both screenshots). The
+  ratio is not a camera measurement at all — it is the merged bounds of the
+  machine's decorative subtree, which rotates every frame and includes a ring
+  scaled by the gameplay suction radius. See "`playerWidthRatio` is not a
+  stable measurement" below.
 - `golden-city` world-space spatial gate (`8afdaab`): the two checks above the
   screen-space block — `PLAYABLE_OPEN_AREA_GROUND_SAMPLES_MIN` (2048 ≥ 1) and
   `PLAYABLE_OPEN_AREA_RATIO_MIN` (`playableOpenAreaRatio` **0.986328125** ≥
@@ -291,6 +299,78 @@ Both traffic defects date from `7eeb3fc`, which rewrote traffic into five
 authored ring vehicles and renamed the road entries; the earlier check passed
 only because `ce30274` had two vehicles driving along the south arm against a
 single `FourWayRoad` entry whose bounds were that arm.
+
+### `playerWidthRatio` is not a stable measurement
+
+`PLAYER_WIDTH_RATIO_MIN` is the one golden-city check that cannot be trusted
+yet, and the cause is not the camera. **Four** runs of the same build produced
+**four** different ratios:
+
+| run | camera `y / z` | machine level | `AbyssBase` half | `HoleRing` half | AABB x | ratio | verdict |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `413b1e9` (18:32) | `44.00056 / 27.00020` | — | — | — | `5.4827` | `0.2979` | PASS |
+| premise re-test | `44.00006 / 27.00002` | — | — | — | `4.0700` | `0.2192` | **FAIL**, short by `0.0008` |
+| drawn-only | `43.99998 / 26.99999` | — | `2.0350` | `2.4224` | `4.8449` | `0.2622` | PASS |
+| latest | `44.00001 / 27.00000` | **1** (`r 2.4`) | `2.0350` | `2.1657` | `4.3314` | `0.2337` | PASS |
+
+The camera is the declared `PortraitGameplayCameraPreset` in all four — the
+poses span `6e-4` m — and the rendered player is **byte-identical**: the violet
+ring measures `x 154..235` (82 px) at every scanline in both screenshots, and
+the near-black core measures 39 px and 38 px. What moved is the geometry the
+probe merges.
+
+`collectMergedWorldBounds` unions every `MeshRenderer.model.worldBounds` in the
+player's subtree, and that subtree is the machine's decorative assembly. The
+probe now reports `player.contributors`, and in the two runs that carry it the
+**fixed** body meshes are identical while **every decorative node differs**:
+
+| node | drawn-only run | LV1 run |
+| :--- | :--- | :--- |
+| `AbyssBase` (cylinder, r 1.10) | `2.0350` | `2.0350` |
+| `HoleInner` (cylinder, r 0.56) | `1.0360` | `1.0360` |
+| `InnerSwirl` | `0.9437` | `1.0403` |
+| `MidSwirl` | `1.4337` | `1.3504` |
+| `OuterSwirl` | `1.9673` | `1.8351` |
+| `ShimmerSwirl` | `2.1955` | `1.9078` |
+| `HoleRing` | `2.4224` | `2.1657` |
+
+So the variation lives entirely in the decoration, which rotates every frame
+(`BlackHoleMachine.update` drives five yaw-rotating, z-tilted meshes and a
+`sin`-driven pulse) and whose widest member, `HoleRing`, is scaled by
+`1 + min(0.38, (suctionRadius - 2.4) * 0.075)` — a function of the **gameplay
+suction radius**, which is per-level (`GameConfig`: `2.4 / 3.4 / 4.6 / 6.0 /
+8.0` → ringScale `1.000 / 1.075 / 1.165 / 1.270 / 1.380`). The comment beside
+that ring says why it is capped: the suction radius can grow quickly, and the
+outer ring is only a controlled level hint that must not read as the collision
+range. The gate reads that hint as the player's width.
+
+**The check is therefore not deterministic, and the level is not the whole
+story.** The LV1 run measured `0.2337` while the premise run measured `0.2192`;
+both were sampled at the same level-1 machine, and `AbyssBase` is a fixed mesh
+that measured `2.0350` in both. A verdict currently depends on the animation
+phase and machine state at the sample instant.
+
+**The consequence is the part that matters.** The level-independent body is
+`AbyssBase` at `4.07 m` — `1.10 × 2 × 1.85` — which reads **`0.2192`**, i.e.
+`0.0008` *below* the contract floor. The gate therefore passes only when
+decoration inflates the number past the floor. The implemented range across all
+four runs is `0.2192`–`0.2979` against a contract of `0.22`–`0.30`.
+
+**Committed here, neither a product change:** `collectMergedWorldBounds` takes
+`drawnOnly` and the player measurement opts in, so a hidden renderer can no
+longer contribute to a silhouette (the environment entries keep their existing
+numbers); and the composition and gate now record `machineLevel` and
+`machineSuctionRadius` beside the ratio, so a level-driven number cannot be
+misread as a framing change.
+
+**What remains is a decision, not a defect.** Either the measured subject must
+be pinned — declare which node *is* the silhouette, so the check stops reading
+whichever decorative mesh happens to be widest — or the band must move. The
+body-only reading is `0.2192` and misses the floor by `0.0008`, so a ~0.7%
+increase in the player's on-screen width (`coreScale 1.85 → ~1.863`) would clear
+it at every level; the alternative is to lower the floor to the documented
+18–23% readability band. The contract is `LOCKED` and the value is
+player-facing, so nothing was changed here.
 
 ### Operational note: Creator CLI builds hang intermittently
 

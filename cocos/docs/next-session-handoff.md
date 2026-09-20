@@ -18,7 +18,7 @@ The runner declares **16** scopes. Only these six were re-run alone on the slot:
 | `full` | **PASS** — 375x667 + 390x844 + 430x932, `failures: []` | `BUNDLE_STABLE` `fe685340` |
 | `arena-ai` | **PASS** — 180.014 s, `reason: TIME`, all four bot states | `BUNDLE_STABLE` `333e265f` |
 | `arena-timer` | **PASS** — 180.0057 s, `reason: TIME`, reward paid | `BUNDLE_STABLE` |
-| `golden-city` | **PASS** 31/31, `deficits: []` | evidence committed `413b1e9` |
+| `golden-city` | **PASS** 31/31 — but `PLAYER_WIDTH_RATIO_MIN` is a *level* reading, see below | `413b1e9`, re-run since |
 | `cell-lifecycle` | **PASS** — 375x667 + 390x844 + 430x932, 6/6 checkpoints | `BUNDLE_STABLE` |
 | `regions` | **PASS** — all six regions over the 940 m route | `BUNDLE_STABLE` |
 
@@ -41,6 +41,37 @@ dedicated re-run of that scope — which passes at all three viewports with
 `failures: []`, `BUNDLE_STABLE` and `consoleErrors: []`. That same run is the
 first clean observation of the now-fatal clobber guard, which correctly stayed
 silent.
+
+**`golden-city` is green, but its width check is not stable.** Re-testing the
+collectible premise answered it cleanly — `authoredCollectibleSlotTotal: 23`
+against `collectibles: 23`, so **nothing is missing** and the "19 of 20" was
+purely a live-census artifact — but the same re-run **failed** on
+`player width ratio is 0.2192, needs >= 0.22 (short by 0.0008)`. Four runs of
+the same build measured `0.2192`, `0.2337`, `0.2622` and `0.2979` with a camera
+pose spanning `6e-4` m and a **byte-identical rendered player** (the violet ring
+measures 82 px at every scanline in both screenshots).
+
+The ratio is the merged `worldBounds` of the machine's **decorative** subtree.
+In the two runs that now record `player.contributors`, the fixed body meshes are
+identical (`AbyssBase 2.0350`, `HoleInner 1.0360`) while all five decorative
+nodes differ — they rotate every frame, and the widest (`HoleRing`) is scaled by
+the **gameplay suction radius** (`GameConfig` `2.4/3.4/4.6/6.0/8.0` → ringScale
+`1.000–1.380`). The latest run recorded `machineLevel: 1` / `suctionRadius: 2.4`
+and measured `0.2337`, so the level is not the whole story either — the premise
+run measured `0.2192` on a level-1 machine. **A `golden-city` verdict currently
+depends on the animation phase and machine state at the sample instant.**
+
+The consequence is the part that matters: the level-independent body is
+`AbyssBase` at `4.07 m`, which reads **`0.2192`** — `0.0008` below the contract
+floor. The gate passes only when decoration inflates the number past it.
+
+Two harness changes are committed: the player silhouette now merges only
+**drawn** renderers, and the composition and gate record `machineLevel` and
+`machineSuctionRadius` beside the ratio. **The remaining gap is a decision, not
+a defect** — either pin which node *is* the silhouette, so the check stops
+reading whichever decorative mesh happens to be widest, or move the band: a
+~0.7% nudge (`coreScale 1.85 → ~1.863`) clears the floor at every level, and the
+alternative is to lower the floor to the documented 18–23% band.
 
 `arena-ai` and `arena-timer` previously read PASS and were **not**. Three lanes
 built concurrently; a Cocos build **deletes `cocos/build/web-mobile` wholesale and
