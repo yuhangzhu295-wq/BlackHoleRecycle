@@ -42,15 +42,45 @@ switch) and reads the same directory, so the scopes must run serially.
 | Scope | Result | Evidence |
 | :--- | :--- | :--- |
 | `full` | **PASS** — 375x667 + 390x844 + 430x932, `failures: []` | `acceptance-report-full.json` |
-| `arena-ai` | **VOID** — re-run in flight | `acceptance-report-arena-ai.json` |
-| `arena-timer` | **VOID** — must re-run | `acceptance-report-arena-timer.json` |
+| `arena-ai` | **PASS** — real 180 s match, all four bot states | `acceptance-report-arena-ai.json` |
+| `arena-timer` | **VOID** — re-run in flight | `acceptance-report-arena-timer.json` |
 | `golden-city` | **PASS** — 31/31, `deficits: []` | `evidence/v2/portrait/golden-city-gate.json` |
 
-`full` is the first scope re-run alone on the slot, and its report is the first
-carrying the provenance guard. It reports `BUNDLE_STABLE`: `censusDigest`
-`fe685340` identical at start and end, 187 files, untruncated. That is the clean
-observation that licenses promoting a clobber from a warning to a failure —
-do that in a follow-up, not silently.
+`full` and `arena-ai` were re-run alone on the slot, and both reports carry
+`bundleProvenance: BUNDLE_STABLE` with identical start/end digests. `arena-ai`
+reached `reason: TIME` at `elapsedSeconds 180.014` with 8 competitors and
+`stateFrames {COLLECT 47719, ROAM 7310, CHASE 6673, FLEE 1155, EVENT_HUNT 843}`,
+`deathsObserved: 3`, `consoleErrors: []`.
+
+That clean `BUNDLE_STABLE` observation licenses promoting a clobber from a
+warning to a failure — do that in a follow-up, not silently.
+
+### The bot-movement gate found a real bug, and it was mine to fix (`edcc8fd`)
+
+`arena-ai` first failed `FAIL_ARENA_AI_STATE_CHASE` with only 14 state frames
+(`COLLECT 12, FLEE 2`) — while reporting `BUNDLE_STABLE`, so it was a true
+failure, not a clobber. The page console named the cause:
+`BOT_TELEPORT_CLAMP_METERS is not defined`.
+
+`page.evaluate` **serializes its callback and runs it in the browser**, so the
+callback cannot close over a Node-side module constant. The bare reference threw
+`ReferenceError` inside the `requestAnimationFrame` observe loop **on every
+frame**, silently emptying the bot telemetry and then reporting a misleading
+"bots do not move". The clamp is now a parameter of the evaluated callback.
+
+Two lessons, both worth keeping:
+
+- **`tsc --checkJs` cannot catch this class.** In the JS file the name *is* in
+  scope, so only a real run — or the page console — reveals it. The pre-run
+  guard covers Node-scope errors, not browser-serialization errors.
+- **A gate that reports a misleading cause is worse than one that reports
+  nothing.** "Bots do not move" sent the investigation toward the bot AI when
+  the fault was a harness scope error.
+
+Provenance note: this bug reached HEAD inside `9b515cd`, where the whole
+acceptance script was staged and another lane's uncommitted bot-teleport work
+was swept in alongside the provenance guard. The diffstat (`+132/−1`) looked
+exactly like the guard alone. **Read the staged diff, not just its size.**
 
 `verifyArenaAiRuntime` and `collectGoldenCityBaseline` are each reachable from
 only one scope, so `--scope=full` does **not** substitute for them.
