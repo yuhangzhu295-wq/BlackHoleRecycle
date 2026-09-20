@@ -169,7 +169,7 @@ an unverified census is only the absence of evidence.
    not *contains*, so three of four buildings are only partly on screen, and the
    "~13 m band" has no code predicate at all.
 8. **`progression` and `skin-unlock` were both blocked by one field swap — fixed,
-   `skin-unlock` verified PASS.** `23906d0` (`09-18 23:51`) changed the collectible id from
+   both verified PASS.** `23906d0` (`09-18 23:51`) changed the collectible id from
    `cluster_<DISTRICT>_<clusterId>_…` to `cluster_<clusterId>_<DISTRICT>_…`, and
    two checks in `verifyFiveLevelProgression` still filter the district as a
    **prefix** (`cluster_WAREHOUSE_`, `cluster_DOWNTOWN_`). Neither can match a
@@ -218,14 +218,16 @@ an unverified census is only the absence of evidence.
    sweep: any other check that drives to a T4/T5 target with a
    `suctionRadius * 0.62` radius has the same latent flake.
 
-**Result.** After all three fixes, `skin-unlock` is **PASS** at `390x844` with
-`failures: []`, `consoleErrors: []` and `BUNDLE_STABLE` (`09-21 01:31`). The
-targeting change is legible in the report: level 3 ate `cardboard_box` x17 +
-`trash_bag` x17 (T2) instead of ping-ponging on the 80-mass battery, level 4 ate
+**Result.** After all three fixes, both scopes that share the helper are **PASS**
+at `390x844` with `failures: []`, `consoleErrors: []` and `BUNDLE_STABLE`:
+`skin-unlock` at `09-21 01:31` and `progression` at `09-21 01:46`. The targeting
+change is legible in both reports: level 3 ate `cardboard_box`/`trash_bag` (T2)
+instead of ping-ponging on the 80-mass battery, level 4 ate
 `chair`/`small_table` (T3), level 5 ate `crate`/`shelf`/`sofa` (T4) — each stage
 taking the heaviest tier its `maxTier` allowed — and the terminal T5 was the same
-static `container` that had failed before. `progression` still needs its own
-re-run: it shares `verifyFiveLevelProgression` and its PASS is dated `09-16`.
+static `container` that had failed before. Two independent runs agreeing on the
+tier choice per level *and* the terminal asset is what separates a fixed gate
+from a gate that happened to pass once.
 11. **Residual harness risks, not yet fixed.** The opening T1→T2 loop still uses
    a flat 60 s budget (`592a985`, `09-16`) to earn 900 mass from T1 clusters
    averaging 65 mass, which is roughly 88 s of driving at the measured 6.3 s per

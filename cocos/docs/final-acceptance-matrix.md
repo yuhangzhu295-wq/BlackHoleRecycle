@@ -39,7 +39,7 @@
 `cocos/build/web-mobile` through the Creator CLI (the script has no skip-build
 switch) and reads the same directory, so the scopes must run serially.
 
-The runner declares **16** scopes. Eight are verified by a re-run alone on the
+The runner declares **16** scopes. Nine are verified by a re-run alone on the
 slot and carry `bundleProvenance`. The rest hold older reports that predate both
 the provenance guard and the fixes recorded below, so they are **not** evidence
 of the current build.
@@ -54,10 +54,11 @@ of the current build.
 | `regions` | **PASS** — all six regions over the 940 m route | `BUNDLE_STABLE` | `09-20 23:28` |
 | `skins` | **PASS** — home skin switched `skin_classic` → `skin_violet_vortex`, locked tap at 0 coins | `BUNDLE_STABLE` | `09-21 00:43` |
 | `skin-unlock` | **PASS** — LV1→LV5 by real touch, then a paid unlock; T5 `container` absorbed | `BUNDLE_STABLE` | `09-21 01:31` |
-| `arena`, `network`, `pages`, `progression`, `revive`, `save-resume`, `settlement`, `ui-full-flow` | **PASS**, never re-run | none | `09-16` – `09-18` **stale** |
+| `progression` | **PASS** — same five-level route through the shared helper; T5 `container` absorbed | `BUNDLE_STABLE` | `09-21 01:46` |
+| `arena`, `network`, `pages`, `revive`, `save-resume`, `settlement`, `ui-full-flow` | **PASS**, never re-run | none | `09-16` – `09-18` **stale** |
 
-**"The chain is green" is therefore still not a true statement.** Eight scopes are
-defensible; eight carry stale passes. The eight above are what this session
+**"The chain is green" is therefore still not a true statement.** Nine scopes are
+defensible; seven carry stale passes. The nine above are what this session
 actually verified.
 
 `regions` was the one recorded failure and is now resolved — but only after the
@@ -65,7 +66,7 @@ re-run disproved the diagnosis. It failed reproducibly (`BUNDLE_STABLE`,
 `consoleErrors: []`), and the guess that `7661123` had superseded it by moving
 `ResidentialHouseWest` was **wrong**. See below.
 
-Measured for the eight verified scopes:
+Measured for the nine verified scopes:
 
 - `full`: `failures: []` across all three viewports; digest `fe685340`.
 - `arena-ai`: `reason: TIME` at `elapsedSeconds 180.014`, 8 competitors,
@@ -97,8 +98,16 @@ Measured for the eight verified scopes:
   `maxTier` 2) to reach 15235; level 4 `chair` x6 + `small_table` x5 (T3,
   950/1400, `maxTier` 3) to reach 56035; level 5 `crate` x6 + `shelf` x5 + `sofa`
   x1 (T4, 5500-8000, `maxTier` 4) to reach 183350. The terminal city asset was a
-  static `container` (`cluster_alley-boxes_DOWNTOWN_0_-16_3`), and the
+  static   `container` (`cluster_alley-boxes_DOWNTOWN_0_-16_3`), and the
   `CompressionSystem` reached all five states with `resourceBlockCount` 190.
+- `progression`: `failures: []` at 390x844, `consoleErrors: []`, `BUNDLE_STABLE`,
+  and it reproduces `skin-unlock`'s profile through the same helper rather than
+  merely agreeing with it: level 3 `trash_bag` x32 + `cardboard_box` x1 to reach
+  15405, level 4 `chair` x6 + `small_table` x5 to reach 56885, level 5 `crate` x6
+  + `shelf` x5 + `sofa` x1 to reach 198915, and the same terminal
+  `cluster_alley-boxes_DOWNTOWN_0_-16_3` `container`. Two independent runs
+  agreeing on both the tier choice per level and the terminal asset is what
+  separates a fixed gate from a gate that happened to pass once.
 
 That clean `BUNDLE_STABLE` observation licensed promoting a clobber from a
 warning to a failure, which `f39f689` did — see below.
