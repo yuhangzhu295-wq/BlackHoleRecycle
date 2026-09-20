@@ -3658,19 +3658,33 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
         // sequence: an object absorbed without ever entering the
         // attraction/suction phase still fails (absorbedIndex would not follow
         // attractOrSuckIndex).
+        //
+        // The order is read from the engine-recorded sequence, not from the
+        // sampled trace. Tier 1 is ATTRACTED for roughly 0.2s and then SUCKING
+        // for `suckDuration` = 0.35s, while one full composition snapshot
+        // blocks the browser main thread for longer than that; a sampled trace
+        // therefore misses the whole attraction phase at random and failed a
+        // correct absorption. The engine records every transition in
+        // CompressibleObject.stateHistory and the authored slot keeps the
+        // sequence after the entity is pooled, so this gate is exact. The
+        // sampled trace stays in the failure payload as a diagnostic.
+        const absorbTiming = removalTiming || getCollectibleTiming(removalSnapshot || t1Snapshot, target.runtimeId);
+        const recordedSequence = Array.isArray(absorbTiming?.slot?.lastLifecycle)
+          ? absorbTiming.slot.lastLifecycle.map((state) => (state === 'ABSORBED' || state === 'RECYCLED' ? 'ABSORBED/RECYCLED' : state))
+          : null;
         const expectedLifecycle = ['IDLE', 'ATTRACTED|SUCKING', 'ABSORBED/RECYCLED'];
-        const idleIndex = lifecycleTrace.findIndex((entry) => entry.state === 'IDLE');
-        const attractOrSuckIndex = lifecycleTrace.findIndex((entry) => entry.state === 'ATTRACTED' || entry.state === 'SUCKING');
-        const absorbedIndex = lifecycleTrace.findIndex((entry) => entry.state === 'ABSORBED/RECYCLED');
+        const orderedStates = recordedSequence || lifecycleTrace.map((entry) => entry.state);
+        const idleIndex = orderedStates.indexOf('IDLE');
+        const attractOrSuckIndex = orderedStates.findIndex((state) => state === 'ATTRACTED' || state === 'SUCKING');
+        const absorbedIndex = orderedStates.findIndex((state) => state === 'ABSORBED/RECYCLED');
         assert(
           idleIndex >= 0 && attractOrSuckIndex > idleIndex && absorbedIndex > attractOrSuckIndex,
-          `FAIL_COLLECTIBLE_LIFECYCLE_ORDER: ${JSON.stringify({ target, expectedLifecycle, lifecycleTrace })}`,
+          `FAIL_COLLECTIBLE_LIFECYCLE_ORDER: ${JSON.stringify({ target, expectedLifecycle, recordedSequence, lifecycleTrace })}`,
         );
         assert(removalObservedAt !== null,
           `FAIL_COLLECTIBLE_TERMINAL_OBSERVATION: ${JSON.stringify({ target, massBefore, lifecycleTrace })}`);
-        t1Absorptions.push({ runtimeId: target.runtimeId, massBefore, massAfter: t1Snapshot.machine.mass, lifecycle: { expected: expectedLifecycle, observed: lifecycleTrace } });
+        t1Absorptions.push({ runtimeId: target.runtimeId, massBefore, massAfter: t1Snapshot.machine.mass, lifecycle: { expected: expectedLifecycle, recorded: recordedSequence, observed: lifecycleTrace } });
         if (!resourceReplenishment) {
-          const absorbTiming = removalTiming || getCollectibleTiming(removalSnapshot || t1Snapshot, target.runtimeId);
           assert(absorbTiming?.slot && absorbTiming.slot.active === false
               && absorbTiming.clock < absorbTiming.slot.availableAt
               && Number.isFinite(absorbTiming.slot.availableAt),

@@ -52,7 +52,8 @@ record('MASS_TO_UPGRADE_CHAIN', machineSource.includes('public addMass(amount: n
   && machineSource.includes('this.checkEvolution()')
   && machineSource.includes('applyEvolutionLevel(cfg.level, true)'),
   'Collected mass is the existing authority that triggers evolution.');
-record('SUCTION_TO_COMPRESSION_CHAIN', objectSource.includes("this.fsm.setState('ABSORBED')")
+record('SUCTION_TO_COMPRESSION_CHAIN', objectSource.includes("this.transitionTo('ABSORBED')")
+  && objectSource.includes('if (!this.fsm.setState(nextState)) return;')
   && managerSource.includes('this.compressionSystem.absorbObject(obj, this.machine)')
   && compressionSource.includes('this.machine.addMass(this.bufferMass)'),
   'The real suction FSM feeds the existing compression system and then machine mass.');

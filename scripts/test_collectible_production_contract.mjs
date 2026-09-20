@@ -46,17 +46,34 @@ class FakeNode {
 }
 
 class FakeObject {
-  constructor(id) { this.node = { isValid: true }; this.runtimeId = id; this.state = 'RECYCLED'; this.spawnCount = 0; }
+  constructor(id) {
+    this.node = { isValid: true };
+    this.runtimeId = id;
+    this.state = 'RECYCLED';
+    // Mirrors CompressibleObject.stateHistory; removeAbsorbedCollectible
+    // records it onto the authored slot before the entity is pooled.
+    this.stateHistory = [];
+    this.spawnCount = 0;
+  }
   spawn(template, x, z, scale, runtimeId) {
     this.template = template;
     this.position = { x, z };
     this.runtimeId = runtimeId;
     this.state = 'IDLE';
+    this.stateHistory = ['IDLE'];
     this.spawnCount += 1;
     this.node.isValid = true;
   }
-  recycle() { this.state = 'RECYCLED'; }
+  /** Mirrors CompressibleObject.transitionTo. */
+  setState(nextState) {
+    if (this.state === nextState) return;
+    if (nextState === 'IDLE') this.stateHistory.length = 0;
+    this.state = nextState;
+    this.stateHistory.push(nextState);
+  }
+  recycle() { this.setState('RECYCLED'); }
   getState() { return this.state; }
+  getStateHistory() { return this.stateHistory; }
 }
 
 class FakePool {
@@ -79,7 +96,7 @@ record('T1_TO_T5_REAL_TEMPLATES', templateTypes.every((type, index) => {
 }), 'five distinct production templates cover T1, T2, T3, T4 and T5 with positive mass/value.');
 record('ART_REGISTRY_COVERS_T1_TO_T5', templateTypes.every((type) => artSource.includes(type + ':')), 'each selected production template has an ObjectArtRegistry binding.');
 record('MASS_AND_TIER_GATE', objectSource.includes('this.template.tier > machineMaxTier && !isMagnetStorm')
-  && objectSource.includes("this.fsm.setState('ATTRACTED')"), 'mass remains template-owned and the existing tier gate preserves the threshold.');
+  && objectSource.includes("this.transitionTo('ATTRACTED')"), 'mass remains template-owned and the existing tier gate preserves the threshold.');
 record('HIGHER_TIER_DISPLAYS_REQUIRED_LEVEL', objectSource.includes('TierLockLabel')
   && objectSource.includes("this.lockLabel.string = '需要 LV.' + this.template.tier"), 'over-tier lock feedback exposes the required 需要 LV.X.');
 

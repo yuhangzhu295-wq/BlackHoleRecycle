@@ -97,8 +97,12 @@ async function run() {
   );
 
   const hasT2 = /tier:\s*ObjectTier\.T2/.test(gameConfig);
-  const hasAbsorbPath = /this\.fsm\.setState\('ATTRACTED'\)/.test(compressibleObject)
-    && /this\.fsm\.setState\('ABSORBED'\)/.test(compressibleObject)
+  // Every motion transition now goes through CompressibleObject.transitionTo,
+  // which is the single recorded entry point that delegates to the FSM. Assert
+  // both halves so the absorption path is still proven to be FSM-driven.
+  const hasAbsorbPath = /this\.transitionTo\('ATTRACTED'\)/.test(compressibleObject)
+    && /this\.transitionTo\('ABSORBED'\)/.test(compressibleObject)
+    && /if \(!this\.fsm\.setState\(nextState\)\) return;/.test(compressibleObject)
     && /this\.template\.tier > machineMaxTier/.test(compressibleObject);
   record(
     'CHECK_LV2_SUCTION_T2_OBJECT',

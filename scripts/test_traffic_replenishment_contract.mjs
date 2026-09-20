@@ -68,6 +68,10 @@ class FakeObject {
     this.node = { isValid: true };
     this.runtimeId = id;
     this.state = 'RECYCLED';
+    // Mirrors CompressibleObject.stateHistory: the ordered motion-state
+    // transitions since the last entry into IDLE. The collectible branch of
+    // removeAbsorbedCollectible records it onto the authored slot.
+    this.stateHistory = [];
     this.spawnCount = 0;
     this.position = { x: 0, y: 0, z: 0 };
     this.headingDegrees = 0;
@@ -79,16 +83,29 @@ class FakeObject {
     this.position = { x, y: 0, z };
     this.runtimeId = runtimeId;
     this.state = 'IDLE';
+    this.stateHistory = ['IDLE'];
     this.spawnCount += 1;
     this.node.isValid = true;
   }
 
+  /** Mirrors CompressibleObject.transitionTo. */
+  setState(nextState) {
+    if (this.state === nextState) return;
+    if (nextState === 'IDLE') this.stateHistory.length = 0;
+    this.state = nextState;
+    this.stateHistory.push(nextState);
+  }
+
   recycle() {
-    this.state = 'RECYCLED';
+    this.setState('RECYCLED');
   }
 
   getState() {
     return this.state;
+  }
+
+  getStateHistory() {
+    return this.stateHistory;
   }
 
   getPosition() {

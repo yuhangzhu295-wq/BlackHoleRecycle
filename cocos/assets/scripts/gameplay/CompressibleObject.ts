@@ -40,9 +40,40 @@ export class CompressibleObject extends Component {
    * mass, tier or the suction profile.
    */
   private strainSeconds: number = 0;
+  /**
+   * Ordered motion-state transitions since the last entry into IDLE.
+   *
+   * The suction window is far shorter than a runtime observation can sample:
+   * for tier 1 the object is ATTRACTED for roughly 0.2s and then SUCKING for
+   * `suckDuration` = 0.35s, while one full QA composition snapshot blocks the
+   * browser main thread for longer than that. Recording the sequence here lets
+   * a lifecycle gate read the true order instead of racing it. Mirrors the
+   * existing `CompressionSystem.stateHistory` diagnostic.
+   */
+  public stateHistory: ObjectMotionState[] = ['IDLE'];
+  private static readonly STATE_HISTORY_LIMIT = 16;
 
   public getPosition(): Vec3 {
     return this.currentPos;
+  }
+
+  /** Read-only ordered FSM evidence; see `stateHistory`. */
+  public getStateHistory(): readonly ObjectMotionState[] {
+    return this.stateHistory;
+  }
+
+  /**
+   * Single transition entry point for this entity's motion FSM.
+   *
+   * `FSM.setState` reports whether the state actually changed, so a no-op
+   * transition is never recorded. Entering IDLE starts a new lifecycle, so the
+   * history always describes exactly the current attraction attempt.
+   */
+  private transitionTo(nextState: ObjectMotionState): void {
+    if (!this.fsm.setState(nextState)) return;
+    if (nextState === 'IDLE') this.stateHistory.length = 0;
+    this.stateHistory.push(nextState);
+    if (this.stateHistory.length > CompressibleObject.STATE_HISTORY_LIMIT) this.stateHistory.shift();
   }
 
   /**
@@ -168,7 +199,7 @@ export class CompressibleObject extends Component {
 
     this.buildVisibleNode();
     this.applyTemplateArt();
-    this.fsm.setState('IDLE');
+    this.transitionTo('IDLE');
   }
 
   private applyTemplateArt(): void {
@@ -294,7 +325,7 @@ export class CompressibleObject extends Component {
       // the next tick loses the first pull step at streaming/rebase edges and
       // can leave a player chasing a target that has already started moving.
       this.captureOwnerId = consumerId;
-      this.fsm.setState('ATTRACTED');
+      this.transitionTo('ATTRACTED');
     }
 
     if (state === 'ATTRACTED' || state === 'SUCKING') {
@@ -306,12 +337,12 @@ export class CompressibleObject extends Component {
           this.captureOwnerId = null;
           this.suckTimer = 0;
           this.node.setScale(Vec3.ONE);
-          this.fsm.setState('IDLE');
+          this.transitionTo('IDLE');
           return false;
         }
       }
       if (state === 'SUCKING') this.suckTimer += dt;
-      else if (Math.sqrt(distSq) < 0.6) this.fsm.setState('SUCKING');
+      else if (Math.sqrt(distSq) < 0.6) this.transitionTo('SUCKING');
 
       // V4 reference 09 legibility: a large target must visibly fight the pull
       // instead of looking like it is passing by. Tier 4/5 gains a slow,
@@ -341,7 +372,7 @@ export class CompressibleObject extends Component {
         this.visualNode?.setRotationFromEuler(0, this.visualYawDegrees, this.visualRollDegrees);
       }
       if (result.isAbsorbed) {
-        this.fsm.setState('ABSORBED');
+        this.transitionTo('ABSORBED');
         return true;
       }
     }
@@ -350,6 +381,6 @@ export class CompressibleObject extends Component {
 
   public recycle(): void {
     this.captureOwnerId = null;
-    this.fsm.setState('RECYCLED');
+    this.transitionTo('RECYCLED');
   }
 }

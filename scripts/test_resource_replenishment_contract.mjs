@@ -63,6 +63,9 @@ class FakeObject {
     this.node = { isValid: true };
     this.runtimeId = id;
     this.state = 'RECYCLED';
+    // Mirrors CompressibleObject.stateHistory: the ordered motion-state
+    // transitions since the last entry into IDLE.
+    this.stateHistory = [];
     this.spawnCount = 0;
   }
 
@@ -71,16 +74,32 @@ class FakeObject {
     this.position = { x, z };
     this.runtimeId = runtimeId;
     this.state = 'IDLE';
+    this.stateHistory = ['IDLE'];
     this.spawnCount += 1;
     this.node.isValid = true;
   }
 
+  /**
+   * Mirrors CompressibleObject.transitionTo: a no-op transition is never
+   * recorded, and re-entering IDLE starts a new lifecycle.
+   */
+  setState(nextState) {
+    if (this.state === nextState) return;
+    if (nextState === 'IDLE') this.stateHistory.length = 0;
+    this.state = nextState;
+    this.stateHistory.push(nextState);
+  }
+
   recycle() {
-    this.state = 'RECYCLED';
+    this.setState('RECYCLED');
   }
 
   getState() {
     return this.state;
+  }
+
+  getStateHistory() {
+    return this.stateHistory;
   }
 }
 
@@ -129,7 +148,18 @@ const pool = new FakePool();
 const procedural = makeCell();
 procedural.populate([{ template, localX: 1, localZ: 2, customId: 'procedural-slot' }], pool, origin);
 const absorbed = procedural.objects[0];
+// The entity is released to the pool the moment it is absorbed, so the authored
+// slot is the only thing that outlives the event. Drive a real FSM sequence
+// first and prove the slot captures its order: a runtime gate cannot read it
+// from the entity afterwards, and the whole tier-1 attraction window is shorter
+// than one full composition snapshot.
+absorbed.setState('ATTRACTED');
+absorbed.setState('SUCKING');
+absorbed.setState('ABSORBED');
 record('ABSORB_REMOVES_FROM_CELL', procedural.removeAbsorbedCollectible(absorbed, pool, 4), 'remove returned true');
+record('ABSORB_RECORDS_FSM_ORDER',
+  JSON.stringify(procedural.collectibleSlots[0].lastLifecycle) === JSON.stringify(['IDLE', 'ATTRACTED', 'SUCKING', 'ABSORBED']),
+  'the authored slot keeps the ordered FSM sequence that produced the absorption');
 record('ABSORB_REMOVES_AND_RETURNS_TO_POOL', procedural.objects.length === 0 && pool.getActiveCount() === 0, 'cell=0, pool.active=0');
 procedural.advanceRespawnClock(3.99);
 record('COOLDOWN_BLOCKS_RESPAWN', procedural.updateCollectibleRespawn(pool, origin, 0, 240) === 0, 'no respawn before four seconds');

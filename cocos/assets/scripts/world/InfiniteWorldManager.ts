@@ -67,6 +67,13 @@ interface CollectibleRespawnSlot {
   readonly customId: string;
   availableAt: number;
   active: boolean;
+  /**
+   * Ordered motion-state sequence that produced the most recent absorption of
+   * this slot. The entity itself is released to the pool the instant it is
+   * absorbed, so the authored slot is the only thing that outlives the event
+   * long enough for a runtime gate to read the true FSM order.
+   */
+  lastLifecycle?: readonly string[];
 }
 
 interface TrafficRespawnSlot {
@@ -606,6 +613,9 @@ class InfiniteWorldCell {
         id: slot.customId,
         active: slot.active,
         availableAt: slot.availableAt,
+        // The recorded FSM order of the last absorption, or null while this
+        // slot has never been absorbed in this session.
+        lastLifecycle: slot.lastLifecycle ? slot.lastLifecycle.slice() : null,
       })),
     };
   }
@@ -653,6 +663,11 @@ class InfiniteWorldCell {
       if (slot) {
         slot.active = false;
         slot.availableAt = this.respawnClock + respawnDelaySeconds;
+        // Capture the FSM order before the entity is pooled. Reading it later
+        // from a runtime snapshot is not possible: the entity is removed from
+        // `objects` here, and the whole ATTRACTED+SUCKING window is shorter
+        // than one full composition snapshot.
+        slot.lastLifecycle = object.getStateHistory().slice();
       }
     }
     objectPool.release(object);
