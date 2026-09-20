@@ -48,8 +48,10 @@ against `collectibles: 23`, so **nothing is missing** and the "19 of 20" was
 purely a live-census artifact — but the same re-run **failed** on
 `player width ratio is 0.2192, needs >= 0.22 (short by 0.0008)`. Four runs of
 the same build measured `0.2192`, `0.2337`, `0.2622` and `0.2979` with a camera
-pose spanning `6e-4` m and a **byte-identical rendered player** (the violet ring
-measures 82 px at every scanline in both screenshots).
+pose spanning `6e-4` m and a rendered player whose widest span is identical in
+both screenshots (`x 154..235`; 11 of 13 sampled scanlines match exactly, and
+the two that differ move 5–6 px at the disc's top edge with the ring rotation
+phase).
 
 The ratio is the merged `worldBounds` of the machine's **decorative** subtree.
 In the two runs that now record `player.contributors`, the fixed body meshes are

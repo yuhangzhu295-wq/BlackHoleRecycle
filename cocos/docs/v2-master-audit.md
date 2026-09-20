@@ -143,12 +143,13 @@ was recorded here as passing at 0.2994 against 0.30 with 0.00065 of headroom,
 and as deterministic because the ratio scales as `1/distance` and the camera is
 now sampled post-settle. **Both halves of that are wrong.** Four runs of the
 same build measured `0.2192`, `0.2337`, `0.2622` and `0.2979` with a camera pose
-spanning `6e-4` m and a byte-identical rendered player, because the ratio is the
-merged `worldBounds` of the machine's *decorative* subtree — rotating meshes
-plus an outer ring scaled by the gameplay suction radius. It is not a camera
-measurement and it is not deterministic. Worse, the level-independent body
-(`AbyssBase`, `4.07 m`) reads `0.2192`, which is `0.0008` *below* the floor, so
-the check passes only when decoration inflates it. See
+spanning `6e-4` m and a rendered player whose widest span is identical in both
+screenshots (`x 154..235`; 11 of 13 sampled scanlines match exactly), because
+the ratio is the merged `worldBounds` of the machine's *decorative* subtree —
+rotating meshes plus an outer ring scaled by the gameplay suction radius. It is
+not a camera measurement and it is not deterministic. Worse, the
+level-independent body (`AbyssBase`, `4.07 m`) reads `0.2192`, which is `0.0008`
+*below* the floor, so the check passes only when decoration inflates it. See
 `final-acceptance-matrix.md`, "`playerWidthRatio` is not a stable measurement".
 
 | Label | Meaning |

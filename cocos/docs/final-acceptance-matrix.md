@@ -181,8 +181,9 @@ invalidating a passing run — will recur the moment two lanes share the slot.
   scales as `1/distance` from a camera that is now sampled only after it
   settles. **That claim is withdrawn — it was wrong.** Four runs on the same
   build measured **0.2192**, **0.2337**, **0.2622** and **0.2979** with a camera
-  pose that spans `6e-4` m and a **byte-identical rendered player** (the violet
-  ring measures `x 154..235` = 82 px at every scanline in both screenshots). The
+  pose that spans `6e-4` m and a rendered player whose widest span is identical
+  (the violet disc measures `x 154..235` at `y 480`–`490`, and 11 of 13 sampled
+  scanlines match exactly). The
   ratio is not a camera measurement at all — it is the merged bounds of the
   machine's decorative subtree, which rotates every frame and includes a ring
   scaled by the gameplay suction radius. See "`playerWidthRatio` is not a
@@ -315,10 +316,12 @@ yet, and the cause is not the camera. **Four** runs of the same build produced
 | latest | `44.00001 / 27.00000` | **1** (`r 2.4`) | `2.0350` | `2.1657` | `4.3314` | `0.2337` | PASS |
 
 The camera is the declared `PortraitGameplayCameraPreset` in all four — the
-poses span `6e-4` m — and the rendered player is **byte-identical**: the violet
-ring measures `x 154..235` (82 px) at every scanline in both screenshots, and
-the near-black core measures 39 px and 38 px. What moved is the geometry the
-probe merges.
+poses span `6e-4` m — and the rendered player is essentially unchanged. The
+violet disc's widest span is identical in both screenshots (`x 154..235`, at
+`y 480`–`490`), the near-black core measures 39 px and 38 px, and 11 of 13
+sampled scanlines match exactly. The two that differ sit at the disc's top edge
+and move by 5–6 px, which is the ring rotation phase, not the framing. What
+moved is the geometry the probe merges.
 
 `collectMergedWorldBounds` unions every `MeshRenderer.model.worldBounds` in the
 player's subtree, and that subtree is the machine's decorative assembly. The
