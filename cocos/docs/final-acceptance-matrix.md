@@ -41,13 +41,40 @@ switch) and reads the same directory, so the scopes must run serially.
 
 | Scope | Result | Evidence |
 | :--- | :--- | :--- |
-| `full` | **PASS** (375x667 + 390x844) | `acceptance-report-full.json` |
-| `arena-ai` | **PASS** | `acceptance-report-arena-ai.json` |
-| `arena-timer` | **PASS** | `acceptance-report-arena-timer.json` |
-| `golden-city` | **PASS** | `acceptance-report-golden-city.json` |
+| `full` | **PENDING** — clean re-run in flight | `acceptance-report-full.json` |
+| `arena-ai` | **VOID** — must re-run | `acceptance-report-arena-ai.json` |
+| `arena-timer` | **VOID** — must re-run | `acceptance-report-arena-timer.json` |
+| `golden-city` | **PASS** — 31/31, `deficits: []` | `evidence/v2/portrait/golden-city-gate.json` |
 
 `verifyArenaAiRuntime` and `collectGoldenCityBaseline` are each reachable from
 only one scope, so `--scope=full` does **not** substitute for them.
+
+### Why three scopes are marked VOID, not PASS
+
+They previously read PASS. They are not PASS. A Cocos build **deletes
+`cocos/build/web-mobile` wholesale and rewrites it**, so any verification
+running while another lane builds gets 404s for the entire rebuild window. Three
+lanes were in flight at once and the evidence files record it:
+
+- `cocos/profiles/v2/packages/builder.json` mtime `18:53:57` falls **inside**
+  the `--scope=full` window `18:52:50–18:54:50`.
+- `acceptance-report-arena-ai.json` (`18:53:32`) and
+  `rc-arena-timer.log` (`18:54:45 → 18:57:58`) were written during that window.
+
+The tell is diagnostic and worth remembering: the same eight asset URLs returned
+**404 consistently for 45 s** and then existed again 10 s later. A stable 404 is
+a directory being rewritten, not a slow boot and not a transfer race. Every
+`FAIL_PORTRAIT_BOOT` in this chain had that cause; none was a product defect.
+The scopes are serial and must be run **alone**. `golden-city` is unaffected
+because its evidence was committed at `413b1e9`, before the collision window.
+
+A bundle-provenance guard now stamps every report with
+`bundleProvenance {status, start, end, comparisonWindow}` and warns when the
+built tree changes mid-run, so the next collision self-labels as
+`BUNDLE_CLOBBERED` instead of reading as a product failure. It is
+**report-only** (exit code is deliberately unchanged) until a clean run shows
+`BUNDLE_STABLE`, because no observation yet distinguishes a true positive from
+a false one and a false FATAL would block the chain.
 
 ### Measured results
 
@@ -196,4 +223,137 @@ the last line of `cocos/temp/builder/log/web-mobile<date>.log` plus
 `find <dir> -type f -newermt "-3 minutes"`; do **not** rely on the npm log
 mtime, which is static for the whole build because output is buffered. Clear it
 with `taskkill /F /IM CocosCreator.exe`.
+
+**Amended:** a stall is only diagnosable by checking **all three** trees —
+`cocos/temp`, `cocos/library` **and** `cocos/build`. Checking only the first two
+misreports an asset re-import as a hang. A confirmed stall looks like: the build
+task logs `Build with Cocos Creator 3.8.3`, then **zero** writes anywhere under
+`cocos/` for minutes. A healthy build deletes and rewrites
+`cocos/build/web-mobile`, so `index.html` legitimately **disappears** mid-build;
+absence is progress, not failure.
+
+### Two gates asserted on transients shorter than the sampling interval
+
+Both defects share one shape: the state's lifetime is shorter than one
+observation, so the assertion is a coin flip. The rule this yields is worth
+applying to every gate in the file — **before asserting on a transient, compute
+window duration vs sampling period; if window < period, the check must become an
+engine-side record or a poll-until-true.**
+
+`QABridge.snapshot()` recomputes the whole composition and blocks the browser
+main thread for roughly 0.5 s, so no full-snapshot poll can observe anything
+shorter than that. Two checks tried anyway:
+
+1. **`FAIL_COLLECTIBLE_LIFECYCLE_ORDER`** (`5f7e579`). Tier-1 is `ATTRACTED`
+   ≈0.2 s + `SUCKING` 0.35 s ≈ **0.55 s**, shorter than one snapshot. The trace
+   sampled `IDLE → MISSING → ABSORBED/RECYCLED` at random and failed a correct
+   absorption. Raising the sample rate cannot fix this — the blind spot exceeds
+   the window. `CompressibleObject` now records the ordered FSM sequence in
+   `stateHistory` through a single `transitionTo()` entry point (mirroring the
+   existing `CompressionSystem.stateHistory` precedent), and
+   `InfiniteWorldManager.removeAbsorbedCollectible` copies it onto the authored
+   slot as `lastLifecycle` before the entity is pooled. The gate asserts the
+   **recorded** sequence; the sampled trace is kept only as a diagnostic.
+
+2. **`FAIL_ABSORB_FEEDBACK_NOT_VISIBLE`** (`4c271cf`, `aff8867`). The popup is
+   emitted in the same frame as the absorption but is fully opaque for only
+   **1.584 s** of its 1.8 s life (`FEEDBACK_DURATION_SECONDS 1.8`,
+   `FEEDBACK_FADE_START 0.88`). The check read it once, *after* the resource
+   replenishment block, which holds a real CDP touch through a 4 s cooldown plus
+   an escape leg — so it could only ever see an expired popup. Its own comment
+   ("Capture immediately after release") described an intent it did not
+   implement. It now captures during the absorption window from the snapshots
+   the lifecycle observer already receives, requiring the absorption to advance
+   `emittedCount` past a per-attempt baseline.
+
+### `largeEmptyGroundRatio` drifts with gameplay — measured, not suspected
+
+`WorldCompositionProbe.estimateEmptyGround` (`:771-806`) excludes only `GROUND`
+and `RESOURCE_CLUSTER` from `occupants`, so `COLLECTIBLE`, `VEHICLE` and
+`COMPETITOR` all count as ground cover. Eating a collectible therefore **raises**
+the ratio, and the user's headline metric moves as the player plays.
+
+Replicating the probe loop over the saved composition reproduces the shipped
+value to the digit (221/1280 = `0.17265625`). Counterfactuals:
+
+| occupants excluded | ratio | vs cap 0.25 |
+| :--- | ---: | :--- |
+| as-shipped (GROUND, RESOURCE_CLUSTER) | 0.172656 | PASS |
+| + COLLECTIBLE | 0.178125 | PASS |
+| + COLLECTIBLE, VEHICLE, COMPETITOR | 0.182812 | PASS |
+| **+ ROAD as well** | **0.857812** | **FAIL** |
+
+Two consequences, and the second is an **invariant**:
+
+- The drift is bounded at ≤13/1280 = **0.010** against a **0.077** margin, so it
+  is a quantified residual, not a live flake. It is documented rather than fixed
+  because the fix would invalidate the committed `golden-city` evidence for a
+  0.010 gain. The safe fix, if taken later, is to exclude
+  `COLLECTIBLE`/`VEHICLE`/`COMPETITOR` (proven: 0.1828).
+- **`estimateEmptyGround` must keep ROAD as an occupant, while
+  `computeScreenSpaceBudget` must not** (the latter changed to walkable/open in
+  `95d5816`). ROAD covers 990/1280 samples and is the only reason the ratio is
+  low. Anyone who "unifies" the two instruments fails this gate at **0.858**.
+  The divergence needs a contract assertion, not just a code comment.
+
+### `FAIL_CELL_LIFECYCLE_OPENING_RELOAD` — live census compared to live census
+
+Both sides of the comparison are live, so neither is the authored contract.
+`openingObjects` is `openingCell.collectibleRuntimeIds`
+(`test_cocos_portrait_acceptance.mjs:2419`) which comes from the **live**
+`cell.objects` (`InfiniteWorldManager.ts:1447`); `reload.collectibleCount` comes
+from `recordCellLifecycle` (`InfiniteWorldManager.ts:1597`) as
+`cell.objects.filter((object) => !isVehicleObject(object)).length`, also the
+**live** list, sampled at LOAD. If the player eats an opening-cell collectible
+before the scenario's first snapshot, the reload rebuilds all authored slots and
+can never match. This is the same live-census-vs-authored-contract category
+error as `7744f91`, not a timing race. **Not yet fixed** — it needs the authored
+slot count.
+
+### The aspirational T4/T5 are genuinely visible at LV.1 (N2 closed)
+
+`collectCollectibleEntries` (`WorldCompositionProbe.ts:382-406`) already emits
+one entry per collectible keyed by `runtimeId` with `screenBounds` and `visible`,
+so this needed no product change. Recorded as a triple, not a boolean, because
+the two objects differ:
+
+- `aspirational_authored_0` (T4): `visible` + `onScreen` + `clearOfHud`.
+- `aspirational_authored_1` (T5): `visible` + `onScreen`, but **`clearOfHud`
+  false** (centre y 131.79 vs HUD band start 135.04).
+
+So a low-level player does see a T4 and a T5 it cannot yet swallow. The T5 sits
+under translucent HUD furniture — a **legibility** caveat, not invisibility. An
+earlier draft folded the HUD test into `onScreen` and would have reported a
+demonstrably visible T5 as invisible; it was caught by validating against the
+artefact rather than against intent.
+
+### Golden City: the user's four layout requirements, audited
+
+The gate passes 31/31 and the composition is contract-compliant. That is **not**
+the same as the user's brief being met. Auditing the brief itself:
+
+1. **≥4 buildings inside the ~13 m visible band — PARTIAL.** The predicate is
+   *intersects*, not *contains*: three of the four buildings are only partly on
+   screen (`ResidentialHouseWest` bounds −19.07 → 36.31, ~36 of 55 px on screen).
+   The "~13 m band" has **no code predicate at all** — it is a derived
+   frame-width equivalence from prose (≈29.7 px/m at that depth).
+2. **Including the hospital — MET.** `Hospital_ClinicNorth` is a `BUILDING`,
+   `visible`, bounds −4.74 → 43.84.
+3. **Add the 1 missing visible collectible — NOT MET.** **No collectible was
+   ever added.** The 19 → 23 movement is a **measurement redefinition** by
+   `7744f91` (which introduced `authoredCollectibleSlots`), not a content change.
+   The original "19 of 20" was itself a live-census reading, so `e4243d1`'s
+   "missing due to framing" attribution is probably wrong. The instruction was
+   acted on as a measurement problem when it may have been a premise problem.
+4. **Ground coverage 34% → ≤25% empty — ENDPOINT MET, BASELINE UNVERIFIABLE.**
+   The endpoint is `0.17265625` (221/1280). The stated `0.34` baseline exists
+   **only as prose** and is not machine-readable anywhere in the repo.
+
+**Process defect, more serious than the finding:**
+`artifacts/qa/portrait/golden-city-composition-before.json` was **overwritten**
+by the re-capture in `413b1e9`. A file whose name declares it is the *before*
+state must be immutable once written, otherwise a deficit we claim to have
+closed can never be re-checked. Git preserves only two versions: `ce30274`
+(`0.505078125`, `BASELINE_COLLECTED`) and `413b1e9` (`0.17265625`, `PASS`).
+**Rule: `-before` evidence is write-once.**
 

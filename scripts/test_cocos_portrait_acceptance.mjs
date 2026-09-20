@@ -7,7 +7,7 @@
  */
 import { spawn } from 'node:child_process';
 import { createServer } from 'node:http';
-import { mkdirSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, existsSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { inflateSync } from 'node:zlib';
@@ -158,6 +158,94 @@ function buildCocosWebMobile() {
       reject(new Error(`Cocos CLI build failed with exit code ${code}.\n${output}`));
     });
   });
+}
+
+/**
+ * Bundle provenance. A Cocos build rewrites `cocos/build/web-mobile` in place, so
+ * a second build landing while a run is in flight silently swaps the artifacts
+ * under a live page. That has already produced one misleading FAIL in this
+ * project, where a run loaded a script that a teammate had replaced mid-flight.
+ * The runner cannot prevent a concurrent build, but it can make one visible.
+ *
+ * Both helpers swallow their own errors. They are called from the `finally`
+ * block below, where a throw would REPLACE the in-flight exception and skip the
+ * two `writeFileSync` calls at the end — losing the report in exactly the run
+ * whose evidence matters most. A failed census must degrade, never mask.
+ */
+const BUNDLE_CENSUS_ENTRY_LIMIT = 20000;
+
+function censusBundleTree(directory) {
+  try {
+    const entries = [];
+    let truncated = false;
+    const walk = (current) => {
+      for (const entry of readdirSync(current, { withFileTypes: true })) {
+        if (entries.length >= BUNDLE_CENSUS_ENTRY_LIMIT) {
+          truncated = true;
+          return;
+        }
+        const child = path.join(current, entry.name);
+        if (entry.isDirectory()) walk(child);
+        else if (entry.isFile()) {
+          const stats = statSync(child);
+          entries.push(`${path.relative(directory, child).split(path.sep).join('/')}:${stats.size}:${stats.mtimeMs}`);
+        }
+      }
+    };
+    walk(directory);
+    entries.sort();
+    // FNV-1a. The digest only has to detect a change between two censuses taken
+    // inside this process; it is never persisted and carries no crypto
+    // requirement, so a dependency-free hash is the right size of tool.
+    const joined = entries.join('\n');
+    let hash = 0x811c9dc5;
+    for (let index = 0; index < joined.length; index += 1) {
+      hash ^= joined.charCodeAt(index);
+      hash = Math.imul(hash, 0x01000193) >>> 0;
+    }
+    return { fileCount: entries.length, truncated, censusDigest: hash.toString(16).padStart(8, '0') };
+  } catch (error) {
+    return {
+      fileCount: null,
+      truncated: false,
+      censusDigest: null,
+      censusError: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
+/**
+ * Statuses: `BUNDLE_STABLE` (the tree is byte-identical across the run),
+ * `BUNDLE_CLOBBERED` (it changed — treat the report as describing no single
+ * build), `BUNDLE_UNVERIFIED` (a census failed, so stability is unknown; this is
+ * deliberately distinct from STABLE and must never be read as one).
+ *
+ * `comparisonWindow` is populated only when both censuses succeeded, so a
+ * consumer can tell a real clobber from a census that never ran.
+ */
+function buildBundleProvenance(startedAt) {
+  const end = censusBundleTree(buildDirectory);
+  // A truncated census is not evidence of stability: both sides could stop at
+  // the same first N entries while the change lands past the cut, which would
+  // read as BUNDLE_STABLE. Truncation therefore degrades to UNVERIFIED, exactly
+  // like a failed census. The limit is high enough that a real Web Mobile tree
+  // never reaches it; hitting it means something is wrong, not that we should
+  // guess.
+  const truncated = Boolean(startedAt?.truncated) || end.truncated;
+  const comparable = Boolean(startedAt)
+    && startedAt.censusDigest !== null
+    && end.censusDigest !== null
+    && !truncated;
+  const status = !comparable
+    ? 'BUNDLE_UNVERIFIED'
+    : startedAt.censusDigest === end.censusDigest ? 'BUNDLE_STABLE' : 'BUNDLE_CLOBBERED';
+  return {
+    status,
+    reason: comparable ? null : truncated ? 'CENSUS_TRUNCATED' : 'CENSUS_UNAVAILABLE',
+    comparisonWindow: comparable ? { start: startedAt, end } : null,
+    start: startedAt || null,
+    end,
+  };
 }
 
 function createStaticServer(rootDirectory) {
@@ -2012,6 +2100,16 @@ async function verifyArenaTimerExpiry(cdp, page, canvasRect) {
  */
 const ARENA_AI_BOT_TRAVEL_MIN_METERS = 10;
 const ARENA_AI_BOT_MOVING_MIN = 4;
+/**
+ * Largest single-sample displacement still counted as locomotion. A respawn
+ * teleports a bot, and in a raw `Math.hypot` sum a teleport is indistinguishable
+ * from travel — so a bot that only ever teleported would clear the floor above
+ * and the gate would pass on displacement the player never saw. The clamp sits
+ * well above any real per-frame step at this camera scale and well below the
+ * shortest respawn jump, which separates the two by construction rather than by
+ * trusting that the totals stay large.
+ */
+const BOT_TELEPORT_CLAMP_METERS = 50;
 
 /**
  * S8 gate: record only read-only Cocos runtime snapshots for one unshortened
@@ -2058,6 +2156,8 @@ async function verifyArenaAiRuntime(cdp, page, canvasRect) {
       // accumulate real travel between consecutive frames.
       botLastPosition: {},
       botTravelMeters: {},
+      botPathMeters: {},
+      botTeleportSteps: {},
       botPositionSamples: {},
       localDeadFrames: 0,
     };
@@ -2089,12 +2189,22 @@ async function verifyArenaAiRuntime(cdp, page, canvasRect) {
           }
           // Accumulate per-bot travel so "bots really move" is asserted on real
           // displacement rather than inferred from a behaviour label.
+          //
+          // Two accumulators. `botTravelMeters` is the raw sum and is kept for
+          // context; `botPathMeters` drops any single-sample step above the
+          // teleport clamp, so it counts locomotion only. The assertion below
+          // reads the clamped one, which is what makes it teleport-insensitive.
           const position = entry.position;
           if (position && Number.isFinite(position.x) && Number.isFinite(position.z)) {
             const previous = telemetry.botLastPosition[entry.id];
             if (previous) {
-              telemetry.botTravelMeters[entry.id] = (telemetry.botTravelMeters[entry.id] || 0)
-                + Math.hypot(position.x - previous.x, position.z - previous.z);
+              const step = Math.hypot(position.x - previous.x, position.z - previous.z);
+              telemetry.botTravelMeters[entry.id] = (telemetry.botTravelMeters[entry.id] || 0) + step;
+              if (step <= BOT_TELEPORT_CLAMP_METERS) {
+                telemetry.botPathMeters[entry.id] = (telemetry.botPathMeters[entry.id] || 0) + step;
+              } else {
+                telemetry.botTeleportSteps[entry.id] = (telemetry.botTeleportSteps[entry.id] || 0) + 1;
+              }
             }
             telemetry.botLastPosition[entry.id] = { x: position.x, z: position.z };
             telemetry.botPositionSamples[entry.id] = (telemetry.botPositionSamples[entry.id] || 0) + 1;
@@ -2177,6 +2287,8 @@ async function verifyArenaAiRuntime(cdp, page, canvasRect) {
       deathsObserved: current.deathsObserved,
       eventHuntWithFragmentFrames: current.eventHuntWithFragmentFrames,
       botTravelMeters: current.botTravelMeters,
+      botPathMeters: current.botPathMeters,
+      botTeleportSteps: current.botTeleportSteps,
       botPositionSamples: current.botPositionSamples,
       localDeadFrames: current.localDeadFrames,
     };
@@ -4085,6 +4197,7 @@ const report = {
   scope: acceptanceScope,
   runner: 'official-cocos-cli + Playwright CDP touch',
   build: null,
+  bundleProvenance: null,
   viewports: [],
   touch: [],
   multiTouch: null,
@@ -4117,9 +4230,11 @@ const report = {
 let server;
 let browser;
 let networkProbeServer;
+let bundleProvenanceStart = null;
 try {
   console.log('[acceptance:v2] Building Web Mobile with Cocos Creator 3.8.3...');
   report.build = await buildCocosWebMobile();
+  bundleProvenanceStart = censusBundleTree(buildDirectory);
   assert(existsSync(path.join(buildDirectory, 'index.html')), `Missing official Cocos build output: ${buildDirectory}`);
 
   if (acceptanceScope === 'network') {
@@ -4145,12 +4260,23 @@ try {
 } catch (error) {
   report.status = 'FAIL';
   report.failures.push(error instanceof Error ? error.message : String(error));
+  // Stamp a census on the failure path too, so a failure can be told apart from
+  // a failure that coincided with a rebuild landing under the run.
+  report.bundleProvenanceAtFailure = censusBundleTree(buildDirectory);
   console.error(`[acceptance:v2] FAIL: ${report.failures[0]}`);
   process.exitCode = 1;
 } finally {
   if (browser) await browser.close();
   if (server) await new Promise((resolve) => server.close(resolve));
   await stopNetworkProbeServer(networkProbeServer);
+  // Computed BEFORE the writes and after all I/O above. `buildBundleProvenance`
+  // never throws, so it cannot replace the in-flight exception nor skip the
+  // `writeFileSync` calls below.
+  report.bundleProvenance = buildBundleProvenance(bundleProvenanceStart);
+  if (report.bundleProvenance.status === 'BUNDLE_CLOBBERED') {
+    console.error('[acceptance:v2] WARNING: the built bundle changed during this run; '
+      + 'the report does not describe one single build.');
+  }
   const serializedReport = `${JSON.stringify(report, null, 2)}\n`;
   writeFileSync(reportPath, serializedReport, 'utf8');
   writeFileSync(scopedReportPath, serializedReport, 'utf8');
