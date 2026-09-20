@@ -11,7 +11,7 @@ path is restored. All commits are safe locally; `origin/main` is far behind.
 
 ### Gate chain state — read this before trusting any PASS
 
-The runner declares **16** scopes. Only these six were re-run alone on the slot:
+The runner declares **16** scopes. Only these seven were re-run alone on the slot:
 
 | Scope | State | Provenance |
 | :--- | :--- | :--- |
@@ -21,11 +21,13 @@ The runner declares **16** scopes. Only these six were re-run alone on the slot:
 | `golden-city` | **PASS** 31/31 — but `PLAYER_WIDTH_RATIO_MIN` is a *level* reading, see below | `413b1e9`, re-run since |
 | `cell-lifecycle` | **PASS** — 375x667 + 390x844 + 430x932, 6/6 checkpoints | `BUNDLE_STABLE` |
 | `regions` | **PASS** — all six regions over the 940 m route | `BUNDLE_STABLE` |
+| `skins` | **PASS** — home skin switched `skin_classic` → `skin_violet_vortex` | `BUNDLE_STABLE` |
 
-**Do not read that as "the chain is green".** The remaining ten scopes hold
+**Do not read that as "the chain is green".** The remaining eight scopes hold
 reports from `09-16`–`09-18` that predate both the provenance guard and the fixes
-below, so they say nothing about the current build, and **`skins` and
-`skin-unlock` have no report at all.**
+below, so they say nothing about the current build, and **`skin-unlock` has no
+report at all** — it drives the full five-level progression plus a paid purchase,
+so it is the slowest of the set.
 
 `regions` is resolved (`d87d10f`) but worth reading, because it was misdiagnosed
 twice. It was a **live** failure, not a stale one, and the landmark was never
@@ -105,6 +107,25 @@ last 3 minutes, someone else is mid-run. A build that is progressing **deletes**
 `scripts/capture_v4_design_evidence.mjs` is safe to run in parallel — it never
 spawns a build and binds an ephemeral port.
 
+**A stalled build still holds the slot, and it looks idle.** Observed 09-21: the
+build task logged `Build with Cocos Creator 3.8.3` and then wrote nothing for
+over eight minutes while 6 `CocosCreator.exe` processes stayed resident — the
+launcher was alive, the slot was occupied, and the builder log sat at 3 lines.
+A healthy build finishes in **25–60 s** and grows that log to ~400–520 lines /
+80 KB. The trigger was environmental, not a project defect: the editor logged
+`Request failed with status code 400` from `apiQueryExtensionList` and
+`failed to connect login server due to request timeout`, `github.com` was
+unreachable, and a `git push` hung for 12 minutes — after the network recovered,
+the same command built in 25 s. So **retry rather than debug**, and clear a
+confirmed stall with `taskkill /F /IM CocosCreator.exe`.
+
+Two traps when diagnosing this, both hit: `find <dir> -newermt "-3 minutes"`
+returned the same count minutes apart and reads as "still building", and
+sorting mtimes by `%TH:%TM:%TS` is lexicographic, so `23:59` outranks `00:33`.
+Use `find . -printf '%T@ %p\n' | sort -rn`. `buildCocosWebMobile` now bounds the
+wait itself (`BHR_COCOS_BUILD_TIMEOUT_MS`, default 15 min) and kills the process
+**tree** on expiry, so a stall fails loudly instead of hanging forever.
+
 Reports carry `bundleProvenance {status, start, end, comparisonWindow}` and, since
 `f39f689`, a clobber **fails the run** (`FAIL_BUNDLE_CLOBBERED`, exit 1). The
 promotion waited for its precondition: three scopes re-run alone all reported
@@ -147,6 +168,72 @@ an unverified census is only the absence of evidence.
 7. **Golden City requirement 1 is PARTIAL.** The band predicate is *intersects*,
    not *contains*, so three of four buildings are only partly on screen, and the
    "~13 m band" has no code predicate at all.
+8. **`progression` and `skin-unlock` were both blocked by one field swap — fixed,
+   `skin-unlock` verified PASS.** `23906d0` (`09-18 23:51`) changed the collectible id from
+   `cluster_<DISTRICT>_<clusterId>_…` to `cluster_<clusterId>_<DISTRICT>_…`, and
+   two checks in `verifyFiveLevelProgression` still filter the district as a
+   **prefix** (`cluster_WAREHOUSE_`, `cluster_DOWNTOWN_`). Neither can match a
+   cluster that exists, so `skin-unlock` failed
+   `FAIL_FULL_PROGRESSION_NO_ELIGIBLE_WAREHOUSE` with `BUNDLE_STABLE` and no
+   console errors — a live failure that was not a product defect. Measured on the
+   failing report's 216 objects: the old predicate matched **0**, the new one
+   matches **28**, **21** of them eligible. `isDistrictCluster` now matches the
+   district as its own segment. `progression` calls the same helper, and its PASS
+   is dated `09-16`–`09-18` — *before* the rename — which is why it reads green
+   while being broken. Both failure messages were dumping `objects`, the whole
+   nine-cell world at ~80 KB, and now report cluster/idle/tier counts instead.
+   Same class as the region landmark defect: an assertion keyed to a generated
+   name that later changed.
+9. **The same commit also outgrew the stage budget — fixed.** With the prefix
+   repaired, `skin-unlock` got past that gate and failed later at
+   `FAIL_FULL_PROGRESSION_LEVEL_3`: 11140 of 15000 mass after **exactly** the 38
+   absorbs that `6.3 s × 240 s` allows, so it was budget-limited, not blocked.
+   The ledger closes exactly — 19 `battery` (T1, 80) + 19 `paint_bucket` (T2, 300)
+   predicts 7220 against 7285 observed — so no mass was lost. Two stale
+   assumptions: the flat 240 s budget (`bfd4afc`, `09-05`) predates `23906d0`'s
+   re-weighting to `T1:50 T2:25 T3:15 T4:8 T5:2` (mean mass 65 / 294 / 1162 /
+   6667 / 33500, so 81% of the world's mass is T4/T5 and unedible at `maxTier` 2),
+   and nearest-first targeting ping-pongs on whatever respawns beside the machine
+   because `COLLECTIBLE_RESPAWN_DELAY_SECONDS` is 4 s against a 6.3 s round trip.
+   The stage now ends on a **stall** (120 s with no mass progress) under a 900 s
+   ceiling, and targets are ordered **heaviest edible tier first, then nearest**
+   with an explicit 60 s drive timeout. The ladder itself is fine — the `09-16`
+   report absorbed 226 objects across five levels — so this is a harness budget
+   that the world outgrew, not a product regression. Guarded by
+   `PROGRESSION_STAGE_BUDGET_TRACKS_PROGRESS`, mutation-checked against three
+   fixed-clock shapes.
+10. **The T5 absorption check was passing on a moving target — fixed.** Past the
+   budget gate, `skin-unlock` cleared all three stages, reached the city and found
+   a valid T5 `cluster_alley-boxes_DOWNTOWN_0_-16_3` (`container`, tier 5, `IDLE`)
+   — then failed `FAIL_FULL_PROGRESSION_T5_ABSORPTION` with `absorbedTiers[5]`
+   stuck at 6. `CompressibleObject` only promotes ATTRACTED → SUCKING below
+   **0.6 m**, and `SUCTION_TIER_PROFILES[5]` is `{pullResistance: 3.6,
+   suckDuration: 3.2}`; the check drove to an arrival radius of
+   `suctionRadius * 0.62` = **4.96 m** at LV.5 and waited **1500 ms**. It passed on
+   `09-16` only because that day's nearest T5 was a moving `car` that drove into
+   the core by itself — a static `container` never closes the gap. The drive now
+   enters the core at 0.45 m (as the opening T1 loop already documents for this
+   exact reason), with `allowMiss` because the target is ATTRACTED and creeping,
+   and traces `absorbedTiers[5]` for up to 12 s instead of sampling once. Worth a
+   sweep: any other check that drives to a T4/T5 target with a
+   `suctionRadius * 0.62` radius has the same latent flake.
+
+**Result.** After all three fixes, `skin-unlock` is **PASS** at `390x844` with
+`failures: []`, `consoleErrors: []` and `BUNDLE_STABLE` (`09-21 01:31`). The
+targeting change is legible in the report: level 3 ate `cardboard_box` x17 +
+`trash_bag` x17 (T2) instead of ping-ponging on the 80-mass battery, level 4 ate
+`chair`/`small_table` (T3), level 5 ate `crate`/`shelf`/`sofa` (T4) — each stage
+taking the heaviest tier its `maxTier` allowed — and the terminal T5 was the same
+static `container` that had failed before. `progression` still needs its own
+re-run: it shares `verifyFiveLevelProgression` and its PASS is dated `09-16`.
+11. **Residual harness risks, not yet fixed.** The opening T1→T2 loop still uses
+   a flat 60 s budget (`592a985`, `09-16`) to earn 900 mass from T1 clusters
+   averaging 65 mass, which is roughly 88 s of driving at the measured 6.3 s per
+   absorb; it passes today on short trips and passive suction, but it is the same
+   fixed-clock shape as item 9. `collectUntil`'s per-target drives still use
+   `max(1.0, suctionRadius * 0.62)` and therefore also rely on coasting past a
+   target to cross the 0.6 m SUCKING gate rather than driving into it; stages 3–5
+   passed this way, so it was left alone rather than changed without evidence.
 
 ---
 

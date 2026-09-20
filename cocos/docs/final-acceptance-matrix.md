@@ -39,7 +39,7 @@
 `cocos/build/web-mobile` through the Creator CLI (the script has no skip-build
 switch) and reads the same directory, so the scopes must run serially.
 
-The runner declares **16** scopes. Six are verified by a re-run alone on the
+The runner declares **16** scopes. Eight are verified by a re-run alone on the
 slot and carry `bundleProvenance`. The rest hold older reports that predate both
 the provenance guard and the fixes recorded below, so they are **not** evidence
 of the current build.
@@ -52,19 +52,20 @@ of the current build.
 | `golden-city` | **PASS** — 31/31, `deficits: []`; but the width check is unstable, see below | `BUNDLE_STABLE` (earlier evidence committed `413b1e9`) | `09-21 00:20` |
 | `cell-lifecycle` | **PASS** — 375x667 + 390x844 + 430x932, 6/6 checkpoints | `BUNDLE_STABLE` | `09-20 19:32` |
 | `regions` | **PASS** — all six regions over the 940 m route | `BUNDLE_STABLE` | `09-20 23:28` |
+| `skins` | **PASS** — home skin switched `skin_classic` → `skin_violet_vortex`, locked tap at 0 coins | `BUNDLE_STABLE` | `09-21 00:43` |
+| `skin-unlock` | **PASS** — LV1→LV5 by real touch, then a paid unlock; T5 `container` absorbed | `BUNDLE_STABLE` | `09-21 01:31` |
 | `arena`, `network`, `pages`, `progression`, `revive`, `save-resume`, `settlement`, `ui-full-flow` | **PASS**, never re-run | none | `09-16` – `09-18` **stale** |
-| `skins`, `skin-unlock` | **no report at all** | — | — |
 
-**"The chain is green" is therefore not yet a true statement.** Six scopes are
-defensible; eight carry stale passes and two have never produced a report. The
-six above are what this session actually verified.
+**"The chain is green" is therefore still not a true statement.** Eight scopes are
+defensible; eight carry stale passes. The eight above are what this session
+actually verified.
 
 `regions` was the one recorded failure and is now resolved — but only after the
 re-run disproved the diagnosis. It failed reproducibly (`BUNDLE_STABLE`,
 `consoleErrors: []`), and the guess that `7661123` had superseded it by moving
 `ResidentialHouseWest` was **wrong**. See below.
 
-Measured for the six verified scopes:
+Measured for the eight verified scopes:
 
 - `full`: `failures: []` across all three viewports; digest `fe685340`.
 - `arena-ai`: `reason: TIME` at `elapsedSeconds 180.014`, 8 competitors,
@@ -85,6 +86,19 @@ Measured for the six verified scopes:
   `bedroom` 0 m, `warehouse` 175.5, `supermarket` 367.4, `parking` 557.5,
   `construction` 751.2, `city` 941.4 — each with its district and landmark
   confirmed, `rebaseCount` 4, `consoleErrors: []`.
+- `skins`: `failures: []` at 390x844, `consoleErrors: []`, and the payload is a
+  real home-skin selection rather than a page that merely rendered:
+  `previousSkinId skin_classic` → `selectedSkinId skin_violet_vortex`, with the
+  locked-skin tap exercised at `coinsBeforeLockedTap: 0`. `bundleProvenance` is
+  `BUNDLE_STABLE`.
+- `skin-unlock`: `failures: []` at 390x844, `consoleErrors: []`, `BUNDLE_STABLE`,
+  with the whole ladder driven by real touch and the targeting visible in what it
+  chose to eat: level 3 `cardboard_box` x17 + `trash_bag` x17 (T2, 320/350 mass,
+  `maxTier` 2) to reach 15235; level 4 `chair` x6 + `small_table` x5 (T3,
+  950/1400, `maxTier` 3) to reach 56035; level 5 `crate` x6 + `shelf` x5 + `sofa`
+  x1 (T4, 5500-8000, `maxTier` 4) to reach 183350. The terminal city asset was a
+  static `container` (`cluster_alley-boxes_DOWNTOWN_0_-16_3`), and the
+  `CompressionSystem` reached all five states with `resourceBlockCount` 190.
 
 That clean `BUNDLE_STABLE` observation licensed promoting a clobber from a
 warning to a failure, which `f39f689` did — see below.
@@ -400,6 +414,45 @@ task logs `Build with Cocos Creator 3.8.3`, then **zero** writes anywhere under
 `cocos/build/web-mobile`, so `index.html` legitimately **disappears** mid-build;
 absence is progress, not failure.
 
+**Amended again (09-21), with a measurement and a cause.** A stall is not
+confined to builds that follow a failure: the one observed here followed
+`golden-city` **passing** minutes earlier, so the earlier "follows a scope that
+had just failed" correlation does not hold. Two things were measured rather than
+inferred:
+
+- **The signature, quantified.** A healthy build of this project finishes in
+  **25–60 s** and grows `cocos/temp/builder/log/web-mobile<date>.log` to roughly
+  **400–520 lines / 80 KB**. The stalled build sat at **3 lines / 1710 bytes**
+  from `00:33:03` onward while nothing under `cocos/` was written for over eight
+  minutes and 6 `CocosCreator.exe` processes stayed resident. `index.html` was
+  still the *previous* run's file, which is the trap: the slot looks occupied by
+  a build that has in fact stopped.
+- **The cause, most likely the network.** Immediately before the stall the
+  editor logged `Request failed with status code 400` from
+  `apiQueryExtensionList` and `failed to connect login server due to request
+  timeout`. At the same time `github.com` was unreachable and a `git push` hung
+  for 12 minutes with no output, while `api.github.com` and `cocos.com` answered
+  in under half a second. After the network recovered, the identical command
+  built in **25 s**. Treat a stall as an environmental symptom to retry, not as
+  a project defect to debug — but bound the wait, because the runner used to
+  wait on `close` forever.
+
+**Two diagnostic traps, both hit while establishing the above.** The documented
+`find <dir> -type f -newermt "-3 minutes"` is unreliable here: it returned the
+same count on two checks several minutes apart, which reads as "still building".
+Sort by epoch instead — `find . -printf '%T@ %p\n' | sort -rn` — and note that
+sorting by `%TH:%TM:%TS` is **wrong**, because it is lexicographic and puts
+`23:59` ahead of `00:33`. Both mistakes point the same way: they make a dead
+build look alive.
+
+**Now bounded in code.** `buildCocosWebMobile` applies
+`BHR_COCOS_BUILD_TIMEOUT_MS` (default 15 min) and on expiry kills the **process
+tree** with `taskkill /PID <pid> /T /F`, then fails naming the builder log. The
+tree matters: killing only the launcher leaves the other editor processes
+holding the project and breaks the next run too. The kill path was verified
+against a real spawned tree — timer fired, launcher gone, `node.exe` count back
+to baseline, no orphan.
+
 ### Two gates asserted on transients shorter than the sampling interval
 
 Both defects share one shape: the state's lifetime is shorter than one
@@ -539,6 +592,162 @@ The probe now also emits `descendantNames` per group and the check searches the
 subtree, so it answers for both cell shapes. The failure message was also
 trimmed: it dumped the full renderer diagnostics, about 6 KB, which is unreadable
 exactly when it matters.
+
+### `FAIL_FULL_PROGRESSION_NO_ELIGIBLE_WAREHOUSE` — a field swap, and two scopes keyed to the old order
+
+This is the **same class of defect as the region landmark above** — an assertion
+keyed to a generated name that later changed — and it is the reason `skin-unlock`
+could not pass. `23906d0` (`09-18 23:51`, "refine collectible distribution
+cadence") rewrote the collectible id in `ChunkConfig.ts` and **swapped the two
+leading fields**:
+
+| | generated id |
+| :--- | :--- |
+| before `23906d0` | `cluster_<DISTRICT>_<clusterId>_<cellX>_<cellZ>_<n>` |
+| after `23906d0` | `cluster_<clusterId>_<DISTRICT>_<cellX>_<cellZ>_<n>` |
+
+Two progression checks filter on the district as a **prefix**:
+
+```js
+String(object.runtimeId || '').startsWith('cluster_WAREHOUSE_')   // stages 3-5
+String(object.runtimeId || '').startsWith('cluster_DOWNTOWN_')    // the city T5 target
+```
+
+After the swap the district is the *second* field, so neither can ever match a
+cluster that exists. Both came from `d9da039` (`09-05`) and were never updated.
+The counts are not ambiguous — measured against the 216 objects in the failing
+report, the old predicate matched **0**, and matching the district as its own
+segment matches **28**, of which **21** are eligible (`IDLE`, `tier <= maxTier`).
+The clusters were in the world the whole time; the check simply could not name
+them.
+
+The last passing `progression` report proves the same thing from the other side.
+It is dated **`09-16 18:27`**, before the rename, and every target it actually
+absorbed carries the old field order:
+
+| stage | absorbed target in the `09-16` report |
+| :--- | :--- |
+| level 3 warehouse | `cluster_WAREHOUSE_container-yard_0_-4_3` |
+| level 4 supermarket | `cluster_SUPERMARKET_parking-recycling_0_-7_7` |
+| level 5 parking | `cluster_PARKING_parking-corner_0_-10_18` |
+| city T5 | `cluster_DOWNTOWN_taxi-stand_0_-16_19`, `type: car` |
+
+Every one of those matches `startsWith('cluster_<DISTRICT>_')` and none matches
+after the swap. That row also confirms the T5 check's premise directly: the T5
+target was a `car` from the `taxi-stand` cluster, and `car` is `ObjectTier.T5` —
+so keeping the cluster requirement while fixing the prefix is the faithful repair
+rather than a loosening.
+
+**Two scopes, one cause.** `verifyFiveLevelProgression` is called by both
+`progression` (line 3504) and `skin-unlock` (line 3581), so both were broken by
+the same commit. `progression`'s report is dated `09-16`–`09-18`, i.e. **before**
+`23906d0`, which is exactly why it reads PASS: it passed under the old naming and
+was never re-run afterwards. That is the trap this document keeps hitting — a
+stale PASS and a currently-passing scope look identical in the report directory.
+
+`isClusterOfDistrict(runtimeId, district)` now matches the district as its own
+segment. Cluster ids are lowercase and hyphenated (`pallet-boxes`, `loading-bay`,
+`shelf-spill`, `container-yard`), so an uppercase district cannot collide with
+one. Both failure messages were also trimmed the same way as the landmark one:
+each dumped `objects`, the whole nine-cell streamed world at about 80 KB, and
+each now reports the counts that actually answer the question — how many clusters
+the district has, how many are idle, which tiers they carry.
+
+**Checked for a third instance and found none.** The other name-keyed assertions
+in the runner were each verified against the current generators:
+`traffic_${coord.x}_${coord.z}_${visualKind}` still produces `traffic_0_0_…`, and
+`FourWayRoad` / `MainCrossroad`, `Ground` and `tile-low` all still exist in the
+source or the prefab. `FourWayRoad` is deliberately kept alongside its rename so
+an older probe build stays diagnosable.
+
+### The stage budget was set before the world got thinner (`23906d0`)
+
+Fixing the prefix let `skin-unlock` past that gate, and it then failed **later**
+and for a different reason: `FAIL_FULL_PROGRESSION_LEVEL_3`. That is progress, not
+a second naming bug, and the mass ledger says so exactly.
+
+The machine absorbed 38 objects in the stage's 240 s: 19 `battery` (T1, 80 mass)
+and 19 `paint_bucket` (T2, 300). Predicted **7220**, observed **7285** — a 65-mass
+gap, i.e. one small object caught by passive suction. Mass is fully conserved
+through the `CompressionSystem` buffer, so nothing was leaking or being dropped;
+the run simply ran out of clock. It needed 11145 mass, reached 11140, and the loop
+did **exactly** the 38 absorbs that `6.3 s × 240 s` allows.
+
+Two harness assumptions had gone stale together, and `23906d0` is why:
+
+| commit | date | what it fixed in place |
+| :--- | :--- | :--- |
+| `bfd4afc` | `09-05 18:53` | the flat 240 s stage budget |
+| `592a985` | `09-16 03:06` | the 60 s opening budget |
+| `23906d0` | `09-18 23:51` | re-weighted placement to `T1:50 T2:25 T3:15 T4:8 T5:2` |
+
+Under those weights the world's mass is `81%` T4/T5 (mean mass `65 / 294 / 1162 /
+6667 / 33500` for T1..T5), but at level 2 the machine's `maxTier` is T2 — so the
+`900 → 15000` step has to be ground out on items averaging about **106 mass**
+while every T3 cluster (mean 1162) sits visibly out of reach. That is a design
+choice, not a defect: the `09-16` report absorbed 226 objects across five levels,
+so the ladder is completable. What was wrong is that a **fixed wall clock** was
+trying to cover a cost that the same commit had multiplied by roughly five.
+
+The second stale assumption was the targeting. Nearest-first ping-pongs on
+whatever respawns beside the machine, because `COLLECTIBLE_RESPAWN_DELAY_SECONDS`
+is **4 s** — shorter than one 6.3 s round trip — so the same T1 `battery` and the
+same T2 `paint_bucket` came back forever while 21 eligible clusters existed. Both
+are now addressed:
+
+- the stage ends on a **stall** (no mass progress for 120 s), with a 900 s ceiling
+  so a genuinely wedged run still terminates, instead of a flat 240 s;
+- targets are ordered **heaviest edible tier first, then nearest** — tier is the
+  mass proxy the snapshot actually carries, since `QABridge` projects only
+  `runtimeId / type / tier / state / x / z / lockVisible` — with an explicit 60 s
+  drive timeout, because tier-first can legitimately pick a cluster in an adjacent
+  cell and the default 30 s would abort that trip as `FAIL_VERTICAL_SLICE_ROUTE_`.
+
+The failure message was trimmed here too. `machine: latest.machine` dragged in
+`visualMaterials`, dozens of renderer entries, which is why the original
+`LEVEL_3` message ran to tens of kilobytes; it now reports the level, mass,
+deficit, elapsed time, stall time and the absorbed mix by type.
+
+`test_collectible_production_contract.mjs` gained a third guard for this class.
+`PROGRESSION_STAGE_BUDGET_TRACKS_PROGRESS` asserts on the stage loop's **exit
+condition** — not its body, since the body also mentions `lastProgressAt` when it
+records progress, which is exactly the false-negative a first attempt at this
+guard had. Mutation-checked against three shapes: the pre-fix fixed clock, a
+ceiling with the stall term dropped, and a condition missing the level term. All
+three are caught; the real source passes.
+
+### The T5 absorption check was passing on a moving target (`skin-unlock`)
+
+With the budget fixed, `skin-unlock` cleared the warehouse, supermarket and
+parking stages, drove to the city and **found** a valid T5 target —
+`cluster_alley-boxes_DOWNTOWN_0_-16_3`, type `container`, tier 5, `IDLE`. It then
+failed to absorb it: `absorbedTiers[5]` stayed at **6**.
+
+The FSM explains it exactly. `CompressibleObject` only promotes a target from
+ATTRACTED to SUCKING on proximity:
+
+```
+else if (Math.sqrt(distSq) < 0.6) this.transitionTo('SUCKING');
+```
+
+and `SUCTION_TIER_PROFILES[5]` is `{ pullResistance: 3.6, suckDuration: 3.2 }`, so
+a T5 also needs **3.2 s** of SUCKING after that. The check drove with an arrival
+radius of `max(1.5, suctionRadius * 0.62)` — **4.96 m at LV.5**, eight times the
+0.6 m gate — and then waited only **1500 ms**, under half the suck.
+
+It had been passing on `09-16` because the nearest T5 that day was a `car`: a
+dynamic vehicle that drives into the machine's core on its own. A static
+`container` (radius 4.5, the slowest `pullResistance`) never closes the gap, so
+the flake surfaced the first time the nearest T5 happened to be static. The
+opening T1 loop already documents this exact requirement — *"the production FSM
+only switches ATTRACTED -> SUCKING below 0.6 m … finish the physical route inside
+that core"* — the T5 check simply never followed it.
+
+The drive now goes into the core at 0.45 m, with `allowMiss` set because the
+target is ATTRACTED and creeping toward the machine while the machine drives at
+its last known point, and the check then traces `absorbedTiers[5]` for up to
+12 s rather than sampling once. The claim being asserted is the absorption, not
+the route.
 
 ### The aspirational T4/T5 are genuinely visible at LV.1 (N2 closed)
 
