@@ -3592,7 +3592,32 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
         let removalObservedAt = null;
         let removalTiming = null;
         let removalSnapshot = null;
+        // Absorbing an object shows a real pickup popup (`showAbsorbFeedback`,
+        // emitted from the absorption handler in GameManager). The popup is
+        // fully opaque for the first 1.584s of its 1.8s life
+        // (PickupFeedbackPresenter FEEDBACK_DURATION_SECONDS = 1.8,
+        // FEEDBACK_FADE_START = 0.88), which is far shorter than the
+        // cooldown/escape drive that runs after the absorption. Reading it once
+        // at the end of that sequence can therefore only ever observe an expired
+        // popup, which is what failed here. Record the observation made during
+        // the absorption window instead, and require the absorption itself to
+        // have advanced the emission counter so a popup left over from an
+        // earlier pickup cannot satisfy the gate.
+        let feedbackBaselineEmitted = null;
+        let visibleAbsorbFeedback = null;
         const observeCollectibleLifecycle = (snapshot, phase) => {
+          const pickupFeedback = snapshot.ui?.pickupFeedback?.endless || null;
+          if (pickupFeedback) {
+            // The first call is the pre-absorption snapshot, so its emission
+            // count is the baseline the absorption has to advance.
+            if (feedbackBaselineEmitted === null) {
+              feedbackBaselineEmitted = pickupFeedback.emittedCount;
+            } else if (!visibleAbsorbFeedback
+              && (pickupFeedback.activeCount || 0) > 0
+              && pickupFeedback.emittedCount > feedbackBaselineEmitted) {
+              visibleAbsorbFeedback = { phase, elapsedMs: Date.now() - lifecycleStartedAt, feedback: pickupFeedback };
+            }
+          }
           const object = snapshot.objects.find((candidate) => candidate.runtimeId === target.runtimeId) || null;
           const timing = getCollectibleTiming(snapshot, target.runtimeId);
           // ABSORBED is immediately pooled by production; a later read can
@@ -3852,13 +3877,24 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
       report.verticalSlice.t1Absorptions = t1Absorptions;
       report.resourceReplenishment = resourceReplenishment;
       // The cluster can complete its real attraction animation while the
-      // physical drag is still held. Capture immediately after release; a
-      // later 1.6s wait is deliberately long enough for short feedback to
-      // have expired and would not be an honest visibility check.
+      // physical drag is still held. The popup observation that gates is the
+      // one taken inside that window (`visibleAbsorbFeedback`, recorded by
+      // `observeCollectibleLifecycle`); this read exists only to carry the
+      // post-cooldown state into the failure payload.
       const feedbackSnapshot = await readRuntimeSnapshot(page);
-      const visibleEndlessFeedback = feedbackSnapshot.ui?.pickupFeedback?.endless || null;
-      assert((visibleEndlessFeedback?.activeCount || 0) > 0,
-        `FAIL_ABSORB_FEEDBACK_NOT_VISIBLE: ${JSON.stringify(feedbackSnapshot.ui?.pickupFeedback)}`);
+      // The popup is emitted in the same frame as the absorption, so the
+      // observation recorded during the absorption window is the honest one.
+      // The instantaneous read is taken after the cooldown/escape drive has run
+      // and is kept only as a diagnostic: by then the 1.8s popup has
+      // legitimately expired, so it must not gate.
+      assert(visibleAbsorbFeedback !== null
+          && /^\+\d+$/.test(visibleAbsorbFeedback.feedback.lastText || ''),
+        `FAIL_ABSORB_FEEDBACK_NOT_VISIBLE: ${JSON.stringify({
+          visibleAbsorbFeedback,
+          feedbackBaselineEmitted,
+          emittedAfterAbsorption: feedbackSnapshot.ui?.pickupFeedback?.endless?.emittedCount ?? null,
+          afterCooldown: feedbackSnapshot.ui?.pickupFeedback,
+        })}`);
       report.verticalSlice.pickupFeedback = feedbackSnapshot.ui?.pickupFeedback || null;
       await page.screenshot({ path: path.join(evidenceDirectory, 'portrait-390x844-absorb-feedback.png') });
       await page.waitForTimeout(3200);
