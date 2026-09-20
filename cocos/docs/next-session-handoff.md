@@ -110,13 +110,19 @@ spawns a build and binds an ephemeral port.
 **A stalled build still holds the slot, and it looks idle.** Observed 09-21: the
 build task logged `Build with Cocos Creator 3.8.3` and then wrote nothing for
 over eight minutes while 6 `CocosCreator.exe` processes stayed resident — the
-launcher was alive, the slot was occupied, and the builder log sat at 3 lines.
+launcher was alive, the slot was occupied, and the builder log sat at 3 lines /
+**1710 bytes**, frozen *before* the first `onBeforeBuild` hook — a healthy log
+runs `cocos-service` (7 ms), `scene` (0 ms) and `black-hole-home-builder` (2 ms)
+at that point, then `Start lock asset db` ten seconds later.
 A healthy build finishes in **25–60 s** and grows that log to ~400–520 lines /
-80 KB. The trigger was environmental, not a project defect: the editor logged
-`Request failed with status code 400` from `apiQueryExtensionList` and
-`failed to connect login server due to request timeout`, `github.com` was
-unreachable, and a `git push` hung for 12 minutes — after the network recovered,
-the same command built in 25 s. So **retry rather than debug**, and clear a
+80 KB. The trigger is **not** the two messages once blamed for it: `report.build`
+keeps the editor console for every run, and the 400 appears in four **passing**
+reports (`arena-timer`, `golden-city`, `progression`, `skin-unlock`) while the
+login-server message appears in seven (`arena-ai`, `cell-lifecycle`, `full`,
+`pages`, `regions`, `revive`, `skins`) — eleven of fifteen, all passing, so
+neither distinguishes a stall from a healthy build. The cause is unknown; the
+rate is **11 stalls in 697 builds over three days**, and a retry has recovered
+every one. So **retry rather than debug**, and clear a
 confirmed stall with `taskkill /F /IM CocosCreator.exe`.
 
 Two traps when diagnosing this, both hit: `find <dir> -newermt "-3 minutes"`

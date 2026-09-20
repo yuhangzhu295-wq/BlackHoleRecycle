@@ -423,8 +423,8 @@ task logs `Build with Cocos Creator 3.8.3`, then **zero** writes anywhere under
 `cocos/build/web-mobile`, so `index.html` legitimately **disappears** mid-build;
 absence is progress, not failure.
 
-**Amended again (09-21), with a measurement and a cause.** A stall is not
-confined to builds that follow a failure: the one observed here followed
+**Amended again (09-21), with a measurement and a ruled-out cause.** A stall is
+not confined to builds that follow a failure: the one observed here followed
 `golden-city` **passing** minutes earlier, so the earlier "follows a scope that
 had just failed" correlation does not hold. Two things were measured rather than
 inferred:
@@ -436,15 +436,28 @@ inferred:
   minutes and 6 `CocosCreator.exe` processes stayed resident. `index.html` was
   still the *previous* run's file, which is the trap: the slot looks occupied by
   a build that has in fact stopped.
-- **The cause, most likely the network.** Immediately before the stall the
-  editor logged `Request failed with status code 400` from
-  `apiQueryExtensionList` and `failed to connect login server due to request
-  timeout`. At the same time `github.com` was unreachable and a `git push` hung
-  for 12 minutes with no output, while `api.github.com` and `cocos.com` answered
-  in under half a second. After the network recovered, the identical command
-  built in **25 s**. Treat a stall as an environmental symptom to retry, not as
-  a project defect to debug — but bound the wait, because the runner used to
-  wait on `close` forever.
+- **The cause is not the two messages this section previously blamed.** An
+  earlier version named the network, on the evidence that the editor logged
+  `Request failed with status code 400` from `apiQueryExtensionList` and
+  `failed to connect login server due to request timeout` immediately before the
+  stall. Both are now **ruled out**, because `report.build` keeps the editor
+  console for *every* run, not only failing ones — so the healthy side of the
+  comparison exists. The 400 appears in **four passing** reports (`arena-timer`,
+  `golden-city`, `progression`, `skin-unlock`) and the login-server message in
+  **seven** (`arena-ai`, `cell-lifecycle`, `full`, `pages`, `regions`, `revive`,
+  `skins`). Eleven of the fifteen reports carry one or the other and all fifteen
+  pass, so neither message distinguishes a stall from a healthy build. They are
+  startup noise from the editor's update and login checks, which fail routinely
+  in this environment and do not stop the build.
+- **What is actually measured is the rate.** The signature is exact — the log
+  freezes at **1710 bytes** with `Build with Cocos Creator 3.8.3` as its last
+  line, *before* the first `onBeforeBuild` hook runs (`cocos-service` at 7 ms,
+  `scene` at 0 ms, `black-hole-home-builder` at 2 ms, then `Start lock asset db`
+  ten seconds later, in a healthy log). Across **697 builds over three days**,
+  **11 stalled** — 2% overall, but 3 of the ~12 on 09-21 alone. Every stall has
+  been recovered by a retry, so treat it as environmental and re-run rather than
+  debug — but bound the wait, because the runner used to wait on `close`
+  forever.
 
 **Two diagnostic traps, both hit while establishing the above.** The documented
 `find <dir> -type f -newermt "-3 minutes"` is unreliable here: it returned the

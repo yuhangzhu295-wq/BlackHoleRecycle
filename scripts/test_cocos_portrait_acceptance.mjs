@@ -194,7 +194,11 @@ function buildCocosWebMobile() {
         `Cocos CLI build produced no exit within ${Math.round(cocosBuildTimeoutMs / 1000)} s and was killed. `
         + `A healthy build finishes in under a minute; check `
         + `${path.join(cocosProject, 'temp', 'builder', 'log')} — a stalled build stops growing there `
-        + `while the editor process stays alive, which is what a degraded network looked like on 09-21.\n${output}`,
+        + `while the editor process stays alive. The signature is exact: the log freezes at 1710 bytes `
+        + `with "Build with Cocos Creator 3.8.3" as its last line, before the first onBeforeBuild hook. `
+        + `It is intermittent (11 of 697 builds over three days) and a retry recovers, so re-run before `
+        + `investigating. An \`extension-manager.cocos.com\` 400 is NOT the cause: it is startup noise `
+        + `present in passing runs too.\n${output}`,
       ));
     }, cocosBuildTimeoutMs);
   });
