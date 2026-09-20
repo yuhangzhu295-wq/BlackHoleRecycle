@@ -42,24 +42,49 @@
  * observed position of each node is remembered as its base, so repeated calls
  * cannot accumulate drift.
  *
- * ## Known shortfall
+ * ## The 24 px rule, and why it only binds the interactive elements
  *
- * The locked rule is "lateral padding >= 24 px for any interactive element". That
- * is **not reachable** at 390x844 with the current authored row: a 24 px margin
- * needs `S = 295.75 - 24/0.65938 = 259.3` design px, which forces `BtnPause` left
- * by 43.7 px into `LevelPanel`. The maximum collision-free margin is ~4.4 px.
- * This clamp therefore targets **zero clipping** (`SAFE_AREA_MARGIN_SCREEN_PX = 0`),
- * which removes the visible defect without inventing overlaps; the padding
- * shortfall is recorded in `design-lock.md` as requiring an authoring pass.
+ * The locked rule is "lateral padding >= 24 px for **any interactive element**".
+ * An earlier revision of this file read that as applying to the whole row on both
+ * edges and concluded 24 px was unreachable: `S = 295.75 - 24/0.65938 = 259.3`
+ * design px, which pushed `BtnPause` 43.7 px into `LevelPanel`. That conclusion
+ * was wrong, because the rule binds only interactive nodes.
+ *
+ * Of the five top-level HUD children, `CoinPanel`, `LevelPanel` and `RegionPanel`
+ * are labels — they must not be clipped, but they carry no padding obligation.
+ * Only `BtnPause` and `Joystick` are interactive. So the available span is
+ * `295.74 + 259.3 = 555.04` design px against an authored row of 622 px, and
+ * `622 - 23.26 (left overflow) - 43.7 (right overflow) = 555.04` — it fits
+ * exactly, with 15.0 and 14.0 design px left between the clusters.
+ *
+ * The margin is therefore applied **per group**: 24 screen px if the group
+ * contains an interactive node, 0 otherwise.
  */
-import { Camera, Node, UITransform, Vec3, view } from 'cc';
+import { Button, Camera, Node, UITransform, Vec3, view } from 'cc';
 
 /**
- * Design-space lateral padding, in SCREEN px. See "Known shortfall" above: 24 is
- * the locked target but is not collision-free at 390x844, so this clamp enforces
- * zero clipping instead of shipping a layout that overlaps itself.
+ * Locked lateral padding for interactive HUD elements, in SCREEN px. Applied per
+ * group; label-only groups get 0 (they must merely stay unclipped).
  */
-const SAFE_AREA_MARGIN_SCREEN_PX = 0;
+const SAFE_AREA_MARGIN_SCREEN_PX = 24;
+
+/**
+ * Horizontal gap, in design px, below which two vertically-overlapping children
+ * are treated as one cluster. `LevelPanel` ends at x = 231 and `BtnPause` starts
+ * at 245, a 14 px gap — they read as one right-hand cluster, and they must move
+ * together. Otherwise `BtnPause` takes its 24 px margin alone and lands on top of
+ * `LevelPanel` (201.3..259.3 against -19..231). `CoinPanel` ends at -101 and
+ * `LevelPanel` starts at -19, an 82 px gap, so the two clusters stay separate.
+ */
+const GROUP_GAP_TOLERANCE = 24;
+
+/** Nodes that must receive the interactive margin even without a Button. */
+const INTERACTIVE_NODE_NAMES: readonly string[] = ['BtnPause', 'Joystick'];
+
+function isInteractive(node: Node): boolean {
+  if (INTERACTIVE_NODE_NAMES.indexOf(node.name) >= 0) return true;
+  return !!node.getComponent(Button);
+}
 
 /** Rect-overlap tolerance in design px. */
 const OVERLAP_EPSILON = 1;
@@ -76,6 +101,10 @@ export interface HudSafeAreaGroup {
   readonly left: number;
   readonly right: number;
   readonly shift: number;
+  /** 24 when the group holds an interactive node, 0 for label-only groups. */
+  readonly marginScreenPx: number;
+  /** The x-limit this group was clamped against, in design units. */
+  readonly groupSafeHalfWidth: number;
 }
 
 export interface HudSafeAreaPass {
@@ -183,9 +212,11 @@ function buildGroups(items: Item[]): Item[][] {
     for (let j = i + 1; j < items.length; j += 1) {
       const a = items[i];
       const b = items[j];
-      const overlapsX = a.left - OVERLAP_EPSILON < b.right && b.left - OVERLAP_EPSILON < a.right;
+      // Near-adjacent items form one cluster, not only strictly overlapping ones;
+      // see GROUP_GAP_TOLERANCE for why this matters to the right-hand cluster.
+      const nearX = a.left - GROUP_GAP_TOLERANCE < b.right && b.left - GROUP_GAP_TOLERANCE < a.right;
       const overlapsY = a.bottom - OVERLAP_EPSILON < b.top && b.bottom - OVERLAP_EPSILON < a.top;
-      if (overlapsX && overlapsY) union(i, j);
+      if (nearX && overlapsY) union(i, j);
     }
   }
   const buckets = new Map<number, Item[]>();
@@ -285,6 +316,8 @@ export function applyHudSafeAreaInset(host: Node): void {
   }
 
   const groups: HudSafeAreaGroup[] = [];
+  const scale = hudDesignToFrameScale(host) || 1;
+  const visibleHalfWidth = hudVisibleHalfWidth(host);
   for (const group of buildGroups(items)) {
     let unionLeft = Infinity;
     let unionRight = -Infinity;
@@ -292,17 +325,30 @@ export function applyHudSafeAreaInset(host: Node): void {
       if (item.left < unionLeft) unionLeft = item.left;
       if (item.right > unionRight) unionRight = item.right;
     }
+    // The 24 px rule binds interactive elements only; a label-only group merely
+    // has to stay unclipped. See the header note.
+    const marginScreenPx = group.some((item) => isInteractive(item.node))
+      ? SAFE_AREA_MARGIN_SCREEN_PX
+      : 0;
+    const groupSafeHalfWidth = visibleHalfWidth - marginScreenPx / scale;
     const width = unionRight - unionLeft;
     let shift = 0;
-    if (width > safeHalfWidth * 2) {
+    if (width > groupSafeHalfWidth * 2) {
       // Wider than the safe span: centre it rather than clipping one side.
       shift = -(unionLeft + unionRight) * 0.5;
-    } else if (unionLeft < -safeHalfWidth) {
-      shift = -safeHalfWidth - unionLeft;
-    } else if (unionRight > safeHalfWidth) {
-      shift = -(unionRight - safeHalfWidth);
+    } else if (unionLeft < -groupSafeHalfWidth) {
+      shift = -groupSafeHalfWidth - unionLeft;
+    } else if (unionRight > groupSafeHalfWidth) {
+      shift = -(unionRight - groupSafeHalfWidth);
     }
-    groups.push({ names: group.map((item) => item.node.name), left: unionLeft, right: unionRight, shift });
+    groups.push({
+      names: group.map((item) => item.node.name),
+      left: unionLeft,
+      right: unionRight,
+      shift,
+      marginScreenPx,
+      groupSafeHalfWidth,
+    });
     if (shift === 0) continue;
     for (const item of group) {
       item.node.setPosition(item.base.x + shift, item.base.y, item.base.z);
