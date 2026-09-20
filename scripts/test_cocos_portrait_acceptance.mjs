@@ -2550,6 +2550,11 @@ async function verifyCellLifecycle(cdp, page, joystick) {
   ];
   const captures = [];
   let previousRebaseCount = initialCheck.stream.rebaseCount;
+  // The opening cell's own UNLOAD event, captured at the EAST checkpoint and
+  // consumed by the OPENING checkpoint (which runs last, so it is always set).
+  // The reload assertion below must compare two engine-recorded lifecycle
+  // events against each other; see the note there.
+  let openingUnload = null;
   for (const checkpoint of checkpoints) {
     await driveJoystickToLogicalPoint(
       cdp,
@@ -2589,7 +2594,7 @@ async function verifyCellLifecycle(cdp, page, joystick) {
       lifecycleEvents: check.stream.cellLifecycle,
     });
     if (checkpoint.id === 'EAST') {
-      const openingUnload = check.stream.cellLifecycle.find((event) => event.action === 'UNLOAD'
+      openingUnload = check.stream.cellLifecycle.find((event) => event.action === 'UNLOAD'
         && event.x === 0 && event.z === 0);
       assert(!check.active.has('0:0')
           && !objectIds(settled).some((id) => openingObjects.includes(id))
@@ -2606,10 +2611,30 @@ async function verifyCellLifecycle(cdp, page, joystick) {
       const openingEvents = check.stream.cellLifecycle.filter((event) => event.x === 0 && event.z === 0);
       const unloadIndex = openingEvents.findIndex((event) => event.action === 'UNLOAD');
       const reload = openingEvents.slice(unloadIndex + 1).find((event) => event.action === 'LOAD');
-      assert(reloaded
-          && reload?.collectibleCount === openingObjects.length
-          && reload?.vehicleCount === openingTraffic.length,
-      'FAIL_CELL_LIFECYCLE_OPENING_RELOAD: ' + JSON.stringify({ openingObjects, openingTraffic, reloaded, openingEvents, reload }));
+      // Compare two engine-recorded lifecycle events against each other, never a
+      // live census against an event. `openingObjects`/`openingTraffic` above are
+      // live readings of `cell.objects`/`cell.dynamicVehicles`, and
+      // `removeAbsorbedCollectible` splices `cell.objects` on every pickup, so a
+      // live census shrinks with gameplay while a LOAD event counts the freshly
+      // populated authored set. Requiring them to be equal held only while
+      // nothing had yet been collected in the opening cell, which made this a
+      // latent flake whose message blamed reloading for a pickup.
+      //
+      // The invariant asserted instead is the engine's own: `populateAuthoredContent`
+      // and `populateAuthoredTraffic` re-register every authored spawn point
+      // unconditionally, whereas the UNLOAD count is whatever remained at
+      // departure and can only be smaller. So the round trip must restore at
+      // least what it took away, and must not come back empty. The authored
+      // totals are deliberately not used as the reference: `getSnapshot().activeCells`
+      // serializes only live `cell.objects`/`cell.dynamicVehicles`, and the
+      // authored `collectibleSlots`/`trafficSlots` reach the golden-city
+      // diagnostics rather than this snapshot.
+      assert(reloaded && openingUnload && reload
+          && reload.collectibleCount > 0
+          && reload.vehicleCount > 0
+          && reload.collectibleCount >= openingUnload.collectibleCount
+          && reload.vehicleCount >= openingUnload.vehicleCount,
+      'FAIL_CELL_LIFECYCLE_OPENING_RELOAD: ' + JSON.stringify({ openingUnload, reloaded, reload, openingEvents, openingObjects, openingTraffic }));
       assert(check.stream.constructionLandmark?.visible === true,
         'FAIL_CELL_LIFECYCLE_GOLDEN_CITY_RELOAD: ' + JSON.stringify(check.stream.constructionLandmark));
     }
@@ -4280,9 +4305,27 @@ try {
   // never throws, so it cannot replace the in-flight exception nor skip the
   // `writeFileSync` calls below.
   report.bundleProvenance = buildBundleProvenance(bundleProvenanceStart);
+  // A clobber is now fatal, not advisory. Three scopes were previously recorded
+  // PASS against a bundle that another lane was rebuilding underneath them, and
+  // each re-run alone has since reported BUNDLE_STABLE with identical start/end
+  // digests (full fe685340, arena-ai 333e265f, arena-timer). With that clean
+  // observation in hand, a changed tree is positive evidence that this report
+  // describes no single build, so it cannot be allowed to stand as a pass.
   if (report.bundleProvenance.status === 'BUNDLE_CLOBBERED') {
-    console.error('[acceptance:v2] WARNING: the built bundle changed during this run; '
-      + 'the report does not describe one single build.');
+    const clobberMessage = 'FAIL_BUNDLE_CLOBBERED: the built bundle changed during this run, '
+      + 'so this report describes no single build. Re-run this scope alone on the build slot.';
+    report.failures.push(clobberMessage);
+    report.status = 'FAIL';
+    process.exitCode = 1;
+    console.error(`[acceptance:v2] FAIL: ${clobberMessage}`);
+  } else if (report.bundleProvenance.status === 'BUNDLE_UNVERIFIED') {
+    // Deliberately NOT fatal, and the asymmetry is the point. A clobber is
+    // positive evidence the report is incoherent; an unverified census is only
+    // the absence of evidence, since the census itself failed (a locked or
+    // vanished file mid-read). Failing here would turn healthy runs red for a
+    // reason unrelated to the product, which is how a guard gets switched off.
+    console.error('[acceptance:v2] WARNING: bundle stability could not be verified '
+      + '(the census did not complete), so this report carries no provenance guarantee.');
   }
   const serializedReport = `${JSON.stringify(report, null, 2)}\n`;
   writeFileSync(reportPath, serializedReport, 'utf8');
