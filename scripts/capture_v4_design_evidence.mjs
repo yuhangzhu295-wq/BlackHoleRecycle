@@ -334,6 +334,28 @@ function measureHudGeometry(snapshot) {
     .filter(([, rect]) => rect.overflowLeft > 0 || rect.overflowRight > 0
       || rect.overflowTop > 0 || rect.overflowBottom > 0)
     .map(([name, rect]) => ({ name, ...rect }));
+  /**
+   * The locked rule is "lateral padding >= 24 px for any **interactive**
+   * element". `CoinPanel`/`LevelPanel`/`RegionPanel` are labels, so only the
+   * pause button and the joystick carry the obligation.
+   *
+   * Checking overflow alone is not enough and previously reported `pass: true`
+   * for a pause button sitting flush at x = frameWidth with exactly 0 px of
+   * padding — the clamp had removed the clipping but not the violation.
+   */
+  const INTERACTIVE_PADDING_PX = 24;
+  const interactiveNames = ['pauseButton', 'joystick'];
+  const padding = measured
+    .filter(([name]) => interactiveNames.indexOf(name) >= 0)
+    .map(([name, rect]) => ({
+      name,
+      left: Number(rect.left.toFixed(2)),
+      right: Number(rect.right.toFixed(2)),
+      paddingLeft: Number(rect.left.toFixed(2)),
+      paddingRight: Number((frameWidth - rect.right).toFixed(2)),
+    }));
+  const paddingViolations = padding.filter((entry) => entry.paddingLeft < INTERACTIVE_PADDING_PX
+    || entry.paddingRight < INTERACTIVE_PADDING_PX);
   return {
     status: 'MEASURED',
     viewport,
@@ -349,7 +371,10 @@ function measureHudGeometry(snapshot) {
     nodes,
     measuredCount: measured.length,
     offenders,
-    pass: measured.length > 0 && offenders.length === 0,
+    interactivePaddingPx: INTERACTIVE_PADDING_PX,
+    interactivePadding: padding,
+    paddingViolations,
+    pass: measured.length > 0 && offenders.length === 0 && paddingViolations.length === 0,
     pillText: hud.pillText || null,
     /**
      * The clamp's own account of the pass: its inputs and every group's shift.
