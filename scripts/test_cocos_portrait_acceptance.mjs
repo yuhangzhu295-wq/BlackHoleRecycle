@@ -2133,7 +2133,14 @@ async function verifyArenaAiRuntime(cdp, page, canvasRect) {
     `FAIL_ARENA_AI_ROSTER: ${JSON.stringify(started.arena)}`);
   await page.screenshot({ path: path.join(evidenceDirectory, 'portrait-390x844-arena-ai-start.png') });
 
-  await page.evaluate(() => {
+  // `page.evaluate` serializes this callback and runs it in the page, so it
+  // cannot close over a Node-side constant. Passing the clamp in as an argument
+  // is the only form that works: a bare `BOT_TELEPORT_CLAMP_METERS` reference
+  // here throws `ReferenceError` inside the rAF loop on every frame, which
+  // silently empties the telemetry and then fails the movement assertion with a
+  // misleading "bots do not move" message. Keep browser-side values as
+  // parameters, never as module-scope references.
+  await page.evaluate((teleportClampMeters) => {
     const telemetry = {
       active: true,
       frames: 0,
@@ -2200,7 +2207,7 @@ async function verifyArenaAiRuntime(cdp, page, canvasRect) {
             if (previous) {
               const step = Math.hypot(position.x - previous.x, position.z - previous.z);
               telemetry.botTravelMeters[entry.id] = (telemetry.botTravelMeters[entry.id] || 0) + step;
-              if (step <= BOT_TELEPORT_CLAMP_METERS) {
+              if (step <= teleportClampMeters) {
                 telemetry.botPathMeters[entry.id] = (telemetry.botPathMeters[entry.id] || 0) + step;
               } else {
                 telemetry.botTeleportSteps[entry.id] = (telemetry.botTeleportSteps[entry.id] || 0) + 1;
@@ -2221,7 +2228,7 @@ async function verifyArenaAiRuntime(cdp, page, canvasRect) {
       requestAnimationFrame(observe);
     };
     requestAnimationFrame(observe);
-  });
+  }, BOT_TELEPORT_CLAMP_METERS);
 
   // An idle local player can legitimately enter the real revive flow, which
   // pauses this offline match. Keep playing through the visible joystick and
