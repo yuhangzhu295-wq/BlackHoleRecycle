@@ -3669,6 +3669,16 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
       // cross the LV2 threshold without a test-side grant.
       const t1Absorptions = [];
       let resourceReplenishment = null;
+      // Absorbing an object shows a real pickup popup (`showAbsorbFeedback`,
+      // emitted from the absorption handler in GameManager). The popup is fully
+      // opaque for the first 1.584s of its 1.8s life (PickupFeedbackPresenter
+      // FEEDBACK_DURATION_SECONDS = 1.8, FEEDBACK_FADE_START = 0.88), which is
+      // far shorter than the cooldown/escape drive that runs after the
+      // absorption. Reading it once at the end of that sequence can therefore
+      // only ever observe an expired popup, which is what failed here. These
+      // live outside the loop because the gate that consumes them sits after it.
+      let feedbackBaselineEmitted = null;
+      let visibleAbsorbFeedback = null;
       let t1Snapshot = await readRuntimeSnapshot(page);
       while (t1Snapshot.machine.level < 2) {
         const logicalOrigin = t1Snapshot.world?.streaming?.logicalOrigin || { x: 0, z: 0 };
@@ -3693,19 +3703,12 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
         let removalObservedAt = null;
         let removalTiming = null;
         let removalSnapshot = null;
-        // Absorbing an object shows a real pickup popup (`showAbsorbFeedback`,
-        // emitted from the absorption handler in GameManager). The popup is
-        // fully opaque for the first 1.584s of its 1.8s life
-        // (PickupFeedbackPresenter FEEDBACK_DURATION_SECONDS = 1.8,
-        // FEEDBACK_FADE_START = 0.88), which is far shorter than the
-        // cooldown/escape drive that runs after the absorption. Reading it once
-        // at the end of that sequence can therefore only ever observe an expired
-        // popup, which is what failed here. Record the observation made during
-        // the absorption window instead, and require the absorption itself to
-        // have advanced the emission counter so a popup left over from an
-        // earlier pickup cannot satisfy the gate.
-        let feedbackBaselineEmitted = null;
-        let visibleAbsorbFeedback = null;
+        // Re-seed the emission baseline for this attempt, so a popup still
+        // alive from the previous absorption cannot satisfy the gate. The
+        // capture itself is deliberately hoisted out of the loop: the first
+        // absorption that produced a visible popup is the evidence, and later
+        // iterations must not be able to overwrite it.
+        feedbackBaselineEmitted = null;
         const observeCollectibleLifecycle = (snapshot, phase) => {
           const pickupFeedback = snapshot.ui?.pickupFeedback?.endless || null;
           if (pickupFeedback) {
