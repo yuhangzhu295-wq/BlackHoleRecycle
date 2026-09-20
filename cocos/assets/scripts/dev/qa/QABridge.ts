@@ -103,6 +103,11 @@ export class QABridge {
       mainCamera,
       machine?.node || null,
       arenaManager?.getCompositionCompetitors() || [],
+      // Record the machine state beside the silhouette. The outer ring scales
+      // with the suction radius, so the player's measured width moves with its
+      // level; without this the gate cannot tell a level change from a framing
+      // change.
+      machine ? { level: machine.currentLevel, suctionRadius: machine.getSuctionRadius() } : null,
     );
     const currentCellVisualDiagnostics = WorldCompositionProbe.getCurrentCellVisualDiagnostics(world);
     const goldenPlayer = goldenCityComposition?.player || null;

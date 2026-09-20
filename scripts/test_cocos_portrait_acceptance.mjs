@@ -1676,6 +1676,12 @@ function evaluateGoldenCityGate(contract, composition, devicePixelRatio) {
     playerWidthRatio: player.widthRatio ?? null,
     playerScreenYRatio: player.screenYRatio ?? null,
     playerVisible: player.visible === true,
+    // The measured width is not level-independent: the machine's luminous
+    // outer ring scales with the suction radius, so the ratio moves with the
+    // player's level rather than with the camera. Record the level and radius
+    // beside it, so a level-driven verdict cannot be read as a framing change.
+    playerMachineLevel: player.machineLevel ?? null,
+    playerMachineSuctionRadius: player.machineSuctionRadius ?? null,
     viewportWidth: viewport.width ?? null,
     viewportHeight: viewport.height ?? null,
     devicePixelRatio,

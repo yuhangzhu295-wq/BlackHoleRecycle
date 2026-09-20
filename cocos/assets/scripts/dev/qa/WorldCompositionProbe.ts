@@ -154,6 +154,28 @@ export interface GoldenCityCompositionDiagnostics {
     visible: boolean;
     widthRatio: number | null;
     screenYRatio: number | null;
+    /**
+     * Which renderers actually fed `worldBounds`, and which were skipped
+     * because they are not drawn. The machine's subtree carries decorative
+     * rings and swirls whose scale is driven by gameplay (the suction-radius
+     * indicator) and whose rotation is driven by time, so a merged bounds
+     * without this list cannot be told apart from a real change in the
+     * player's silhouette.
+     */
+    contributors: readonly Readonly<{
+      name: string;
+      drawn: boolean;
+      halfExtents: Readonly<{ x: number; y: number; z: number }>;
+    }>[];
+    /**
+     * The machine state the silhouette was measured against. `playerWidthRatio`
+     * is not level-independent: the machine's luminous outer ring scales with
+     * the suction radius, so the ratio moves with the player's level. Without
+     * these two numbers beside it, a level-driven pass or failure is
+     * indistinguishable from a change in the camera framing.
+     */
+    machineLevel: number | null;
+    machineSuctionRadius: number | null;
   }>;
   readonly emptyGround: Readonly<{
     method: 'screen-space grid estimate';
@@ -188,6 +210,7 @@ export class WorldCompositionProbe {
     camera: Camera | null,
     playerNode: Node | null,
     competitors: readonly CompositionCompetitor[],
+    playerMachine: Readonly<{ level: number; suctionRadius: number }> | null = null,
   ): GoldenCityCompositionDiagnostics | null {
     if (!world) return null;
     const viewport = view.getViewportRect();
@@ -217,6 +240,9 @@ export class WorldCompositionProbe {
         visible: false,
         widthRatio: null,
         screenYRatio: null,
+        contributors: [],
+        machineLevel: null,
+        machineSuctionRadius: null,
       },
       emptyGround: this.emptyGround(),
       playableOpenArea: this.emptyPlayableOpenArea(),
@@ -240,8 +266,18 @@ export class WorldCompositionProbe {
       if (entry.visible) counts[entry.category] += entry.logicalUnits;
     }
 
+    // The player's silhouette is the geometry that is actually drawn. The
+    // machine's subtree also carries decorative swirls and a luminous outer
+    // ring, and that ring's scale is driven by the gameplay suction radius
+    // (`1 + min(0.38, (suctionRadius - 2.4) * 0.075)`), not by the camera. A
+    // merged bounds over every renderer therefore reports the suction
+    // indicator as though it were the player, and moves with the player's
+    // level instead of with the framing.
+    const playerContributors = playerNode?.isValid && playerNode.activeInHierarchy
+      ? this.collectRenderableContributors([playerNode])
+      : [];
     const playerBounds = playerNode?.isValid && playerNode.activeInHierarchy
-      ? this.collectMergedWorldBounds([playerNode])
+      ? this.collectMergedWorldBounds([playerNode], { drawnOnly: true })
       : null;
     const playerProjection = playerBounds ? this.projectBounds(camera, viewport, playerBounds) : null;
     const player = {
@@ -252,6 +288,9 @@ export class WorldCompositionProbe {
       screenYRatio: playerProjection?.screenBounds
         ? ((playerProjection.screenBounds.top + playerProjection.screenBounds.bottom) * 0.5 - viewport.y) / viewport.height
         : null,
+      contributors: playerContributors,
+      machineLevel: playerMachine?.level ?? null,
+      machineSuctionRadius: playerMachine?.suctionRadius ?? null,
     };
 
     return {
@@ -710,7 +749,18 @@ export class WorldCompositionProbe {
     };
   }
 
-  private static collectMergedWorldBounds(roots: readonly Node[]): GoldenCityLiveBounds | null {
+  /**
+   * Merges the world bounds of every MeshRenderer in the given subtrees.
+   *
+   * `drawnOnly` restricts the merge to renderers that are actually drawn. It
+   * defaults to false so the environment entries keep their existing numbers;
+   * the player measurement opts in, because a hidden renderer is not part of
+   * the player's on-screen silhouette.
+   */
+  private static collectMergedWorldBounds(
+    roots: readonly Node[],
+    options: Readonly<{ drawnOnly?: boolean }> = {},
+  ): GoldenCityLiveBounds | null {
     let min: Vec3 | null = null;
     let max: Vec3 | null = null;
     const append = (candidateMin: Readonly<Vec3>, candidateMax: Readonly<Vec3>): void => {
@@ -724,7 +774,13 @@ export class WorldCompositionProbe {
     };
     const visit = (node: Node): void => {
       if (!node.activeInHierarchy) return;
-      const bounds = node.getComponent(MeshRenderer)?.model?.worldBounds || null;
+      const renderer = node.getComponent(MeshRenderer);
+      // A disabled renderer still owns a model with world bounds, so it must be
+      // filtered here rather than relied on to be absent. Its children are
+      // still visited: disabling one layer does not hide the subtree.
+      const bounds = renderer && (!options.drawnOnly || renderer.enabled)
+        ? renderer.model?.worldBounds || null
+        : null;
       if (bounds) {
         append(
           new Vec3(bounds.center.x - bounds.halfExtents.x, bounds.center.y - bounds.halfExtents.y, bounds.center.z - bounds.halfExtents.z),
@@ -735,6 +791,34 @@ export class WorldCompositionProbe {
     };
     roots.forEach(visit);
     return min && max ? { min, max } : null;
+  }
+
+  /** Lists every renderer under the roots with its size and whether it is drawn. */
+  private static collectRenderableContributors(roots: readonly Node[]): Array<Readonly<{
+    name: string;
+    drawn: boolean;
+    halfExtents: Readonly<{ x: number; y: number; z: number }>;
+  }>> {
+    const contributors: Array<Readonly<{
+      name: string;
+      drawn: boolean;
+      halfExtents: Readonly<{ x: number; y: number; z: number }>;
+    }>> = [];
+    const visit = (node: Node): void => {
+      if (!node.activeInHierarchy) return;
+      const renderer = node.getComponent(MeshRenderer);
+      const halfExtents = renderer?.model?.worldBounds?.halfExtents || null;
+      if (renderer && halfExtents) {
+        contributors.push({
+          name: node.name,
+          drawn: renderer.enabled,
+          halfExtents: { x: halfExtents.x, y: halfExtents.y, z: halfExtents.z },
+        });
+      }
+      node.children.forEach(visit);
+    };
+    roots.forEach(visit);
+    return contributors;
   }
 
   private static serializeWorldBounds(bounds: GoldenCityLiveBounds | null): GoldenCityWorldBounds | null {
