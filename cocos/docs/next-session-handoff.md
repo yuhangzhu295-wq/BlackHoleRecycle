@@ -14,16 +14,26 @@ path is restored. All commits are safe locally; `origin/main` is far behind.
 | Scope | State |
 | :--- | :--- |
 | `golden-city` | **PASS** 31/31, `deficits: []`. Evidence committed `413b1e9`. Solid. |
-| `full` | **PENDING** — clean re-run was in flight at handoff. |
-| `arena-ai` | **VOID** — re-run required. |
-| `arena-timer` | **VOID** — re-run required. |
+| `full` | **PASS** — 375x667 + 390x844 + 430x932, `failures: []`, `BUNDLE_STABLE`. |
+| `arena-ai` | **PASS** — 180.014 s, `reason: TIME`, all four bot states, `BUNDLE_STABLE`. |
+| `arena-timer` | **PASS** — 180.0057 s, `reason: TIME`, reward paid, `BUNDLE_STABLE`. |
 
-`arena-ai` and `arena-timer` previously read PASS and **are not**. Three lanes
+All four were re-run alone on the slot and each reported `BUNDLE_STABLE` with
+identical start/end digests. The chain is green as of `718fa16`.
+
+`arena-ai` and `arena-timer` previously read PASS and were **not**. Three lanes
 built concurrently; a Cocos build **deletes `cocos/build/web-mobile` wholesale and
 rewrites it**, so a verification running during another lane's build 404s for the
 whole rebuild window. The signature is the same eight URLs returning **404
 consistently for 45 s** and existing again 10 s later. Every `FAIL_PORTRAIT_BOOT`
 in this chain had that cause and **none was a product defect**.
+
+Separately, `arena-ai` failed for a **real** reason once it ran alone:
+`BOT_TELEPORT_CLAMP_METERS is not defined`. `page.evaluate` serializes its
+callback into the browser, so it cannot close over a Node-side constant; the
+throw fired every frame inside the rAF loop, emptied the telemetry, and then
+reported a misleading "bots do not move". Fixed in `edcc8fd`. **`tsc --checkJs`
+cannot catch this class** — the name is in scope in the JS file.
 
 ### The one operational rule that matters
 

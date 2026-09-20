@@ -43,14 +43,23 @@ switch) and reads the same directory, so the scopes must run serially.
 | :--- | :--- | :--- |
 | `full` | **PASS** — 375x667 + 390x844 + 430x932, `failures: []` | `acceptance-report-full.json` |
 | `arena-ai` | **PASS** — real 180 s match, all four bot states | `acceptance-report-arena-ai.json` |
-| `arena-timer` | **VOID** — re-run in flight | `acceptance-report-arena-timer.json` |
+| `arena-timer` | **PASS** — 180.0057 s, `reason: TIME`, reward paid | `acceptance-report-arena-timer.json` |
 | `golden-city` | **PASS** — 31/31, `deficits: []` | `evidence/v2/portrait/golden-city-gate.json` |
 
-`full` and `arena-ai` were re-run alone on the slot, and both reports carry
-`bundleProvenance: BUNDLE_STABLE` with identical start/end digests. `arena-ai`
-reached `reason: TIME` at `elapsedSeconds 180.014` with 8 competitors and
-`stateFrames {COLLECT 47719, ROAM 7310, CHASE 6673, FLEE 1155, EVENT_HUNT 843}`,
-`deathsObserved: 3`, `consoleErrors: []`.
+**All four scopes PASS, and each was re-run alone on the slot.** Every re-run
+report carries `bundleProvenance: BUNDLE_STABLE` with identical start/end
+digests, which is what makes these passes defensible where the earlier three
+were not. Measured:
+
+- `full`: `failures: []` across all three viewports; digest `fe685340`.
+- `arena-ai`: `reason: TIME` at `elapsedSeconds 180.014`, 8 competitors,
+  `stateFrames {COLLECT 47719, ROAM 7310, CHASE 6673, FLEE 1155, EVENT_HUNT 843}`,
+  `deathsObserved: 3`, `consoleErrors: []`.
+- `arena-timer`: `reason: TIME` at `elapsedSeconds 180.0057`,
+  `remainingSeconds 0`, 8 competitors, `eliminationCount 28`, and a real
+  `settlementReward {coins 15, survivalCoins 12, placementCoins 3}`,
+  `consoleErrors: []`.
+- `golden-city`: 31 checks, `deficits: []`.
 
 That clean `BUNDLE_STABLE` observation licenses promoting a clobber from a
 warning to a failure — do that in a follow-up, not silently.
@@ -114,10 +123,10 @@ a false one and a false FATAL would block the chain.
 
 ### Measured results
 
-**Caveat:** `full` and `golden-city` are now defensible — `full` was re-run alone
-and reported `BUNDLE_STABLE`, and `golden-city`'s evidence predates the collision
-window. The `arena-ai` and `arena-timer` figures below were recorded during that
-window and remain **indicative only** until each is re-run alone.
+**Caveat resolved:** all four scopes have now been re-run alone and each reports
+`BUNDLE_STABLE`, so the figures below are defensible. The `VOID` episode above
+is kept because the failure mode it documents — a concurrent build silently
+invalidating a passing run — will recur the moment two lanes share the slot.
 
 - `full`: real portrait runtime and CDP touch verified on both viewports,
   `consoleErrors: []`. Includes `V4_HUD_SAFE_AREA_INSET` (see below).
