@@ -440,10 +440,10 @@ render. These are product defects, not reference defects.
 
 | ID | Defect | Evidence | Status |
 | --- | --- | --- | --- |
-| `RT-08-HUD-CLIP` | The HUD row **overflows both frame edges**. | The UI layer is drawn by an **orthographic** `UICamera` with `orthoHeight = 640` (= `designHeight / 2`, serialized in `Game.scene → Canvas/UICamera`), so the UI renders at **fit-height** even though the global view policy is `ResolutionPolicy.FIXED_WIDTH` (`PortraitGameplayCameraController.ts:45-48`). At 390×844 the horizontally usable design half-width is therefore `640 × (390/844) = 295.75`, i.e. a usable x-range of ≈[−296, +296] — the original claim was correct. The serialized row spans design [−319, 303] (622 px), which is wider than the 591.5 px safe width, so it cannot fit. Re-projected at the correct scale **0.65938 = 844/1280** (not `viewport.width/design.width`): `CoinPanel` design [−319, −101] ⇒ frame [−15.35, 128.40] ⇒ **overflowLeft 15.35 frame px**; `BtnPause` design [245, 303] ⇒ frame [356.55, 394.79] ⇒ **overflowRight 4.79 frame px**; `LevelPanel` and `RegionPanel` are inside. Both pills are visibly cut. | **FIXED and verified on a real frame.** Two independent defects made the clamp a silent no-op; both are now closed. **(1) Wrong scale source.** The first revision read `view.getVisibleSize().width`, which under `FIXED_WIDTH` returns the **full design width 720** ⇒ `hudVisibleHalfWidth` = `min(360, 360)` = 360 ⇒ `safeHalfWidth` = 324, so the guard evaluated `324 >= 324` and returned before shifting. The scale now comes from the **UICamera's `orthoHeight`** (`hudDesignToFrameScale`). **(2) ES5 iterator spread.** `buildGroups` ended with `[...buckets.values()]`. `cocos/tsconfig.json` declares `target: ES2022`, so `tsc --noEmit` was clean — but the Creator pipeline downlevels to ES5, emitting `[].concat(buckets.values())`, and `concat` does **not** spread iterators: it appends the Map *iterator* as a single element. The caller then looped once with an iterator as the "group", read `item.left` off the bucket **arrays** (always `undefined`, so the union stayed at ±Infinity) and computed a shift of exactly 0. `SaveService.ts:154` documents the identical trap for `[...new Set(...)]`. Replaced with `buckets.forEach(...)`, and `V4_NO_ES5_UNSAFE_ITERATOR_SPREAD` now guards the pattern. A third, lesser defect: `TopShade` is a 720 px backdrop that vertically overlaps the whole top row, so including it in the overlap grouping merged the pills into one unshiftable 720 px group; full-bleed nodes are now excluded from the grouping. **Measured after the fix**, `openingHudGeometry.pass = true`, `offenders = []`: `CoinPanel` design [−319, −101] → frame [0, 143.74] (`overflowLeft` **0**, was 15.34) and `BtnPause` [245, 303] → [351.76, 390.00] (`overflowRight` **0**, was 4.79). Per-group shifts: `[CoinPanel, CoinIcon, CoinValue]` **+23.27**, `[BtnPause]` **−7.27**, `[LevelPanel, LevelValue, MassValue]` / `[RegionPanel, RegionValue]` / `[Joystick]` 0. Targets **zero clipping**, not the 24 px rule — see Gate item 7. |
+| `RT-08-HUD-CLIP` | The HUD row **overflows both frame edges**. | The UI layer is drawn by an **orthographic** `UICamera` with `orthoHeight = 640` (= `designHeight / 2`, serialized in `Game.scene → Canvas/UICamera`), so the UI renders at **fit-height** even though the global view policy is `ResolutionPolicy.FIXED_WIDTH` (`PortraitGameplayCameraController.ts:45-48`). At 390×844 the horizontally usable design half-width is therefore `640 × (390/844) = 295.75`, i.e. a usable x-range of ≈[−296, +296] — the original claim was correct. The serialized row spans design [−319, 303] (622 px), which is wider than the 591.5 px safe width, so it cannot fit. Re-projected at the correct scale **0.65938 = 844/1280** (not `viewport.width/design.width`): `CoinPanel` design [−319, −101] ⇒ frame [−15.35, 128.40] ⇒ **overflowLeft 15.35 frame px**; `BtnPause` design [245, 303] ⇒ frame [356.55, 394.79] ⇒ **overflowRight 4.79 frame px**; `LevelPanel` and `RegionPanel` are inside. Both pills are visibly cut. | **FIXED and verified on a real frame.** Two independent defects made the clamp a silent no-op; both are now closed. **(1) Wrong scale source.** The first revision read `view.getVisibleSize().width`, which under `FIXED_WIDTH` returns the **full design width 720** ⇒ `hudVisibleHalfWidth` = `min(360, 360)` = 360 ⇒ `safeHalfWidth` = 324, so the guard evaluated `324 >= 324` and returned before shifting. The scale now comes from the **UICamera's `orthoHeight`** (`hudDesignToFrameScale`). **(2) ES5 iterator spread.** `buildGroups` ended with `[...buckets.values()]`. `cocos/tsconfig.json` declares `target: ES2022`, so `tsc --noEmit` was clean — but the Creator pipeline downlevels to ES5, emitting `[].concat(buckets.values())`, and `concat` does **not** spread iterators: it appends the Map *iterator* as a single element. The caller then looped once with an iterator as the "group", read `item.left` off the bucket **arrays** (always `undefined`, so the union stayed at ±Infinity) and computed a shift of exactly 0. `SaveService.ts:154` documents the identical trap for `[...new Set(...)]`. Replaced with `buckets.forEach(...)`, and `V4_NO_ES5_UNSAFE_ITERATOR_SPREAD` now guards the pattern. A third, lesser defect: `TopShade` is a 720 px backdrop that vertically overlaps the whole top row, so including it in the overlap grouping merged the pills into one unshiftable 720 px group; full-bleed nodes are now excluded from the grouping. **Measured after the fix**, `openingHudGeometry.pass = true`, `offenders = []`: `CoinPanel` design [−319, −101] → frame [0, 143.74] (`overflowLeft` **0**, was 15.34) and `BtnPause` [245, 303] → [351.76, 390.00] (`overflowRight` **0**, was 4.79). Per-group shifts: `[CoinPanel, CoinIcon, CoinValue]` **+23.27**, `[BtnPause]` **−7.27**, `[LevelPanel, LevelValue, MassValue]` / `[RegionPanel, RegionValue]` / `[Joystick]` 0. That revision targeted **zero clipping** only. The 24 px rule is now enforced as well — see Gate item 7, which this row's fix has since closed. |
 | `RT-08-HUD-ROWS` | The HUD occupies two rows reaching ≈24 % of frame height, against "one row, y ≤ 100". | `CoinPanel`/`LevelPanel` sit at design y = 430 and `RegionPanel` at y = 346, i.e. a second row below them. | OPEN — accepted; the region pill is the only second-row element and collapsing it would remove the "current region" readout the 08 HUD set requires. |
 | `RT-08-MASS-SEP` | The mass readout renders as `质量 56150-kg` — a hyphen between the number and the unit that reads like a negative number. | The string is `质量 0 kg` in the scene and `质量 ${mass} kg` in `EndlessHUDController.ts:56`, so there is no `-` literal anywhere. Root cause confirmed: `MassValue` is fontSize 18 and its serialized `cc.LabelOutline` carries no `_width`, so it uses the default width 2 — the two outlines bridge the ~4px space and fill it in. `LevelValue` (fontSize 20) shows the same space intact because its gap is wider. | FIXED in code — the space is dropped (`质量 56150kg` / `56150kg`) in both gameplay HUDs, which keeps the authored outline style and removes the artifact. |
-| `RT-08-PARK-UNDER-JOYSTICK` | A dense dark mass sits in the lower-centre of the portrait frame, directly under the joystick. | Identified from `GoldenCityCell.prefab`: it is the authored **park props cluster** — `FlowerbedWest` (−5, 7), `FlowerbedEast` (5, 7), `ParkHedgeNorth`, benches, bins and `POI_ParkFountain` (0, 7). z = +7 is the nearest authored band to the camera, so it projects to the bottom of a portrait frame. It is legitimate environment content, not 满地垃圾, and the world-space `playableOpenAreaRatio = 0.9854` is unaffected — but it does reduce the effective joystick thumb area. | OPEN — assessed, low severity |
+| `RT-08-PARK-UNDER-JOYSTICK` | A dense dark mass sits in the lower-centre of the portrait frame, directly under the joystick. | Identified from `GoldenCityCell.prefab`: it is the authored **park props cluster** — `FlowerbedWest` (−5, 7), `FlowerbedEast` (5, 7), `ParkHedgeNorth`, benches, bins and `POI_ParkFountain` (0, 7). z = +7 is the nearest authored band to the camera, so it projects to the bottom of a portrait frame. It is legitimate environment content, not 满地垃圾, and the world-space `playableOpenAreaRatio = 0.98633` (re-measured 2026-09-20; the preserved baseline recorded ≈0.9854) is unaffected — but it does reduce the effective joystick thumb area. | OPEN — assessed, low severity |
 
 
 ### Runtime anchors
@@ -633,28 +633,46 @@ authored by `deepseek-v4.1-flash` because the routing degraded mid-session
 (`design-lineage.md` §7, `KIMI3_DESIGN_REVIEW = NOT_SATISFIED`). No Kimi-K3
 authorship is claimed anywhere in the V4 set.
 
-Gate item 7 is **UNSATISFIED at 390×844 and is not reachable by runtime clamping.**
-The UI layer renders fit-height (`UICamera.orthoHeight = 640`), so the usable
-design half-width is `640 × (390/844) = 295.75` and the usable x-range is
-`[−295.75, +295.75]`. The authored `EndlessHUD` row spans design `[−319, 303]`
-(622 px) against a 591.5 px safe width. Measured node rects, re-projected at the
-correct scale (`0.65938 = 844/1280`):
+Gate item 7 is **SATISFIED and verified on a real frame.** An earlier revision of
+this document declared it unreachable, on the premise that a 24 px margin applies
+to **both edges of the whole row**. That premise was wrong twice over.
 
-| Node | Design span | Frame span | Overflow |
-| --- | --- | --- | --- |
-| `CoinPanel` | [−319, −101] | [−15.35, 128.40] | left **15.35 px** |
-| `LevelPanel` | [−19, 231] | [182.47, 347.32] | none |
-| `RegionPanel` | [−129, 129] | [109.94, 280.06] | none |
-| `BtnPause` | [245, 303] | [356.55, 394.79] | right **4.79 px** |
+**First, the rule binds interactive elements only.** The layout table says
+"≥ 24 px for any interactive element". Of the five top-level `EndlessHUD`
+children, `CoinPanel`, `LevelPanel` and `RegionPanel` are labels: they must stay
+unclipped, but they carry no padding obligation. Only `BtnPause` and `Joystick`
+are interactive. The available span is therefore
+`295.75 (right) + 259.35 (left) = 555.10` design px against an authored row of
+622 px, and `622 − 23.26 (left overflow) − 43.66 (right overflow) = 555.08` — it
+fits, with 15.1 px and 14.0 px left between the resulting clusters.
 
-A 24 px margin needs `S = 295.75 − 24/0.65938 = 259.35` design px. That forces
-`BtnPause` to `[201.35, 259.35]`, which overlaps `LevelPanel`'s right edge at 231
-— and the two already overlap vertically. The maximum **collision-free** margin
-is therefore `(237.75 − 231) × 0.65938 = 4.45` screen px, i.e. ~4.4 px, not 24.
+**Second, `BtnPause` cannot be clamped in isolation.** `LevelPanel` ends at
+`x = 231` and `BtnPause` starts at `245` — a 14 px gap, and they overlap
+vertically, so they read as one right-hand cluster. Clamping `BtnPause` alone
+would land it at `[201.35, 259.35]`, 43.7 px *inside* `LevelPanel`'s `[−19, 231]`.
+The clamp therefore groups near-adjacent items (`GROUP_GAP_TOLERANCE = 24` in
+`HudSafeAreaInset.ts`) and shifts the cluster as a unit. `CoinPanel` ends at
+`−101` and `LevelPanel` starts at `−19`, an 82 px gap, so the two clusters stay
+separate and only the right-hand one moves.
 
-`HudSafeAreaInset.ts` consequently targets **zero clipping**
-(`SAFE_AREA_MARGIN_SCREEN_PX = 0`) rather than the locked 24 px: that removes the
-visible defect without shipping a layout that overlaps itself. Closing item 7
-properly requires an **authoring pass** on the serialized row (narrow the pills
-and/or raise the pause button above `LevelPanel`), which is out of scope for a
-runtime clamp. Recorded here as an open authoring item, not silently satisfied.
+Measured on a real 390×844 frame (`openingHudGeometry`, evidence
+`v4-design-evidence.json`):
+
+| Node | Frame span | Padding left | Padding right | Required |
+| --- | --- | --- | --- | --- |
+| `pauseButton` | [327.76, **366.00**] | 327.76 | **24.00** | ≥ 24 |
+| `joystick` | [227.97, 357.21] | 227.97 | **32.79** | ≥ 24 |
+
+`paddingViolations = []`, `pass = true`. Per-group results: the right-hand
+cluster `[LevelPanel, LevelValue, MassValue, BtnPause]` carries
+`marginScreenPx = 24` and shifts **−43.66**; the left-hand
+`[CoinPanel, CoinIcon, CoinValue]` carries `marginScreenPx = 0` and shifts
+**+23.27**; `[RegionPanel, RegionValue]` and `[Joystick]` need no shift. Both
+clusters remain disjoint (15.1 px and 14.0 px of clear space), so the 24 px rule
+is met **without** an authoring pass. No serialized `.prefab` change was needed
+and none was made.
+
+The probe now gates this directly: `capture_v4_design_evidence.mjs` checks
+`INTERACTIVE_PADDING_PX = 24` on both edges of the interactive nodes. The earlier
+probe passed a pause button sitting flush at `x = frameWidth` because it only
+checked clipping, never padding — that hole is closed.

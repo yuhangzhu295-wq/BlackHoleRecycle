@@ -71,11 +71,55 @@ The authoritative runtime openness measure is the world-space metric in §3.
 `playableOpenAreaRatio ≥ 0.55` for any authored or procedural cell, measured in
 world space from real object footprints.
 
+### 3.1 Where this is enforced
+
+The threshold is declared in
+`cocos/docs/design-contracts/golden-city-composition.json` under
+`worldSpaceSpatial.playableOpenAreaRatioMin`, deliberately as a **separate
+section** from `mandatoryComposition` (which is screen-space). The gate asserts
+it as `PLAYABLE_OPEN_AREA_RATIO_MIN`, preceded by
+`PLAYABLE_OPEN_AREA_GROUND_SAMPLES_MIN ≥ 1` so a degenerate probe run reports
+"no ground samples" rather than a bare "ratio unavailable". It runs under
+`npm run acceptance:v2 -- --scope=golden-city` and is written to
+`cocos/docs/evidence/v2/portrait/golden-city-gate.json` alongside the
+screen-space checks.
+
+Declaring it in the contract matters: the loader validates every declared
+threshold, so removing or malforming it is a hard
+`FAIL_GOLDEN_CITY_CONTRACT_INVALID` rather than a silent skip. Before this was
+wired up, the probe and the reader both existed but **nothing asserted the
+ratio**, so a passing `LARGE_EMPTY_GROUND_MAX` was the only spatial evidence and
+a screen-dense / world-open cell would have passed while violating §3.
+
+### 3.2 Why the two metrics can never substitute for each other
+
+Measured on **two** real 390×844 frames. The two instruments disagree by more
+than an order of magnitude on each:
+
+| Frame | Screen-space ratio | World-space `playableOpenAreaRatio` |
+| --- | --- | --- |
+| Endless opening (`v4-design-evidence.json → gameplay.openingBudget`) | `probeEmptyGroundRatio` **0.0172** | **0.98633** |
+| Golden City cell (`golden-city-composition-before.json`) | `emptyGround.largeEmptyGroundRatio` **0.16563** | **0.98633** |
+
+The Endless frame is simultaneously 1.7 % open by the screen-space instrument and
+98.6 % open in world space. The screen-space figure is dominated by
+proximity-cluster entries that span every collectible in the cell, which is why
+`openingBudget` self-reports `isGate: false` and
+`reliability: UNRELIABLE_FOR_VISUAL_SHARE`.
+
+Note the direction of the error, because it is what makes the substitution
+dangerous rather than merely imprecise. `largeEmptyGroundMaxPercent = 25` is a
+*crowding* ceiling: a high screen-space number means crowded. The Endless frame
+reads **0.0172** — the instrument is claiming almost no empty ground at all,
+i.e. maximum crowding, on a frame that is visibly open road. It would sail past
+the `≤ 0.25` ceiling while describing the opposite of what is on screen. A gate
+that accepted either number as evidence for the other would be measuring nothing.
+
 Recorded V3 baseline, which V4 must not regress:
 
 | Source | `playableOpenAreaRatio` |
 | --- | --- |
-| `AUTHORED_GOLDEN_CITY` | ≈ 0.9854 |
+| `AUTHORED_GOLDEN_CITY` | ≈ 0.9854 (re-measured 2026-09-20: 0.98633) |
 | `PROCEDURAL_FALLBACK` | ≈ 0.9319 |
 
 Screen-space numbers obtained earlier in the project were low and are **not**

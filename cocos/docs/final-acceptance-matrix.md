@@ -44,7 +44,7 @@ switch) and reads the same directory, so the scopes must run serially.
 | `full` | **PASS** (375x667 + 390x844) | `acceptance-report-full.json` |
 | `arena-ai` | **PASS** | `acceptance-report-arena-ai.json` |
 | `arena-timer` | **PASS** | `acceptance-report-arena-timer.json` |
-| `golden-city` | **FAIL** | `acceptance-report-golden-city.json` |
+| `golden-city` | **PASS** | `acceptance-report-golden-city.json` |
 
 `verifyArenaAiRuntime` and `collectGoldenCityBaseline` are each reachable from
 only one scope, so `--scope=full` does **not** substitute for them.
@@ -60,11 +60,32 @@ only one scope, so `--scope=full` does **not** substitute for them.
   `elapsedSeconds 180.008`, `remainingSeconds 0`, and paid a real
   `settlementReward {coins 15, survivalCoins 12, placementCoins 3}`,
   `consoleErrors: []`.
-- `golden-city`: `FAIL_GOLDEN_CITY_COMPOSITION_GATE`, 4 unmet thresholds
-  against `design-contracts/golden-city-composition.json`:
-  `buildings 2 < 4`, `collectibles 19 < 20`,
-  `largeEmptyGroundRatio 0.3406 > 0.25`, and the required `hospital`
-  semantic is absent.
+- `golden-city`: all **31** gate checks green, `deficits: []`. Against
+  `design-contracts/golden-city-composition.json` v1: buildings 4, trees 12,
+  roads 5 (logical units), POI 14, vehicles 5, competitors 7, authored
+  collectible slots 23 of 23, authored resource clusters 2 of 2,
+  `largeEmptyGroundRatio 0.1727` (max 0.25), player width ratio 0.2994
+  (0.22–0.30), player screen-Y ratio 0.5728 (0.50–0.67), viewport 390x844,
+  devicePixelRatio 1, and all 12 required semantics present including
+  `hospital`. Evidence: `evidence/v2/portrait/golden-city-gate.json`
+  (`verdict: PASS`) plus the composition and screenshot beside it.
+  `PLAYER_WIDTH_RATIO_MAX` is the tightest check at 0.00065 of headroom, but
+  the ratio scales as 1/distance from a camera that is now sampled only after
+  it settles, so it is deterministic rather than flaky.
+- `golden-city` world-space spatial gate (`8afdaab`): the two checks above the
+  screen-space block — `PLAYABLE_OPEN_AREA_GROUND_SAMPLES_MIN` (2048 ≥ 1) and
+  `PLAYABLE_OPEN_AREA_RATIO_MIN` (`playableOpenAreaRatio` **0.986328125** ≥
+  0.55) — close a real hole. The probe and the reader both existed, but nothing
+  asserted the ratio, so a passing `LARGE_EMPTY_GROUND_MAX` was the only spatial
+  evidence. The threshold is now declared in the contract under a **separate**
+  `worldSpaceSpatial` section, because the brief requires the world-space metric
+  and the screen-space one to be measured independently and forbids
+  substituting either for the other. The separation is not academic: across the
+  two runs the screen-space ratio moved `0.16563 → 0.17266` while the
+  world-space ratio held at exactly `0.986328125`, and on the Endless opening
+  frame the screen-space instrument reports `0.0172` (i.e. maximum crowding) on
+  a frame that is visibly open road. `--scope` now also rejects an unrecognised
+  value instead of silently falling back to `full`.
 
 ### Two harness defects found and fixed (`2c3f595`)
 
@@ -97,58 +118,73 @@ changed.
    `verifyArenaAiRuntime` already does and documents. No clock manipulation
    and no state setters.
 
-### Golden City remains an open P0, not a test defect
+### Golden City P0 closed (`7661123`, `7744f91`, `acf674b`)
 
-`FAIL_GOLDEN_CITY_COMPOSITION_GATE` predates this work:
+`FAIL_GOLDEN_CITY_COMPOSITION_GATE` predated the V4 set (introduced by
+`855b637`) and is now green. It needed three separate fixes, and each one
+exposed a defect the previous failure had been hiding — an `assert` chain
+short-circuits, so a scope that fails early never runs the checks behind it.
 
-- The assertion was introduced by `855b637 test(golden-city): enforce portrait
-  composition gate`, not by the V4 set.
-- The committed `evidence/v2/portrait/acceptance-report-golden-city.json` is
-  `status: BASELINE_COLLECTED` with `failures: []` — it only collected numbers
-  and never asserted them.
-- `v2-master-audit.md` already tracks it as open P0 **D-005** with the same
-  `buildings 2` baseline, and its gate table reads
-  `Golden City | NOT ESTABLISHED | PENDING_EVIDENCE`.
-- The cell improved substantially against that baseline (trees 0→12, POI→14,
-  vehicles 1→5, competitors 7, collectibles 3→19, empty ground 0.75→0.34) but
-  is still short of the contract.
-
-### What the Golden City gate is actually measuring
-
+**1. The layout could not satisfy the contract by re-framing (`7661123`).**
 The gate reads `composition.entries[].visible === true`, and the probe records
-the world and screen bounds of every candidate, so the failure can be read
-precisely rather than guessed at. `GoldenCityCell.prefab` **does** contain the
-required content — including `Hospital_ClinicNorth` and `CommercialShopEast` —
-but the probe measures them as not visible from the player's real gameplay
-view:
+the world and screen bounds of every candidate, so the deficit was readable
+precisely: `ResidentialHouseWest` and `CommercialMarketSouth` were visible but
+clipped, while `Hospital_ClinicNorth` (screenBounds right −1.14) and
+`CommercialShopEast` (left 390.28) missed the 390 px frame by 1.14 px and
+0.28 px. The screen mapping at that depth is ≈29.7 px/m, so the frame spans only
+≈13.1 m of world x while the hospital and the shop were **21.66 m** apart, on
+opposite sides of the cell — no player position could hold both, and the camera
+was already contract-compliant (`fov 44`, `fovAxis 0`, pitch −55°). The fix was
+a layout pass, with the tutorial collectible ring left byte-identical:
 
-| Entry | world x | screenBounds | verdict |
-| :--- | :--- | :--- | :--- |
-| `ResidentialHouseWest` | [−11.14, −8.86] | left −8.90 | visible, clipped |
-| `CommercialMarketSouth` | [9.15, 10.85] | right 392.80 | visible, clipped |
-| `Hospital_ClinicNorth` | [−10.81, −9.19] | right **−1.14** | not visible — misses by 1.14 px |
-| `CommercialShopEast` | [9.15, 10.85] | left **390.28** | not visible — misses by 0.28 px |
+- `MainCrossroad` scale `12→16`, which also removes a 2 m unpaved ring: the
+  junction was 12×12 while all four arms start at |8|.
+- `CommercialShopEast` x `10→7.5` and `Hospital_ClinicNorth` x `−10→−7.5`, so
+  both project inside the frame.
+- The T4 aspirational collectible moved to bearings 250°/290°.
 
-So `buildings 2 < 4` and the absent `hospital` semantic are the same cause: two
-buildings sit just outside the 390 px frame. One visible collectible is short
-for the same reason (19 visible of 20 entries).
+`GoldenCityCell.prefab` is a **generated** artifact: the Creator extension
+`extensions/black-hole-world-art-builder/scene.js` rebuilds it through
+`replacePrefabThroughAssetDatabase` (whole-prefab delete-then-recreate), so the
+recipe was synced in the same commit or `npm run author:golden-city` would have
+reverted the edits.
 
-This is **not** fixable by re-framing. The screen mapping at that depth is
-≈29.7 px/m, so the frame spans only ≈13.1 m of world x while the hospital and
-the shop are **21.66 m** apart, on opposite sides of the cell. The frame centre
-tracks the player's x (frame centre ≈ −2.63 m against a player x of −2.78 m),
-so no player position can hold both. The camera itself is contract-compliant
-(`fov 44`, `fovAxis 0`, pitch −55°, `playerWidthRatio 0.2868` in [0.22, 0.3],
-`playerScreenYRatio 0.5864` in [0.5, 0.67]), so the camera preset is not the
-lever either.
+**2. Two thresholds measured the live census, not the cell (`7744f91`).**
+`counts.COLLECTIBLE` counts objects in the `IDLE`/`ATTRACTED`/`SUCKING` FSM
+states, and the player spawns at the centre of the opening rings (radius 5 m and
+6 m) and starts absorbing immediately, so the count fell to 18/19/23 against 20
+authored slots. `RESOURCE_CLUSTER` is grouped from that same census, so a
+cluster vanished once the player had absorbed all of its members (measured 0
+against 2 authored clusters). Both describe *when* the sample was taken, not
+what the cell presents. The probe now also reports `authoredCollectibleSlots`
+and `authoredResourceClusters` — the authored population, with visibility
+derived by projecting each authored slot through the same gameplay camera — and
+the gate reads those, keeping the live numbers as drift diagnostics.
 
-Closing the gate therefore needs a layout pass on `GoldenCityCell.prefab`: bring
-at least four buildings, including the hospital, inside the ≈13 m visible band,
-add the one missing visible collectible, and raise ground coverage
-(`largeEmptyGroundRatio 0.3406 > 0.25`). Constraint: this cell is also the
-tutorial cell, and its collectible-ring spacing is an explicitly exempted
-`INTENTIONAL_TUTORIAL_EXCEPTION` that must not be rearranged — so buildings may
-move, the collectible ring may not.
+The camera is also sampled only after it settles. `PortraitGameplayCamera
+Controller` follows with `lerp(current, target, dt * 5)`, so it never reaches
+the declared preset exactly; reading mid-ease moved `largeEmptyGroundRatio`
+between 0.14 and 0.25 for identical scene content.
+
+**3. The traffic route left the pavement, and the check tested the wrong
+bounds (`acf674b`).** `FAIL_GOLDEN_CITY_TRAFFIC_OFF_ROAD` required every
+opening vehicle to be inside `MainCrossroad`'s own `worldBounds` — but that is
+only the 16×16 junction, while the arms run out to |24|, so a vehicle on an arm
+was reported off-road. The predicate now tests the union of the visible `ROAD`
+footprints. That fix exposed a real art defect: the route is a closed diamond
+whose vertices were the four arm *centres* (radius 16), and a vehicle drives
+straight from its spawn point to the next waypoint, so every diagonal chord cut
+a junction corner. Sampling the route against the measured road footprints put
+**24.95%** of the loop on unpaved ground — the corners near (7, 9) and (9, 7)
+are outside both the junction and the 12-wide arms. A chord from (R, 0) to
+(0, R) only stays paved while R is at most 14, so the route vertices are now
+clamped to 12. Re-sampled after the change: 0 of 40000 points off-pavement,
+including every vehicle's first leg from its anchor.
+
+Both traffic defects date from `7eeb3fc`, which rewrote traffic into five
+authored ring vehicles and renamed the road entries; the earlier check passed
+only because `ce30274` had two vehicles driving along the south arm against a
+single `FourWayRoad` entry whose bounds were that arm.
 
 ### Operational note: Creator CLI builds hang intermittently
 
