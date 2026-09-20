@@ -138,10 +138,18 @@ had not run since `7eeb3fc`.
    unpaved. A chord from (R, 0) to (0, R) stays paved while R is at most 14, so
    the vertices are clamped to 12 (re-sampled: 0 of 40000 points off-pavement).
 
-Known residual, recorded rather than hidden: `PLAYER_WIDTH_RATIO_MAX` passes at
-0.2994 against 0.30, i.e. 0.00065 of headroom. The ratio scales as 1/distance
-and the camera is now sampled post-settle, so it is deterministic, but any
-future camera or player-scale change will cross it first.
+Known residual, corrected rather than left standing: `PLAYER_WIDTH_RATIO_MAX`
+was recorded here as passing at 0.2994 against 0.30 with 0.00065 of headroom,
+and as deterministic because the ratio scales as `1/distance` and the camera is
+now sampled post-settle. **Both halves of that are wrong.** Four runs of the
+same build measured `0.2192`, `0.2337`, `0.2622` and `0.2979` with a camera pose
+spanning `6e-4` m and a byte-identical rendered player, because the ratio is the
+merged `worldBounds` of the machine's *decorative* subtree — rotating meshes
+plus an outer ring scaled by the gameplay suction radius. It is not a camera
+measurement and it is not deterministic. Worse, the level-independent body
+(`AbyssBase`, `4.07 m`) reads `0.2192`, which is `0.0008` *below* the floor, so
+the check passes only when decoration inflates it. See
+`final-acceptance-matrix.md`, "`playerWidthRatio` is not a stable measurement".
 
 | Label | Meaning |
 |---|---|

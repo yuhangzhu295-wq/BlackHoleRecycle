@@ -171,7 +171,8 @@ invalidating a passing run — will recur the moment two lanes share the slot.
   roads 5 (logical units), POI 14, vehicles 5, competitors 7, authored
   collectible slots 23 of 23, authored resource clusters 2 of 2,
   `largeEmptyGroundRatio 0.1727` (max 0.25), player width ratio 0.2994
-  (0.22–0.30), player screen-Y ratio 0.5728 (0.50–0.67), viewport 390x844,
+  (0.22–0.30 — **not reproducible**, see below), player screen-Y ratio 0.5728
+  (0.50–0.67), viewport 390x844,
   devicePixelRatio 1, and all 12 required semantics present including
   `hospital`. Evidence: `evidence/v2/portrait/golden-city-gate.json`
   (`verdict: PASS`) plus the composition and screenshot beside it.
