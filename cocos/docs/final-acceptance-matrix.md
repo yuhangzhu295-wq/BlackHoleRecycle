@@ -49,8 +49,8 @@ of the current build.
 | `full` | **PASS** — 375x667 + 390x844 + 430x932, `failures: []` | `BUNDLE_STABLE` `fe685340` | `09-20 19:08` |
 | `arena-ai` | **PASS** — real 180 s match, all four bot states | `BUNDLE_STABLE` `333e265f` | `09-20 19:18` |
 | `arena-timer` | **PASS** — 180.0057 s, `reason: TIME`, reward paid | `BUNDLE_STABLE` | `09-20 19:23` |
-| `golden-city` | **PASS** — 31/31, `deficits: []` | none (pre-guard; evidence committed `413b1e9`) | `09-20 18:32` |
-| `cell-lifecycle` | **PASS** — 375x667 + 390x844 + 430x932, 6/6 checkpoints | `BUNDLE_STABLE` | `09-20 19:36` |
+| `golden-city` | **PASS** — 31/31, `deficits: []`; but the width check is unstable, see below | `BUNDLE_STABLE` (earlier evidence committed `413b1e9`) | `09-21 00:20` |
+| `cell-lifecycle` | **PASS** — 375x667 + 390x844 + 430x932, 6/6 checkpoints | `BUNDLE_STABLE` | `09-20 19:32` |
 | `regions` | **PASS** — all six regions over the 940 m route | `BUNDLE_STABLE` | `09-20 23:28` |
 | `arena`, `network`, `pages`, `progression`, `revive`, `save-resume`, `settlement`, `ui-full-flow` | **PASS**, never re-run | none | `09-16` – `09-18` **stale** |
 | `skins`, `skin-unlock` | **no report at all** | — | — |
