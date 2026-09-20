@@ -6,8 +6,8 @@
     "height": 844
   },
   "buildDirectory": "C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\build\\web-mobile",
-  "baseUrl": "http://127.0.0.1:63325/?qa=1",
-  "capturedAt": "2026-09-19T13:46:36.103Z",
+  "baseUrl": "http://127.0.0.1:52125/?qa=1",
+  "capturedAt": "2026-09-20T10:18:32.460Z",
   "frames": {
     "home": "C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\docs\\evidence\\v4-design\\v4-390x844-05-home.png",
     "modeSelect": "C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\docs\\evidence\\v4-design\\v4-390x844-03-mode-select-runtime.png",
@@ -16,7 +16,8 @@
     "endlessGameplay": "C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\docs\\evidence\\v4-design\\v4-390x844-08-endless-gameplay.png",
     "tierLock": "C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\docs\\evidence\\v4-design\\v4-390x844-10-tier-lock.png",
     "tierUpgrade": "C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\docs\\evidence\\v4-design\\v4-390x844-10-tier-upgrade.png",
-    "endlessGameplayMoved": "C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\docs\\evidence\\v4-design\\v4-390x844-08-endless-gameplay-moved.png"
+    "endlessGameplayMoved": "C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\docs\\evidence\\v4-design\\v4-390x844-08-endless-gameplay-moved.png",
+    "largeTarget": "C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\docs\\evidence\\v4-design\\v4-390x844-09-large-target-suction.png"
   },
   "readyPages": {
     "endless": {
@@ -934,19 +935,19 @@
         "pauseButton": {
           "active": true,
           "interactable": true,
-          "x": 266.7345971563981,
+          "x": 230.33649289099526,
           "y": 474,
           "width": 58,
           "height": 58,
           "scaleX": 1,
           "scaleY": 1,
           "world": {
-            "x": 626.7345971563981,
+            "x": 590.3364928909953,
             "y": 1114,
             "z": 0
           },
           "screen": {
-            "x": 0.9509695512820513,
+            "x": 0.8894310897435898,
             "y": 0.12968749999999996
           }
         },
@@ -1010,7 +1011,7 @@
         "safeArea": {
           "designHalfWidth": 360,
           "visibleHalfWidth": 295.7345971563981,
-          "safeHalfWidth": 295.7345971563981,
+          "safeHalfWidth": 259.33649289099526,
           "scale": 0.659375,
           "frameWidth": 390,
           "frameHeight": 844,
@@ -1029,17 +1030,22 @@
               ],
               "left": -319,
               "right": -101,
-              "shift": 23.26540284360192
+              "shift": 23.26540284360192,
+              "marginScreenPx": 0,
+              "groupSafeHalfWidth": 295.7345971563981
             },
             {
               "names": [
                 "LevelPanel",
                 "LevelValue",
-                "MassValue"
+                "MassValue",
+                "BtnPause"
               ],
               "left": -19,
-              "right": 231,
-              "shift": 0
+              "right": 303,
+              "shift": -43.66350710900474,
+              "marginScreenPx": 24,
+              "groupSafeHalfWidth": 259.33649289099526
             },
             {
               "names": [
@@ -1048,15 +1054,9 @@
               ],
               "left": -129,
               "right": 129,
-              "shift": 0
-            },
-            {
-              "names": [
-                "BtnPause"
-              ],
-              "left": 245,
-              "right": 303,
-              "shift": -7.265402843601919
+              "shift": 0,
+              "marginScreenPx": 0,
+              "groupSafeHalfWidth": 295.7345971563981
             },
             {
               "names": [
@@ -1064,7 +1064,9 @@
               ],
               "left": 50,
               "right": 246,
-              "shift": 0
+              "shift": 0,
+              "marginScreenPx": 24,
+              "groupSafeHalfWidth": 259.33649289099526
             }
           ]
         },
@@ -1091,38 +1093,38 @@
           "mass": {
             "active": true,
             "interactable": null,
-            "x": 106,
+            "x": 62.33649289099526,
             "y": 409,
             "width": 76.017578125,
             "height": 41.8,
             "scaleX": 1,
             "scaleY": 1,
             "world": {
-              "x": 466,
+              "x": 422.33649289099526,
               "y": 1049,
               "z": 0
             },
             "screen": {
-              "x": 0.6792147435897437,
+              "x": 0.6053926282051282,
               "y": 0.18046874999999996
             }
           },
           "level": {
             "active": true,
             "interactable": null,
-            "x": 106,
+            "x": 62.33649289099526,
             "y": 443,
             "width": 128.47265625,
             "height": 44.32,
             "scaleX": 1,
             "scaleY": 1,
             "world": {
-              "x": 466,
+              "x": 422.33649289099526,
               "y": 1083,
               "z": 0
             },
             "screen": {
-              "x": 0.6792147435897437,
+              "x": 0.6053926282051282,
               "y": 0.1539062499999999
             }
           },
@@ -1169,19 +1171,19 @@
           "level": {
             "active": true,
             "interactable": null,
-            "x": 106,
+            "x": 62.33649289099526,
             "y": 430,
             "width": 250,
             "height": 64,
             "scaleX": 1,
             "scaleY": 1,
             "world": {
-              "x": 466,
+              "x": 422.33649289099526,
               "y": 1070,
               "z": 0
             },
             "screen": {
-              "x": 0.6792147435897437,
+              "x": 0.6053926282051282,
               "y": 0.1640625
             }
           },
@@ -1266,21 +1268,21 @@
       "groundRegionIsMeasured": true,
       "totalContentSamples": 2560,
       "groundSamples": 1280,
-      "openSamples": 82,
-      "openShare": 0.0641,
+      "openSamples": 22,
+      "openShare": 0.0172,
       "environmentShare": 0,
-      "staticShare": 0.6094,
+      "staticShare": 0.6023,
       "dynamicShare": 0.1031,
-      "otherShare": 0.2234,
+      "otherShare": 0.2773,
       "bucketSamples": {
-        "open": 82,
+        "open": 22,
         "environment": 0,
-        "static": 780,
+        "static": 771,
         "dynamic": 132,
-        "other": 286
+        "other": 355
       },
-      "probeEmptyGroundRatio": 0.09375,
-      "probePlayableOpenAreaRatio": 0.9853515625,
+      "probeEmptyGroundRatio": 0.0171875,
+      "probePlayableOpenAreaRatio": 0.986328125,
       "entryCountsByCategory": {
         "BUILDING": 0,
         "TREE": 10,
@@ -1288,7 +1290,7 @@
         "POI": 3,
         "VEHICLE": 3,
         "COMPETITOR": 0,
-        "COLLECTIBLE": 18,
+        "COLLECTIBLE": 19,
         "RESOURCE_CLUSTER": 2,
         "GROUND": 2
       }
@@ -1319,7 +1321,7 @@
           "bucket": "open",
           "min": 0.55,
           "max": 0.65,
-          "value": 0.0641,
+          "value": 0.0172,
           "inBand": false
         },
         {
@@ -1333,7 +1335,7 @@
           "bucket": "static",
           "min": 0.1,
           "max": 0.15,
-          "value": 0.6094,
+          "value": 0.6023,
           "inBand": false
         },
         {
@@ -1380,9 +1382,9 @@
         },
         "levelPanel": {
           "active": true,
-          "centreX": 264.89,
-          "left": 182.47,
-          "right": 347.32,
+          "centreX": 236.1,
+          "left": 153.68,
+          "right": 318.52,
           "top": 117.37,
           "bottom": 159.57,
           "width": 164.84,
@@ -1408,9 +1410,9 @@
         },
         "pauseButton": {
           "active": true,
-          "centreX": 370.88,
-          "left": 351.76,
-          "right": 390,
+          "centreX": 346.88,
+          "left": 327.76,
+          "right": 366,
           "top": 90.33,
           "bottom": 128.58,
           "width": 38.24,
@@ -1437,6 +1439,24 @@
       },
       "measuredCount": 5,
       "offenders": [],
+      "interactivePaddingPx": 24,
+      "interactivePadding": [
+        {
+          "name": "pauseButton",
+          "left": 327.76,
+          "right": 366,
+          "paddingLeft": 327.76,
+          "paddingRight": 24
+        },
+        {
+          "name": "joystick",
+          "left": 227.97,
+          "right": 357.21,
+          "paddingLeft": 227.97,
+          "paddingRight": 32.79
+        }
+      ],
+      "paddingViolations": [],
       "pass": true,
       "pillText": {
         "coin": "0",
@@ -1447,7 +1467,7 @@
       "safeArea": {
         "designHalfWidth": 360,
         "visibleHalfWidth": 295.7345971563981,
-        "safeHalfWidth": 295.7345971563981,
+        "safeHalfWidth": 259.33649289099526,
         "scale": 0.659375,
         "frameWidth": 390,
         "frameHeight": 844,
@@ -1466,17 +1486,22 @@
             ],
             "left": -319,
             "right": -101,
-            "shift": 23.26540284360192
+            "shift": 23.26540284360192,
+            "marginScreenPx": 0,
+            "groupSafeHalfWidth": 295.7345971563981
           },
           {
             "names": [
               "LevelPanel",
               "LevelValue",
-              "MassValue"
+              "MassValue",
+              "BtnPause"
             ],
             "left": -19,
-            "right": 231,
-            "shift": 0
+            "right": 303,
+            "shift": -43.66350710900474,
+            "marginScreenPx": 24,
+            "groupSafeHalfWidth": 259.33649289099526
           },
           {
             "names": [
@@ -1485,15 +1510,9 @@
             ],
             "left": -129,
             "right": 129,
-            "shift": 0
-          },
-          {
-            "names": [
-              "BtnPause"
-            ],
-            "left": 245,
-            "right": 303,
-            "shift": -7.265402843601919
+            "shift": 0,
+            "marginScreenPx": 0,
+            "groupSafeHalfWidth": 295.7345971563981
           },
           {
             "names": [
@@ -1501,7 +1520,9 @@
             ],
             "left": 50,
             "right": 246,
-            "shift": 0
+            "shift": 0,
+            "marginScreenPx": 24,
+            "groupSafeHalfWidth": 259.33649289099526
           }
         ]
       }
@@ -1523,7 +1544,7 @@
           "runtimeId": "traffic_0_0_authored_VehicleAnchor_SedanCenter",
           "type": "car",
           "tier": 5,
-          "distance": 4.58
+          "distance": 3.92
         },
         {
           "runtimeId": "tutorial_t2_target",
@@ -1535,19 +1556,19 @@
           "runtimeId": "traffic_0_0_authored_VehicleAnchor_SedanWest",
           "type": "car",
           "tier": 5,
-          "distance": 10.33
+          "distance": 10.52
         },
         {
           "runtimeId": "traffic_0_0_authored_VehicleAnchor_SedanNorth",
           "type": "car",
           "tier": 5,
-          "distance": 10.33
+          "distance": 10.52
         },
         {
           "runtimeId": "traffic_0_0_authored_VehicleAnchor_DeliveryVanEast",
           "type": "delivery_van",
           "tier": 5,
-          "distance": 10.59
+          "distance": 10.79
         }
       ],
       "authoredAspirational": [
@@ -1570,7 +1591,7 @@
       "regionIndex": 0,
       "machine": {
         "level": 2,
-        "mass": 1435,
+        "mass": 3715,
         "requiredMass": 15000,
         "suctionRadius": 3.4,
         "maxTier": 2,
@@ -1582,8 +1603,8 @@
         "touchDiagnostic": {
           "phase": "END",
           "id": 0,
-          "x": 307.8558654785156,
-          "y": 98.916015625,
+          "x": 303.1083068847656,
+          "y": 96.5609130859375,
           "accepted": false,
           "joystickArea": true,
           "paused": false
@@ -2302,31 +2323,31 @@
         },
         "groundRegionIsMeasured": true,
         "totalContentSamples": 2560,
-        "groundSamples": 1560,
-        "openSamples": 778,
-        "openShare": 0.4987,
-        "environmentShare": 0.0667,
-        "staticShare": 0,
-        "dynamicShare": 0.0141,
-        "otherShare": 0.4205,
+        "groundSamples": 1640,
+        "openSamples": 619,
+        "openShare": 0.3774,
+        "environmentShare": 0.0756,
+        "staticShare": 0.0293,
+        "dynamicShare": 0.1567,
+        "otherShare": 0.361,
         "bucketSamples": {
-          "open": 778,
-          "environment": 104,
-          "static": 0,
-          "dynamic": 22,
-          "other": 656
+          "open": 619,
+          "environment": 124,
+          "static": 48,
+          "dynamic": 257,
+          "other": 592
         },
-        "probeEmptyGroundRatio": 0.4987179487179487,
-        "probePlayableOpenAreaRatio": 0.9853515625,
+        "probeEmptyGroundRatio": 0.3774390243902439,
+        "probePlayableOpenAreaRatio": 0.986328125,
         "entryCountsByCategory": {
           "BUILDING": 2,
           "TREE": 0,
-          "ROAD": 2,
-          "POI": 0,
-          "VEHICLE": 3,
+          "ROAD": 3,
+          "POI": 4,
+          "VEHICLE": 5,
           "COMPETITOR": 0,
-          "COLLECTIBLE": 1,
-          "RESOURCE_CLUSTER": 0,
+          "COLLECTIBLE": 3,
+          "RESOURCE_CLUSTER": 2,
           "GROUND": 1
         }
       },
@@ -2356,28 +2377,28 @@
             "bucket": "open",
             "min": 0.55,
             "max": 0.65,
-            "value": 0.4987,
+            "value": 0.3774,
             "inBand": false
           },
           {
             "bucket": "environment",
             "min": 0.15,
             "max": 0.2,
-            "value": 0.0667,
+            "value": 0.0756,
             "inBand": false
           },
           {
             "bucket": "static",
             "min": 0.1,
             "max": 0.15,
-            "value": 0,
+            "value": 0.0293,
             "inBand": false
           },
           {
             "bucket": "dynamic",
             "min": 0.05,
             "max": 0.1,
-            "value": 0.0141,
+            "value": 0.1567,
             "inBand": false
           }
         ],
@@ -2389,7 +2410,7 @@
       "gameState": "PLAYING",
       "machine": {
         "level": 2,
-        "mass": 1435,
+        "mass": 3715,
         "requiredMass": 15000,
         "suctionRadius": 3.4,
         "maxTier": 2,
@@ -2401,8 +2422,8 @@
         "touchDiagnostic": {
           "phase": "END",
           "id": 0,
-          "x": 307.8558654785156,
-          "y": 98.916015625,
+          "x": 303.1083068847656,
+          "y": 96.5609130859375,
           "accepted": false,
           "joystickArea": true,
           "paused": false
@@ -3102,19 +3123,19 @@
         "pauseButton": {
           "active": true,
           "interactable": true,
-          "x": 266.7345971563981,
+          "x": 230.33649289099526,
           "y": 474,
           "width": 58,
           "height": 58,
           "scaleX": 1,
           "scaleY": 1,
           "world": {
-            "x": 626.7345971563981,
+            "x": 590.3364928909953,
             "y": 1114,
             "z": 0
           },
           "screen": {
-            "x": 0.9509695512820513,
+            "x": 0.8894310897435898,
             "y": 0.12968749999999996
           }
         },
@@ -3178,7 +3199,7 @@
         "safeArea": {
           "designHalfWidth": 360,
           "visibleHalfWidth": 295.7345971563981,
-          "safeHalfWidth": 295.7345971563981,
+          "safeHalfWidth": 259.33649289099526,
           "scale": 0.659375,
           "frameWidth": 390,
           "frameHeight": 844,
@@ -3197,17 +3218,22 @@
               ],
               "left": -319,
               "right": -101,
-              "shift": 23.26540284360192
+              "shift": 23.26540284360192,
+              "marginScreenPx": 0,
+              "groupSafeHalfWidth": 295.7345971563981
             },
             {
               "names": [
                 "LevelPanel",
                 "LevelValue",
-                "MassValue"
+                "MassValue",
+                "BtnPause"
               ],
               "left": -19,
-              "right": 231,
-              "shift": 0
+              "right": 303,
+              "shift": -43.66350710900474,
+              "marginScreenPx": 24,
+              "groupSafeHalfWidth": 259.33649289099526
             },
             {
               "names": [
@@ -3216,15 +3242,9 @@
               ],
               "left": -129,
               "right": 129,
-              "shift": 0
-            },
-            {
-              "names": [
-                "BtnPause"
-              ],
-              "left": 245,
-              "right": 303,
-              "shift": -7.265402843601919
+              "shift": 0,
+              "marginScreenPx": 0,
+              "groupSafeHalfWidth": 295.7345971563981
             },
             {
               "names": [
@@ -3232,15 +3252,19 @@
               ],
               "left": 50,
               "right": 246,
-              "shift": 0
+              "shift": 0,
+              "marginScreenPx": 24,
+              "groupSafeHalfWidth": 259.33649289099526
             },
             {
               "names": [
                 "TierLockChip"
               ],
-              "left": -130.81533182448945,
-              "right": 3.893652550510552,
-              "shift": 0
+              "left": -131.1403970257164,
+              "right": 3.5685873492836038,
+              "shift": 0,
+              "marginScreenPx": 0,
+              "groupSafeHalfWidth": 295.7345971563981
             }
           ]
         },
@@ -3267,38 +3291,38 @@
           "mass": {
             "active": true,
             "interactable": null,
-            "x": 106,
+            "x": 62.33649289099526,
             "y": 409,
             "width": 106.0498046875,
             "height": 41.8,
             "scaleX": 1,
             "scaleY": 1,
             "world": {
-              "x": 466,
+              "x": 422.33649289099526,
               "y": 1049,
               "z": 0
             },
             "screen": {
-              "x": 0.6792147435897437,
+              "x": 0.6053926282051282,
               "y": 0.18046874999999996
             }
           },
           "level": {
             "active": true,
             "interactable": null,
-            "x": 106,
+            "x": 62.33649289099526,
             "y": 443,
             "width": 128.47265625,
             "height": 44.32,
             "scaleX": 1,
             "scaleY": 1,
             "world": {
-              "x": 466,
+              "x": 422.33649289099526,
               "y": 1083,
               "z": 0
             },
             "screen": {
-              "x": 0.6792147435897437,
+              "x": 0.6053926282051282,
               "y": 0.1539062499999999
             }
           },
@@ -3345,19 +3369,19 @@
           "level": {
             "active": true,
             "interactable": null,
-            "x": 106,
+            "x": 62.33649289099526,
             "y": 430,
             "width": 250,
             "height": 64,
             "scaleX": 1,
             "scaleY": 1,
             "world": {
-              "x": 466,
+              "x": 422.33649289099526,
               "y": 1070,
               "z": 0
             },
             "screen": {
-              "x": 0.6792147435897437,
+              "x": 0.6053926282051282,
               "y": 0.1640625
             }
           },
@@ -3382,20 +3406,20 @@
           }
         },
         "pillText": {
-          "coin": "163",
-          "mass": "质量 1435kg",
+          "coin": "512",
+          "mass": "质量 3715kg",
           "level": "LV.2 磁力黑洞",
           "region": "卧室杂物区"
         }
       },
       "pickupFeedback": {
         "endless": {
-          "emittedCount": 25,
+          "emittedCount": 52,
           "activeCount": 0,
-          "lastText": "+250",
+          "lastText": "+50",
           "lastPosition": {
-            "x": -12.876678755307381,
-            "y": -112.44374468568816
+            "x": -12.40227705276916,
+            "y": -106.63776103718433
           },
           "lastOpacity": 0
         },
@@ -3405,11 +3429,11 @@
     "finalAfterGrowth": {
       "gameState": "PLAYING",
       "machine": {
-        "level": 2,
-        "mass": 1435,
-        "requiredMass": 15000,
-        "suctionRadius": 3.4,
-        "maxTier": 2,
+        "level": 4,
+        "mass": 56800,
+        "requiredMass": 180000,
+        "suctionRadius": 6,
+        "maxTier": 4,
         "movementInput": {
           "x": 0,
           "y": 0
@@ -3418,8 +3442,8 @@
         "touchDiagnostic": {
           "phase": "END",
           "id": 0,
-          "x": 307.8558654785156,
-          "y": 98.916015625,
+          "x": 302.7195739746094,
+          "y": 181.5587158203125,
           "accepted": false,
           "joystickArea": true,
           "paused": false
@@ -3472,7 +3496,7 @@
           },
           {
             "path": "VisualRoot/MachineVisual_LV2/MagneticTurbineLeft/magnetic-turbine/cog-e",
-            "active": true,
+            "active": false,
             "primitiveCount": 1,
             "slots": [
               {
@@ -3490,7 +3514,7 @@
           },
           {
             "path": "VisualRoot/MachineVisual_LV2/MagneticTurbineRight/magnetic-turbine/cog-e",
-            "active": true,
+            "active": false,
             "primitiveCount": 1,
             "slots": [
               {
@@ -3508,7 +3532,7 @@
           },
           {
             "path": "VisualRoot/MachineVisual_LV2/MagneticPipeLeft/magnetic-pipe/machine-connection-pipe",
-            "active": true,
+            "active": false,
             "primitiveCount": 1,
             "slots": [
               {
@@ -3526,7 +3550,7 @@
           },
           {
             "path": "VisualRoot/MachineVisual_LV2/MagneticPipeRight/magnetic-pipe/machine-connection-pipe",
-            "active": true,
+            "active": false,
             "primitiveCount": 1,
             "slots": [
               {
@@ -3549,9 +3573,14 @@
             "slots": [
               {
                 "index": 0,
-                "effect": null,
-                "valid": false,
-                "color": null
+                "effect": "builtin-unlit",
+                "valid": true,
+                "color": {
+                  "r": 53,
+                  "g": 168,
+                  "b": 94,
+                  "a": 255
+                }
               }
             ]
           },
@@ -3562,9 +3591,14 @@
             "slots": [
               {
                 "index": 0,
-                "effect": null,
-                "valid": false,
-                "color": null
+                "effect": "builtin-unlit",
+                "valid": true,
+                "color": {
+                  "r": 183,
+                  "g": 232,
+                  "b": 255,
+                  "a": 255
+                }
               }
             ]
           },
@@ -3575,9 +3609,14 @@
             "slots": [
               {
                 "index": 0,
-                "effect": null,
-                "valid": false,
-                "color": null
+                "effect": "builtin-unlit",
+                "valid": true,
+                "color": {
+                  "r": 183,
+                  "g": 232,
+                  "b": 255,
+                  "a": 255
+                }
               }
             ]
           },
@@ -3588,9 +3627,14 @@
             "slots": [
               {
                 "index": 0,
-                "effect": null,
-                "valid": false,
-                "color": null
+                "effect": "builtin-unlit",
+                "valid": true,
+                "color": {
+                  "r": 183,
+                  "g": 232,
+                  "b": 255,
+                  "a": 255
+                }
               }
             ]
           },
@@ -3601,9 +3645,14 @@
             "slots": [
               {
                 "index": 0,
-                "effect": null,
-                "valid": false,
-                "color": null
+                "effect": "builtin-unlit",
+                "valid": true,
+                "color": {
+                  "r": 183,
+                  "g": 232,
+                  "b": 255,
+                  "a": 255
+                }
               }
             ]
           },
@@ -3614,9 +3663,14 @@
             "slots": [
               {
                 "index": 0,
-                "effect": null,
-                "valid": false,
-                "color": null
+                "effect": "builtin-unlit",
+                "valid": true,
+                "color": {
+                  "r": 255,
+                  "g": 183,
+                  "b": 3,
+                  "a": 255
+                }
               }
             ]
           },
@@ -3627,9 +3681,14 @@
             "slots": [
               {
                 "index": 0,
-                "effect": null,
-                "valid": false,
-                "color": null
+                "effect": "builtin-unlit",
+                "valid": true,
+                "color": {
+                  "r": 255,
+                  "g": 183,
+                  "b": 3,
+                  "a": 255
+                }
               }
             ]
           },
@@ -3640,139 +3699,194 @@
             "slots": [
               {
                 "index": 0,
-                "effect": null,
-                "valid": false,
-                "color": null
+                "effect": "builtin-unlit",
+                "valid": true,
+                "color": {
+                  "r": 53,
+                  "g": 168,
+                  "b": 94,
+                  "a": 255
+                }
               }
             ]
           },
           {
             "path": "VisualRoot/MachineVisual_LV4/MagneticTurbineLeft/magnetic-turbine/cog-e",
-            "active": false,
+            "active": true,
             "primitiveCount": 1,
             "slots": [
               {
                 "index": 0,
-                "effect": null,
-                "valid": false,
-                "color": null
+                "effect": "builtin-unlit",
+                "valid": true,
+                "color": {
+                  "r": 183,
+                  "g": 232,
+                  "b": 255,
+                  "a": 255
+                }
               }
             ]
           },
           {
             "path": "VisualRoot/MachineVisual_LV4/MagneticTurbineRight/magnetic-turbine/cog-e",
-            "active": false,
+            "active": true,
             "primitiveCount": 1,
             "slots": [
               {
                 "index": 0,
-                "effect": null,
-                "valid": false,
-                "color": null
+                "effect": "builtin-unlit",
+                "valid": true,
+                "color": {
+                  "r": 183,
+                  "g": 232,
+                  "b": 255,
+                  "a": 255
+                }
               }
             ]
           },
           {
             "path": "VisualRoot/MachineVisual_LV4/MagneticPipeLeft/magnetic-pipe/machine-connection-pipe",
-            "active": false,
+            "active": true,
             "primitiveCount": 1,
             "slots": [
               {
                 "index": 0,
-                "effect": null,
-                "valid": false,
-                "color": null
+                "effect": "builtin-unlit",
+                "valid": true,
+                "color": {
+                  "r": 183,
+                  "g": 232,
+                  "b": 255,
+                  "a": 255
+                }
               }
             ]
           },
           {
             "path": "VisualRoot/MachineVisual_LV4/MagneticPipeRight/magnetic-pipe/machine-connection-pipe",
-            "active": false,
+            "active": true,
             "primitiveCount": 1,
             "slots": [
               {
                 "index": 0,
-                "effect": null,
-                "valid": false,
-                "color": null
+                "effect": "builtin-unlit",
+                "valid": true,
+                "color": {
+                  "r": 183,
+                  "g": 232,
+                  "b": 255,
+                  "a": 255
+                }
               }
             ]
           },
           {
             "path": "VisualRoot/MachineVisual_LV4/CompressionChamber/compression-engine/machine",
-            "active": false,
+            "active": true,
             "primitiveCount": 1,
             "slots": [
               {
                 "index": 0,
-                "effect": null,
-                "valid": false,
-                "color": null
+                "effect": "builtin-unlit",
+                "valid": true,
+                "color": {
+                  "r": 255,
+                  "g": 183,
+                  "b": 3,
+                  "a": 255
+                }
               }
             ]
           },
           {
             "path": "VisualRoot/MachineVisual_LV4/CompressionHopper/singularity-hopper/hopper-round",
-            "active": false,
+            "active": true,
             "primitiveCount": 1,
             "slots": [
               {
                 "index": 0,
-                "effect": null,
-                "valid": false,
-                "color": null
+                "effect": "builtin-unlit",
+                "valid": true,
+                "color": {
+                  "r": 255,
+                  "g": 183,
+                  "b": 3,
+                  "a": 255
+                }
               }
             ]
           },
           {
             "path": "VisualRoot/MachineVisual_LV4/GravityWingLeft/gravity-wing-frame/conveyor-bars-fence",
-            "active": false,
+            "active": true,
             "primitiveCount": 1,
             "slots": [
               {
                 "index": 0,
-                "effect": null,
-                "valid": false,
-                "color": null
+                "effect": "builtin-unlit",
+                "valid": true,
+                "color": {
+                  "r": 191,
+                  "g": 166,
+                  "b": 255,
+                  "a": 255
+                }
               }
             ]
           },
           {
             "path": "VisualRoot/MachineVisual_LV4/GravityWingRight/gravity-wing-frame/conveyor-bars-fence",
-            "active": false,
+            "active": true,
             "primitiveCount": 1,
             "slots": [
               {
                 "index": 0,
-                "effect": null,
-                "valid": false,
-                "color": null
+                "effect": "builtin-unlit",
+                "valid": true,
+                "color": {
+                  "r": 191,
+                  "g": 166,
+                  "b": 255,
+                  "a": 255
+                }
               }
             ]
           },
           {
             "path": "VisualRoot/MachineVisual_LV4/GravityPipeLeft/magnetic-pipe/machine-connection-pipe",
-            "active": false,
+            "active": true,
             "primitiveCount": 1,
             "slots": [
               {
                 "index": 0,
-                "effect": null,
-                "valid": false,
-                "color": null
+                "effect": "builtin-unlit",
+                "valid": true,
+                "color": {
+                  "r": 191,
+                  "g": 166,
+                  "b": 255,
+                  "a": 255
+                }
               }
             ]
           },
           {
             "path": "VisualRoot/MachineVisual_LV4/GravityPipeRight/magnetic-pipe/machine-connection-pipe",
-            "active": false,
+            "active": true,
             "primitiveCount": 1,
             "slots": [
               {
                 "index": 0,
-                "effect": null,
-                "valid": false,
-                "color": null
+                "effect": "builtin-unlit",
+                "valid": true,
+                "color": {
+                  "r": 191,
+                  "g": 166,
+                  "b": 255,
+                  "a": 255
+                }
               }
             ]
           },
@@ -4088,11 +4202,11 @@
       },
       "tierUpgrade": {
         "endless": {
-          "emittedCount": 1,
+          "emittedCount": 3,
           "activeCount": 0,
-          "lastLevel": 2,
-          "lastTitle": "磁力黑洞",
-          "lastText": "升级！\nLV.2 磁力黑洞\n解锁更大型目标"
+          "lastLevel": 4,
+          "lastTitle": "引力黑洞",
+          "lastText": "升级！\nLV.4 引力黑洞\n解锁更大型目标"
         },
         "arena": null
       },
@@ -4119,19 +4233,19 @@
         "pauseButton": {
           "active": true,
           "interactable": true,
-          "x": 266.7345971563981,
+          "x": 230.33649289099526,
           "y": 474,
           "width": 58,
           "height": 58,
           "scaleX": 1,
           "scaleY": 1,
           "world": {
-            "x": 626.7345971563981,
+            "x": 590.3364928909953,
             "y": 1114,
             "z": 0
           },
           "screen": {
-            "x": 0.9509695512820513,
+            "x": 0.8894310897435898,
             "y": 0.12968749999999996
           }
         },
@@ -4195,7 +4309,7 @@
         "safeArea": {
           "designHalfWidth": 360,
           "visibleHalfWidth": 295.7345971563981,
-          "safeHalfWidth": 295.7345971563981,
+          "safeHalfWidth": 259.33649289099526,
           "scale": 0.659375,
           "frameWidth": 390,
           "frameHeight": 844,
@@ -4214,17 +4328,22 @@
               ],
               "left": -319,
               "right": -101,
-              "shift": 23.26540284360192
+              "shift": 23.26540284360192,
+              "marginScreenPx": 0,
+              "groupSafeHalfWidth": 295.7345971563981
             },
             {
               "names": [
                 "LevelPanel",
                 "LevelValue",
-                "MassValue"
+                "MassValue",
+                "BtnPause"
               ],
               "left": -19,
-              "right": 231,
-              "shift": 0
+              "right": 303,
+              "shift": -43.66350710900474,
+              "marginScreenPx": 24,
+              "groupSafeHalfWidth": 259.33649289099526
             },
             {
               "names": [
@@ -4233,15 +4352,9 @@
               ],
               "left": -129,
               "right": 129,
-              "shift": 0
-            },
-            {
-              "names": [
-                "BtnPause"
-              ],
-              "left": 245,
-              "right": 303,
-              "shift": -7.265402843601919
+              "shift": 0,
+              "marginScreenPx": 0,
+              "groupSafeHalfWidth": 295.7345971563981
             },
             {
               "names": [
@@ -4249,15 +4362,19 @@
               ],
               "left": 50,
               "right": 246,
-              "shift": 0
+              "shift": 0,
+              "marginScreenPx": 24,
+              "groupSafeHalfWidth": 259.33649289099526
             },
             {
               "names": [
                 "TierLockChip"
               ],
-              "left": -130.81533182448945,
-              "right": 3.893652550510552,
-              "shift": 0
+              "left": -131.1403970257164,
+              "right": 3.5685873492836038,
+              "shift": 0,
+              "marginScreenPx": 0,
+              "groupSafeHalfWidth": 295.7345971563981
             }
           ]
         },
@@ -4267,7 +4384,7 @@
             "interactable": null,
             "x": -164.73459715639808,
             "y": 430,
-            "width": 50.716796875,
+            "width": 74.068359375,
             "height": 54.4,
             "scaleX": 1,
             "scaleY": 1,
@@ -4284,38 +4401,38 @@
           "mass": {
             "active": true,
             "interactable": null,
-            "x": 106,
+            "x": 62.33649289099526,
             "y": 409,
-            "width": 106.0498046875,
+            "width": 116.060546875,
             "height": 41.8,
             "scaleX": 1,
             "scaleY": 1,
             "world": {
-              "x": 466,
+              "x": 422.33649289099526,
               "y": 1049,
               "z": 0
             },
             "screen": {
-              "x": 0.6792147435897437,
+              "x": 0.6053926282051282,
               "y": 0.18046874999999996
             }
           },
           "level": {
             "active": true,
             "interactable": null,
-            "x": 106,
+            "x": 62.33649289099526,
             "y": 443,
             "width": 128.47265625,
             "height": 44.32,
             "scaleX": 1,
             "scaleY": 1,
             "world": {
-              "x": 466,
+              "x": 422.33649289099526,
               "y": 1083,
               "z": 0
             },
             "screen": {
-              "x": 0.6792147435897437,
+              "x": 0.6053926282051282,
               "y": 0.1539062499999999
             }
           },
@@ -4362,19 +4479,19 @@
           "level": {
             "active": true,
             "interactable": null,
-            "x": 106,
+            "x": 62.33649289099526,
             "y": 430,
             "width": 250,
             "height": 64,
             "scaleX": 1,
             "scaleY": 1,
             "world": {
-              "x": 466,
+              "x": 422.33649289099526,
               "y": 1070,
               "z": 0
             },
             "screen": {
-              "x": 0.6792147435897437,
+              "x": 0.6053926282051282,
               "y": 0.1640625
             }
           },
@@ -4399,20 +4516,20 @@
           }
         },
         "pillText": {
-          "coin": "163",
-          "mass": "质量 1435kg",
-          "level": "LV.2 磁力黑洞",
+          "coin": "9,839",
+          "mass": "质量 56800kg",
+          "level": "LV.4 引力黑洞",
           "region": "卧室杂物区"
         }
       },
       "pickupFeedback": {
         "endless": {
-          "emittedCount": 25,
+          "emittedCount": 211,
           "activeCount": 0,
-          "lastText": "+250",
+          "lastText": "+100",
           "lastPosition": {
-            "x": -12.876678755307381,
-            "y": -112.44374468568816
+            "x": 2.168694921208072,
+            "y": -98.09623114558553
           },
           "lastOpacity": 0
         },
@@ -4432,17 +4549,17 @@
   ],
   "targets": {
     "drive": {
-      "startedAt": "2026-09-19T13:46:49.627Z",
+      "startedAt": "2026-09-20T10:18:41.991Z",
       "budgetMs": 150000,
-      "sweeps": 85,
-      "steers": 85,
+      "sweeps": 88,
+      "steers": 88,
       "seekTarget": {
         "runtimeId": "traffic_0_0_authored_VehicleAnchor_SedanWest",
         "tier": 5,
         "type": "car",
-        "distance": 2.18
+        "distance": 0.88
       },
-      "directionSign": -1,
+      "directionSign": 1,
       "tierLock": {
         "status": "CAPTURED",
         "presenter": {
@@ -4450,8 +4567,8 @@
           "activeCount": 1,
           "lastText": "需要 LV.2",
           "lastPosition": {
-            "x": -33.67238288328596,
-            "y": -3.385743221399693
+            "x": -50.702149170993025,
+            "y": 19.316513871095538
           },
           "lastTier": 2
         },
@@ -4461,8 +4578,8 @@
             "type": "book_stack",
             "tier": 2,
             "state": "IDLE",
-            "x": -4.783569541606062,
-            "z": -4.382035741715271,
+            "x": -4.899630152610734,
+            "z": -4.724571515116154,
             "lockVisible": true
           }
         ],
@@ -4470,7 +4587,33 @@
         "machineLevel": 1
       },
       "largeTarget": {
-        "status": "NOT_REACHED"
+        "status": "CAPTURED",
+        "runtimeId": "aspirational_RESIDENTIAL_-1_-1_24",
+        "tier": 4,
+        "type": "crate",
+        "state": "ATTRACTED",
+        "machineMaxTier": 4,
+        "machineLevel": 4,
+        "machineMass": 56800,
+        "suctionRadius": 6,
+        "distanceToMachine": 3.16,
+        "chain": [
+          "IDLE",
+          "ATTRACTED"
+        ],
+        "drivenTarget": {
+          "runtimeId": "aspirational_RESIDENTIAL_-1_-1_24",
+          "tier": 4,
+          "type": "crate"
+        },
+        "capturedAt": "2026-09-20T10:28:47.179Z",
+        "captureSource": "GROWTH_PHASE_REAL_JOYSTICK_PLAY",
+        "stateAfterCapture": "SUCKING",
+        "chainAfterCapture": [
+          "IDLE",
+          "ATTRACTED"
+        ],
+        "machineLevelAfterCapture": 4
       },
       "tierUpgrade": {
         "status": "CAPTURED",
@@ -4485,902 +4628,1406 @@
       },
       "samples": [
         {
-          "atMs": 309,
+          "atMs": 207,
           "level": 1,
           "mass": 0,
           "maxTier": 1,
           "region": "bedroom",
           "lockedVisible": 0,
           "tierLockActive": 0,
-          "targetDistance": 5.13
+          "targetDistance": 4.17
         },
         {
-          "atMs": 2122,
+          "atMs": 1922,
           "level": 1,
           "mass": 0,
           "maxTier": 1,
           "region": "bedroom",
           "lockedVisible": 0,
           "tierLockActive": 0,
-          "targetDistance": 7.24
+          "targetDistance": 6.96
         },
         {
-          "atMs": 3879,
+          "atMs": 3604,
           "level": 1,
           "mass": 0,
           "maxTier": 1,
           "region": "bedroom",
           "lockedVisible": 0,
           "tierLockActive": 0,
-          "targetDistance": 5.99
+          "targetDistance": 5.67
         },
         {
-          "atMs": 5866,
+          "atMs": 5220,
           "level": 1,
           "mass": 0,
           "maxTier": 1,
           "region": "bedroom",
           "lockedVisible": 0,
           "tierLockActive": 0,
-          "targetDistance": 4.43
+          "targetDistance": 4.2
         },
         {
-          "atMs": 7817,
+          "atMs": 6937,
           "level": 1,
           "mass": 0,
           "maxTier": 1,
           "region": "bedroom",
           "lockedVisible": 0,
           "tierLockActive": 0,
-          "targetDistance": 3.11
+          "targetDistance": 3.2
         },
         {
-          "atMs": 10290,
+          "atMs": 8808,
           "level": 1,
           "mass": 135,
           "maxTier": 1,
           "region": "bedroom",
           "lockedVisible": 1,
           "tierLockActive": 1,
-          "targetDistance": 1.25
+          "targetDistance": 1.88
         },
         {
-          "atMs": 12118,
+          "atMs": 10487,
+          "level": 1,
+          "mass": 135,
+          "maxTier": 1,
+          "region": "bedroom",
+          "lockedVisible": 1,
+          "tierLockActive": 1,
+          "targetDistance": 0.19
+        },
+        {
+          "atMs": 12255,
           "level": 1,
           "mass": 135,
           "maxTier": 1,
           "region": "bedroom",
           "lockedVisible": 0,
           "tierLockActive": 0,
-          "targetDistance": 0.88
+          "targetDistance": 1.12
         },
         {
-          "atMs": 13913,
+          "atMs": 13904,
           "level": 1,
-          "mass": 135,
-          "maxTier": 1,
-          "region": "bedroom",
-          "lockedVisible": 0,
-          "tierLockActive": 0,
-          "targetDistance": 0.39
-        },
-        {
-          "atMs": 15766,
-          "level": 1,
-          "mass": 255,
-          "maxTier": 1,
-          "region": "bedroom",
-          "lockedVisible": 0,
-          "tierLockActive": 0,
-          "targetDistance": 0.21
-        },
-        {
-          "atMs": 17533,
-          "level": 1,
-          "mass": 255,
-          "maxTier": 1,
-          "region": "bedroom",
-          "lockedVisible": 0,
-          "tierLockActive": 0,
-          "targetDistance": 0.94
-        },
-        {
-          "atMs": 19257,
-          "level": 1,
-          "mass": 255,
+          "mass": 265,
           "maxTier": 1,
           "region": "bedroom",
           "lockedVisible": 1,
           "tierLockActive": 1,
-          "targetDistance": 0.06
+          "targetDistance": 0.1
         },
         {
-          "atMs": 21062,
+          "atMs": 15520,
           "level": 1,
-          "mass": 375,
+          "mass": 265,
           "maxTier": 1,
           "region": "bedroom",
           "lockedVisible": 0,
           "tierLockActive": 0,
-          "targetDistance": 0.53
+          "targetDistance": 1.03
         },
         {
-          "atMs": 22801,
+          "atMs": 17170,
           "level": 1,
-          "mass": 375,
+          "mass": 395,
           "maxTier": 1,
           "region": "bedroom",
           "lockedVisible": 0,
           "tierLockActive": 0,
-          "targetDistance": 0.9
+          "targetDistance": 0.45
         },
         {
-          "atMs": 24534,
+          "atMs": 18891,
           "level": 1,
-          "mass": 375,
-          "maxTier": 1,
-          "region": "bedroom",
-          "lockedVisible": 1,
-          "tierLockActive": 1,
-          "targetDistance": 0.2
-        },
-        {
-          "atMs": 26247,
-          "level": 1,
-          "mass": 515,
-          "maxTier": 1,
-          "region": "bedroom",
-          "lockedVisible": 0,
-          "tierLockActive": 0,
-          "targetDistance": 1.23
-        },
-        {
-          "atMs": 28011,
-          "level": 1,
-          "mass": 515,
-          "maxTier": 1,
-          "region": "bedroom",
-          "lockedVisible": 0,
-          "tierLockActive": 0,
-          "targetDistance": 0.6
-        },
-        {
-          "atMs": 29788,
-          "level": 1,
-          "mass": 655,
+          "mass": 395,
           "maxTier": 1,
           "region": "bedroom",
           "lockedVisible": 1,
           "tierLockActive": 1,
-          "targetDistance": 0.6
+          "targetDistance": 0.73
         },
         {
-          "atMs": 31527,
+          "atMs": 20603,
           "level": 1,
-          "mass": 655,
+          "mass": 535,
           "maxTier": 1,
           "region": "bedroom",
           "lockedVisible": 0,
           "tierLockActive": 0,
-          "targetDistance": 0.88
+          "targetDistance": 0.81
         },
         {
-          "atMs": 33273,
+          "atMs": 22338,
           "level": 1,
-          "mass": 655,
+          "mass": 535,
           "maxTier": 1,
           "region": "bedroom",
           "lockedVisible": 0,
           "tierLockActive": 0,
-          "targetDistance": 0.22
+          "targetDistance": 0.76
         },
         {
-          "atMs": 35742,
-          "level": 2,
-          "mass": 915,
-          "maxTier": 2,
-          "region": "bedroom",
-          "lockedVisible": 0,
-          "tierLockActive": 0,
-          "targetDistance": 4.96
-        },
-        {
-          "atMs": 37604,
-          "level": 2,
-          "mass": 1135,
-          "maxTier": 2,
-          "region": "bedroom",
-          "lockedVisible": 2,
-          "tierLockActive": 1,
-          "targetDistance": 2.99
-        },
-        {
-          "atMs": 39371,
-          "level": 2,
-          "mass": 1135,
-          "maxTier": 2,
-          "region": "bedroom",
-          "lockedVisible": 0,
-          "tierLockActive": 0,
-          "targetDistance": 1.76
-        },
-        {
-          "atMs": 41193,
-          "level": 2,
-          "mass": 1435,
-          "maxTier": 2,
+          "atMs": 24030,
+          "level": 1,
+          "mass": 675,
+          "maxTier": 1,
           "region": "bedroom",
           "lockedVisible": 1,
           "tierLockActive": 1,
-          "targetDistance": 0.4
+          "targetDistance": 0.35
         },
         {
-          "atMs": 42993,
-          "level": 2,
-          "mass": 1435,
-          "maxTier": 2,
-          "region": "bedroom",
-          "lockedVisible": 2,
-          "tierLockActive": 1,
-          "targetDistance": 0.69
-        },
-        {
-          "atMs": 44622,
-          "level": 2,
-          "mass": 1435,
-          "maxTier": 2,
-          "region": "bedroom",
-          "lockedVisible": 1,
-          "tierLockActive": 1,
-          "targetDistance": 1.89
-        },
-        {
-          "atMs": 46357,
-          "level": 2,
-          "mass": 1435,
-          "maxTier": 2,
-          "region": "bedroom",
-          "lockedVisible": 1,
-          "tierLockActive": 1,
-          "targetDistance": 1.73
-        },
-        {
-          "atMs": 48133,
-          "level": 2,
-          "mass": 1435,
-          "maxTier": 2,
-          "region": "bedroom",
-          "lockedVisible": 2,
-          "tierLockActive": 1,
-          "targetDistance": 1.33
-        },
-        {
-          "atMs": 49790,
-          "level": 2,
-          "mass": 1435,
-          "maxTier": 2,
-          "region": "bedroom",
-          "lockedVisible": 1,
-          "tierLockActive": 1,
-          "targetDistance": 3.16
-        },
-        {
-          "atMs": 51741,
-          "level": 2,
-          "mass": 1435,
-          "maxTier": 2,
-          "region": "bedroom",
-          "lockedVisible": 0,
-          "tierLockActive": 0,
-          "targetDistance": 7.62
-        },
-        {
-          "atMs": 53542,
-          "level": 2,
-          "mass": 1435,
-          "maxTier": 2,
-          "region": "bedroom",
-          "lockedVisible": 0,
-          "tierLockActive": 0,
-          "targetDistance": 11.51
-        },
-        {
-          "atMs": 55335,
-          "level": 2,
-          "mass": 1435,
-          "maxTier": 2,
-          "region": "bedroom",
-          "lockedVisible": 0,
-          "tierLockActive": 0,
-          "targetDistance": 13.4
-        },
-        {
-          "atMs": 57140,
-          "level": 2,
-          "mass": 1435,
-          "maxTier": 2,
-          "region": "bedroom",
-          "lockedVisible": 0,
-          "tierLockActive": 0,
-          "targetDistance": 4.85
-        },
-        {
-          "atMs": 59014,
-          "level": 2,
-          "mass": 1435,
-          "maxTier": 2,
+          "atMs": 25707,
+          "level": 1,
+          "mass": 675,
+          "maxTier": 1,
           "region": "bedroom",
           "lockedVisible": 0,
           "tierLockActive": 0,
           "targetDistance": 1.22
         },
         {
-          "atMs": 60904,
-          "level": 2,
-          "mass": 1435,
-          "maxTier": 2,
+          "atMs": 27425,
+          "level": 1,
+          "mass": 675,
+          "maxTier": 1,
           "region": "bedroom",
           "lockedVisible": 0,
           "tierLockActive": 0,
-          "targetDistance": 1.73
+          "targetDistance": 0.69
         },
         {
-          "atMs": 62730,
+          "atMs": 29165,
+          "level": 1,
+          "mass": 795,
+          "maxTier": 1,
+          "region": "bedroom",
+          "lockedVisible": 3,
+          "tierLockActive": 1,
+          "targetDistance": 0.36
+        },
+        {
+          "atMs": 30853,
+          "level": 1,
+          "mass": 795,
+          "maxTier": 1,
+          "region": "bedroom",
+          "lockedVisible": 1,
+          "tierLockActive": 1,
+          "targetDistance": 1.11
+        },
+        {
+          "atMs": 33257,
           "level": 2,
-          "mass": 1435,
+          "mass": 935,
           "maxTier": 2,
           "region": "bedroom",
           "lockedVisible": 1,
           "tierLockActive": 1,
-          "targetDistance": 1.73
-        },
-        {
-          "atMs": 64519,
-          "level": 2,
-          "mass": 1435,
-          "maxTier": 2,
-          "region": "bedroom",
-          "lockedVisible": 0,
-          "tierLockActive": 0,
-          "targetDistance": 1.73
-        },
-        {
-          "atMs": 66323,
-          "level": 2,
-          "mass": 1435,
-          "maxTier": 2,
-          "region": "bedroom",
-          "lockedVisible": 0,
-          "tierLockActive": 0,
-          "targetDistance": 1.73
-        },
-        {
-          "atMs": 68299,
-          "level": 2,
-          "mass": 1435,
-          "maxTier": 2,
-          "region": "bedroom",
-          "lockedVisible": 1,
-          "tierLockActive": 1,
-          "targetDistance": 1.73
-        },
-        {
-          "atMs": 70116,
-          "level": 2,
-          "mass": 1435,
-          "maxTier": 2,
-          "region": "bedroom",
-          "lockedVisible": 0,
-          "tierLockActive": 0,
-          "targetDistance": 1.74
-        },
-        {
-          "atMs": 71952,
-          "level": 2,
-          "mass": 1435,
-          "maxTier": 2,
-          "region": "bedroom",
-          "lockedVisible": 2,
-          "tierLockActive": 1,
-          "targetDistance": 1.73
-        },
-        {
-          "atMs": 73655,
-          "level": 2,
-          "mass": 1435,
-          "maxTier": 2,
-          "region": "bedroom",
-          "lockedVisible": 0,
-          "tierLockActive": 0,
-          "targetDistance": 1.49
-        },
-        {
-          "atMs": 75526,
-          "level": 2,
-          "mass": 1435,
-          "maxTier": 2,
-          "region": "bedroom",
-          "lockedVisible": 0,
-          "tierLockActive": 0,
-          "targetDistance": 2.19
-        },
-        {
-          "atMs": 77355,
-          "level": 2,
-          "mass": 1435,
-          "maxTier": 2,
-          "region": "bedroom",
-          "lockedVisible": 2,
-          "tierLockActive": 1,
-          "targetDistance": 3.07
-        },
-        {
-          "atMs": 79245,
-          "level": 2,
-          "mass": 1435,
-          "maxTier": 2,
-          "region": "bedroom",
-          "lockedVisible": 0,
-          "tierLockActive": 0,
-          "targetDistance": 3.68
-        },
-        {
-          "atMs": 81066,
-          "level": 2,
-          "mass": 1435,
-          "maxTier": 2,
-          "region": "bedroom",
-          "lockedVisible": 0,
-          "tierLockActive": 0,
-          "targetDistance": 0.89
-        },
-        {
-          "atMs": 82833,
-          "level": 2,
-          "mass": 1435,
-          "maxTier": 2,
-          "region": "bedroom",
-          "lockedVisible": 0,
-          "tierLockActive": 0,
-          "targetDistance": 4.46
-        },
-        {
-          "atMs": 84560,
-          "level": 2,
-          "mass": 1435,
-          "maxTier": 2,
-          "region": "bedroom",
-          "lockedVisible": 0,
-          "tierLockActive": 0,
-          "targetDistance": 3.96
-        },
-        {
-          "atMs": 86239,
-          "level": 2,
-          "mass": 1435,
-          "maxTier": 2,
-          "region": "bedroom",
-          "lockedVisible": 1,
-          "tierLockActive": 1,
-          "targetDistance": 2.18
-        },
-        {
-          "atMs": 87938,
-          "level": 2,
-          "mass": 1435,
-          "maxTier": 2,
-          "region": "bedroom",
-          "lockedVisible": 0,
-          "tierLockActive": 0,
-          "targetDistance": 4.91
-        },
-        {
-          "atMs": 89622,
-          "level": 2,
-          "mass": 1435,
-          "maxTier": 2,
-          "region": "bedroom",
-          "lockedVisible": 0,
-          "tierLockActive": 0,
-          "targetDistance": 11.21
-        },
-        {
-          "atMs": 91271,
-          "level": 2,
-          "mass": 1435,
-          "maxTier": 2,
-          "region": "bedroom",
-          "lockedVisible": 0,
-          "tierLockActive": 0,
-          "targetDistance": 13.82
-        },
-        {
-          "atMs": 92972,
-          "level": 2,
-          "mass": 1435,
-          "maxTier": 2,
-          "region": "bedroom",
-          "lockedVisible": 0,
-          "tierLockActive": 0,
-          "targetDistance": 15.97
-        },
-        {
-          "atMs": 94656,
-          "level": 2,
-          "mass": 1435,
-          "maxTier": 2,
-          "region": "bedroom",
-          "lockedVisible": 0,
-          "tierLockActive": 0,
-          "targetDistance": 10
-        },
-        {
-          "atMs": 96339,
-          "level": 2,
-          "mass": 1435,
-          "maxTier": 2,
-          "region": "bedroom",
-          "lockedVisible": 0,
-          "tierLockActive": 0,
-          "targetDistance": 7.51
-        },
-        {
-          "atMs": 98022,
-          "level": 2,
-          "mass": 1435,
-          "maxTier": 2,
-          "region": "bedroom",
-          "lockedVisible": 0,
-          "tierLockActive": 0,
-          "targetDistance": 14.85
-        },
-        {
-          "atMs": 99755,
-          "level": 2,
-          "mass": 1435,
-          "maxTier": 2,
-          "region": "bedroom",
-          "lockedVisible": 0,
-          "tierLockActive": 0,
-          "targetDistance": 11.3
-        },
-        {
-          "atMs": 101472,
-          "level": 2,
-          "mass": 1435,
-          "maxTier": 2,
-          "region": "bedroom",
-          "lockedVisible": 0,
-          "tierLockActive": 0,
-          "targetDistance": 14.82
-        },
-        {
-          "atMs": 103205,
-          "level": 2,
-          "mass": 1435,
-          "maxTier": 2,
-          "region": "bedroom",
-          "lockedVisible": 0,
-          "tierLockActive": 0,
-          "targetDistance": 18.72
-        },
-        {
-          "atMs": 104889,
-          "level": 2,
-          "mass": 1435,
-          "maxTier": 2,
-          "region": "bedroom",
-          "lockedVisible": 0,
-          "tierLockActive": 0,
-          "targetDistance": 19.12
-        },
-        {
-          "atMs": 106571,
-          "level": 2,
-          "mass": 1435,
-          "maxTier": 2,
-          "region": "bedroom",
-          "lockedVisible": 0,
-          "tierLockActive": 0,
-          "targetDistance": 15.33
-        },
-        {
-          "atMs": 108321,
-          "level": 2,
-          "mass": 1435,
-          "maxTier": 2,
-          "region": "bedroom",
-          "lockedVisible": 0,
-          "tierLockActive": 0,
-          "targetDistance": 12.02
-        },
-        {
-          "atMs": 110004,
-          "level": 2,
-          "mass": 1435,
-          "maxTier": 2,
-          "region": "bedroom",
-          "lockedVisible": 0,
-          "tierLockActive": 0,
-          "targetDistance": 12.27
-        },
-        {
-          "atMs": 111672,
-          "level": 2,
-          "mass": 1435,
-          "maxTier": 2,
-          "region": "bedroom",
-          "lockedVisible": 0,
-          "tierLockActive": 0,
-          "targetDistance": 17.73
-        },
-        {
-          "atMs": 113355,
-          "level": 2,
-          "mass": 1435,
-          "maxTier": 2,
-          "region": "bedroom",
-          "lockedVisible": 0,
-          "tierLockActive": 0,
-          "targetDistance": 24.12
-        },
-        {
-          "atMs": 115090,
-          "level": 2,
-          "mass": 1435,
-          "maxTier": 2,
-          "region": "bedroom",
-          "lockedVisible": 0,
-          "tierLockActive": 0,
-          "targetDistance": 30.86
-        },
-        {
-          "atMs": 116754,
-          "level": 2,
-          "mass": 1435,
-          "maxTier": 2,
-          "region": "bedroom",
-          "lockedVisible": 0,
-          "tierLockActive": 0,
-          "targetDistance": 23.7
-        },
-        {
-          "atMs": 118438,
-          "level": 2,
-          "mass": 1435,
-          "maxTier": 2,
-          "region": "bedroom",
-          "lockedVisible": 0,
-          "tierLockActive": 0,
-          "targetDistance": 15.19
-        },
-        {
-          "atMs": 120113,
-          "level": 2,
-          "mass": 1435,
-          "maxTier": 2,
-          "region": "bedroom",
-          "lockedVisible": 0,
-          "tierLockActive": 0,
-          "targetDistance": 15.14
-        },
-        {
-          "atMs": 121771,
-          "level": 2,
-          "mass": 1435,
-          "maxTier": 2,
-          "region": "bedroom",
-          "lockedVisible": 0,
-          "tierLockActive": 0,
-          "targetDistance": 10.82
-        },
-        {
-          "atMs": 123436,
-          "level": 2,
-          "mass": 1435,
-          "maxTier": 2,
-          "region": "bedroom",
-          "lockedVisible": 0,
-          "tierLockActive": 0,
-          "targetDistance": 9.26
-        },
-        {
-          "atMs": 125121,
-          "level": 2,
-          "mass": 1435,
-          "maxTier": 2,
-          "region": "bedroom",
-          "lockedVisible": 0,
-          "tierLockActive": 0,
-          "targetDistance": 10.11
-        },
-        {
-          "atMs": 126821,
-          "level": 2,
-          "mass": 1435,
-          "maxTier": 2,
-          "region": "bedroom",
-          "lockedVisible": 0,
-          "tierLockActive": 0,
-          "targetDistance": 11.71
-        },
-        {
-          "atMs": 128504,
-          "level": 2,
-          "mass": 1435,
-          "maxTier": 2,
-          "region": "bedroom",
-          "lockedVisible": 0,
-          "tierLockActive": 0,
-          "targetDistance": 13.71
-        },
-        {
-          "atMs": 130237,
-          "level": 2,
-          "mass": 1435,
-          "maxTier": 2,
-          "region": "bedroom",
-          "lockedVisible": 0,
-          "tierLockActive": 0,
-          "targetDistance": 19.5
-        },
-        {
-          "atMs": 131887,
-          "level": 2,
-          "mass": 1435,
-          "maxTier": 2,
-          "region": "bedroom",
-          "lockedVisible": 0,
-          "tierLockActive": 0,
-          "targetDistance": 22.11
-        },
-        {
-          "atMs": 133537,
-          "level": 2,
-          "mass": 1435,
-          "maxTier": 2,
-          "region": "bedroom",
-          "lockedVisible": 0,
-          "tierLockActive": 0,
-          "targetDistance": 15.25
-        },
-        {
-          "atMs": 135220,
-          "level": 2,
-          "mass": 1435,
-          "maxTier": 2,
-          "region": "bedroom",
-          "lockedVisible": 0,
-          "tierLockActive": 0,
-          "targetDistance": 8.11
-        },
-        {
-          "atMs": 136953,
-          "level": 2,
-          "mass": 1435,
-          "maxTier": 2,
-          "region": "bedroom",
-          "lockedVisible": 1,
-          "tierLockActive": 1,
-          "targetDistance": 1.24
-        },
-        {
-          "atMs": 138670,
-          "level": 2,
-          "mass": 1435,
-          "maxTier": 2,
-          "region": "bedroom",
-          "lockedVisible": 0,
-          "tierLockActive": 0,
-          "targetDistance": 2.1
-        },
-        {
-          "atMs": 140337,
-          "level": 2,
-          "mass": 1435,
-          "maxTier": 2,
-          "region": "bedroom",
-          "lockedVisible": 1,
-          "tierLockActive": 1,
-          "targetDistance": 1.41
-        },
-        {
-          "atMs": 142071,
-          "level": 2,
-          "mass": 1435,
-          "maxTier": 2,
-          "region": "bedroom",
-          "lockedVisible": 1,
-          "tierLockActive": 1,
-          "targetDistance": 0.42
-        },
-        {
-          "atMs": 143803,
-          "level": 2,
-          "mass": 1435,
-          "maxTier": 2,
-          "region": "bedroom",
-          "lockedVisible": 0,
-          "tierLockActive": 0,
           "targetDistance": 2.16
         },
         {
-          "atMs": 145522,
+          "atMs": 34937,
+          "level": 2,
+          "mass": 1235,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 1.88
+        },
+        {
+          "atMs": 36594,
+          "level": 2,
+          "mass": 1235,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 1,
+          "tierLockActive": 1,
+          "targetDistance": 1.73
+        },
+        {
+          "atMs": 38219,
+          "level": 2,
+          "mass": 1235,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 1.73
+        },
+        {
+          "atMs": 39869,
+          "level": 2,
+          "mass": 1235,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 1.47
+        },
+        {
+          "atMs": 41637,
+          "level": 2,
+          "mass": 1235,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 1,
+          "tierLockActive": 1,
+          "targetDistance": 1.76
+        },
+        {
+          "atMs": 43268,
+          "level": 2,
+          "mass": 1235,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 1.73
+        },
+        {
+          "atMs": 45002,
+          "level": 2,
+          "mass": 1235,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 1.73
+        },
+        {
+          "atMs": 46724,
+          "level": 2,
+          "mass": 1235,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 1,
+          "tierLockActive": 1,
+          "targetDistance": 1.73
+        },
+        {
+          "atMs": 48400,
+          "level": 2,
+          "mass": 1235,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 1.73
+        },
+        {
+          "atMs": 50018,
           "level": 2,
           "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 1,
+          "tierLockActive": 1,
+          "targetDistance": 1.4
+        },
+        {
+          "atMs": 51636,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 1,
+          "tierLockActive": 1,
+          "targetDistance": 1.98
+        },
+        {
+          "atMs": 53336,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 2.03
+        },
+        {
+          "atMs": 55061,
+          "level": 2,
+          "mass": 1435,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 1,
+          "tierLockActive": 1,
+          "targetDistance": 1.73
+        },
+        {
+          "atMs": 56752,
+          "level": 2,
+          "mass": 1635,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 1,
+          "tierLockActive": 1,
+          "targetDistance": 0.05
+        },
+        {
+          "atMs": 58480,
+          "level": 2,
+          "mass": 1635,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 2.59
+        },
+        {
+          "atMs": 60235,
+          "level": 2,
+          "mass": 1635,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 1,
+          "tierLockActive": 1,
+          "targetDistance": 1.86
+        },
+        {
+          "atMs": 61921,
+          "level": 2,
+          "mass": 1635,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 1,
+          "tierLockActive": 1,
+          "targetDistance": 1.86
+        },
+        {
+          "atMs": 63535,
+          "level": 2,
+          "mass": 1635,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 0.73
+        },
+        {
+          "atMs": 65168,
+          "level": 2,
+          "mass": 1635,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 2.56
+        },
+        {
+          "atMs": 66889,
+          "level": 2,
+          "mass": 1835,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 1,
+          "tierLockActive": 1,
+          "targetDistance": 0.61
+        },
+        {
+          "atMs": 68601,
+          "level": 2,
+          "mass": 1835,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 1,
+          "tierLockActive": 1,
+          "targetDistance": 0.52
+        },
+        {
+          "atMs": 70318,
+          "level": 2,
+          "mass": 1835,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 3.16
+        },
+        {
+          "atMs": 72035,
+          "level": 2,
+          "mass": 1835,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 5.46
+        },
+        {
+          "atMs": 73768,
+          "level": 2,
+          "mass": 1835,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 5.8
+        },
+        {
+          "atMs": 75451,
+          "level": 2,
+          "mass": 1835,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 12.64
+        },
+        {
+          "atMs": 77084,
+          "level": 2,
+          "mass": 1835,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 19.82
+        },
+        {
+          "atMs": 78702,
+          "level": 2,
+          "mass": 1835,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 14.27
+        },
+        {
+          "atMs": 80517,
+          "level": 2,
+          "mass": 1835,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 7.54
+        },
+        {
+          "atMs": 82219,
+          "level": 2,
+          "mass": 1835,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 4.63
+        },
+        {
+          "atMs": 83952,
+          "level": 2,
+          "mass": 1835,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 6.69
+        },
+        {
+          "atMs": 85695,
+          "level": 2,
+          "mass": 1835,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 3.61
+        },
+        {
+          "atMs": 87418,
+          "level": 2,
+          "mass": 1835,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 1,
+          "tierLockActive": 1,
+          "targetDistance": 0.82
+        },
+        {
+          "atMs": 89119,
+          "level": 2,
+          "mass": 1835,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 1.73
+        },
+        {
+          "atMs": 90751,
+          "level": 2,
+          "mass": 1835,
           "maxTier": 2,
           "region": "bedroom",
           "lockedVisible": 3,
           "tierLockActive": 1,
-          "targetDistance": 0.58
+          "targetDistance": 1.57
         },
         {
-          "atMs": 147203,
+          "atMs": 92384,
           "level": 2,
-          "mass": 1435,
+          "mass": 1835,
           "maxTier": 2,
           "region": "bedroom",
           "lockedVisible": 0,
           "tierLockActive": 0,
-          "targetDistance": 2.25
+          "targetDistance": 0.93
         },
         {
-          "atMs": 148887,
+          "atMs": 94148,
           "level": 2,
-          "mass": 1435,
+          "mass": 1835,
           "maxTier": 2,
           "region": "bedroom",
           "lockedVisible": 0,
           "tierLockActive": 0,
-          "targetDistance": 2.18
+          "targetDistance": 0.26
+        },
+        {
+          "atMs": 95912,
+          "level": 2,
+          "mass": 2035,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 2,
+          "tierLockActive": 1,
+          "targetDistance": 0.24
+        },
+        {
+          "atMs": 97668,
+          "level": 2,
+          "mass": 2035,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 0.79
+        },
+        {
+          "atMs": 99453,
+          "level": 2,
+          "mass": 2215,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 1.15
+        },
+        {
+          "atMs": 101161,
+          "level": 2,
+          "mass": 2395,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 2,
+          "tierLockActive": 1,
+          "targetDistance": 0.94
+        },
+        {
+          "atMs": 102896,
+          "level": 2,
+          "mass": 2395,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 2.36
+        },
+        {
+          "atMs": 104534,
+          "level": 2,
+          "mass": 2755,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 1,
+          "tierLockActive": 1,
+          "targetDistance": 2.24
+        },
+        {
+          "atMs": 106166,
+          "level": 2,
+          "mass": 2755,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 1.89
+        },
+        {
+          "atMs": 107955,
+          "level": 2,
+          "mass": 2755,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 1.91
+        },
+        {
+          "atMs": 109734,
+          "level": 2,
+          "mass": 2955,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 1,
+          "tierLockActive": 1,
+          "targetDistance": 0.05
+        },
+        {
+          "atMs": 111508,
+          "level": 2,
+          "mass": 3135,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 2.56
+        },
+        {
+          "atMs": 113183,
+          "level": 2,
+          "mass": 3135,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 2,
+          "tierLockActive": 1,
+          "targetDistance": 2.72
+        },
+        {
+          "atMs": 114849,
+          "level": 2,
+          "mass": 3135,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 2.23
+        },
+        {
+          "atMs": 116516,
+          "level": 2,
+          "mass": 3135,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 1,
+          "tierLockActive": 1,
+          "targetDistance": 1.1
+        },
+        {
+          "atMs": 118216,
+          "level": 2,
+          "mass": 3135,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 0.05
+        },
+        {
+          "atMs": 119964,
+          "level": 2,
+          "mass": 3135,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 3.01
+        },
+        {
+          "atMs": 122089,
+          "level": 2,
+          "mass": 3135,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 9.49
+        },
+        {
+          "atMs": 123732,
+          "level": 2,
+          "mass": 3135,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 12.64
+        },
+        {
+          "atMs": 125384,
+          "level": 2,
+          "mass": 3135,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 9.61
+        },
+        {
+          "atMs": 127164,
+          "level": 2,
+          "mass": 3315,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 7.06
+        },
+        {
+          "atMs": 128917,
+          "level": 2,
+          "mass": 3315,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 1,
+          "tierLockActive": 1,
+          "targetDistance": 0.9
+        },
+        {
+          "atMs": 130745,
+          "level": 2,
+          "mass": 3515,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 3,
+          "tierLockActive": 1,
+          "targetDistance": 0.36
+        },
+        {
+          "atMs": 132482,
+          "level": 2,
+          "mass": 3515,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 2.74
+        },
+        {
+          "atMs": 134188,
+          "level": 2,
+          "mass": 3515,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 1,
+          "tierLockActive": 1,
+          "targetDistance": 2.35
+        },
+        {
+          "atMs": 135849,
+          "level": 2,
+          "mass": 3515,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 0.68
+        },
+        {
+          "atMs": 137551,
+          "level": 2,
+          "mass": 3515,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 2.6
+        },
+        {
+          "atMs": 139249,
+          "level": 2,
+          "mass": 3515,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 1,
+          "tierLockActive": 1,
+          "targetDistance": 3.11
+        },
+        {
+          "atMs": 140916,
+          "level": 2,
+          "mass": 3715,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 6.37
+        },
+        {
+          "atMs": 143000,
+          "level": 2,
+          "mass": 3715,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 11.59
+        },
+        {
+          "atMs": 144981,
+          "level": 2,
+          "mass": 3715,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 13.85
+        },
+        {
+          "atMs": 146615,
+          "level": 2,
+          "mass": 3715,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 5.04
+        },
+        {
+          "atMs": 148397,
+          "level": 2,
+          "mass": 3715,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 2,
+          "tierLockActive": 1,
+          "targetDistance": 1.81
+        },
+        {
+          "atMs": 150102,
+          "level": 2,
+          "mass": 3715,
+          "maxTier": 2,
+          "region": "bedroom",
+          "lockedVisible": 0,
+          "tierLockActive": 0,
+          "targetDistance": 0.88
         }
       ],
-      "endedAt": "2026-09-19T13:49:20.032Z",
+      "endedAt": "2026-09-20T10:21:13.627Z",
       "growth": {
-        "status": "BUDGET_EXHAUSTED",
+        "status": "REACHED",
         "reason": null,
-        "budgetMs": 0,
+        "budgetMs": 1200000,
         "targetMaxTier": 4,
         "steerRadiusRatio": 0.18,
         "method": "real joystick play only (CDP touch events); no setter, no save edit, no QA hook",
         "entryLevel": 2,
-        "entryMass": 1435,
+        "entryMass": 3715,
         "entryMaxTier": 2,
-        "finalLevel": 2,
-        "finalMass": 1435,
-        "finalMaxTier": 2,
-        "elapsedMs": 439,
-        "reachedTargetMaxTier": false,
-        "targetsPursued": 0,
-        "absorbedCount": 0,
-        "stalledTargets": 0,
-        "absorbedByTier": {},
-        "absorbed": [],
+        "finalLevel": 4,
+        "finalMass": 56060,
+        "finalMaxTier": 4,
+        "elapsedMs": 441473,
+        "reachedTargetMaxTier": true,
+        "targetsPursued": 60,
+        "absorbedCount": 59,
+        "stalledTargets": 1,
+        "absorbedByTier": {
+          "2": 33,
+          "3": 26
+        },
+        "absorbed": [
+          {
+            "runtimeId": "tutorial_t2_target",
+            "type": "book_stack",
+            "tier": 2,
+            "atMs": 3306
+          },
+          {
+            "runtimeId": "scatter_RESIDENTIAL_-1_0_22",
+            "type": "paint_bucket",
+            "tier": 2,
+            "atMs": 10758
+          },
+          {
+            "runtimeId": "scatter_RESIDENTIAL_-1_0_11",
+            "type": "book_stack",
+            "tier": 2,
+            "atMs": 19537
+          },
+          {
+            "runtimeId": "group_0_RESIDENTIAL_-1_0_4",
+            "type": "cone",
+            "tier": 2,
+            "atMs": 23368
+          },
+          {
+            "runtimeId": "scatter_RESIDENTIAL_-1_0_11",
+            "type": "book_stack",
+            "tier": 2,
+            "atMs": 27382
+          },
+          {
+            "runtimeId": "group_0_RESIDENTIAL_-1_0_4",
+            "type": "cone",
+            "tier": 2,
+            "atMs": 32143
+          },
+          {
+            "runtimeId": "scatter_RESIDENTIAL_-1_0_11",
+            "type": "book_stack",
+            "tier": 2,
+            "atMs": 35743
+          },
+          {
+            "runtimeId": "group_0_RESIDENTIAL_-1_0_4",
+            "type": "cone",
+            "tier": 2,
+            "atMs": 39333
+          },
+          {
+            "runtimeId": "scatter_RESIDENTIAL_-1_0_11",
+            "type": "book_stack",
+            "tier": 2,
+            "atMs": 45518
+          },
+          {
+            "runtimeId": "group_0_RESIDENTIAL_-1_0_4",
+            "type": "cone",
+            "tier": 2,
+            "atMs": 48750
+          },
+          {
+            "runtimeId": "scatter_RESIDENTIAL_-1_0_11",
+            "type": "book_stack",
+            "tier": 2,
+            "atMs": 53550
+          },
+          {
+            "runtimeId": "group_0_RESIDENTIAL_-1_0_4",
+            "type": "cone",
+            "tier": 2,
+            "atMs": 61162
+          },
+          {
+            "runtimeId": "scatter_RESIDENTIAL_-1_0_11",
+            "type": "book_stack",
+            "tier": 2,
+            "atMs": 70458
+          },
+          {
+            "runtimeId": "group_0_RESIDENTIAL_-1_0_4",
+            "type": "cone",
+            "tier": 2,
+            "atMs": 77884
+          },
+          {
+            "runtimeId": "scatter_RESIDENTIAL_-1_0_11",
+            "type": "book_stack",
+            "tier": 2,
+            "atMs": 83649
+          },
+          {
+            "runtimeId": "group_0_RESIDENTIAL_-1_0_4",
+            "type": "cone",
+            "tier": 2,
+            "atMs": 89109
+          },
+          {
+            "runtimeId": "scatter_RESIDENTIAL_-2_0_10",
+            "type": "trash_bag",
+            "tier": 2,
+            "atMs": 95864
+          },
+          {
+            "runtimeId": "scatter_RESIDENTIAL_-2_0_16",
+            "type": "trash_bag",
+            "tier": 2,
+            "atMs": 102017
+          },
+          {
+            "runtimeId": "scatter_RESIDENTIAL_-2_0_10",
+            "type": "trash_bag",
+            "tier": 2,
+            "atMs": 106370
+          },
+          {
+            "runtimeId": "scatter_RESIDENTIAL_-2_0_16",
+            "type": "trash_bag",
+            "tier": 2,
+            "atMs": 113933
+          },
+          {
+            "runtimeId": "scatter_RESIDENTIAL_-2_0_10",
+            "type": "trash_bag",
+            "tier": 2,
+            "atMs": 117993
+          },
+          {
+            "runtimeId": "scatter_RESIDENTIAL_-2_0_16",
+            "type": "trash_bag",
+            "tier": 2,
+            "atMs": 124928
+          },
+          {
+            "runtimeId": "scatter_RESIDENTIAL_-2_0_10",
+            "type": "trash_bag",
+            "tier": 2,
+            "atMs": 128458
+          },
+          {
+            "runtimeId": "scatter_RESIDENTIAL_-2_0_16",
+            "type": "trash_bag",
+            "tier": 2,
+            "atMs": 133659
+          },
+          {
+            "runtimeId": "scatter_RESIDENTIAL_-2_0_20",
+            "type": "cardboard_box",
+            "tier": 2,
+            "atMs": 140462
+          },
+          {
+            "runtimeId": "scatter_RESIDENTIAL_-2_0_11",
+            "type": "cardboard_box",
+            "tier": 2,
+            "atMs": 148633
+          },
+          {
+            "runtimeId": "scatter_RESIDENTIAL_-2_0_20",
+            "type": "cardboard_box",
+            "tier": 2,
+            "atMs": 154402
+          },
+          {
+            "runtimeId": "scatter_RESIDENTIAL_-2_0_16",
+            "type": "trash_bag",
+            "tier": 2,
+            "atMs": 156983
+          },
+          {
+            "runtimeId": "scatter_RESIDENTIAL_-2_0_10",
+            "type": "trash_bag",
+            "tier": 2,
+            "atMs": 161060
+          },
+          {
+            "runtimeId": "scatter_RESIDENTIAL_-2_0_16",
+            "type": "trash_bag",
+            "tier": 2,
+            "atMs": 164413
+          },
+          {
+            "runtimeId": "scatter_RESIDENTIAL_-2_0_20",
+            "type": "cardboard_box",
+            "tier": 2,
+            "atMs": 167367
+          },
+          {
+            "runtimeId": "scatter_RESIDENTIAL_-2_0_11",
+            "type": "cardboard_box",
+            "tier": 2,
+            "atMs": 171313
+          },
+          {
+            "runtimeId": "scatter_RESIDENTIAL_-2_0_20",
+            "type": "cardboard_box",
+            "tier": 2,
+            "atMs": 174631
+          },
+          {
+            "runtimeId": "aspirational_RESIDENTIAL_-2_0_21",
+            "type": "monitor",
+            "tier": 3,
+            "atMs": 180191
+          },
+          {
+            "runtimeId": "aspirational_RESIDENTIAL_-1_0_24",
+            "type": "monitor",
+            "tier": 3,
+            "atMs": 190470
+          },
+          {
+            "runtimeId": "aspirational_RESIDENTIAL_-2_0_21",
+            "type": "monitor",
+            "tier": 3,
+            "atMs": 201623
+          },
+          {
+            "runtimeId": "aspirational_RESIDENTIAL_-1_0_24",
+            "type": "monitor",
+            "tier": 3,
+            "atMs": 211818
+          },
+          {
+            "runtimeId": "aspirational_RESIDENTIAL_-2_0_21",
+            "type": "monitor",
+            "tier": 3,
+            "atMs": 221965
+          },
+          {
+            "runtimeId": "aspirational_RESIDENTIAL_-1_0_24",
+            "type": "monitor",
+            "tier": 3,
+            "atMs": 232257
+          },
+          {
+            "runtimeId": "aspirational_RESIDENTIAL_-2_0_21",
+            "type": "monitor",
+            "tier": 3,
+            "atMs": 242496
+          },
+          {
+            "runtimeId": "aspirational_RESIDENTIAL_-1_0_24",
+            "type": "monitor",
+            "tier": 3,
+            "atMs": 252529
+          },
+          {
+            "runtimeId": "aspirational_RESIDENTIAL_-2_0_21",
+            "type": "monitor",
+            "tier": 3,
+            "atMs": 262978
+          },
+          {
+            "runtimeId": "aspirational_RESIDENTIAL_-1_0_24",
+            "type": "monitor",
+            "tier": 3,
+            "atMs": 273459
+          },
+          {
+            "runtimeId": "aspirational_RESIDENTIAL_-2_0_21",
+            "type": "monitor",
+            "tier": 3,
+            "atMs": 283839
+          },
+          {
+            "runtimeId": "aspirational_RESIDENTIAL_-1_0_24",
+            "type": "monitor",
+            "tier": 3,
+            "atMs": 294568
+          },
+          {
+            "runtimeId": "aspirational_RESIDENTIAL_-2_0_21",
+            "type": "monitor",
+            "tier": 3,
+            "atMs": 305166
+          },
+          {
+            "runtimeId": "aspirational_RESIDENTIAL_-1_0_24",
+            "type": "monitor",
+            "tier": 3,
+            "atMs": 315245
+          },
+          {
+            "runtimeId": "aspirational_RESIDENTIAL_-2_0_21",
+            "type": "monitor",
+            "tier": 3,
+            "atMs": 325581
+          },
+          {
+            "runtimeId": "aspirational_RESIDENTIAL_-1_0_24",
+            "type": "monitor",
+            "tier": 3,
+            "atMs": 335566
+          },
+          {
+            "runtimeId": "aspirational_RESIDENTIAL_-2_0_21",
+            "type": "monitor",
+            "tier": 3,
+            "atMs": 345714
+          },
+          {
+            "runtimeId": "aspirational_RESIDENTIAL_-1_0_24",
+            "type": "monitor",
+            "tier": 3,
+            "atMs": 355749
+          },
+          {
+            "runtimeId": "aspirational_RESIDENTIAL_-2_0_21",
+            "type": "monitor",
+            "tier": 3,
+            "atMs": 367022
+          },
+          {
+            "runtimeId": "aspirational_RESIDENTIAL_-1_0_24",
+            "type": "monitor",
+            "tier": 3,
+            "atMs": 377250
+          },
+          {
+            "runtimeId": "aspirational_RESIDENTIAL_-2_0_21",
+            "type": "monitor",
+            "tier": 3,
+            "atMs": 388330
+          },
+          {
+            "runtimeId": "aspirational_RESIDENTIAL_-1_0_24",
+            "type": "monitor",
+            "tier": 3,
+            "atMs": 398552
+          },
+          {
+            "runtimeId": "aspirational_RESIDENTIAL_-2_0_21",
+            "type": "monitor",
+            "tier": 3,
+            "atMs": 408631
+          },
+          {
+            "runtimeId": "aspirational_RESIDENTIAL_-1_0_24",
+            "type": "monitor",
+            "tier": 3,
+            "atMs": 418795
+          },
+          {
+            "runtimeId": "aspirational_RESIDENTIAL_-2_0_21",
+            "type": "monitor",
+            "tier": 3,
+            "atMs": 430159
+          },
+          {
+            "runtimeId": "aspirational_RESIDENTIAL_-1_0_24",
+            "type": "monitor",
+            "tier": 3,
+            "atMs": 440301
+          }
+        ],
         "levelTimeline": [
           {
             "level": 2,
-            "mass": 1435,
+            "mass": 3715,
             "maxTier": 2,
             "atMs": 0
+          },
+          {
+            "level": 3,
+            "mass": 15060,
+            "maxTier": 3,
+            "atMs": 174631
+          },
+          {
+            "level": 4,
+            "mass": 56060,
+            "maxTier": 4,
+            "atMs": 441220
           }
         ],
-        "progressLog": [],
-        "startedAt": "2026-09-19T13:49:21.633Z",
-        "endedAt": "2026-09-19T13:49:22.072Z",
-        "exitReason": "BUDGET_EXHAUSTED"
+        "progressLog": [
+          {
+            "atMs": 270,
+            "level": 2,
+            "mass": 3715,
+            "maxTier": 2,
+            "absorbedCount": 0
+          },
+          {
+            "atMs": 32312,
+            "level": 2,
+            "mass": 5625,
+            "maxTier": 2,
+            "absorbedCount": 6
+          },
+          {
+            "atMs": 71741,
+            "level": 2,
+            "mass": 7845,
+            "maxTier": 2,
+            "absorbedCount": 13
+          },
+          {
+            "atMs": 102361,
+            "level": 2,
+            "mass": 9765,
+            "maxTier": 2,
+            "absorbedCount": 18
+          },
+          {
+            "atMs": 134258,
+            "level": 2,
+            "mass": 12025,
+            "maxTier": 2,
+            "absorbedCount": 24
+          },
+          {
+            "atMs": 164600,
+            "level": 2,
+            "mass": 14070,
+            "maxTier": 2,
+            "absorbedCount": 30
+          },
+          {
+            "atMs": 201795,
+            "level": 3,
+            "mass": 18710,
+            "maxTier": 3,
+            "absorbedCount": 36
+          },
+          {
+            "atMs": 232373,
+            "level": 3,
+            "mass": 23495,
+            "maxTier": 3,
+            "absorbedCount": 39
+          },
+          {
+            "atMs": 263129,
+            "level": 3,
+            "mass": 28100,
+            "maxTier": 3,
+            "absorbedCount": 42
+          },
+          {
+            "atMs": 294795,
+            "level": 3,
+            "mass": 32885,
+            "maxTier": 3,
+            "absorbedCount": 45
+          },
+          {
+            "atMs": 325683,
+            "level": 3,
+            "mass": 37490,
+            "maxTier": 3,
+            "absorbedCount": 48
+          },
+          {
+            "atMs": 355888,
+            "level": 3,
+            "mass": 42275,
+            "maxTier": 3,
+            "absorbedCount": 51
+          },
+          {
+            "atMs": 388450,
+            "level": 3,
+            "mass": 46990,
+            "maxTier": 3,
+            "absorbedCount": 54
+          },
+          {
+            "atMs": 418891,
+            "level": 3,
+            "mass": 51775,
+            "maxTier": 3,
+            "absorbedCount": 57
+          }
+        ],
+        "startedAt": "2026-09-20T10:21:15.323Z",
+        "endedAt": "2026-09-20T10:28:36.796Z",
+        "exitReason": "MAX_TIER_REACHED"
       },
       "largeSeek": {
-        "status": "SKIPPED",
-        "reason": "MAX_TIER_2_BELOW_4",
-        "budgetMs": 0,
+        "status": "CAPTURED",
+        "reason": null,
+        "budgetMs": 180000,
         "predicate": "object.tier >= 4 && (object.state === \"SUCKING\" || object.state === \"ATTRACTED\")",
-        "entryLevel": null,
-        "entryMass": null,
-        "entryMaxTier": null,
-        "target": null,
-        "elapsedMs": 0,
-        "startedAt": null,
-        "endedAt": null,
+        "entryLevel": 4,
+        "entryMass": 56060,
+        "entryMaxTier": 4,
+        "target": {
+          "runtimeId": "aspirational_RESIDENTIAL_-1_-1_24",
+          "tier": 4,
+          "type": "crate",
+          "distance": 61.97
+        },
+        "elapsedMs": 10394,
+        "startedAt": "2026-09-20T10:28:36.796Z",
+        "endedAt": "2026-09-20T10:28:47.190Z",
         "exitReason": null
       }
     }
