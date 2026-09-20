@@ -2005,6 +2005,15 @@ async function verifyArenaTimerExpiry(cdp, page, canvasRect) {
 }
 
 /**
+ * A bot must have travelled at least this far to count as moving, and at least
+ * this many of the seven bots must clear it. Deliberately low: over a 180 s
+ * match a bot that merely wanders clears it easily, while a frozen bot — which
+ * every other counter in this gate would accept — reads ~0.
+ */
+const ARENA_AI_BOT_TRAVEL_MIN_METERS = 10;
+const ARENA_AI_BOT_MOVING_MIN = 4;
+
+/**
  * S8 gate: record only read-only Cocos runtime snapshots for one unshortened
  * local Arena match. Keeping the sampler in the page avoids CDP polling gaps
  * that can miss short CHASE/FLEE transitions, while it never changes gameplay.
@@ -2041,6 +2050,16 @@ async function verifyArenaAiRuntime(cdp, page, canvasRect) {
       alive: {},
       deathsObserved: 0,
       eventHuntWithFragmentFrames: 0,
+      // The brief requires bots to "really move", and a bot that holds a state
+      // without translating is indistinguishable from a frozen one on every
+      // other counter here (consumed / mass / kills can all be gained while
+      // stationary in a contest). `leaderboard[].position` is the engine's
+      // render-space position, documented as read-only QA evidence, so
+      // accumulate real travel between consecutive frames.
+      botLastPosition: {},
+      botTravelMeters: {},
+      botPositionSamples: {},
+      localDeadFrames: 0,
     };
     window.__BHR_ARENA_AI_TELEMETRY__ = telemetry;
     const observe = () => {
@@ -2062,10 +2081,23 @@ async function verifyArenaAiRuntime(cdp, page, canvasRect) {
           telemetry.botIds.add(id);
           telemetry.stateFrames[state] = (telemetry.stateFrames[state] || 0) + 1;
         }
+        if (arena.localAlive === false) telemetry.localDeadFrames += 1;
         for (const entry of arena.leaderboard || []) {
           if (entry.isLocal) continue;
           if (!telemetry.botInitial[entry.id]) {
             telemetry.botInitial[entry.id] = { mass: entry.mass, consumed: entry.consumed, kills: entry.kills };
+          }
+          // Accumulate per-bot travel so "bots really move" is asserted on real
+          // displacement rather than inferred from a behaviour label.
+          const position = entry.position;
+          if (position && Number.isFinite(position.x) && Number.isFinite(position.z)) {
+            const previous = telemetry.botLastPosition[entry.id];
+            if (previous) {
+              telemetry.botTravelMeters[entry.id] = (telemetry.botTravelMeters[entry.id] || 0)
+                + Math.hypot(position.x - previous.x, position.z - previous.z);
+            }
+            telemetry.botLastPosition[entry.id] = { x: position.x, z: position.z };
+            telemetry.botPositionSamples[entry.id] = (telemetry.botPositionSamples[entry.id] || 0) + 1;
           }
           const maximum = telemetry.botMaximum[entry.id] || { mass: 0, consumed: 0, kills: 0 };
           maximum.mass = Math.max(maximum.mass, entry.mass || 0);
@@ -2144,6 +2176,9 @@ async function verifyArenaAiRuntime(cdp, page, canvasRect) {
       botMaximum: current.botMaximum,
       deathsObserved: current.deathsObserved,
       eventHuntWithFragmentFrames: current.eventHuntWithFragmentFrames,
+      botTravelMeters: current.botTravelMeters,
+      botPositionSamples: current.botPositionSamples,
+      localDeadFrames: current.localDeadFrames,
     };
     delete window.__BHR_ARENA_AI_TELEMETRY__;
     return result;
@@ -2166,10 +2201,76 @@ async function verifyArenaAiRuntime(cdp, page, canvasRect) {
     `FAIL_ARENA_AI_DEATH: ${JSON.stringify(telemetry)}`);
   assert(telemetry.eventHuntWithFragmentFrames > 0,
     `FAIL_ARENA_AI_EVENT_HUNT_FRAGMENT: ${JSON.stringify(telemetry)}`);
+  // "Bots really move" was previously inferred from behaviour labels only: a bot
+  // that held COLLECT/CHASE while frozen would have satisfied every other check
+  // here. Assert real displacement. The floor is deliberately low (a bot merely
+  // needs to have travelled 10 m over a 180 s match) so this cannot fail on a
+  // legitimately slow bot, while a frozen one reads ~0.
+  const botTravel = Object.entries(telemetry.botTravelMeters).map(([id, meters]) => ({
+    id,
+    meters: Number(meters.toFixed(3)),
+    samples: telemetry.botPositionSamples[id] || 0,
+  }));
+  assert(botTravel.length > 0 && botTravel.every((entry) => entry.samples >= 2),
+    `FAIL_ARENA_AI_BOT_POSITION_UNSAMPLED: ${JSON.stringify(botTravel)}`);
+  const movedBots = botTravel.filter((entry) => entry.meters >= ARENA_AI_BOT_TRAVEL_MIN_METERS);
+  assert(movedBots.length >= ARENA_AI_BOT_MOVING_MIN,
+    `FAIL_ARENA_AI_BOTS_NOT_MOVING: ${JSON.stringify({
+      required: ARENA_AI_BOT_MOVING_MIN,
+      minTravelMeters: ARENA_AI_BOT_TRAVEL_MIN_METERS,
+      moved: movedBots,
+      all: botTravel,
+    })}`);
+  // Revive must be observed when the local player is actually eliminated. The
+  // loop below taps 复活 whenever REVIVING appears, so a run in which the player
+  // died and no revive happened means the tap silently did nothing.
+  assert(telemetry.localDeadFrames === 0 || reviveCount > 0,
+    `FAIL_ARENA_AI_REVIVE_NOT_OBSERVED: ${JSON.stringify({
+      localDeadFrames: telemetry.localDeadFrames,
+      reviveCount,
+    })}`);
   assert(telemetry.maxElapsedSeconds >= telemetry.durationSeconds && settled.arena?.reason === 'TIME',
     `FAIL_ARENA_AI_DURATION: ${JSON.stringify({ telemetry, arena: settled.arena })}`);
+  // The TIME outcome must settle exactly once, like every other outcome. Before
+  // this, arena-ai proved only that the Settlement screen appeared, so a TIME
+  // settlement that granted the reward twice, or never marked itself claimed,
+  // would still have passed here.
+  const timeReward = settled.arena?.settlementReward;
+  assert(settled.settlement?.claimed === true,
+    `FAIL_ARENA_AI_SETTLEMENT_NOT_CLAIMED: ${JSON.stringify(settled.settlement)}`);
+  assert(settled.settlement?.matchId === settled.arena?.matchId,
+    `FAIL_ARENA_AI_SETTLEMENT_MATCH_ID: ${JSON.stringify({
+      settlementMatchId: settled.settlement?.matchId,
+      arenaMatchId: settled.arena?.matchId,
+    })}`);
+  const timeClaimedIds = settled.save?.claimedArenaSettlementIds ?? [];
+  assert(timeClaimedIds.includes(settled.arena?.matchId),
+    `FAIL_ARENA_AI_SETTLEMENT_UNCLAIMED_IN_SAVE: ${JSON.stringify({
+      matchId: settled.arena?.matchId,
+      claimedArenaSettlementIds: timeClaimedIds,
+    })}`);
+  // Re-read the finished match: the reward must be identical, so a second
+  // observation cannot mint a second grant.
+  const timeSettledAgain = await readRuntimeSnapshot(page);
+  assert(JSON.stringify(timeSettledAgain.arena?.settlementReward) === JSON.stringify(timeReward)
+    && (timeSettledAgain.save?.claimedArenaSettlementIds ?? []).length === timeClaimedIds.length,
+    `FAIL_ARENA_AI_REWARD_DUPLICATED: ${JSON.stringify({
+      first: timeReward,
+      second: timeSettledAgain.arena?.settlementReward,
+      claimedBefore: timeClaimedIds,
+      claimedAfter: timeSettledAgain.save?.claimedArenaSettlementIds,
+    })}`);
   await page.screenshot({ path: path.join(evidenceDirectory, 'portrait-390x844-arena-ai-time-settlement.png') });
-  return { started: started.arena, settled: settled.arena, telemetry, botProgress, reviveCount };
+  return {
+    started: started.arena,
+    settled: settled.arena,
+    telemetry,
+    botProgress,
+    botTravel,
+    reviveCount,
+    timeReward,
+    timeClaimedIds,
+  };
 }
 
 function validatePortraitSnapshot(viewport, canvasRect, runtimeSnapshot) {
