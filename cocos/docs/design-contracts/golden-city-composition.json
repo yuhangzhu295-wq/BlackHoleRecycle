@@ -19,6 +19,10 @@
     "resourceClustersMin": 2,
     "largeEmptyGroundMaxPercent": 25
   },
+  "worldSpaceSpatial": {
+    "playableOpenAreaRatioMin": 0.55,
+    "semantics": "World-space openness. The probe samples a 1m grid on the xz plane over the union of the real GROUND tile worldBounds and counts a sample open when no solid occupant footprint (BUILDING, TREE, POI, static vehicle environment node) covers it; roads and walkways are walkable and never blocking, and COLLECTIBLE/RESOURCE_CLUSTER cover is reported separately because it is absorbable. This is NOT mandatoryComposition.largeEmptyGroundMaxPercent, which is a screen-space ratio of large empty ground regions inside the 390x844 frame. The two metrics have different semantics, respond to different changes, and must never be substituted for one another: a cell can be screen-dense and world-open, or screen-sparse and world-cluttered."
+  },
   "requiredSemantics": [
     "road and visible junction",
     "shop",

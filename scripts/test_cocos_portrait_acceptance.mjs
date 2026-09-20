@@ -31,9 +31,16 @@ const reportPath = path.join(evidenceDirectory, 'acceptance-report.json');
 const requestedAcceptanceScope = process.argv.find((argument) => argument.startsWith('--scope='))?.slice('--scope='.length)
   || process.env.BHR_ACCEPTANCE_SCOPE
   || 'full';
-const acceptanceScope = ['full', 'pages', 'arena', 'arena-ai', 'revive', 'settlement', 'ui-full-flow', 'skins', 'skin-unlock', 'arena-timer', 'network', 'regions', 'progression', 'cell-lifecycle', 'golden-city', 'save-resume'].includes(requestedAcceptanceScope)
-  ? requestedAcceptanceScope
-  : 'full';
+const acceptanceScopes = ['full', 'pages', 'arena', 'arena-ai', 'revive', 'settlement', 'ui-full-flow', 'skins', 'skin-unlock', 'arena-timer', 'network', 'regions', 'progression', 'cell-lifecycle', 'golden-city', 'save-resume'];
+// An unrecognised scope used to fall back to `full` silently, which turned a
+// typo such as `--scope=golden_city` into a multi-minute full regression whose
+// report was then mistaken for the scoped gate. Fail loudly instead: the whole
+// point of the scoped form is that the operator asked for one gate.
+if (!acceptanceScopes.includes(requestedAcceptanceScope)) {
+  throw new Error(`FAIL_ACCEPTANCE_SCOPE_UNKNOWN: ${JSON.stringify(requestedAcceptanceScope)}; `
+    + `expected one of ${acceptanceScopes.join(', ')}`);
+}
+const acceptanceScope = requestedAcceptanceScope;
 // Preserve each independently-runnable acceptance scope. The canonical report
 // remains the most recent run for quick inspection, while a scoped copy keeps
 // a six-region proof from being overwritten by the longer full regression.
@@ -1483,6 +1490,7 @@ function loadGoldenCityContract() {
   const camera = parsed?.cameraComposition;
   const cameraPreset = parsed?.world?.cameraPreset;
   const requiredSemantics = parsed?.requiredSemantics;
+  const worldSpaceSpatial = parsed?.worldSpaceSpatial;
   const declaredNumbers = {
     'world.screen.width': screen?.width,
     'world.screen.height': screen?.height,
@@ -1495,6 +1503,10 @@ function loadGoldenCityContract() {
     'mandatoryComposition.collectiblesMin': mandatory?.collectiblesMin,
     'mandatoryComposition.resourceClustersMin': mandatory?.resourceClustersMin,
     'mandatoryComposition.largeEmptyGroundMaxPercent': mandatory?.largeEmptyGroundMaxPercent,
+    // World-space spatial threshold. Declared separately from
+    // `mandatoryComposition` on purpose: that block is screen-space, this one is
+    // world-space, and the brief forbids substituting one for the other.
+    'worldSpaceSpatial.playableOpenAreaRatioMin': worldSpaceSpatial?.playableOpenAreaRatioMin,
     'cameraComposition.playerWidthRatioMin': camera?.playerWidthRatioMin,
     'cameraComposition.playerWidthRatioMax': camera?.playerWidthRatioMax,
     'cameraComposition.playerScreenYRatioMin': camera?.playerScreenYRatioMin,
@@ -1514,6 +1526,7 @@ function loadGoldenCityContract() {
     version: parsed.contractVersion ?? null,
     screen,
     mandatory,
+    worldSpaceSpatial,
     camera,
     cameraPreset,
     requiredSemantics,
@@ -1564,6 +1577,14 @@ function evaluateGoldenCityGate(contract, composition, devicePixelRatio) {
     liveResourceClusters: composition.counts.RESOURCE_CLUSTER,
     authoredResourceClusterTotal: composition.authoredResourceClusters?.total ?? null,
     largeEmptyGroundRatio: composition.emptyGround?.largeEmptyGroundRatio ?? null,
+    // World-space counterpart to `largeEmptyGroundRatio`. Both are reported, and
+    // both are gated, because the brief requires the spatial gate to be measured
+    // in world space and states the two ratios cannot substitute for each other.
+    playableOpenAreaRatio: composition.playableOpenArea?.playableOpenAreaRatio ?? null,
+    playableOpenAreaGroundSamples: composition.playableOpenArea?.groundSamples ?? null,
+    playableOpenAreaSampleSpacingMeters: composition.playableOpenArea?.sampleSpacingMeters ?? null,
+    playableOpenAreaBlockedSamples: composition.playableOpenArea?.blockedSamples ?? null,
+    playableOpenAreaBlockedByCategory: composition.playableOpenArea?.blockedByCategory ?? null,
     playerWidthRatio: player.widthRatio ?? null,
     playerScreenYRatio: player.screenYRatio ?? null,
     playerVisible: player.visible === true,
@@ -1603,7 +1624,7 @@ function evaluateGoldenCityGate(contract, composition, devicePixelRatio) {
         : `${label} is unavailable, needs <= ${maximum}`,
     });
   };
-  const { mandatory, camera, screen } = contract;
+  const { mandatory, camera, screen, worldSpaceSpatial } = contract;
   atLeast('BUILDINGS_MIN', 'visible buildings', metrics.buildings, mandatory.buildingsMin);
   atLeast('TREES_MIN', 'visible trees', metrics.trees, mandatory.treesMin);
   atLeast('ROAD_SEGMENTS_MIN', 'visible road segments (logical units)', metrics.roads, mandatory.roadSegmentsMin);
@@ -1614,6 +1635,15 @@ function evaluateGoldenCityGate(contract, composition, devicePixelRatio) {
   atLeast('RESOURCE_CLUSTERS_MIN', 'visible authored resource clusters', metrics.resourceClusters, mandatory.resourceClustersMin);
   atMost('LARGE_EMPTY_GROUND_MAX', 'large empty ground ratio', metrics.largeEmptyGroundRatio,
     mandatory.largeEmptyGroundMaxPercent / 100);
+  // World-space spatial gate. Deliberately NOT folded into
+  // `LARGE_EMPTY_GROUND_MAX`: that one is a screen-space ratio, this one is
+  // sampled in world space over the real GROUND footprint, and the brief
+  // forbids using one as evidence for the other. The sample count is asserted
+  // first so a degenerate probe run (no ground samples) reports the real cause
+  // instead of a bare "ratio unavailable".
+  atLeast('PLAYABLE_OPEN_AREA_GROUND_SAMPLES_MIN', 'world-space ground samples', metrics.playableOpenAreaGroundSamples, 1);
+  atLeast('PLAYABLE_OPEN_AREA_RATIO_MIN', 'world-space playable open area ratio', metrics.playableOpenAreaRatio,
+    worldSpaceSpatial.playableOpenAreaRatioMin);
   atLeast('PLAYER_WIDTH_RATIO_MIN', 'player width ratio', metrics.playerWidthRatio, camera.playerWidthRatioMin);
   atMost('PLAYER_WIDTH_RATIO_MAX', 'player width ratio', metrics.playerWidthRatio, camera.playerWidthRatioMax);
   atLeast('PLAYER_SCREEN_Y_RATIO_MIN', 'player screen-Y ratio', metrics.playerScreenYRatio, camera.playerScreenYRatioMin);
