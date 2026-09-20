@@ -149,11 +149,16 @@ async function steerHeld(cdp, canvasRect, base, dx, dy, radiusRatio = 0.06) {
  * The probe already publishes the projected screen bounds of every environment,
  * collectible, cluster and vehicle entry plus the ground region. This function
  * re-derives a whole-region budget from that published data with a documented
- * precedence so the four buckets are mutually exclusive and sum to 100%:
+ * precedence so the buckets are mutually exclusive and sum to 100%:
  *   dynamic (VEHICLE) > static (COLLECTIBLE / RESOURCE_CLUSTER) > environment
- *   (BUILDING / TREE / POI) > open (inside the ground region, covered by none).
- * The HUD band exclusion matches WorldCompositionProbe.estimateEmptyGround so
- * the open share here equals the probe's `largeEmptyGroundRatio` by construction.
+ *   (BUILDING / TREE / POI) > open (walkable: bare ground or ROAD) >
+ *   unclassified.
+ * The HUD band exclusion matches WorldCompositionProbe.estimateEmptyGround.
+ *
+ * It does NOT reproduce `largeEmptyGroundRatio`: that ratio keeps roads as
+ * covered for its own crowding ceiling, while a road is walkable and therefore
+ * open here. The two are different measurements and neither may stand in for
+ * the other. `roadOpenShare` reports how much of `open` is road.
  */
 function computeScreenSpaceBudget(composition, viewport) {
   if (!composition || composition.status !== 'MEASURED') {
@@ -171,9 +176,22 @@ function computeScreenSpaceBudget(composition, viewport) {
     if (categories.has('VEHICLE')) return 'dynamic';
     if (categories.has('COLLECTIBLE') || categories.has('RESOURCE_CLUSTER')) return 'static';
     if (categories.has('BUILDING') || categories.has('TREE') || categories.has('POI')) return 'environment';
-    return 'other';
+    // A road is walkable, so it is OPEN movable ground, not an occupant. It used
+    // to fall through to `other`, which is where the whole of `otherShare` came
+    // from and why this block's open share was nonsense. The world-space probe
+    // `estimatePlayableOpenArea` already classifies roads as walkable, so this
+    // also brings the two instruments onto the same convention.
+    //
+    // Consequence, deliberately accepted: this open share no longer equals
+    // `largeEmptyGroundRatio`, which keeps roads as covered for its own crowding
+    // ceiling. The two ratios are different measurements of different things and
+    // neither may stand in for the other.
+    if (categories.has('ROAD')) return 'open';
+    return 'unclassified';
   };
-  const buckets = { open: 0, environment: 0, static: 0, dynamic: 0, other: 0 };
+  const buckets = { open: 0, environment: 0, static: 0, dynamic: 0, unclassified: 0 };
+  /** Informational: how much of `open` is road rather than bare ground. */
+  let roadOpenSamples = 0;
   let groundSamples = 0;
   let contentSamples = 0;
   for (let row = 0; row < grid.rows; row++) {
@@ -188,7 +206,10 @@ function computeScreenSpaceBudget(composition, viewport) {
         buckets.open += 1;
         continue;
       }
-      buckets[precedence(new Set(covering.map((entry) => entry.category)))] += 1;
+      const categories = new Set(covering.map((entry) => entry.category));
+      const bucket = precedence(categories);
+      buckets[bucket] += 1;
+      if (bucket === 'open' && categories.has('ROAD')) roadOpenSamples += 1;
     }
   }
   const share = (value) => (groundSamples > 0 ? Number((value / groundSamples).toFixed(4)) : null);
@@ -210,7 +231,7 @@ function computeScreenSpaceBudget(composition, viewport) {
       'projected world bounding quads over-count; cluster entries and large landmarks dominate',
     isGate: false,
     method: 'screen-space grid over published projected bounds, precedence-classified',
-    precedence: 'dynamic > static > environment > open',
+    precedence: 'dynamic > static > environment > road > unclassified',
     grid,
     hudExclusion,
     groundRegionIsMeasured: true,
@@ -221,7 +242,12 @@ function computeScreenSpaceBudget(composition, viewport) {
     environmentShare: share(buckets.environment),
     staticShare: share(buckets.static),
     dynamicShare: share(buckets.dynamic),
-    otherShare: share(buckets.other),
+    // Nothing is hidden in a catch-all any more. `roadOpenSamples` is a
+    // sub-count of `open` (roads are walkable), not a bucket of its own, so
+    // open + environment + static + dynamic + unclassified still sums to 1.
+    roadOpenSamples,
+    roadOpenShare: share(roadOpenSamples),
+    unclassifiedShare: share(buckets.unclassified),
     bucketSamples: { ...buckets },
     probeEmptyGroundRatio: composition.emptyGround?.largeEmptyGroundRatio ?? null,
     /** World-space, real-geometry openness. This IS the runtime spatial gate. */
