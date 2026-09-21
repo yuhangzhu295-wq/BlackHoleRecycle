@@ -38,6 +38,18 @@ export class BlackHoleMachine extends Component {
   public isMagnetStormActive: boolean = false;
   private magnetStormTimer: number = 0;
 
+  /**
+   * Only the player's own machine owns the account's persisted progression.
+   *
+   * `saveService` is a process-wide singleton, so an unguarded write lets an
+   * opponent's mass become the player's `machineMass` — and because
+   * `setMachineProgression` raises `machineLevel` monotonically, an opponent
+   * that reaches LV2+ would hand the player a free level. Arena bots
+   * (`ArenaMatchManager`) and replicated remote players (`NetworkArenaReplica`)
+   * are real `BlackHoleMachine` instances, so their owners clear this flag.
+   */
+  public persistsProgression: boolean = true;
+
   // 内部视觉节点容器
   private visualRoot: Node | null = null;
   private chassisNode: Node | null = null;
@@ -67,7 +79,26 @@ export class BlackHoleMachine extends Component {
     this.buildVisibleGeometry();
     this.currentMass = Math.max(0, saveService.data.machineMass || 0);
     const savedLevel = Math.max(1, Math.min(MACHINE_EVOLUTION_CONFIG.length, saveService.data.machineLevel || 1));
-    this.applyEvolutionLevel(savedLevel, false);
+    // Loading only mirrors the save, so it must never write back. A bot is
+    // created with `addComponent`, which runs this hook before its owner can
+    // clear `persistsProgression`, so the guard has to hold here too.
+    this.withoutPersisting(() => this.applyEvolutionLevel(savedLevel, false));
+  }
+
+  /** Single gate for every write to the account's persisted progression. */
+  private persistProgression(): void {
+    if (!this.persistsProgression) return;
+    saveService.setMachineProgression(this.currentMass, this.currentLevel);
+  }
+
+  private withoutPersisting(action: () => void): void {
+    const previous = this.persistsProgression;
+    this.persistsProgression = false;
+    try {
+      action();
+    } finally {
+      this.persistsProgression = previous;
+    }
   }
 
   /**
@@ -270,7 +301,7 @@ export class BlackHoleMachine extends Component {
 
   public addMass(amount: number): boolean {
     this.currentMass += Math.max(0, amount);
-    saveService.setMachineProgression(this.currentMass, this.currentLevel);
+    this.persistProgression();
     return this.checkEvolution();
   }
 
@@ -291,7 +322,7 @@ export class BlackHoleMachine extends Component {
   public applyEvolutionLevel(level: number, triggerEvent: boolean = true): void {
     this.currentLevel = level;
     this.currentConfig = MACHINE_EVOLUTION_CONFIG[level - 1] || MACHINE_EVOLUTION_CONFIG[0];
-    saveService.setMachineProgression(this.currentMass, this.currentLevel);
+    this.persistProgression();
 
     // Exactly one Creator-saved upgrade assembly is selected per level.
     // HYBRID is the player-facing presentation: its chassis is suppressed so

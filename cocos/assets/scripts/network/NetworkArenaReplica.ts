@@ -123,6 +123,10 @@ export class NetworkArenaReplica {
     const node = new Node(`NetworkArenaPlayer_${id}`);
     this.root.addChild(node);
     const machine = node.addComponent(BlackHoleMachine);
+    // Replicated opponents are rendered by real machines, but `applyPlayer`
+    // feeds them the server's mass and level. They must never reach the
+    // account save that `this.machine` owns.
+    machine.persistsProgression = false;
     machine.setPresentation('BOT');
     machine.setArenaBotTint(BOT_TINTS[index % BOT_TINTS.length]);
     machine.isPaused = true;

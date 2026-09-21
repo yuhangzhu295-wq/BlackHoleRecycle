@@ -216,6 +216,10 @@ export class ArenaMatchManager extends Component {
       const node = new Node(`ArenaBot_${slot}`);
       this.node.addChild(node);
       const machine = node.addComponent(BlackHoleMachine);
+      // A bot is a real machine but not the account: without this, every bot
+      // absorb would rewrite the player's persisted `machineMass` (and could
+      // raise their saved level).
+      machine.persistsProgression = false;
       this.prepareMachine(machine, START_MASS);
       machine.setPresentation('BOT');
       machine.setArenaBotTint(BOT_TINTS[slot - 1]);
