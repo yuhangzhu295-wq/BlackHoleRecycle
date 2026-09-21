@@ -1,0 +1,192 @@
+{
+  "timestamp": "2026-09-20T10:44:03.251Z",
+  "status": "PASS",
+  "assertions": {
+    "openingSource": {
+      "expected": "AUTHORED_GOLDEN_CITY",
+      "actual": "AUTHORED_GOLDEN_CITY",
+      "pass": true
+    },
+    "authoredDynamicCounts": {
+      "actual": {
+        "collectibles": 23,
+        "clusters": 2,
+        "vehicles": 5
+      },
+      "collectiblesPass": true,
+      "clustersPass": true,
+      "vehiclesPass": true,
+      "pass": true
+    },
+    "authoredClusterAnchors": {
+      "count": 2,
+      "anchors": [
+        {
+          "name": "ClusterAnchor_CentralPark",
+          "associatedCluster": "Cluster_Park",
+          "worldPosition": {
+            "x": 5,
+            "y": 0,
+            "z": 5
+          },
+          "objectCount": 10
+        },
+        {
+          "name": "ClusterAnchor_RecyclingSquare",
+          "associatedCluster": "Cluster_CitySquare",
+          "worldPosition": {
+            "x": -5,
+            "y": 0,
+            "z": -5
+          },
+          "objectCount": 10
+        }
+      ],
+      "pass": true
+    },
+    "authoredTrafficInitial": {
+      "count": 5,
+      "vehicles": [
+        {
+          "id": "traffic_0_0_authored_VehicleAnchor_SedanWest",
+          "kind": "sedan",
+          "x": -10.047819598533893,
+          "z": 1.9521804014661028
+        },
+        {
+          "id": "traffic_0_0_authored_VehicleAnchor_SedanNorth",
+          "kind": "sedan",
+          "x": 1.9521804014661028,
+          "z": 10.047819598533893
+        },
+        {
+          "id": "traffic_0_0_authored_VehicleAnchor_DeliveryVanEast",
+          "kind": "delivery_van",
+          "x": 10.438255678827117,
+          "z": -1.5617443211728823
+        },
+        {
+          "id": "traffic_0_0_authored_VehicleAnchor_GarbageTruckSouth",
+          "kind": "garbage_truck",
+          "x": -1.2689172609529669,
+          "z": -10.731082739047034
+        },
+        {
+          "id": "traffic_0_0_authored_VehicleAnchor_SedanCenter",
+          "kind": "sedan",
+          "x": -3.127984078818512,
+          "z": 2.6128741820368746
+        }
+      ],
+      "pass": true
+    },
+    "trafficMovement": {
+      "movements": [
+        {
+          "id": "traffic_0_0_authored_VehicleAnchor_SedanWest",
+          "before": {
+            "x": -10.047819598533893,
+            "z": 1.9521804014661028
+          },
+          "after": {
+            "x": -5.401279517967134,
+            "z": 6.598720482032863
+          },
+          "distance": 6.571200000047686
+        },
+        {
+          "id": "traffic_0_0_authored_VehicleAnchor_SedanNorth",
+          "before": {
+            "x": 1.9521804014661028,
+            "z": 10.047819598533893
+          },
+          "after": {
+            "x": 6.598720482032863,
+            "z": 5.401279517967134
+          },
+          "distance": 6.571200000047686
+        },
+        {
+          "id": "traffic_0_0_authored_VehicleAnchor_DeliveryVanEast",
+          "before": {
+            "x": 10.438255678827117,
+            "z": -1.5617443211728823
+          },
+          "after": {
+            "x": 6.721023614373714,
+            "z": -5.278976385626287
+          },
+          "distance": 5.256960000038142
+        },
+        {
+          "id": "traffic_0_0_authored_VehicleAnchor_GarbageTruckSouth",
+          "before": {
+            "x": -1.2689172609529669,
+            "z": -10.731082739047034
+          },
+          "after": {
+            "x": -4.28916831332136,
+            "z": -7.710831686678644
+          },
+          "distance": 4.271280000030992
+        },
+        {
+          "id": "traffic_0_0_authored_VehicleAnchor_SedanCenter",
+          "before": {
+            "x": -3.127984078818512,
+            "z": 2.6128741820368746
+          },
+          "after": {
+            "x": -1.0506204871987475,
+            "z": 8.847072602751389
+          },
+          "distance": 6.5712000000476865
+        }
+      ],
+      "pass": true
+    },
+    "adjacentCellTransit": {
+      "adjacentReached": true,
+      "data": {
+        "currentCell": {
+          "x": 0,
+          "z": -1
+        },
+        "currentCellSource": "PROCEDURAL_FALLBACK",
+        "player": {
+          "position": {
+            "x": 0.017400979079219954,
+            "y": 0,
+            "z": -32.16238745257928
+          },
+          "x": 0.017400979079219954,
+          "y": 0,
+          "z": -32.16238745257928,
+          "isMoving": true,
+          "isDragging": true
+        }
+      },
+      "pass": true
+    },
+    "returnToOpening": {
+      "returnedReached": true,
+      "sourcePass": true,
+      "finalSource": "AUTHORED_GOLDEN_CITY",
+      "initialCounts": {
+        "collectibles": 23,
+        "clusters": 2,
+        "vehicles": 5
+      },
+      "finalCounts": {
+        "collectibles": 23,
+        "clusters": 2,
+        "vehicles": 5
+      },
+      "noDuplicateCollectibles": true,
+      "noDuplicateVehicles": true,
+      "noDuplicateClusters": true,
+      "pass": true
+    }
+  },
+  "consoleErrors": []
+}

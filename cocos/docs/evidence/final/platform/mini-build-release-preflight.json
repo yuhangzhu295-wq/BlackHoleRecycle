@@ -1,0 +1,27 @@
+{
+  "status": "FAIL",
+  "creatorExe": "C:\\ProgramData\\cocos\\editors\\Creator\\3.8.3\\CocosCreator.exe",
+  "requestedPlatform": "wechatgame,bytedance-mini-game",
+  "requireReleaseIds": true,
+  "startedAt": "2026-09-21T12:35:40.731Z",
+  "builds": [
+    {
+      "platform": "wechatgame",
+      "outputDirectory": "C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\build\\wechatgame",
+      "fileCount": 191,
+      "requiredFiles": [
+        "game.json",
+        "project.config.json",
+        "application.js",
+        "src/system.bundle.js"
+      ],
+      "releaseIdStatus": "configured",
+      "appId": "wx6ac3f5090a6b99c5",
+      "launcherExitCode": 36
+    }
+  ],
+  "failures": [
+    "bytedance-mini-game requires a real AppID for release preflight; found testappId."
+  ],
+  "finishedAt": "2026-09-21T12:37:29.365Z"
+}

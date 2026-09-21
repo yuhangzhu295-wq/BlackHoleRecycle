@@ -1484,6 +1484,17 @@ async function verifySaveResume(cdp, page, canvasRect, homeSnapshot) {
   // Screenshot the settlement page before reload
   await page.screenshot({ path: path.join(evidenceDirectory, 'portrait-390x844-save-resume-settlement.png') });
 
+  // Read the persisted record directly (read-only) so a mass mismatch can be
+  // attributed: live runtime value vs the value the save actually holds.
+  const readPersistedSave = () => page.evaluate(() => {
+    try {
+      return JSON.parse(globalThis.localStorage.getItem('BLACK_HOLE_RECYCLE_SAVEDATA_COCOS_V1') || 'null');
+    } catch (error) {
+      return { __readError: String(error) };
+    }
+  });
+  const persistedBeforeReload = await readPersistedSave();
+
   // Reload the browser
   await page.reload({ waitUntil: 'domcontentloaded' });
   try {
@@ -1492,6 +1503,7 @@ async function verifySaveResume(cdp, page, canvasRect, homeSnapshot) {
     throw new Error('FAIL_SAVE_RESUME_QA_BRIDGE_AFTER_RELOAD: ' + String(error));
   }
   const afterReload = await readRuntimeSnapshot(page);
+  const persistedAfterReload = await readPersistedSave();
 
   // Assert coins persisted exactly (no second grant)
   assert(afterReload.save?.coins === preReloadCoins,
@@ -1499,7 +1511,24 @@ async function verifySaveResume(cdp, page, canvasRect, homeSnapshot) {
 
   // Assert machine mass persisted
   assert(afterReload.machine?.mass === preReloadMass,
-    'FAIL_SAVE_RESUME_MASS_MISMATCH: ' + JSON.stringify({ preReload: preReloadMass, afterReload: afterReload.machine?.mass }));
+    'FAIL_SAVE_RESUME_MASS_MISMATCH: ' + JSON.stringify({
+      preReload: preReloadMass,
+      afterReload: afterReload.machine?.mass,
+      massAtArenaEntry: machineInArena.mass,
+      settledMachine: settled.machine,
+      persistedBeforeReload: {
+        machineMass: persistedBeforeReload?.machineMass,
+        machineLevel: persistedBeforeReload?.machineLevel,
+        highScore: persistedBeforeReload?.highScore,
+        coins: persistedBeforeReload?.coins,
+      },
+      persistedAfterReload: {
+        machineMass: persistedAfterReload?.machineMass,
+        machineLevel: persistedAfterReload?.machineLevel,
+        highScore: persistedAfterReload?.highScore,
+        coins: persistedAfterReload?.coins,
+      },
+    }));
 
   // Assert machine level persisted
   assert(afterReload.machine?.level === preReloadLevel,
@@ -4463,7 +4492,17 @@ try {
   const baseUrl = acceptanceScope === 'network'
     ? `http://127.0.0.1:${address.port}/?qa=1&arenaProbe=${encodeURIComponent(networkProbeEndpoint)}`
     : `http://127.0.0.1:${address.port}/?qa=1`;
-  browser = await chromium.launch({ headless: true, args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-webgl'] });
+  // Every acceptance scope is loopback-only: the static server, the Colyseus
+  // probe and the built bundle all live on 127.0.0.1. Chromium still inherits
+  // the ambient http_proxy/https_proxy environment, and a proxy that does not
+  // recognise the loopback address turns `ws://127.0.0.1:<port>` into
+  // `net::ERR_INTERNET_DISCONNECTED` -- which failed `--scope=network` on
+  // 09-21 02:11 with BUNDLE_STABLE. Disable the proxy for the QA browser so the
+  // chain stops depending on the shell that launched it.
+  browser = await chromium.launch({
+    headless: true,
+    args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-webgl', '--no-proxy-server'],
+  });
 
   const targetViewports = acceptanceScope === 'pages' || acceptanceScope === 'revive' || acceptanceScope === 'settlement' || acceptanceScope === 'ui-full-flow' || acceptanceScope === 'skins' || acceptanceScope === 'skin-unlock' || acceptanceScope === 'arena-timer' || acceptanceScope === 'arena-ai' || acceptanceScope === 'network' || acceptanceScope === 'regions' || acceptanceScope === 'progression' || acceptanceScope === 'golden-city' || acceptanceScope === 'save-resume'
     ? requiredPortraitViewports.filter((viewport) => viewport.id === '390x844')

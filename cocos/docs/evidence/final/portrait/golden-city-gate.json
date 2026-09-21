@@ -1,0 +1,335 @@
+{
+  "scope": "golden-city",
+  "currentCellSource": "AUTHORED_GOLDEN_CITY",
+  "runner": "official-cocos-cli + Playwright CDP touch",
+  "contractPath": "C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\docs\\design-contracts\\golden-city-composition.json",
+  "contractVersion": 1,
+  "screen": {
+    "width": 390,
+    "height": 844
+  },
+  "devicePixelRatio": 1,
+  "measuredAt": "2026-09-21T12:14:57.777Z",
+  "verdict": "PASS",
+  "metrics": {
+    "buildings": 4,
+    "trees": 12,
+    "roads": 5,
+    "poi": 14,
+    "vehicles": 5,
+    "competitors": 7,
+    "collectibles": 23,
+    "liveCollectibles": 3,
+    "authoredCollectibleSlotTotal": 23,
+    "resourceClusters": 2,
+    "liveResourceClusters": 0,
+    "authoredResourceClusterTotal": 2,
+    "largeEmptyGroundRatio": 0.16953125,
+    "playableOpenAreaRatio": 0.986328125,
+    "playableOpenAreaGroundSamples": 2048,
+    "playableOpenAreaSampleSpacingMeters": 1,
+    "playableOpenAreaBlockedSamples": 28,
+    "playableOpenAreaBlockedByCategory": {
+      "BUILDING": 10,
+      "POI": 18
+    },
+    "playerWidthRatio": 0.2791741979025915,
+    "playerScreenYRatio": 0.572620660142442,
+    "playerVisible": true,
+    "playerMachineLevel": 1,
+    "playerMachineSuctionRadius": 2.4,
+    "viewportWidth": 390,
+    "viewportHeight": 844,
+    "devicePixelRatio": 1
+  },
+  "checks": [
+    {
+      "id": "BUILDINGS_MIN",
+      "label": "visible buildings",
+      "relation": ">=",
+      "actual": 4,
+      "required": 4,
+      "pass": true,
+      "deficit": null
+    },
+    {
+      "id": "TREES_MIN",
+      "label": "visible trees",
+      "relation": ">=",
+      "actual": 12,
+      "required": 10,
+      "pass": true,
+      "deficit": null
+    },
+    {
+      "id": "ROAD_SEGMENTS_MIN",
+      "label": "visible road segments (logical units)",
+      "relation": ">=",
+      "actual": 5,
+      "required": 3,
+      "pass": true,
+      "deficit": null
+    },
+    {
+      "id": "POI_MIN",
+      "label": "visible points of interest",
+      "relation": ">=",
+      "actual": 14,
+      "required": 3,
+      "pass": true,
+      "deficit": null
+    },
+    {
+      "id": "VEHICLES_MIN",
+      "label": "visible vehicles",
+      "relation": ">=",
+      "actual": 5,
+      "required": 3,
+      "pass": true,
+      "deficit": null
+    },
+    {
+      "id": "COMPETITORS_MIN",
+      "label": "visible AI competitors",
+      "relation": ">=",
+      "actual": 7,
+      "required": 4,
+      "pass": true,
+      "deficit": null
+    },
+    {
+      "id": "COLLECTIBLES_MIN",
+      "label": "visible authored collectible slots",
+      "relation": ">=",
+      "actual": 23,
+      "required": 20,
+      "pass": true,
+      "deficit": null
+    },
+    {
+      "id": "RESOURCE_CLUSTERS_MIN",
+      "label": "visible authored resource clusters",
+      "relation": ">=",
+      "actual": 2,
+      "required": 2,
+      "pass": true,
+      "deficit": null
+    },
+    {
+      "id": "LARGE_EMPTY_GROUND_MAX",
+      "label": "large empty ground ratio",
+      "relation": "<=",
+      "actual": 0.16953125,
+      "required": 0.25,
+      "pass": true,
+      "deficit": null
+    },
+    {
+      "id": "PLAYABLE_OPEN_AREA_GROUND_SAMPLES_MIN",
+      "label": "world-space ground samples",
+      "relation": ">=",
+      "actual": 2048,
+      "required": 1,
+      "pass": true,
+      "deficit": null
+    },
+    {
+      "id": "PLAYABLE_OPEN_AREA_RATIO_MIN",
+      "label": "world-space playable open area ratio",
+      "relation": ">=",
+      "actual": 0.986328125,
+      "required": 0.55,
+      "pass": true,
+      "deficit": null
+    },
+    {
+      "id": "PLAYER_WIDTH_RATIO_MIN",
+      "label": "player width ratio",
+      "relation": ">=",
+      "actual": 0.2791741979025915,
+      "required": 0.22,
+      "pass": true,
+      "deficit": null
+    },
+    {
+      "id": "PLAYER_WIDTH_RATIO_MAX",
+      "label": "player width ratio",
+      "relation": "<=",
+      "actual": 0.2791741979025915,
+      "required": 0.3,
+      "pass": true,
+      "deficit": null
+    },
+    {
+      "id": "PLAYER_SCREEN_Y_RATIO_MIN",
+      "label": "player screen-Y ratio",
+      "relation": ">=",
+      "actual": 0.572620660142442,
+      "required": 0.5,
+      "pass": true,
+      "deficit": null
+    },
+    {
+      "id": "PLAYER_SCREEN_Y_RATIO_MAX",
+      "label": "player screen-Y ratio",
+      "relation": "<=",
+      "actual": 0.572620660142442,
+      "required": 0.67,
+      "pass": true,
+      "deficit": null
+    },
+    {
+      "id": "VIEWPORT_DECLARED_SCREEN",
+      "label": "measured viewport equals the declared screen",
+      "relation": "=",
+      "actual": "390x844",
+      "required": "390x844",
+      "pass": true,
+      "deficit": null
+    },
+    {
+      "id": "PLAYER_VISIBLE",
+      "label": "player projected into the gameplay view",
+      "relation": "=",
+      "actual": true,
+      "required": true,
+      "pass": true,
+      "deficit": null
+    },
+    {
+      "id": "TEST_DEVICE_PIXEL_RATIO",
+      "label": "acceptance device pixel ratio is explicitly pinned",
+      "relation": "=",
+      "actual": 1,
+      "required": 1,
+      "pass": true,
+      "deficit": null
+    },
+    {
+      "id": "SEMANTIC_ROAD_AND_VISIBLE_JUNCTION",
+      "label": "visible required semantic: road and visible junction",
+      "relation": "present",
+      "actual": true,
+      "required": true,
+      "pass": true,
+      "deficit": null
+    },
+    {
+      "id": "SEMANTIC_SHOP",
+      "label": "visible required semantic: shop",
+      "relation": "present",
+      "actual": true,
+      "required": true,
+      "pass": true,
+      "deficit": null
+    },
+    {
+      "id": "SEMANTIC_HOSPITAL",
+      "label": "visible required semantic: hospital",
+      "relation": "present",
+      "actual": true,
+      "required": true,
+      "pass": true,
+      "deficit": null
+    },
+    {
+      "id": "SEMANTIC_PARK",
+      "label": "visible required semantic: park",
+      "relation": "present",
+      "actual": true,
+      "required": true,
+      "pass": true,
+      "deficit": null
+    },
+    {
+      "id": "SEMANTIC_FOUNTAIN",
+      "label": "visible required semantic: fountain",
+      "relation": "present",
+      "actual": true,
+      "required": true,
+      "pass": true,
+      "deficit": null
+    },
+    {
+      "id": "SEMANTIC_TREES_AND_FLOWERBEDS",
+      "label": "visible required semantic: trees and flowerbeds",
+      "relation": "present",
+      "actual": true,
+      "required": true,
+      "pass": true,
+      "deficit": null
+    },
+    {
+      "id": "SEMANTIC_STREETLIGHTS",
+      "label": "visible required semantic: streetlights",
+      "relation": "present",
+      "actual": true,
+      "required": true,
+      "pass": true,
+      "deficit": null
+    },
+    {
+      "id": "SEMANTIC_BENCHES",
+      "label": "visible required semantic: benches",
+      "relation": "present",
+      "actual": true,
+      "required": true,
+      "pass": true,
+      "deficit": null
+    },
+    {
+      "id": "SEMANTIC_BINS",
+      "label": "visible required semantic: bins",
+      "relation": "present",
+      "actual": true,
+      "required": true,
+      "pass": true,
+      "deficit": null
+    },
+    {
+      "id": "SEMANTIC_CARS",
+      "label": "visible required semantic: cars",
+      "relation": "present",
+      "actual": true,
+      "required": true,
+      "pass": true,
+      "deficit": null
+    },
+    {
+      "id": "SEMANTIC_COLLECTIBLE_RESOURCE_CLUSTERS",
+      "label": "visible required semantic: collectible resource clusters",
+      "relation": "present",
+      "actual": true,
+      "required": true,
+      "pass": true,
+      "deficit": null
+    },
+    {
+      "id": "SEMANTIC_AI_COMPETITORS",
+      "label": "visible required semantic: AI competitors",
+      "relation": "present",
+      "actual": true,
+      "required": true,
+      "pass": true,
+      "deficit": null
+    },
+    {
+      "id": "CAMERA_PRESET",
+      "label": "measured camera matches PortraitGameplayCameraPreset",
+      "relation": "matches",
+      "actual": {
+        "fov": 44,
+        "fovAxis": 0,
+        "pitchDegrees": -55
+      },
+      "required": {
+        "fov": 44,
+        "fovAxis": 0,
+        "pitchDegrees": -55
+      },
+      "pass": true,
+      "deficit": null
+    }
+  ],
+  "deficits": []
+}

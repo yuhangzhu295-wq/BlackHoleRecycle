@@ -1,0 +1,1769 @@
+{
+  "status": "MEASURED",
+  "targetCell": {
+    "key": "0:0",
+    "nodeName": "WorldCell_0_0"
+  },
+  "viewport": {
+    "x": 0,
+    "y": 0,
+    "width": 390,
+    "height": 844
+  },
+  "camera": {
+    "preset": "PortraitGameplayCameraPreset",
+    "position": {
+      "x": 0,
+      "y": 44.00016035605044,
+      "z": 27.00005678850191
+    },
+    "forward": {
+      "x": 0,
+      "y": -0.8191520442889919,
+      "z": -0.573576436351046
+    },
+    "fov": 44,
+    "fovAxis": 0
+  },
+  "entries": [
+    {
+      "name": "tile-low",
+      "category": "GROUND",
+      "classificationRule": "Opening-cell actual terrain tile (DistrictGround / GroundTile / tile-low); path=Ground/GroundTile_1/tile-low",
+      "worldBounds": {
+        "min": {
+          "x": -32,
+          "y": 0.010000000000000002,
+          "z": -32
+        },
+        "max": {
+          "x": 0,
+          "y": 0.029999999552965166,
+          "z": 0
+        }
+      },
+      "screenBounds": {
+        "left": -453.94038809302515,
+        "top": 76.4790844785698,
+        "right": 195,
+        "bottom": 485.14143957492274,
+        "width": 648.9403880930251,
+        "height": 408.66235509635294
+      },
+      "visible": true,
+      "clipped": true,
+      "behindCamera": false,
+      "logicalUnits": 1,
+      "countReason": "One actual streamed terrain tile, used only for the transparent empty-ground estimate."
+    },
+    {
+      "name": "tile-low",
+      "category": "GROUND",
+      "classificationRule": "Opening-cell actual terrain tile (DistrictGround / GroundTile / tile-low); path=Ground/GroundTile_2/tile-low",
+      "worldBounds": {
+        "min": {
+          "x": 0,
+          "y": 0.010000000000000002,
+          "z": 0
+        },
+        "max": {
+          "x": 32,
+          "y": 0.029999999552965166,
+          "z": 32
+        }
+      },
+      "screenBounds": {
+        "left": 195,
+        "top": 484.9288885031058,
+        "right": 1203.2404965736623,
+        "bottom": 1345.673114596725,
+        "width": 1008.2404965736623,
+        "height": 860.7442260936193
+      },
+      "visible": true,
+      "clipped": true,
+      "behindCamera": false,
+      "logicalUnits": 1,
+      "countReason": "One actual streamed terrain tile, used only for the transparent empty-ground estimate."
+    },
+    {
+      "name": "MainCrossroad",
+      "category": "ROAD",
+      "classificationRule": "Opening-cell imported road root; path=Roads/MainCrossroad",
+      "worldBounds": {
+        "min": {
+          "x": -8,
+          "y": 0.05,
+          "z": -8
+        },
+        "max": {
+          "x": 8,
+          "y": 0.06999999955296517,
+          "z": 8
+        }
+      },
+      "screenBounds": {
+        "left": 16.773132093982053,
+        "top": 357.29212187902135,
+        "right": 373.22686790601796,
+        "bottom": 636.7961664807656,
+        "width": 356.4537358120359,
+        "height": 279.5040446017442
+      },
+      "visible": true,
+      "clipped": false,
+      "behindCamera": false,
+      "logicalUnits": 1,
+      "countReason": "One authored road segment root."
+    },
+    {
+      "name": "RoadNorth",
+      "category": "ROAD",
+      "classificationRule": "Opening-cell imported road root; path=Roads/RoadNorth",
+      "worldBounds": {
+        "min": {
+          "x": -6,
+          "y": 0.05,
+          "z": 8
+        },
+        "max": {
+          "x": 6,
+          "y": 0.06999999955296517,
+          "z": 24
+        }
+      },
+      "screenBounds": {
+        "left": 28.796223381077457,
+        "top": 636.6156584066821,
+        "right": 361.2037766189226,
+        "bottom": 1051.9508937632527,
+        "width": 332.4075532378451,
+        "height": 415.3352353565706
+      },
+      "visible": true,
+      "clipped": true,
+      "behindCamera": false,
+      "logicalUnits": 1,
+      "countReason": "One authored road segment root."
+    },
+    {
+      "name": "RoadSouth",
+      "category": "ROAD",
+      "classificationRule": "Opening-cell imported road root; path=Roads/RoadSouth",
+      "worldBounds": {
+        "min": {
+          "x": -6,
+          "y": 0.05,
+          "z": -24
+        },
+        "max": {
+          "x": 6,
+          "y": 0.06999999955296517,
+          "z": -8
+        }
+      },
+      "screenBounds": {
+        "left": 83.21186325441299,
+        "top": 156.55523290776512,
+        "right": 306.788136745587,
+        "bottom": 357.52469411927115,
+        "width": 223.576273491174,
+        "height": 200.96946121150603
+      },
+      "visible": true,
+      "clipped": false,
+      "behindCamera": false,
+      "logicalUnits": 1,
+      "countReason": "One authored road segment root."
+    },
+    {
+      "name": "RoadWest",
+      "category": "ROAD",
+      "classificationRule": "Opening-cell imported road root; path=Roads/RoadWest",
+      "worldBounds": {
+        "min": {
+          "x": -24,
+          "y": 0.05,
+          "z": -6.000000000000002
+        },
+        "max": {
+          "x": -7.999999999999998,
+          "y": 0.06999999955296517,
+          "z": 6.000000000000002
+        }
+      },
+      "screenBounds": {
+        "left": -326.9104081429694,
+        "top": 387.10183829035026,
+        "right": 42.88083764277662,
+        "bottom": 596.052920628011,
+        "width": 369.791245785746,
+        "height": 208.9510823376607
+      },
+      "visible": true,
+      "clipped": true,
+      "behindCamera": false,
+      "logicalUnits": 1,
+      "countReason": "One authored road segment root."
+    },
+    {
+      "name": "RoadEast",
+      "category": "ROAD",
+      "classificationRule": "Opening-cell imported road root; path=Roads/RoadEast",
+      "worldBounds": {
+        "min": {
+          "x": 7.999999999999998,
+          "y": 0.05,
+          "z": -6.000000000000002
+        },
+        "max": {
+          "x": 24,
+          "y": 0.06999999955296517,
+          "z": 6.000000000000002
+        }
+      },
+      "screenBounds": {
+        "left": 347.11916235722333,
+        "top": 387.10183829035026,
+        "right": 716.9104081429695,
+        "bottom": 596.052920628011,
+        "width": 369.7912457857461,
+        "height": 208.9510823376607
+      },
+      "visible": true,
+      "clipped": true,
+      "behindCamera": false,
+      "logicalUnits": 1,
+      "countReason": "One authored road segment root."
+    },
+    {
+      "name": "ResidentialHouseWest",
+      "category": "BUILDING",
+      "classificationRule": "Opening-cell named building, shop, clinic, house, or skyline root; path=Buildings/ResidentialHouseWest",
+      "worldBounds": {
+        "min": {
+          "x": -11.139999985694885,
+          "y": 0,
+          "z": -11.82800006866455
+        },
+        "max": {
+          "x": -8.860000014305115,
+          "y": 2.2750000953674316,
+          "z": -8.17199993133545
+        }
+      },
+      "screenBounds": {
+        "left": -19.073869703370434,
+        "top": 276.3177356404899,
+        "right": 36.30393096995534,
+        "bottom": 355.5998957315999,
+        "width": 55.37780067332577,
+        "height": 79.28216009110997
+      },
+      "visible": true,
+      "clipped": true,
+      "behindCamera": false,
+      "logicalUnits": 1,
+      "countReason": "One semantically named imported building landmark."
+    },
+    {
+      "name": "CommercialShopEast",
+      "category": "BUILDING",
+      "classificationRule": "Opening-cell named building, shop, clinic, house, or skyline root; path=Buildings/CommercialShopEast",
+      "worldBounds": {
+        "min": {
+          "x": 6.653999948501586,
+          "y": 0,
+          "z": 9.204770946502686
+        },
+        "max": {
+          "x": 8.345999944210053,
+          "y": 2.327399969100952,
+          "z": 10.795229160785675
+        }
+      },
+      "screenBounds": {
+        "left": 345.27129726560963,
+        "top": 641.6573354378974,
+        "right": 395.71558764855735,
+        "bottom": 697.6092418741205,
+        "width": 50.44429038294771,
+        "height": 55.95190643622311
+      },
+      "visible": true,
+      "clipped": true,
+      "behindCamera": false,
+      "logicalUnits": 1,
+      "countReason": "One semantically named imported building landmark."
+    },
+    {
+      "name": "Hospital_ClinicNorth",
+      "category": "BUILDING",
+      "classificationRule": "Opening-cell named building, shop, clinic, house, or skyline root; path=Buildings/Hospital_ClinicNorth",
+      "worldBounds": {
+        "min": {
+          "x": -8.310000085830689,
+          "y": 0,
+          "z": 9.243999916315078
+        },
+        "max": {
+          "x": -6.690000343322753,
+          "y": 2.327399969100952,
+          "z": 10.755999976396561
+        }
+      },
+      "screenBounds": {
+        "left": -4.746330256110412,
+        "top": 642.5261494109852,
+        "right": 43.84214482480258,
+        "bottom": 696.7325736577814,
+        "width": 48.58847508091299,
+        "height": 54.20642424679613
+      },
+      "visible": true,
+      "clipped": true,
+      "behindCamera": false,
+      "logicalUnits": 1,
+      "countReason": "One semantically named imported building landmark."
+    },
+    {
+      "name": "CommercialMarketSouth",
+      "category": "BUILDING",
+      "classificationRule": "Opening-cell named building, shop, clinic, house, or skyline root; path=Buildings/CommercialMarketSouth",
+      "worldBounds": {
+        "min": {
+          "x": 9.150249630212784,
+          "y": 0,
+          "z": -10.693000027537346
+        },
+        "max": {
+          "x": 10.84974997639656,
+          "y": 2.7934501290321347,
+          "z": -9.306999972462654
+        }
+      },
+      "screenBounds": {
+        "left": 360.7452476316617,
+        "top": 285.41559411946275,
+        "right": 402.63167323141295,
+        "bottom": 339.2835766471218,
+        "width": 41.88642559975125,
+        "height": 53.867982527659024
+      },
+      "visible": true,
+      "clipped": true,
+      "behindCamera": false,
+      "logicalUnits": 1,
+      "countReason": "One semantically named imported building landmark."
+    },
+    {
+      "name": "ParkTreeSmall_1",
+      "category": "TREE",
+      "classificationRule": "Opening-cell name contains Tree; grass and ground cover are excluded; path=Park/ParkTreeSmall_1",
+      "worldBounds": {
+        "min": {
+          "x": -5.420888364315033,
+          "y": 0.07000000000000006,
+          "z": 4.514000028371811
+        },
+        "max": {
+          "x": -4.579111635684967,
+          "y": 1.204000062942505,
+          "z": 5.485999971628189
+        }
+      },
+      "screenBounds": {
+        "left": 75.53878743736144,
+        "top": 555.4602183350071,
+        "right": 97.15769113827815,
+        "bottom": 585.7018636416578,
+        "width": 21.618903700916718,
+        "height": 30.241645306650753
+      },
+      "visible": true,
+      "clipped": false,
+      "behindCamera": false,
+      "logicalUnits": 1,
+      "countReason": "One imported tree root."
+    },
+    {
+      "name": "ParkTreeSmall_2",
+      "category": "TREE",
+      "classificationRule": "Opening-cell name contains Tree; grass and ground cover are excluded; path=Park/ParkTreeSmall_2",
+      "worldBounds": {
+        "min": {
+          "x": -4.420888364315033,
+          "y": 0.07000000000000006,
+          "z": 7.514000028371811
+        },
+        "max": {
+          "x": -3.579111635684967,
+          "y": 1.204000062942505,
+          "z": 8.485999971628189
+        }
+      },
+      "screenBounds": {
+        "left": 93.90576614023466,
+        "top": 615.9453821575933,
+        "right": 115.73456168613367,
+        "bottom": 646.8215848684536,
+        "width": 21.828795545899013,
+        "height": 30.876202710860298
+      },
+      "visible": true,
+      "clipped": false,
+      "behindCamera": false,
+      "logicalUnits": 1,
+      "countReason": "One imported tree root."
+    },
+    {
+      "name": "ParkTreeSmall_3",
+      "category": "TREE",
+      "classificationRule": "Opening-cell name contains Tree; grass and ground cover are excluded; path=Park/ParkTreeSmall_3",
+      "worldBounds": {
+        "min": {
+          "x": -5.420888364315033,
+          "y": 0.07000000000000006,
+          "z": 1.514000028371811
+        },
+        "max": {
+          "x": -4.579111635684967,
+          "y": 1.204000062942505,
+          "z": 2.485999971628189
+        }
+      },
+      "screenBounds": {
+        "left": 79.7238837129317,
+        "top": 499.1654556811555,
+        "right": 100.484724289933,
+        "bottom": 528.7850815831778,
+        "width": 20.760840577001304,
+        "height": 29.61962590202228
+      },
+      "visible": true,
+      "clipped": false,
+      "behindCamera": false,
+      "logicalUnits": 1,
+      "countReason": "One imported tree root."
+    },
+    {
+      "name": "ParkTreeSmall_4",
+      "category": "TREE",
+      "classificationRule": "Opening-cell name contains Tree; grass and ground cover are excluded; path=Park/ParkTreeSmall_4",
+      "worldBounds": {
+        "min": {
+          "x": 4.579111635684967,
+          "y": 0.07000000000000006,
+          "z": -5.485999971628189
+        },
+        "max": {
+          "x": 5.420888364315033,
+          "y": 1.204000062942505,
+          "z": -4.514000028371811
+        }
+      },
+      "screenBounds": {
+        "left": 282.5674350482191,
+        "top": 381.84380840901133,
+        "right": 301.56507235629584,
+        "bottom": 410.06963772161646,
+        "width": 18.99763730807672,
+        "height": 28.22582931260513
+      },
+      "visible": true,
+      "clipped": false,
+      "behindCamera": false,
+      "logicalUnits": 1,
+      "countReason": "One imported tree root."
+    },
+    {
+      "name": "ParkTreeSmall_5",
+      "category": "TREE",
+      "classificationRule": "Opening-cell name contains Tree; grass and ground cover are excluded; path=Park/ParkTreeSmall_5",
+      "worldBounds": {
+        "min": {
+          "x": 3.579111635684967,
+          "y": 0.07000000000000006,
+          "z": -8.485999971628189
+        },
+        "max": {
+          "x": 4.420888364315033,
+          "y": 1.204000062942505,
+          "z": -7.514000028371811
+        }
+      },
+      "screenBounds": {
+        "left": 261.35376371377635,
+        "top": 336.76785848123103,
+        "right": 279.1805896665174,
+        "bottom": 364.4231140559398,
+        "width": 17.826825952741046,
+        "height": 27.655255574708747
+      },
+      "visible": true,
+      "clipped": false,
+      "behindCamera": false,
+      "logicalUnits": 1,
+      "countReason": "One imported tree root."
+    },
+    {
+      "name": "ParkTreeSmall_6",
+      "category": "TREE",
+      "classificationRule": "Opening-cell name contains Tree; grass and ground cover are excluded; path=Park/ParkTreeSmall_6",
+      "worldBounds": {
+        "min": {
+          "x": 4.579111635684967,
+          "y": 0.07000000000000006,
+          "z": -2.485999971628189
+        },
+        "max": {
+          "x": 5.420888364315033,
+          "y": 1.204000062942505,
+          "z": -1.514000028371811
+        }
+      },
+      "screenBounds": {
+        "left": 285.41593378410226,
+        "top": 429.90474570890586,
+        "right": 305.1317734497658,
+        "bottom": 458.7174836334233,
+        "width": 19.71583966566351,
+        "height": 28.81273792451742
+      },
+      "visible": true,
+      "clipped": false,
+      "behindCamera": false,
+      "logicalUnits": 1,
+      "countReason": "One imported tree root."
+    },
+    {
+      "name": "ParkTreeLarge_1",
+      "category": "TREE",
+      "classificationRule": "Opening-cell name contains Tree; grass and ground cover are excluded; path=Park/ParkTreeLarge_1",
+      "worldBounds": {
+        "min": {
+          "x": -3.420888364315033,
+          "y": 0.07000000000000006,
+          "z": 8.514000028371811
+        },
+        "max": {
+          "x": -2.579111635684967,
+          "y": 1.6039999198913575,
+          "z": 9.485999971628189
+        }
+      },
+      "screenBounds": {
+        "left": 115.1985928961853,
+        "top": 633.3888190948071,
+        "right": 137.1780232183962,
+        "bottom": 668.2102781144383,
+        "width": 21.979430322210888,
+        "height": 34.82145901963122
+      },
+      "visible": true,
+      "clipped": false,
+      "behindCamera": false,
+      "logicalUnits": 1,
+      "countReason": "One imported tree root."
+    },
+    {
+      "name": "ParkTreeLarge_2",
+      "category": "TREE",
+      "classificationRule": "Opening-cell name contains Tree; grass and ground cover are excluded; path=Park/ParkTreeLarge_2",
+      "worldBounds": {
+        "min": {
+          "x": -6.420888364315033,
+          "y": 0.07000000000000006,
+          "z": 6.514000028371811
+        },
+        "max": {
+          "x": -5.579111635684967,
+          "y": 1.6039999198913575,
+          "z": 7.485999971628189
+        }
+      },
+      "screenBounds": {
+        "left": 48.95724655234476,
+        "top": 591.3553683404998,
+        "right": 72.92584134060955,
+        "bottom": 625.9529635477046,
+        "width": 23.968594788264788,
+        "height": 34.59759520720479
+      },
+      "visible": true,
+      "clipped": false,
+      "behindCamera": false,
+      "logicalUnits": 1,
+      "countReason": "One imported tree root."
+    },
+    {
+      "name": "ParkTreeLarge_3",
+      "category": "TREE",
+      "classificationRule": "Opening-cell name contains Tree; grass and ground cover are excluded; path=Park/ParkTreeLarge_3",
+      "worldBounds": {
+        "min": {
+          "x": -3.420888364315033,
+          "y": 0.07000000000000006,
+          "z": 5.514000028371811
+        },
+        "max": {
+          "x": -2.579111635684967,
+          "y": 1.6039999198913575,
+          "z": 6.485999971628189
+        }
+      },
+      "screenBounds": {
+        "left": 118.15193820074296,
+        "top": 571.1072284113243,
+        "right": 139.23758136846095,
+        "bottom": 605.5856734581206,
+        "width": 21.08564316771799,
+        "height": 34.47844504679631
+      },
+      "visible": true,
+      "clipped": false,
+      "behindCamera": false,
+      "logicalUnits": 1,
+      "countReason": "One imported tree root."
+    },
+    {
+      "name": "ParkTreeLarge_4",
+      "category": "TREE",
+      "classificationRule": "Opening-cell name contains Tree; grass and ground cover are excluded; path=Park/ParkTreeLarge_4",
+      "worldBounds": {
+        "min": {
+          "x": 2.579111635684967,
+          "y": 0.07000000000000006,
+          "z": -9.485999971628189
+        },
+        "max": {
+          "x": 3.420888364315033,
+          "y": 1.6039999198913575,
+          "z": -8.514000028371811
+        }
+      },
+      "screenBounds": {
+        "left": 242.3327110796099,
+        "top": 317.46604070096976,
+        "right": 259.8483080885976,
+        "bottom": 349.82704921994787,
+        "width": 17.515597008987697,
+        "height": 32.36100851897811
+      },
+      "visible": true,
+      "clipped": false,
+      "behindCamera": false,
+      "logicalUnits": 1,
+      "countReason": "One imported tree root."
+    },
+    {
+      "name": "ParkTreeLarge_5",
+      "category": "TREE",
+      "classificationRule": "Opening-cell name contains Tree; grass and ground cover are excluded; path=Park/ParkTreeLarge_5",
+      "worldBounds": {
+        "min": {
+          "x": 5.579111635684967,
+          "y": 0.07000000000000006,
+          "z": -7.485999971628189
+        },
+        "max": {
+          "x": 6.420888364315033,
+          "y": 1.6039999198913575,
+          "z": -6.514000028371811
+        }
+      },
+      "screenBounds": {
+        "left": 299.49595089587785,
+        "top": 346.6586845759881,
+        "right": 319.30605332746245,
+        "bottom": 379.3224648353139,
+        "width": 19.810102431584596,
+        "height": 32.66378025932579
+      },
+      "visible": true,
+      "clipped": false,
+      "behindCamera": false,
+      "logicalUnits": 1,
+      "countReason": "One imported tree root."
+    },
+    {
+      "name": "ParkTreeLarge_6",
+      "category": "TREE",
+      "classificationRule": "Opening-cell name contains Tree; grass and ground cover are excluded; path=Park/ParkTreeLarge_6",
+      "worldBounds": {
+        "min": {
+          "x": 2.579111635684967,
+          "y": 0.07000000000000006,
+          "z": -6.485999971628189
+        },
+        "max": {
+          "x": 3.420888364315033,
+          "y": 1.6039999198913575,
+          "z": -5.514000028371811
+        }
+      },
+      "screenBounds": {
+        "left": 243.8084022979825,
+        "top": 361.7206778993451,
+        "right": 261.93879423946595,
+        "bottom": 394.53465358766863,
+        "width": 18.130391941483452,
+        "height": 32.813975688323524
+      },
+      "visible": true,
+      "clipped": false,
+      "behindCamera": false,
+      "logicalUnits": 1,
+      "countReason": "One imported tree root."
+    },
+    {
+      "name": "RecyclingBox",
+      "category": "POI",
+      "classificationRule": "Opening-cell named park, street furnishing, planting, path, or readable prop root; path=Props/POI_RecyclingHub/RecyclingBox",
+      "worldBounds": {
+        "min": {
+          "x": 7.642500013113022,
+          "y": 0,
+          "z": 7.642500013113022
+        },
+        "max": {
+          "x": 8.357499986886978,
+          "y": 0.7149999737739563,
+          "z": 8.357499986886978
+        }
+      },
+      "screenBounds": {
+        "left": 364.3147457130219,
+        "top": 623.2371748506977,
+        "right": 384.1502933667108,
+        "bottom": 644.7360504294769,
+        "width": 19.835547653688877,
+        "height": 21.498875578779234
+      },
+      "visible": true,
+      "clipped": false,
+      "behindCamera": false,
+      "logicalUnits": 1,
+      "countReason": "One imported point-of-interest or environmental furnishing."
+    },
+    {
+      "name": "StreetLight",
+      "category": "POI",
+      "classificationRule": "Opening-cell named park, street furnishing, planting, path, or readable prop root; path=Props/POI_CentralSquare/StreetLight",
+      "worldBounds": {
+        "min": {
+          "x": -0.10000000149011612,
+          "y": 0,
+          "z": -5.849999964237213
+        },
+        "max": {
+          "x": 0.10000000149011612,
+          "y": 1.2000000476837158,
+          "z": -4.899999998509884
+        }
+      },
+      "screenBounds": {
+        "left": 193.04245467975633,
+        "top": 376.2684134683009,
+        "right": 196.95754532024367,
+        "bottom": 404.8249315569084,
+        "width": 3.9150906404873353,
+        "height": 28.556518088607504
+      },
+      "visible": true,
+      "clipped": false,
+      "behindCamera": false,
+      "logicalUnits": 1,
+      "countReason": "One imported point-of-interest or environmental furnishing."
+    },
+    {
+      "name": "POI_ParkFountain",
+      "category": "POI",
+      "classificationRule": "Opening-cell named park, street furnishing, planting, path, or readable prop root; path=Props/POI_ParkFountain",
+      "worldBounds": {
+        "min": {
+          "x": -1.9999947547912598,
+          "y": 2.2351741790771484e-8,
+          "z": 4.999999761581421
+        },
+        "max": {
+          "x": 2.0000052452087402,
+          "y": 1.599999189376831,
+          "z": 8.999999761581421
+        }
+      },
+      "screenBounds": {
+        "left": 148.63679424698142,
+        "top": 560.9315675190364,
+        "right": 241.3634489383484,
+        "bottom": 658.3620928279663,
+        "width": 92.72665469136697,
+        "height": 97.43052530892987
+      },
+      "visible": true,
+      "clipped": false,
+      "behindCamera": false,
+      "logicalUnits": 1,
+      "countReason": "One imported point-of-interest or environmental furnishing."
+    },
+    {
+      "name": "ParkBenchWest",
+      "category": "POI",
+      "classificationRule": "Opening-cell named park, street furnishing, planting, path, or readable prop root; path=Props/ParkBenchWest",
+      "worldBounds": {
+        "min": {
+          "x": -7,
+          "y": 0,
+          "z": 3.283350169658661
+        },
+        "max": {
+          "x": -5,
+          "y": 1.405943751335144,
+          "z": 4.600000023841858
+        }
+      },
+      "screenBounds": {
+        "left": 41.84716861371118,
+        "top": 529.7655975323601,
+        "right": 89.80691566248169,
+        "bottom": 569.1610289378009,
+        "width": 47.9597470487705,
+        "height": 39.39543140544083
+      },
+      "visible": true,
+      "clipped": false,
+      "behindCamera": false,
+      "logicalUnits": 1,
+      "countReason": "One imported point-of-interest or environmental furnishing."
+    },
+    {
+      "name": "ParkBenchEast",
+      "category": "POI",
+      "classificationRule": "Opening-cell named park, street furnishing, planting, path, or readable prop root; path=Props/ParkBenchEast",
+      "worldBounds": {
+        "min": {
+          "x": 5,
+          "y": 0,
+          "z": 3.283350169658661
+        },
+        "max": {
+          "x": 7,
+          "y": 1.405943751335144,
+          "z": 4.600000023841858
+        }
+      },
+      "screenBounds": {
+        "left": 300.1930843375183,
+        "top": 529.7655975323601,
+        "right": 348.15283138628877,
+        "bottom": 569.1610289378009,
+        "width": 47.95974704877045,
+        "height": 39.39543140544083
+      },
+      "visible": true,
+      "clipped": false,
+      "behindCamera": false,
+      "logicalUnits": 1,
+      "countReason": "One imported point-of-interest or environmental furnishing."
+    },
+    {
+      "name": "ParkBinWest",
+      "category": "POI",
+      "classificationRule": "Opening-cell named park, street furnishing, planting, path, or readable prop root; path=Props/ParkBinWest",
+      "worldBounds": {
+        "min": {
+          "x": -7.5000006556510925,
+          "y": -3.405981487958343e-7,
+          "z": -2.500000476837158
+        },
+        "max": {
+          "x": -6.50000062584877,
+          "y": 1.142857551574707,
+          "z": -1.4999999403953552
+        }
+      },
+      "screenBounds": {
+        "left": 42.75313426856167,
+        "top": 430.3697318437049,
+        "right": 66.81394869827932,
+        "bottom": 459.7120386920813,
+        "width": 24.060814429717645,
+        "height": 29.34230684837638
+      },
+      "visible": true,
+      "clipped": false,
+      "behindCamera": false,
+      "logicalUnits": 1,
+      "countReason": "One imported point-of-interest or environmental furnishing."
+    },
+    {
+      "name": "ParkBinEast",
+      "category": "POI",
+      "classificationRule": "Opening-cell named park, street furnishing, planting, path, or readable prop root; path=Props/ParkBinEast",
+      "worldBounds": {
+        "min": {
+          "x": 6.4999993443489075,
+          "y": -3.405981487958343e-7,
+          "z": -2.500000476837158
+        },
+        "max": {
+          "x": 7.49999937415123,
+          "y": 1.142857551574707,
+          "z": -1.4999999403953552
+        }
+      },
+      "screenBounds": {
+        "left": 323.1860260293528,
+        "top": 430.3697318437049,
+        "right": 347.2468397175289,
+        "bottom": 459.7120386920813,
+        "width": 24.060813688176154,
+        "height": 29.34230684837638
+      },
+      "visible": true,
+      "clipped": false,
+      "behindCamera": false,
+      "logicalUnits": 1,
+      "countReason": "One imported point-of-interest or environmental furnishing."
+    },
+    {
+      "name": "FlowerbedWest",
+      "category": "POI",
+      "classificationRule": "Opening-cell named park, street furnishing, planting, path, or readable prop root; path=Props/FlowerbedWest",
+      "worldBounds": {
+        "min": {
+          "x": -5.224530920386314,
+          "y": -0.019999999552965164,
+          "z": 6.7754688411951065
+        },
+        "max": {
+          "x": -4.775468364357948,
+          "y": 0.1183263435959816,
+          "z": 7.224531397223473
+        }
+      },
+      "screenBounds": {
+        "left": 79.60337588158296,
+        "top": 610.9796730657781,
+        "right": 90.34284702684559,
+        "bottom": 621.4085150012597,
+        "width": 10.739471145262627,
+        "height": 10.428841935481614
+      },
+      "visible": true,
+      "clipped": false,
+      "behindCamera": false,
+      "logicalUnits": 1,
+      "countReason": "One imported point-of-interest or environmental furnishing."
+    },
+    {
+      "name": "FlowerbedEast",
+      "category": "POI",
+      "classificationRule": "Opening-cell named park, street furnishing, planting, path, or readable prop root; path=Props/FlowerbedEast",
+      "worldBounds": {
+        "min": {
+          "x": 4.84444023668766,
+          "y": -0.020000023767352104,
+          "z": 6.820374771952629
+        },
+        "max": {
+          "x": 5.155559942126274,
+          "y": 0.09066103398799896,
+          "z": 7.116669297218323
+        }
+      },
+      "screenBounds": {
+        "left": 301.22611995081,
+        "top": 612.1487202121558,
+        "right": 308.67004328783736,
+        "bottom": 619.2042493783857,
+        "width": 7.443923337027343,
+        "height": 7.055529166229917
+      },
+      "visible": true,
+      "clipped": false,
+      "behindCamera": false,
+      "logicalUnits": 1,
+      "countReason": "One imported point-of-interest or environmental furnishing."
+    },
+    {
+      "name": "ParkHedgeNorth",
+      "category": "POI",
+      "classificationRule": "Opening-cell named park, street furnishing, planting, path, or readable prop root; path=Props/ParkHedgeNorth",
+      "worldBounds": {
+        "min": {
+          "x": -2,
+          "y": -0.005907773971557617,
+          "z": 9.25000011920929
+        },
+        "max": {
+          "x": 2.000000238418579,
+          "y": 1.4940922260284424,
+          "z": 10.750000238418579
+        }
+      },
+      "screenBounds": {
+        "left": 147.67346894821296,
+        "top": 650.4059154795303,
+        "right": 242.32653669354917,
+        "bottom": 696.6472938411434,
+        "width": 94.65306774533622,
+        "height": 46.2413783616131
+      },
+      "visible": true,
+      "clipped": false,
+      "behindCamera": false,
+      "logicalUnits": 1,
+      "countReason": "One imported point-of-interest or environmental furnishing."
+    },
+    {
+      "name": "ParkPathStonesWest",
+      "category": "POI",
+      "classificationRule": "Opening-cell named park, street furnishing, planting, path, or readable prop root; path=Props/ParkPathStonesWest",
+      "worldBounds": {
+        "min": {
+          "x": -8.126000000536441,
+          "y": 0,
+          "z": 1.1399999946355819
+        },
+        "max": {
+          "x": -7.8739999994635586,
+          "y": 0.009999999776482582,
+          "z": 1.8600000053644181
+        }
+      },
+      "screenBounds": {
+        "left": 26.778736528234475,
+        "top": 505.12799692511265,
+        "right": 33.34495292556654,
+        "bottom": 518.1211336443064,
+        "width": 6.566216397332063,
+        "height": 12.993136719193728
+      },
+      "visible": true,
+      "clipped": false,
+      "behindCamera": false,
+      "logicalUnits": 1,
+      "countReason": "One imported point-of-interest or environmental furnishing."
+    },
+    {
+      "name": "ParkPathStonesEast",
+      "category": "POI",
+      "classificationRule": "Opening-cell named park, street furnishing, planting, path, or readable prop root; path=Props/ParkPathStonesEast",
+      "worldBounds": {
+        "min": {
+          "x": 7.8739999994635586,
+          "y": 0,
+          "z": 1.1399999946355819
+        },
+        "max": {
+          "x": 8.126000000536441,
+          "y": 0.009999999776482582,
+          "z": 1.8600000053644181
+        }
+      },
+      "screenBounds": {
+        "left": 356.65504707443347,
+        "top": 505.12799692511265,
+        "right": 363.22126347176555,
+        "bottom": 518.1211336443064,
+        "width": 6.566216397332084,
+        "height": 12.993136719193728
+      },
+      "visible": true,
+      "clipped": false,
+      "behindCamera": false,
+      "logicalUnits": 1,
+      "countReason": "One imported point-of-interest or environmental furnishing."
+    },
+    {
+      "name": "ParkFenceWest",
+      "category": "POI",
+      "classificationRule": "Opening-cell named park, street furnishing, planting, path, or readable prop root; path=Props/ParkFenceWest",
+      "worldBounds": {
+        "min": {
+          "x": -8.067500002682209,
+          "y": 0,
+          "z": 3.0724999785423277
+        },
+        "max": {
+          "x": -7.932499997317791,
+          "y": 0.4319999694824219,
+          "z": 3.9275000214576723
+        }
+      },
+      "screenBounds": {
+        "left": 22.761448902309944,
+        "top": 535.9192433198493,
+        "right": 28.516727161763573,
+        "bottom": 556.3324295603577,
+        "width": 5.755278259453629,
+        "height": 20.413186240508367
+      },
+      "visible": true,
+      "clipped": false,
+      "behindCamera": false,
+      "logicalUnits": 1,
+      "countReason": "One imported point-of-interest or environmental furnishing."
+    },
+    {
+      "name": "ParkFenceEast",
+      "category": "POI",
+      "classificationRule": "Opening-cell named park, street furnishing, planting, path, or readable prop root; path=Props/ParkFenceEast",
+      "worldBounds": {
+        "min": {
+          "x": 7.932499997317791,
+          "y": 0,
+          "z": 3.0724999785423277
+        },
+        "max": {
+          "x": 8.067500002682209,
+          "y": 0.4319999694824219,
+          "z": 3.9275000214576723
+        }
+      },
+      "screenBounds": {
+        "left": 361.4832728382364,
+        "top": 535.9192433198493,
+        "right": 367.23855109769005,
+        "bottom": 556.3324295603577,
+        "width": 5.7552782594536325,
+        "height": 20.413186240508367
+      },
+      "visible": true,
+      "clipped": false,
+      "behindCamera": false,
+      "logicalUnits": 1,
+      "countReason": "One imported point-of-interest or environmental furnishing."
+    },
+    {
+      "name": "traffic_0_0_authored_VehicleAnchor_SedanWest",
+      "category": "VEHICLE",
+      "classificationRule": "target-cell DynamicVehicle.getCompositionNode()",
+      "worldBounds": {
+        "min": {
+          "x": -6.188713612644065,
+          "y": 0.24499998390674582,
+          "z": 5.8112863873559375
+        },
+        "max": {
+          "x": -3.3249311825560266,
+          "y": 1.649999976158142,
+          "z": 8.675068817443975
+        }
+      },
+      "screenBounds": {
+        "left": 51.99684721035548,
+        "top": 576.6114206244022,
+        "right": 122.64226592995992,
+        "bottom": 649.2709285030758,
+        "width": 70.64541871960444,
+        "height": 72.6595078786736
+      },
+      "visible": true,
+      "clipped": false,
+      "behindCamera": false,
+      "logicalUnits": 1,
+      "countReason": "One active route-driven traffic vehicle in WorldCell_0_0."
+    },
+    {
+      "name": "traffic_0_0_authored_VehicleAnchor_SedanNorth",
+      "category": "VEHICLE",
+      "classificationRule": "target-cell DynamicVehicle.getCompositionNode()",
+      "worldBounds": {
+        "min": {
+          "x": 5.8112863873559375,
+          "y": 0.24499998390674582,
+          "z": 3.324931182556026
+        },
+        "max": {
+          "x": 8.675068817443975,
+          "y": 1.649999976158142,
+          "z": 6.188713612644065
+        }
+      },
+      "screenBounds": {
+        "left": 317.81691019359613,
+        "top": 527.9731791709291,
+        "right": 389.32467500878374,
+        "bottom": 597.9634046810648,
+        "width": 71.50776481518761,
+        "height": 69.9902255101357
+      },
+      "visible": true,
+      "clipped": false,
+      "behindCamera": false,
+      "logicalUnits": 1,
+      "countReason": "One active route-driven traffic vehicle in WorldCell_0_0."
+    },
+    {
+      "name": "traffic_0_0_authored_VehicleAnchor_DeliveryVanEast",
+      "category": "VEHICLE",
+      "classificationRule": "target-cell DynamicVehicle.getCompositionNode()",
+      "worldBounds": {
+        "min": {
+          "x": 4.5296149309616105,
+          "y": 0.34999998807907096,
+          "z": -7.470385069038389
+        },
+        "max": {
+          "x": 7.888371973010319,
+          "y": 1.9999998807907104,
+          "z": -4.111628026989682
+        }
+      },
+      "screenBounds": {
+        "left": 280.20315094123623,
+        "top": 342.0626400018559,
+        "right": 352.6916075877157,
+        "bottom": 413.26045233916335,
+        "width": 72.48845664647945,
+        "height": 71.19781233730743
+      },
+      "visible": true,
+      "clipped": false,
+      "behindCamera": false,
+      "logicalUnits": 1,
+      "countReason": "One active route-driven traffic vehicle in WorldCell_0_0."
+    },
+    {
+      "name": "traffic_0_0_authored_VehicleAnchor_GarbageTruckSouth",
+      "category": "VEHICLE",
+      "classificationRule": "target-cell DynamicVehicle.getCompositionNode()",
+      "worldBounds": {
+        "min": {
+          "x": -6.487322727991966,
+          "y": 0.34999998807907096,
+          "z": -9.012855619717833
+        },
+        "max": {
+          "x": -2.9871443802821687,
+          "y": 1.950000023841858,
+          "z": -5.512677272008034
+        }
+      },
+      "screenBounds": {
+        "left": 67.37879333910507,
+        "top": 319.9983858307812,
+        "right": 139.6923143135044,
+        "bottom": 391.35598020983326,
+        "width": 72.31352097439932,
+        "height": 71.35759437905205
+      },
+      "visible": true,
+      "clipped": false,
+      "behindCamera": false,
+      "logicalUnits": 1,
+      "countReason": "One active route-driven traffic vehicle in WorldCell_0_0."
+    },
+    {
+      "name": "traffic_0_0_authored_VehicleAnchor_SedanCenter",
+      "category": "VEHICLE",
+      "classificationRule": "target-cell DynamicVehicle.getCompositionNode()",
+      "worldBounds": {
+        "min": {
+          "x": -1.8754553692558456,
+          "y": 0.24499998390674582,
+          "z": 8.271000488333494
+        },
+        "max": {
+          "x": 0.3539503660839475,
+          "y": 1.649999976158142,
+          "z": 11.164484502150815
+        }
+      },
+      "screenBounds": {
+        "left": 150.25009795546583,
+        "top": 627.7330062348568,
+        "right": 203.4455457967888,
+        "bottom": 703.9050688733016,
+        "width": 53.19544784132296,
+        "height": 76.1720626384448
+      },
+      "visible": true,
+      "clipped": false,
+      "behindCamera": false,
+      "logicalUnits": 1,
+      "countReason": "One active route-driven traffic vehicle in WorldCell_0_0."
+    },
+    {
+      "name": "tutorial_t2_target",
+      "category": "COLLECTIBLE",
+      "classificationRule": "WorldCell_0_0 CompressibleObject in IDLE, ATTRACTED, or SUCKING state (traffic excluded)",
+      "worldBounds": {
+        "min": {
+          "x": -5,
+          "y": 0.35,
+          "z": -5.377999991178513
+        },
+        "max": {
+          "x": -4.488478186726571,
+          "y": 0.6617067739367485,
+          "z": -5
+        }
+      },
+      "screenBounds": {
+        "left": 98.0283555123474,
+        "top": 389.8449595146127,
+        "right": 108.70551839675797,
+        "bottom": 399.29586868269547,
+        "width": 10.677162884410563,
+        "height": 9.450909168082774
+      },
+      "visible": true,
+      "clipped": false,
+      "behindCamera": false,
+      "logicalUnits": 1,
+      "countReason": "Live Books (IDLE) from the target cell object pool."
+    },
+    {
+      "name": "aspirational_authored_0",
+      "category": "COLLECTIBLE",
+      "classificationRule": "WorldCell_0_0 CompressibleObject in IDLE, ATTRACTED, or SUCKING state (traffic excluded)",
+      "worldBounds": {
+        "min": {
+          "x": -6.785679643581281,
+          "y": 0.3500000000000001,
+          "z": -19.64350159639242
+        },
+        "max": {
+          "x": -4.285679606328378,
+          "y": 3.8699997425079347,
+          "z": -18.64350159639242
+        }
+      },
+      "screenBounds": {
+        "left": 74.97935586132506,
+        "top": 155.9058274022833,
+        "right": 123.38982502024938,
+        "bottom": 213.69167207670614,
+        "width": 48.410469158924315,
+        "height": 57.78584467442283
+      },
+      "visible": true,
+      "clipped": false,
+      "behindCamera": false,
+      "logicalUnits": 1,
+      "countReason": "Live Shelf (IDLE) from the target cell object pool."
+    },
+    {
+      "name": "aspirational_authored_1",
+      "category": "COLLECTIBLE",
+      "classificationRule": "WorldCell_0_0 CompressibleObject in IDLE, ATTRACTED, or SUCKING state (traffic excluded)",
+      "worldBounds": {
+        "min": {
+          "x": 8.443501452593981,
+          "y": 0.24499998390674582,
+          "z": -26.558937622883356
+        },
+        "max": {
+          "x": 9.943501452593981,
+          "y": 1.649999976158142,
+          "z": -24.00893767056707
+        }
+      },
+      "screenBounds": {
+        "left": 327.49427590363644,
+        "top": 109.31689170766924,
+        "right": 357.4089609515068,
+        "bottom": 154.26367946687185,
+        "width": 29.914685047870364,
+        "height": 44.94678775920261
+      },
+      "visible": true,
+      "clipped": false,
+      "behindCamera": false,
+      "logicalUnits": 1,
+      "countReason": "Live Car (IDLE) from the target cell object pool."
+    },
+    {
+      "name": "bot-1",
+      "category": "COMPETITOR",
+      "classificationRule": "ArenaMatchManager.getCompositionCompetitors(): alive non-local bot",
+      "worldBounds": {
+        "min": {
+          "x": 3.643547525867885,
+          "y": -0.11397948002815239,
+          "z": 1.2473677993407541
+        },
+        "max": {
+          "x": 5.320875310406154,
+          "y": 1.3897683176994324,
+          "z": 3.554302676736384
+        }
+      },
+      "screenBounds": {
+        "left": 269.756174605551,
+        "top": 492.3315072099864,
+        "right": 309.93932510927095,
+        "bottom": 550.4370370032216,
+        "width": 40.18315050371996,
+        "height": 58.10552979323518
+      },
+      "visible": true,
+      "clipped": false,
+      "behindCamera": false,
+      "logicalUnits": 1,
+      "countReason": "One alive AI competitor using the real ArenaMatchManager entity node."
+    },
+    {
+      "name": "bot-2",
+      "category": "COMPETITOR",
+      "classificationRule": "ArenaMatchManager.getCompositionCompetitors(): alive non-local bot",
+      "worldBounds": {
+        "min": {
+          "x": -3.7677154096799876,
+          "y": -0.11397948002815239,
+          "z": 7.440522836094454
+        },
+        "max": {
+          "x": -2.0903876251417186,
+          "y": 1.3897683176994324,
+          "z": 9.747457713490084
+        }
+      },
+      "screenBounds": {
+        "left": 107.15799217559807,
+        "top": 612.6320943969083,
+        "right": 148.89339064201653,
+        "bottom": 675.4604684670029,
+        "width": 41.73539846641846,
+        "height": 62.82837407009458
+      },
+      "visible": true,
+      "clipped": false,
+      "behindCamera": false,
+      "logicalUnits": 1,
+      "countReason": "One alive AI competitor using the real ArenaMatchManager entity node."
+    },
+    {
+      "name": "bot-3",
+      "category": "COMPETITOR",
+      "classificationRule": "ArenaMatchManager.getCompositionCompetitors(): alive non-local bot",
+      "worldBounds": {
+        "min": {
+          "x": -5.41773542623357,
+          "y": -0.11397948002815239,
+          "z": 5.318402346030242
+        },
+        "max": {
+          "x": -3.7404076416953007,
+          "y": 1.3897683176994324,
+          "z": 7.625337223425872
+        }
+      },
+      "screenBounds": {
+        "left": 72.02981840069255,
+        "top": 569.3771574379489,
+        "right": 114.56716167111362,
+        "bottom": 630.5033112348129,
+        "width": 42.537343270421076,
+        "height": 61.12615379686406
+      },
+      "visible": true,
+      "clipped": false,
+      "behindCamera": false,
+      "logicalUnits": 1,
+      "countReason": "One alive AI competitor using the real ArenaMatchManager entity node."
+    },
+    {
+      "name": "bot-4",
+      "category": "COMPETITOR",
+      "classificationRule": "ArenaMatchManager.getCompositionCompetitors(): alive non-local bot",
+      "worldBounds": {
+        "min": {
+          "x": -8.045824107306018,
+          "y": -0.11397948002815239,
+          "z": 1.4982058090615804
+        },
+        "max": {
+          "x": -6.368496322767748,
+          "y": 1.3897683176994324,
+          "z": 3.8051406864572104
+        }
+      },
+      "screenBounds": {
+        "left": 20.678767993651185,
+        "top": 496.8686923571194,
+        "right": 63.96458805795298,
+        "bottom": 555.1517019149937,
+        "width": 43.285820064301795,
+        "height": 58.28300955787432
+      },
+      "visible": true,
+      "clipped": false,
+      "behindCamera": false,
+      "logicalUnits": 1,
+      "countReason": "One alive AI competitor using the real ArenaMatchManager entity node."
+    },
+    {
+      "name": "bot-5",
+      "category": "COMPETITOR",
+      "classificationRule": "ArenaMatchManager.getCompositionCompetitors(): alive non-local bot",
+      "worldBounds": {
+        "min": {
+          "x": -3.9494007185413573,
+          "y": -0.11397948002815239,
+          "z": -11.533570748845174
+        },
+        "max": {
+          "x": -2.2720729340030883,
+          "y": 1.3897683176994324,
+          "z": -9.226635871449544
+        }
+      },
+      "screenBounds": {
+        "left": 120.91843181652332,
+        "top": 291.46139999195054,
+        "right": 154.25095328955572,
+        "bottom": 341.7601384487071,
+        "width": 33.3325214730324,
+        "height": 50.29873845675655
+      },
+      "visible": true,
+      "clipped": false,
+      "behindCamera": false,
+      "logicalUnits": 1,
+      "countReason": "One alive AI competitor using the real ArenaMatchManager entity node."
+    },
+    {
+      "name": "bot-6",
+      "category": "COMPETITOR",
+      "classificationRule": "ArenaMatchManager.getCompositionCompetitors(): alive non-local bot",
+      "worldBounds": {
+        "min": {
+          "x": -1.5086501126153147,
+          "y": -0.11397948002815239,
+          "z": -7.638972194297528
+        },
+        "max": {
+          "x": 0.1686776719229547,
+          "y": 1.3897683176994324,
+          "z": -5.332037316901898
+        }
+      },
+      "screenBounds": {
+        "left": 165.51852124651262,
+        "top": 346.9744391928095,
+        "right": 198.2962362574339,
+        "bottom": 399.42079344541503,
+        "width": 32.77771501092127,
+        "height": 52.446354252605545
+      },
+      "visible": true,
+      "clipped": false,
+      "behindCamera": false,
+      "logicalUnits": 1,
+      "countReason": "One alive AI competitor using the real ArenaMatchManager entity node."
+    },
+    {
+      "name": "bot-7",
+      "category": "COMPETITOR",
+      "classificationRule": "ArenaMatchManager.getCompositionCompetitors(): alive non-local bot",
+      "worldBounds": {
+        "min": {
+          "x": 8.25447593403319,
+          "y": -0.11397948002815239,
+          "z": -0.6257135592543788
+        },
+        "max": {
+          "x": 9.93180371857146,
+          "y": 1.3897683176994324,
+          "z": 1.6812213181412512
+        }
+      },
+      "screenBounds": {
+        "left": 360.86016733435844,
+        "top": 459.26429578371113,
+        "right": 404.87930021104444,
+        "bottom": 516.0778698450397,
+        "width": 44.019132876686,
+        "height": 56.81357406132855
+      },
+      "visible": true,
+      "clipped": true,
+      "behindCamera": false,
+      "logicalUnits": 1,
+      "countReason": "One alive AI competitor using the real ArenaMatchManager entity node."
+    }
+  ],
+  "counts": {
+    "BUILDING": 4,
+    "TREE": 12,
+    "ROAD": 5,
+    "POI": 14,
+    "VEHICLE": 5,
+    "COMPETITOR": 7,
+    "COLLECTIBLE": 3,
+    "RESOURCE_CLUSTER": 0,
+    "GROUND": 2
+  },
+  "player": {
+    "worldBounds": {
+      "min": {
+        "x": -2.5747165685587436,
+        "y": -0.23732999819169387,
+        "z": -2.5747165685587436
+      },
+      "max": {
+        "x": 2.5747165685587436,
+        "y": 0.7973299981916939,
+        "z": 2.5747165685587436
+      }
+    },
+    "screenBounds": {
+      "left": 140.56103140899464,
+      "top": 433.05054581523177,
+      "right": 249.43896859100533,
+      "bottom": 533.5331285052102,
+      "width": 108.8779371820107,
+      "height": 100.48258268997847
+    },
+    "visible": true,
+    "widthRatio": 0.2791741979025915,
+    "screenYRatio": 0.572620660142442,
+    "contributors": [
+      {
+        "name": "AbyssBase",
+        "drawn": true,
+        "halfExtents": {
+          "x": 2.035,
+          "y": 0.0275,
+          "z": 2.035
+        }
+      },
+      {
+        "name": "HoleInner",
+        "drawn": true,
+        "halfExtents": {
+          "x": 1.0360000000000003,
+          "y": 0.0375,
+          "z": 1.0360000000000003
+        }
+      },
+      {
+        "name": "InnerSwirl",
+        "drawn": true,
+        "halfExtents": {
+          "x": 0.9790333930232344,
+          "y": 0.10653226508720337,
+          "z": 0.9792898272073911
+        }
+      },
+      {
+        "name": "MidSwirl",
+        "drawn": true,
+        "halfExtents": {
+          "x": 1.1082220040438018,
+          "y": 0.2214356106960188,
+          "z": 1.062501716904387
+        }
+      },
+      {
+        "name": "OuterSwirl",
+        "drawn": true,
+        "halfExtents": {
+          "x": 1.887174991154862,
+          "y": 0.25411935351722875,
+          "z": 1.900261141078143
+        }
+      },
+      {
+        "name": "ShimmerSwirl",
+        "drawn": true,
+        "halfExtents": {
+          "x": 2.108698479434344,
+          "y": 0.5173299981916939,
+          "z": 2.1661223780719023
+        }
+      },
+      {
+        "name": "HoleRing",
+        "drawn": true,
+        "halfExtents": {
+          "x": 2.5747165685587436,
+          "y": 0.04,
+          "z": 2.5747165685587436
+        }
+      }
+    ],
+    "machineLevel": 1,
+    "machineSuctionRadius": 2.4
+  },
+  "emptyGround": {
+    "method": "screen-space grid estimate",
+    "hudExclusion": {
+      "topRatio": 0.16,
+      "bottomRatio": 0.18
+    },
+    "grid": {
+      "columns": 40,
+      "rows": 64
+    },
+    "totalSamples": 2560,
+    "groundSamples": 1280,
+    "occupiedSamples": 1063,
+    "emptyGroundSamples": 217,
+    "coverageByCategory": {
+      "COLLECTIBLE": 36,
+      "ROAD": 990,
+      "BUILDING": 66,
+      "COMPETITOR": 82,
+      "VEHICLE": 119,
+      "POI": 118
+    },
+    "largeEmptyGroundRatio": 0.16953125
+  },
+  "playableOpenArea": {
+    "predicate": "sample grid on xz plane over the union of real GROUND tile worldBounds (spacing 1m, no hardcoded cell size); groundHit = sample inside a GROUND entry footprint (tile-low / DistrictGround / GroundTile); roadHit = sample inside a ROAD entry footprint; roads and walkways count as walkable, never as blocking; blocked = sample inside a solid occupant footprint: BUILDING, TREE, POI (bench/trashcan/fountain/fence/streetlight/...) or a *static* vehicle environment node; route-driven DynamicVehicles are excluded because they move; objectCovered = sample inside a COLLECTIBLE or RESOURCE_CLUSTER footprint, reported separately and never treated as blocking (absorbable); openSamples = groundSamples where no solid occupant covers the sample; playableOpenAreaRatio = openSamples / groundSamples",
+    "caveat": "The gameplay runtime ships no Collider/RigidBody, so this ratio measures visual composition openness of the ground footprint, not a movement constraint.",
+    "sampleSpacingMeters": 1,
+    "extent": {
+      "minX": -32,
+      "maxX": 32,
+      "minZ": -32,
+      "maxZ": 32
+    },
+    "grid": {
+      "columns": 64,
+      "rows": 64
+    },
+    "totalSamples": 4096,
+    "groundSamples": 2048,
+    "roadSamples": 512,
+    "blockedSamples": 28,
+    "blockedByCategory": {
+      "BUILDING": 10,
+      "POI": 18
+    },
+    "objectCoveredSamples": 3,
+    "openSamples": 2020,
+    "playableOpenAreaRatio": 0.986328125
+  },
+  "authoredCollectibleSlots": {
+    "method": "authored slot positions projected through the gameplay camera",
+    "nominalHalfExtentMeters": 0.25,
+    "total": 23,
+    "visible": 23,
+    "liveCountable": 3
+  },
+  "authoredResourceClusters": {
+    "method": "authored cluster slots grouped by authored cluster id",
+    "total": 2,
+    "visible": 2,
+    "clusters": [
+      {
+        "id": "cluster_Cluster_Park",
+        "slots": 10,
+        "visibleSlots": 10,
+        "visible": true
+      },
+      {
+        "id": "cluster_Cluster_CitySquare",
+        "slots": 10,
+        "visibleSlots": 10,
+        "visible": true
+      }
+    ]
+  }
+}

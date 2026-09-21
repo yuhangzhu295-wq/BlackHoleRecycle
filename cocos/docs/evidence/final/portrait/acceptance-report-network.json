@@ -1,0 +1,2062 @@
+{
+  "status": "PASS",
+  "scope": "network",
+  "runner": "official-cocos-cli + Playwright CDP touch",
+  "build": "\r\nArguments:\n  C:\\ProgramData\\cocos\\editors\\Creator\\3.8.3\\CocosCreator.exe: true\n  project: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\n  build: platform=web-mobile;debug=false;orientation=portrait;\n  dev: false\n  home: C:\\Users\\zyu33\\.CocosCreator\n \n[Package] metrics@1.0.0 enable\n[Package] menu@1.0.0 enable\n[Package] profile@1.0.0 enable\n[Package] project@1.0.6 enable\n[Package] messages@1.0.0 enable\n[Package] utils@1.0.0 enable\n[Package] program@1.0.4 enable\n[Package] tester@1.0.0 enable\n[Package] information@1.0.1 enable\n[Package] preferences@1.0.0 enable\n[EditorQuickCompiler]Version information looks good.\nNote, quick compiler does not get launched.\nengine:compile-builtin-engine-success (195ms)\nLoad engine in C:\\ProgramData\\cocos\\editors\\Creator\\3.8.3\\resources\\resources\\3d\\engine\nRegister native engine in C:\\ProgramData\\cocos\\editors\\Creator\\3.8.3\\resources\\resources\\3d\\engine\\native\n[Package] engine@1.0.9 enable\n[Package] programming@1.0.0 enable\nRequest namespace: device-list\n[Package] device@1.0.1 enable\n[Package] ui-kit@1.0.1 enable\n[Package] asset-db@1.0.0 enable\n[Package] scene@1.0.0 enable\n[Package] server@1.0.0 enable\n[Package] preview@1.0.1 enable\nPreview import map: {\n  \"imports\": {\n    \"cc\": \"cce:/internal/x/cc\",\n    \"cc/env\": \"cc/editor/populate-internal-constants\",\n    \"cce.env\": \"cc/editor/populate-internal-constants\",\n    \"cc/userland/macro\": \"./userland/macro\"\n  }\n}\n[Package] animator@1.0.0 enable\n[Build] internalRegister pkg(engine) in android platform success!\n[Build] internalRegister pkg(scene) in android platform success!\n[Package] builder@1.3.8 enable\n[Build] internalRegister pkg(engine) in ohos platform success!\n[Build] internalRegister pkg(scene) in ohos platform success!\n[Build] internalRegister pkg(engine) in openharmony platform success!\n[Build] internalRegister pkg(scene) in openharmony platform success!\n[Build] internalRegister pkg(engine) in huawei-agc platform success!\n[Build] internalRegister pkg(scene) in huawei-agc platform success!\n[Build] internalRegister pkg(engine) in ios platform success!\n[Build] internalRegister pkg(scene) in ios platform success!\n[Build] internalRegister pkg(engine) in windows platform success!\n[Build] internalRegister pkg(scene) in windows platform success!\n[Build] internalRegister pkg(engine) in mac platform success!\n[Build] internalRegister pkg(scene) in mac platform success!\n[Build] internalRegister pkg(engine) in linux platform success!\n[Build] internalRegister pkg(scene) in linux platform success!\n[Build] internalRegister pkg(engine) in alipay-mini-game platform success!\n[Build] internalRegister pkg(scene) in alipay-mini-game platform success!\n[Build] internalRegister pkg(engine) in taobao-creative-app platform success!\n[Build] internalRegister pkg(scene) in taobao-creative-app platform success!\n[Build] internalRegister pkg(engine) in taobao-mini-game platform success!\n[Build] internalRegister pkg(scene) in taobao-mini-game platform success!\n[Build] internalRegister pkg(engine) in bytedance-mini-game platform success!\n[Build] internalRegister pkg(scene) in bytedance-mini-game platform success!\n[Build] internalRegister pkg(engine) in oppo-mini-game platform success!\n[Build] internalRegister pkg(scene) in oppo-mini-game platform success!\n[Build] internalRegister pkg(engine) in huawei-quick-game platform success!\n[Build] internalRegister pkg(scene) in huawei-quick-game platform success!\n[Build] internalRegister pkg(engine) in vivo-mini-game platform success!\n[Build] internalRegister pkg(scene) in vivo-mini-game platform success!\n[Build] internalRegister pkg(engine) in xiaomi-quick-game platform success!\n[Build] internalRegister pkg(scene) in xiaomi-quick-game platform success!\n[Build] internalRegister pkg(engine) in baidu-mini-game platform success!\n[Build] internalRegister pkg(scene) in baidu-mini-game platform success!\n[Build] internalRegister pkg(engine) in wechatgame platform success!\n[Build] internalRegister pkg(scene) in wechatgame platform success!\n[Build] internalRegister pkg(engine) in wechatprogram platform success!\n[Build] internalRegister pkg(scene) in wechatprogram platform success!\n[Build] internalRegister pkg(engine) in link-sure platform success!\n[Build] internalRegister pkg(scene) in link-sure platform success!\n[Build] internalRegister pkg(engine) in qtt platform success!\n[Build] internalRegister pkg(scene) in qtt platform success!\n[Build] internalRegister pkg(engine) in fb-instant-games platform success!\n[Build] internalRegister pkg(scene) in fb-instant-games platform success!\n[Build] internalRegister pkg(engine) in web-desktop platform success!\n[Build] internalRegister pkg(scene) in web-desktop platform success!\n[Build] internalRegister pkg(engine) in web-mobile platform success!\n[Build] internalRegister pkg(scene) in web-mobile platform success!\n[Build] internalRegister pkg(engine) in cocos-runtime platform success!\n[Build] internalRegister pkg(scene) in cocos-runtime platform success!\n[Build] internalRegister pkg(engine) in online platform success!\n[Build] internalRegister pkg(scene) in online platform success!\n[Build] internalRegister pkg(engine) in xr-meta platform success!\n[Build] internalRegister pkg(scene) in xr-meta platform success!\n[Build] internalRegister pkg(engine) in xr-huaweivr platform success!\n[Build] internalRegister pkg(scene) in xr-huaweivr platform success!\n[Build] internalRegister pkg(engine) in xr-pico platform success!\n[Build] internalRegister pkg(scene) in xr-pico platform success!\n[Build] internalRegister pkg(engine) in xr-rokid platform success!\n[Build] internalRegister pkg(scene) in xr-rokid platform success!\n[Build] internalRegister pkg(engine) in xr-monado platform success!\n[Build] internalRegister pkg(scene) in xr-monado platform success!\n[Build] internalRegister pkg(engine) in xr-spaces platform success!\n[Build] internalRegister pkg(scene) in xr-spaces platform success!\n[Build] internalRegister pkg(engine) in xr-seed platform success!\n[Build] internalRegister pkg(scene) in xr-seed platform success!\n[Build] internalRegister pkg(engine) in ar-android platform success!\n[Build] internalRegister pkg(scene) in ar-android platform success!\n[Build] internalRegister pkg(engine) in ar-ios platform success!\n[Build] internalRegister pkg(scene) in ar-ios platform success!\n[Build] internalRegister pkg(engine) in xr-gsxr platform success!\n[Build] internalRegister pkg(scene) in xr-gsxr platform success!\n[Build] internalRegister pkg(engine) in xr-yvr platform success!\n[Build] internalRegister pkg(scene) in xr-yvr platform success!\n[Build] internalRegister pkg(engine) in xr-htc platform success!\n[Build] internalRegister pkg(scene) in xr-htc platform success!\n[Build] internalRegister pkg(engine) in xr-iqiyi platform success!\n[Build] internalRegister pkg(scene) in xr-iqiyi platform success!\n[Build] internalRegister pkg(engine) in xr-skyworth platform success!\n[Build] internalRegister pkg(scene) in xr-skyworth platform success!\n[Build] internalRegister pkg(engine) in xr-ffalcon platform success!\n[Build] internalRegister pkg(scene) in xr-ffalcon platform success!\n[Build] internalRegister pkg(engine) in xr-nreal platform success!\n[Build] internalRegister pkg(scene) in xr-nreal platform success!\n[Build] internalRegister pkg(engine) in xr-inmo platform success!\n[Build] internalRegister pkg(scene) in xr-inmo platform success!\n[Build] internalRegister pkg(engine) in xr-lenovo platform success!\n[Build] internalRegister pkg(scene) in xr-lenovo platform success!\n[Build-plugin] register pkg engine: 36ms\n[Build-plugin] register pkg scene: 36ms\nBuilder PluginManager init: 36ms\n[Package] shortcuts@1.0.1 enable\n[Package] animation-graph@1.0.0 enable\n[Package] about@1.0.0 enable\n[Package] assets@1.0.0 enable\n[Package] console@1.0.0 enable\n[Package] crash-reporter@1.0.0 enable\n[Package] extension@3.1.6 enable\n[Package] hierarchy@1.0.0 enable\n[Package] inspector@1.0.0 enable\n[Package] light-probe@1.0.4 enable\n[Package] lightmap@1.0.4 enable\n[Package] node-library@1.0.1 enable\n[Package] package-asset@1.0.3 enable\n[Package] process@1.0.0 enable\n[Package] reference-image@1.0.0 enable\n[Package] reflection-probe@1.0.4 enable\n[Package] engine-extends@1.0.0 enable\n[Package] adsense-h5g-plugin@1.0.1 enable\n[Build] internalRegister pkg(adsense-h5g-plugin) in android platform success!\n[Build] internalRegister pkg(adsense-h5g-plugin) in ohos platform success!\n[Build] internalRegister pkg(adsense-h5g-plugin) in openharmony platform success!\n[Build] internalRegister pkg(adsense-h5g-plugin) in huawei-agc platform success!\n[Build] internalRegister pkg(adsense-h5g-plugin) in ios platform success!\n[Build] internalRegister pkg(adsense-h5g-plugin) in windows platform success!\n[Build] internalRegister pkg(adsense-h5g-plugin) in mac platform success!\n[Build] internalRegister pkg(adsense-h5g-plugin) in linux platform success!\n[Build] internalRegister pkg(adsense-h5g-plugin) in alipay-mini-game platform success!\n[Build] internalRegister pkg(adsense-h5g-plugin) in taobao-creative-app platform success!\n[Build] internalRegister pkg(adsense-h5g-plugin) in taobao-mini-game platform success!\n[Build] internalRegister pkg(adsense-h5g-plugin) in bytedance-mini-game platform success!\n[Build] internalRegister pkg(adsense-h5g-plugin) in oppo-mini-game platform success!\n[Build] internalRegister pkg(adsense-h5g-plugin) in huawei-quick-game platform success!\n[Build] internalRegister pkg(adsense-h5g-plugin) in vivo-mini-game platform success!\n[Build] internalRegister pkg(adsense-h5g-plugin) in xiaomi-quick-game platform success!\n[Build] internalRegister pkg(adsense-h5g-plugin) in baidu-mini-game platform success!\n[Build] internalRegister pkg(adsense-h5g-plugin) in wechatgame platform success!\n[Build] internalRegister pkg(adsense-h5g-plugin) in wechatprogram platform success!\n[Build] internalRegister pkg(adsense-h5g-plugin) in link-sure platform success!\n[Build] internalRegister pkg(adsense-h5g-plugin) in qtt platform success!\n[Build] internalRegister pkg(adsense-h5g-plugin) in fb-instant-games platform success!\n[Build] internalRegister pkg(adsense-h5g-plugin) in web-desktop platform success!\n[Build] internalRegister pkg(adsense-h5g-plugin) in web-mobile platform success!\n[Build] internalRegister pkg(adsense-h5g-plugin) in cocos-runtime platform success!\n[Build] internalRegister pkg(adsense-h5g-plugin) in online platform success!\n[Build] internalRegister pkg(adsense-h5g-plugin) in xr-meta platform success!\n[Build] internalRegister pkg(adsense-h5g-plugin) in xr-huaweivr platform success!\n[Build] internalRegister pkg(adsense-h5g-plugin) in xr-pico platform success!\n[Build] internalRegister pkg(adsense-h5g-plugin) in xr-rokid platform success!\n[Build] internalRegister pkg(adsense-h5g-plugin) in xr-monado platform success!\n[Build] internalRegister pkg(adsense-h5g-plugin) in xr-spaces platform success!\n[Build] internalRegister pkg(adsense-h5g-plugin) in xr-seed platform success!\n[Build] internalRegister pkg(adsense-h5g-plugin) in ar-android platform success!\n[Build] internalRegister pkg(adsense-h5g-plugin) in ar-ios platform success!\n[Build] internalRegister pkg(adsense-h5g-plugin) in xr-gsxr platform success!\n[Build] internalRegister pkg(adsense-h5g-plugin) in xr-yvr platform success!\n[Build] internalRegister pkg(adsense-h5g-plugin) in xr-htc platform success!\n[Build] internalRegister pkg(adsense-h5g-plugin) in xr-iqiyi platform success!\n[Build] internalRegister pkg(adsense-h5g-plugin) in xr-skyworth platform success!\n[Build] internalRegister pkg(adsense-h5g-plugin) in xr-ffalcon platform success!\n[Build] internalRegister pkg(adsense-h5g-plugin) in xr-nreal platform success!\n[Build] internalRegister pkg(adsense-h5g-plugin) in xr-inmo platform success!\n[Build] internalRegister pkg(adsense-h5g-plugin) in xr-lenovo platform success!\n[Build] internalRegister pkg(adsense-h5g-plugin) in web-desktop platform success!\n[Build] internalRegister pkg(adsense-h5g-plugin) in web-mobile platform success!\n[Build-plugin] register pkg adsense-h5g-plugin: 4ms\ninit builder manager success\n[Package] alipay-mini-game@1.0.2 enable\n[Build] internalRegister pkg(alipay-mini-game) in alipay-mini-game platform success!\n[Build-plugin] register pkg alipay-mini-game: 5ms\n[Package] android@1.0.1 enable\n[Build] internalRegister pkg(android) in android platform success!\n[Build] internalRegister pkg(android) in huawei-agc platform success!\n[Build-plugin] register pkg android: 8ms\n[Package] bytedance-mini-game@1.0.3 enable\n[Build] internalRegister pkg(bytedance-mini-game) in bytedance-mini-game platform success!\n[Build-plugin] register pkg bytedance-mini-game: 5ms\n[Package] certificate@1.0.0 enable\n[Package] channel-upload-tools@1.0.0 enable\n[Package] fb-instant-games@1.0.0 enable\n[Build] internalRegister pkg(fb-instant-games) in fb-instant-games platform success!\n[Build-plugin] register pkg fb-instant-games: 4ms\n[Package] huawei-agc@1.0.0 enable\n[Build] internalRegister pkg(huawei-agc) in huawei-agc platform success!\n[Build-plugin] register pkg huawei-agc: 3ms\n[Package] huawei-quick-game@1.0.3 enable\n[Build] internalRegister pkg(huawei-quick-game) in huawei-quick-game platform success!\n[Build-plugin] register pkg huawei-quick-game: 5ms\n[Package] ios@1.0.1 enable\n[Build-plugin] register pkg ios: 4ms\n[Package] linux@1.0.0 enable\n平台 linux 不存在，无法添加该平台\n[Package] mac@1.0.0 enable\n[Build-plugin] register pkg mac: 9ms\n[Package] native@1.0.2 enable\n[Build] internalRegister pkg(native) in ios platform success!\n[Build] internalRegister pkg(native) in android platform success!\n[Build] internalRegister pkg(native) in huawei-agc platform success!\n[Build] internalRegister pkg(native) in windows platform success!\n[Build] internalRegister pkg(native) in mac platform success!\n[Build] internalRegister pkg(native) in ohos platform success!\n[Build] internalRegister pkg(native) in openharmony platform success!\n平台 linux 不存在，不支持向该平台注册任何内容\n[Build] internalRegister pkg(native) in xr-huaweivr platform success!\n[Build] internalRegister pkg(native) in xr-meta platform success!\n[Build] internalRegister pkg(native) in xr-pico platform success!\n[Build] internalRegister pkg(native) in xr-rokid platform success!\n[Build] internalRegister pkg(native) in xr-monado platform success!\n[Build] internalRegister pkg(native) in ar-android platform success!\n[Build] internalRegister pkg(native) in ar-ios platform success!\n[Build] internalRegister pkg(native) in xr-spaces platform success!\n[Build] internalRegister pkg(native) in xr-seed platform success!\n[Build] internalRegister pkg(native) in xr-gsxr platform success!\n[Build] internalRegister pkg(native) in xr-yvr platform success!\n[Build] internalRegister pkg(native) in xr-htc platform success!\n[Build] internalRegister pkg(native) in xr-iqiyi platform success!\n[Build] internalRegister pkg(native) in xr-skyworth platform success!\n[Build] internalRegister pkg(native) in xr-ffalcon platform success!\n[Build] internalRegister pkg(native) in xr-nreal platform success!\n[Build] internalRegister pkg(native) in xr-inmo platform success!\n[Build] internalRegister pkg(native) in xr-lenovo platform success!\n[Build-plugin] register pkg native: 67ms\n[Package] ohos@1.0.0 enable\n[Build] internalRegister pkg(ohos) in ohos platform success!\n[Build-plugin] register pkg ohos: 3ms\n[Package] openharmony@1.0.0 enable\n[Build] internalRegister pkg(openharmony) in openharmony platform success!\n[Build-plugin] register pkg openharmony: 4ms\n[Package] oppo-mini-game@1.0.3 enable\n[Build] internalRegister pkg(oppo-mini-game) in oppo-mini-game platform success!\n[Build-plugin] register pkg oppo-mini-game: 4ms\n[Package] runtime-dev-tools@1.0.0 enable\n[Package] taobao-mini-game@1.0.1 enable\n[Build] internalRegister pkg(taobao-mini-game) in taobao-mini-game platform success!\n[Build-plugin] register pkg taobao-mini-game: 4ms\n[Package] vivo-mini-game@1.0.3 enable\n[Build] internalRegister pkg(vivo-mini-game) in vivo-mini-game platform success!\n[Build-plugin] register pkg vivo-mini-game: 3ms\n[Package] web-desktop@1.0.1 enable\n[Build] internalRegister pkg(web-desktop) in web-desktop platform success!\n[Build-plugin] register pkg web-desktop: 6ms\n[Package] web-mobile@1.0.1 enable\n[Build] internalRegister pkg(web-mobile) in web-mobile platform success!\n[Build-plugin] register pkg web-mobile: 4ms\n[Package] wechatgame@1.0.4 enable\n[Build] internalRegister pkg(wechatgame) in wechatgame platform success!\n[Build-plugin] register pkg wechatgame: 4ms\n[Package] wechatprogram@1.0.2 enable\n平台 wechatprogram 不存在，无法添加该平台\n[Package] windows@1.0.1 enable\n[Build] internalRegister pkg(windows) in windows platform success!\n[Build-plugin] register pkg windows: 3ms\n[Package] xiaomi-quick-game@1.0.2 enable\n[Build] internalRegister pkg(xiaomi-quick-game) in xiaomi-quick-game platform success!\n[Build-plugin] register pkg xiaomi-quick-game: 4ms\n[Package] cocos-service@3.0.7 enable\n[Build] internalRegister pkg(cocos-service) in android platform success!\n[Build] internalRegister pkg(cocos-service) in ohos platform success!\n[Build] internalRegister pkg(cocos-service) in openharmony platform success!\n[Build] internalRegister pkg(cocos-service) in huawei-agc platform success!\n[Build] internalRegister pkg(cocos-service) in ios platform success!\n[Build] internalRegister pkg(cocos-service) in windows platform success!\n[Build] internalRegister pkg(cocos-service) in mac platform success!\n[Build] internalRegister pkg(cocos-service) in linux platform success!\n[Build] internalRegister pkg(cocos-service) in alipay-mini-game platform success!\n[Build] internalRegister pkg(cocos-service) in taobao-creative-app platform success!\n[Build] internalRegister pkg(cocos-service) in taobao-mini-game platform success!\n[Build] internalRegister pkg(cocos-service) in bytedance-mini-game platform success!\n[Build] internalRegister pkg(cocos-service) in oppo-mini-game platform success!\n[Build] internalRegister pkg(cocos-service) in huawei-quick-game platform success!\n[Build] internalRegister pkg(cocos-service) in vivo-mini-game platform success!\n[Build] internalRegister pkg(cocos-service) in xiaomi-quick-game platform success!\n[Build] internalRegister pkg(cocos-service) in baidu-mini-game platform success!\n[Build] internalRegister pkg(cocos-service) in wechatgame platform success!\n[Build] internalRegister pkg(cocos-service) in wechatprogram platform success!\n[Build] internalRegister pkg(cocos-service) in link-sure platform success!\n[Build] internalRegister pkg(cocos-service) in qtt platform success!\n[Build] internalRegister pkg(cocos-service) in fb-instant-games platform success!\n[Build] internalRegister pkg(cocos-service) in web-desktop platform success!\n[Build] internalRegister pkg(cocos-service) in web-mobile platform success!\n[Build] internalRegister pkg(cocos-service) in cocos-runtime platform success!\n[Build] internalRegister pkg(cocos-service) in online platform success!\n[Build] internalRegister pkg(cocos-service) in xr-meta platform success!\n[Build] internalRegister pkg(cocos-service) in xr-huaweivr platform success!\n[Build] internalRegister pkg(cocos-service) in xr-pico platform success!\n[Build] internalRegister pkg(cocos-service) in xr-rokid platform success!\n[Build] internalRegister pkg(cocos-service) in xr-monado platform success!\n[Build] internalRegister pkg(cocos-service) in xr-spaces platform success!\n[Build] internalRegister pkg(cocos-service) in xr-seed platform success!\n[Build] internalRegister pkg(cocos-service) in ar-android platform success!\n[Build] internalRegister pkg(cocos-service) in ar-ios platform success!\n[Build] internalRegister pkg(cocos-service) in xr-gsxr platform success!\n[Build] internalRegister pkg(cocos-service) in xr-yvr platform success!\n[Build] internalRegister pkg(cocos-service) in xr-htc platform success!\n[Build] internalRegister pkg(cocos-service) in xr-iqiyi platform success!\n[Build] internalRegister pkg(cocos-service) in xr-skyworth platform success!\n[Build] internalRegister pkg(cocos-service) in xr-ffalcon platform success!\n[Build] internalRegister pkg(cocos-service) in xr-nreal platform success!\n[Build] internalRegister pkg(cocos-service) in xr-inmo platform success!\n[Build] internalRegister pkg(cocos-service) in xr-lenovo platform success!\n[Build-plugin] register pkg cocos-service: 4ms\n[Package] im-plugin@3.0.12 enable\n[Package] blank-template@1.0.1 enable\n[Package] black-hole-design-overlay@1.0.0 enable\n[Package] black-hole-home-builder@1.0.0 enable\n[Build] internalRegister pkg(black-hole-home-builder) in android platform success!\n[Build] internalRegister pkg(black-hole-home-builder) in ohos platform success!\n[Build] internalRegister pkg(black-hole-home-builder) in openharmony platform success!\n[Build] internalRegister pkg(black-hole-home-builder) in huawei-agc platform success!\n[Build] internalRegister pkg(black-hole-home-builder) in ios platform success!\n[Build] internalRegister pkg(black-hole-home-builder) in windows platform success!\n[Build] internalRegister pkg(black-hole-home-builder) in mac platform success!\n[Build] internalRegister pkg(black-hole-home-builder) in linux platform success!\n[Build] internalRegister pkg(black-hole-home-builder) in alipay-mini-game platform success!\n[Build] internalRegister pkg(black-hole-home-builder) in taobao-creative-app platform success!\n[Build] internalRegister pkg(black-hole-home-builder) in taobao-mini-game platform success!\n[Build] internalRegister pkg(black-hole-home-builder) in bytedance-mini-game platform success!\n[Build] internalRegister pkg(black-hole-home-builder) in oppo-mini-game platform success!\n[Build] internalRegister pkg(black-hole-home-builder) in huawei-quick-game platform success!\n[Build] internalRegister pkg(black-hole-home-builder) in vivo-mini-game platform success!\n[Build] internalRegister pkg(black-hole-home-builder) in xiaomi-quick-game platform success!\n[Build] internalRegister pkg(black-hole-home-builder) in baidu-mini-game platform success!\n[Build] internalRegister pkg(black-hole-home-builder) in wechatgame platform success!\n[Build] internalRegister pkg(black-hole-home-builder) in wechatprogram platform success!\n[Build] internalRegister pkg(black-hole-home-builder) in link-sure platform success!\n[Build] internalRegister pkg(black-hole-home-builder) in qtt platform success!\n[Build] internalRegister pkg(black-hole-home-builder) in fb-instant-games platform success!\n[Build] internalRegister pkg(black-hole-home-builder) in web-desktop platform success!\n[Build] internalRegister pkg(black-hole-home-builder) in web-mobile platform success!\n[Build] internalRegister pkg(black-hole-home-builder) in cocos-runtime platform success!\n[Build] internalRegister pkg(black-hole-home-builder) in online platform success!\n[Build] internalRegister pkg(black-hole-home-builder) in xr-meta platform success!\n[Build] internalRegister pkg(black-hole-home-builder) in xr-huaweivr platform success!\n[Build] internalRegister pkg(black-hole-home-builder) in xr-pico platform success!\n[Build] internalRegister pkg(black-hole-home-builder) in xr-rokid platform success!\n[Build] internalRegister pkg(black-hole-home-builder) in xr-monado platform success!\n[Build] internalRegister pkg(black-hole-home-builder) in xr-spaces platform success!\n[Build] internalRegister pkg(black-hole-home-builder) in xr-seed platform success!\n[Build] internalRegister pkg(black-hole-home-builder) in ar-android platform success!\n[Build] internalRegister pkg(black-hole-home-builder) in ar-ios platform success!\n[Build] internalRegister pkg(black-hole-home-builder) in xr-gsxr platform success!\n[Build] internalRegister pkg(black-hole-home-builder) in xr-yvr platform success!\n[Build] internalRegister pkg(black-hole-home-builder) in xr-htc platform success!\n[Build] internalRegister pkg(black-hole-home-builder) in xr-iqiyi platform success!\n[Build] internalRegister pkg(black-hole-home-builder) in xr-skyworth platform success!\n[Build] internalRegister pkg(black-hole-home-builder) in xr-ffalcon platform success!\n[Build] internalRegister pkg(black-hole-home-builder) in xr-nreal platform success!\n[Build] internalRegister pkg(black-hole-home-builder) in xr-inmo platform success!\n[Build] internalRegister pkg(black-hole-home-builder) in xr-lenovo platform success!\n[Build-plugin] register pkg black-hole-home-builder: 3ms\n[Package] black-hole-world-art-builder@1.0.0 enable\n[Package] placeholder@1.0.0 enable\nStart enter command build with options {\"platform\":\"web-mobile\",\"debug\":\"false\",\"orientation\":\"portrait\"}\nAxiosError: Request failed with status code 400\n    at settle (C:\\Users\\zyu33\\.CocosCreator\\builtin-extensions\\3.8.3\\extension\\node_modules\\axios\\lib\\core\\settle.js:19:12)\n    at IncomingMessage.handleStreamEnd (C:\\Users\\zyu33\\.CocosCreator\\builtin-extensions\\3.8.3\\extension\\node_modules\\axios\\lib\\adapters\\http.js:599:11)\n    at IncomingMessage.emit (events.js:327:22)\n    at IncomingMessage.emit (domain.js:467:12)\n    at endReadableNT (internal/streams/readable.js:1327:12)\n    at processTicksAndRejections (internal/process/task_queues.js:80:21)\n    at Axios.request (C:\\Users\\zyu33\\.CocosCreator\\builtin-extensions\\3.8.3\\extension\\node_modules\\axios\\lib\\core\\Axios.js:45:41)\n    at processTicksAndRejections (internal/process/task_queues.js:93:5)\n    at apiQueryExtensionList (C:\\Users\\zyu33\\.CocosCreator\\builtin-extensions\\3.8.3\\extension\\node_modules\\@editor\\extension-sdk\\sdk\\manager\\api\\extension.js:6:20)\n    at forceUpdate (C:\\Users\\zyu33\\.CocosCreator\\builtin-extensions\\3.8.3\\extension\\source\\browser\\force-update.ts:103:47) {\n  code: 'ERR_BAD_REQUEST',\n  config: {\n    transitional: {\n      silentJSONParsing: true,\n      forcedJSONParsing: true,\n      clarifyTimeoutError: false\n    },\n    adapter: [ 'xhr', 'http', 'fetch' ],\n    transformRequest: [ [Function: transformRequest] ],\n    transformResponse: [ [Function: transformResponse] ],\n    timeout: 300000,\n    xsrfCookieName: 'XSRF-TOKEN',\n    xsrfHeaderName: 'X-XSRF-TOKEN',\n    maxContentLength: -1,\n    maxBodyLength: -1,\n    env: { FormData: [Function], Blob: null },\n    validateStatus: [Function: validateStatus],\n    headers: Object [AxiosHeaders] {\n      Accept: 'application/json, text/plain, */*',\n      'Content-Type': undefined,\n      'User-Agent': 'axios/1.7.7',\n      'Accept-Encoding': 'gzip, compress, deflate, br'\n    },\n    baseURL: 'https://extension-manager.cocos.com',\n    params: { e: '3.8.3', label: 'hard_update', lang: 'zh' },\n    method: 'get',\n    url: '/module/list',\n    data: undefined\n  },\n  request: <ref *1> ClientRequest {\n    _events: [Object: null prototype] {\n      socket: [Function (anonymous)],\n      abort: [Function (anonymous)],\n      aborted: [Function (anonymous)],\n      connect: [Function (anonymous)],\n      error: [Function (anonymous)],\n      timeout: [Function (anonymous)],\n      prefinish: [Function: requestOnPrefinish]\n    },\n    _eventsCount: 7,\n    _maxListeners: undefined,\n    outputData: [],\n    outputSize: 0,\n    writable: true,\n    destroyed: false,\n    _last: true,\n    chunkedEncoding: false,\n    shouldKeepAlive: false,\n    _defaultKeepAlive: true,\n    useChunkedEncodingByDefault: false,\n    sendDate: false,\n    _removedConnection: false,\n    _removedContLen: false,\n    _removedTE: false,\n    _contentLength: 0,\n    _hasBody: true,\n    _trailer: '',\n    finished: true,\n    _headerSent: true,\n    socket: Socket {\n      connecting: false,\n      _hadError: false,\n      _parent: null,\n      _host: null,\n      _readableState: [ReadableState],\n      _events: [Object: null prototype],\n      _eventsCount: 7,\n      _maxListeners: undefined,\n      _writableState: [WritableState],\n      allowHalfOpen: false,\n      _sockname: null,\n      _pendingData: null,\n      _pendingEncoding: '',\n      server: null,\n      _server: null,\n      parser: null,\n      _httpMessage: [Circular *1],\n      timeout: 300000,\n      [Symbol(async_id_symbol)]: 5559,\n      [Symbol(kHandle)]: [TCP],\n      [Symbol(kSetNoDelay)]: false,\n      [Symbol(lastWriteQueueSize)]: 0,\n      [Symbol(timeout)]: Timeout {\n        _idleTimeout: 300000,\n        _idlePrev: [TimersList],\n        _idleNext: [TimersList],\n        _idleStart: 13474,\n        _onTimeout: [Function: bound ],\n        _timerArgs: undefined,\n        _repeat: null,\n        _destroyed: false,\n        [Symbol(refed)]: false,\n        [Symbol(kHasPrimitive)]: false,\n        [Symbol(asyncId)]: 5567,\n        [Symbol(triggerId)]: 5561\n      },\n      [Symbol(kBuffer)]: null,\n      [Symbol(kBufferCb)]: null,\n      [Symbol(kBufferGen)]: null,\n      [Symbol(kCapture)]: false,\n      [Symbol(kBytesRead)]: 0,\n      [Symbol(kBytesWritten)]: 0,\n      [Symbol(RequestTimeout)]: undefined\n    },\n    _header: 'GET https://extension-manager.cocos.com/module/list?e=3.8.3&label=hard_update&lang=zh HTTP/1.1\\r\\n' +\n      'Accept: application/json, text/plain, */*\\r\\n' +\n      'User-Agent: axios/1.7.7\\r\\n' +\n      'Accept-Encoding: gzip, compress, deflate, br\\r\\n' +\n      'host: extension-manager.cocos.com\\r\\n' +\n      'Connection: close\\r\\n' +\n      '\\r\\n',\n    _keepAliveTimeout: 0,\n    _onPendingData: [Function: noopPendingOutput],\n    agent: Agent {\n      _events: [Object: null prototype],\n      _eventsCount: 2,\n      _maxListeners: undefined,\n      defaultPort: 80,\n      protocol: 'http:',\n      options: [Object],\n      requests: {},\n      sockets: [Object],\n      freeSockets: {},\n      keepAliveMsecs: 1000,\n      keepAlive: false,\n      maxSockets: Infinity,\n      maxFreeSockets: 256,\n      scheduling: 'fifo',\n      maxTotalSockets: Infinity,\n      totalSocketCount: 1,\n      [Symbol(kCapture)]: false\n    },\n    socketPath: undefined,\n    method: 'GET',\n    maxHeaderSize: undefined,\n    insecureHTTPParser: undefined,\n    path: 'https://extension-manager.cocos.com/module/list?e=3.8.3&label=hard_update&lang=zh',\n    _ended: true,\n    res: IncomingMessage {\n      _readableState: [ReadableState],\n      _events: [Object: null prototype],\n      _eventsCount: 4,\n      _maxListeners: undefined,\n      socket: [Socket],\n      httpVersionMajor: 1,\n      httpVersionMinor: 1,\n      httpVersion: '1.1',\n      complete: true,\n      headers: [Object],\n      rawHeaders: [Array],\n      trailers: {},\n      rawTrailers: [],\n      aborted: false,\n      upgrade: false,\n      url: '',\n      method: null,\n      statusCode: 400,\n      statusMessage: 'Bad Request',\n      client: [Socket],\n      _consuming: false,\n      _dumped: false,\n      req: [Circular *1],\n      responseUrl: 'https://extension-manager.cocos.com/module/list?e=3.8.3&label=hard_update&lang=zh',\n      redirects: [],\n      [Symbol(kCapture)]: false,\n      [Symbol(RequestTimeout)]: undefined\n    },\n    aborted: false,\n    timeoutCb: null,\n    upgradeOrConnect: false,\n    parser: null,\n    maxHeadersCount: null,\n    reusedSocket: false,\n    host: '127.0.0.1',\n    protocol: 'http:',\n    _redirectable: Writable {\n      _writableState: [WritableState],\n      _events: [Object: null prototype],\n      _eventsCount: 3,\n      _maxListeners: undefined,\n      _options: [Object],\n      _ended: true,\n      _ending: true,\n      _redirectCount: 0,\n      _redirects: [],\n      _requestBodyLength: 0,\n      _requestBodyBuffers: [],\n      _onNativeResponse: [Function (anonymous)],\n      _currentRequest: [Circular *1],\n      _currentUrl: 'https://extension-manager.cocos.com/module/list?e=3.8.3&label=hard_update&lang=zh',\n      _timeout: null,\n      [Symbol(kCapture)]: false\n    },\n    [Symbol(kCapture)]: false,\n    [Symbol(kNeedDrain)]: false,\n    [Symbol(corked)]: 0,\n    [Symbol(kOutHeaders)]: [Object: null prototype] {\n      accept: [Array],\n      'user-agent': [Array],\n      'accept-encoding': [Array],\n      host: [Array]\n    }\n  },\n  response: {\n    status: 400,\n    statusText: 'Bad Request',\n    headers: Object [AxiosHeaders] {\n      date: 'Mon, 21 Sep 2026 11:50:33 GMT',\n      'content-type': 'text/html',\n      'content-length': '248',\n      connection: 'close'\n    },\n    config: {\n      transitional: [Object],\n      adapter: [Array],\n      transformRequest: [Array],\n      transformResponse: [Array],\n      timeout: 300000,\n      xsrfCookieName: 'XSRF-TOKEN',\n      xsrfHeaderName: 'X-XSRF-TOKEN',\n      maxContentLength: -1,\n      maxBodyLength: -1,\n      env: [Object],\n      validateStatus: [Function: validateStatus],\n      headers: [Object [AxiosHeaders]],\n      baseURL: 'https://extension-manager.cocos.com',\n      params: [Object],\n      method: 'get',\n      url: '/module/list',\n      data: undefined\n    },\n    request: <ref *1> ClientRequest {\n      _events: [Object: null prototype],\n      _eventsCount: 7,\n      _maxListeners: undefined,\n      outputData: [],\n      outputSize: 0,\n      writable: true,\n      destroyed: false,\n      _last: true,\n      chunkedEncoding: false,\n      shouldKeepAlive: false,\n      _defaultKeepAlive: true,\n      useChunkedEncodingByDefault: false,\n      sendDate: false,\n      _removedConnection: false,\n      _removedContLen: false,\n      _removedTE: false,\n      _contentLength: 0,\n      _hasBody: true,\n      _trailer: '',\n      finished: true,\n      _headerSent: true,\n      socket: [Socket],\n      _header: 'GET https://extension-manager.cocos.com/module/list?e=3.8.3&label=hard_update&lang=zh HTTP/1.1\\r\\n' +\n        'Accept: application/json, text/plain, */*\\r\\n' +\n        'User-Agent: axios/1.7.7\\r\\n' +\n        'Accept-Encoding: gzip, compress, deflate, br\\r\\n' +\n        'host: extension-manager.cocos.com\\r\\n' +\n        'Connection: close\\r\\n' +\n        '\\r\\n',\n      _keepAliveTimeout: 0,\n      _onPendingData: [Function: noopPendingOutput],\n      agent: [Agent],\n      socketPath: undefined,\n      method: 'GET',\n      maxHeaderSize: undefined,\n      insecureHTTPParser: undefined,\n      path: 'https://extension-manager.cocos.com/module/list?e=3.8.3&label=hard_update&lang=zh',\n      _ended: true,\n      res: [IncomingMessage],\n      aborted: false,\n      timeoutCb: null,\n      upgradeOrConnect: false,\n      parser: null,\n      maxHeadersCount: null,\n      reusedSocket: false,\n      host: '127.0.0.1',\n      protocol: 'http:',\n      _redirectable: [Writable],\n      [Symbol(kCapture)]: false,\n      [Symbol(kNeedDrain)]: false,\n      [Symbol(corked)]: 0,\n      [Symbol(kOutHeaders)]: [Object: null prototype]\n    },\n    data: '<html>\\r\\n' +\n      '<head><title>400 The plain HTTP request was sent to HTTPS port</title></head>\\r\\n' +\n      '<body>\\r\\n' +\n      '<center><h1>400 Bad Request</h1></center>\\r\\n' +\n      '<center>The plain HTTP request was sent to HTTPS port</center>\\r\\n' +\n      '<hr><center>nginx</center>\\r\\n' +\n      '</body>\\r\\n' +\n      '</html>\\r\\n'\n  },\n  status: 400\n}\nauto refresh because script compiled or scene changed\nasset-db is ready!\ninit cacheTimerList {}\nCheck and complete build options {\n  platform: 'web-mobile',\n  debug: 'false',\n  orientation: 'portrait',\n  outputName: 'web-mobile',\n  taskName: 'web-mobile'\n}\n compression type(undefined) is invalid for this platform! 将会使用新值 merge_dep\n2026-9-21 19:50:41 - debug: =================================== build Task (web-mobile) Start ================================\r\n\n2026-9-21 19:50:41 - debug: Start build task, options:\r{\"platform\":\"web-mobile\",\"debug\":false,\"orientation\":\"portrait\",\"outputName\":\"web-mobile\",\"taskName\":\"web-mobile\",\"mainBundleCompressionType\":\"merge_dep\",\"packages\":{\"adsense-h5g-plugin\":{\"enableAdsense\":false,\"enableTestAd\":false,\"__version__\":\"1.0.1\",\"AFPHostPropertyCode\":\"ca-host-pub-5396158963872751\",\"AFPHostDomain\":\"douyougame.com\",\"otherAFPHostPropertyCode\":\"\",\"otherAFPDomain\":\"\"},\"web-mobile\":{\"orientation\":\"auto\",\"embedWebDebugger\":false},\"cocos-service\":{\"configID\":\"2aea8d\",\"services\":[]}},\"name\":\"black-hole-recycle-cocos\",\"server\":\"\",\"buildPath\":\"project://build\",\"md5Cache\":false,\"skipCompressTexture\":false,\"sourceMaps\":false,\"overwriteProjectSettings\":{\"includeModules\":{\"gfx-webgl2\":\"on\",\"physics\":\"inherit-project-setting\",\"physics-2d\":\"inherit-project-setting\"},\"macroConfig\":{\"cleanupImageCache\":\"inherit-project-setting\"}},\"nativeCodeBundleMode\":\"both\",\"polyfills\":{\"asyncFunctions\":true},\"experimentalEraseModules\":false,\"startSceneAssetBundle\":false,\"bundleConfigs\":[],\"useBuiltinServer\":false,\"mainBundleIsRemote\":false,\"useSplashScreen\":true,\"bundleCommonChunk\":false,\"packAutoAtlas\":true,\"startScene\":\"scene-game-0001-8888-9999-aaaabbbbcccc\",\"scenes\":[{\"url\":\"db://assets/scenes/Bootstrap.scene\",\"uuid\":\"scene-bootstrap-0002-8888-9999-aaaabbbbcccc\"},{\"url\":\"db://assets/scenes/Game.scene\",\"uuid\":\"scene-game-0001-8888-9999-aaaabbbbcccc\"}],\"wasmCompressionMode\":false,\"logDest\":\"project://temp/builder/log/web-mobile2026-9-21 19-50.log\"}\r\n\n2026-9-21 19:50:41 - debug: Build with Cocos Creator 3.8.3\r\n\nauto refresh because script compiled or scene changed\n2026-9-21 19:50:41 - debug: cocos-service:(onBeforeBuild) start..., progress: 0%\r\n\n2026-9-21 19:50:41 - debug: // ---- build task cocos-service：onBeforeBuild ----\r\n\n2026-9-21 19:50:41 - debug: // ---- build task cocos-service：onBeforeBuild ---- (5ms)\r\n\n2026-9-21 19:50:41 - debug: cocos-service:(onBeforeBuild) in 5 ms ✓, progress: 2%\r\n\n2026-9-21 19:50:41 - debug: scene:(onBeforeBuild) start..., progress: 2%\r\n\n2026-9-21 19:50:41 - debug: // ---- build task scene：onBeforeBuild ----\r\n\n2026-9-21 19:50:41 - debug: // ---- build task scene：onBeforeBuild ---- (1ms)\r\n\n2026-9-21 19:50:41 - debug: scene:(onBeforeBuild) in 1 ms ✓, progress: 4%\r\n\n2026-9-21 19:50:41 - debug: black-hole-home-builder:(onBeforeBuild) start..., progress: 4%\r\n\n2026-9-21 19:50:41 - debug: // ---- build task black-hole-home-builder：onBeforeBuild ----\r\n\n2026-9-21 19:50:41 - debug: // ---- build task black-hole-home-builder：onBeforeBuild ---- (1ms)\r\n\n2026-9-21 19:50:41 - debug: black-hole-home-builder:(onBeforeBuild) in 1 ms ✓, progress: 5%\r\n\n2026-9-21 19:50:49 - debug: Start lock asset db..., progress: 5%\r\n\n2026-9-21 19:50:49 - log: Asset DB is paused with build!\r\n\n2026-9-21 19:50:49 - debug: Query all assets info in project\r\n\n2026-9-21 19:50:49 - debug: init custom config: keepNodeUuid: false, useCache: true\r\n\n2026-9-21 19:50:49 - debug: web-mobile:(onAfterInit) start..., progress: 5%\r\n\n2026-9-21 19:50:49 - debug: // ---- build task web-mobile：onAfterInit ----\r\n\n2026-9-21 19:50:49 - debug: // ---- build task web-mobile：onAfterInit ---- (1ms)\r\n\n2026-9-21 19:50:49 - debug: web-mobile:(onAfterInit) in 1 ms ✓, progress: 7%\r\n\n2026-9-21 19:50:49 - debug: cocos-service:(onAfterInit) start..., progress: 7%\r\n\n2026-9-21 19:50:49 - debug: // ---- build task cocos-service：onAfterInit ----\r\n\n2026-9-21 19:50:49 - debug: // ---- build task cocos-service：onAfterInit ---- (4ms)\r\n\n2026-9-21 19:50:49 - debug: cocos-service:(onAfterInit) in 4 ms ✓, progress: 9%\r\n\n2026-9-21 19:50:49 - debug: engine:(onAfterInit) start..., progress: 9%\r\n\n2026-9-21 19:50:49 - debug: // ---- build task engine：onAfterInit ----\r\n\n2026-9-21 19:50:49 - debug: // ---- build task engine：onAfterInit ---- (2ms)\r\n\n2026-9-21 19:50:49 - debug: engine:(onAfterInit) in 2 ms ✓, progress: 11%\r\n\n2026-9-21 19:50:49 - debug: adsense-h5g-plugin:(onBeforeBundleInit) start..., progress: 11%\r\n\n2026-9-21 19:50:49 - debug: // ---- build task adsense-h5g-plugin：onBeforeBundleInit ----\r\n\n2026-9-21 19:50:49 - debug: [adsense-h5g-plugin] remove script success\r\n\n2026-9-21 19:50:49 - debug: // ---- build task adsense-h5g-plugin：onBeforeBundleInit ---- (3ms)\r\n\n2026-9-21 19:50:49 - debug: adsense-h5g-plugin:(onBeforeBundleInit) in 3 ms ✓, progress: 11%\r\n\n2026-9-21 19:50:50 - debug: Init all bundles start..., progress: 11%\r\n\n2026-9-21 19:50:50 - debug: Num of bundles: 3..., progress: 11%\r\n\n2026-9-21 19:50:50 - debug: web-mobile:(onAfterBundleInit) start..., progress: 11%\r\n\n2026-9-21 19:50:50 - debug: // ---- build task web-mobile：onAfterBundleInit ----\r\n\n2026-9-21 19:50:50 - debug: // ---- build task web-mobile：onAfterBundleInit ---- (2ms)\r\n\n2026-9-21 19:50:50 - debug: web-mobile:(onAfterBundleInit) in 2 ms ✓, progress: 11%\r\n\n2026-9-21 19:50:50 - debug: 查询 Asset Bundle start, progress: 11%\r\n\n2026-9-21 19:50:50 - debug: // ---- build task 查询 Asset Bundle ----\r\n\n2026-9-21 19:50:50 - debug: Init bundle root assets start..., progress: 11%\r\n\n2026-9-21 19:50:50 - debug: Query preload assets from cc.config.json: 60f7195c-ec2a-45eb-ba94-8955f60e81d0,1c02ae6f-4492-4915-b8f8-7492a3b1e4cd,810e96e4-e456-4468-9b59-f4e8f39732c0,efe8e2a3-eace-427b-b4f1-cb8a937ec77d,e9aa9a3e-5b2b-4ac7-a2c7-073de2b2b24f,8bbdbcdd-5cd4-4100-b6d5-b7c9625b6107,50f4348b-c883-4e2f-8f11-ce233b859fa1,fda095cb-831d-4601-ad94-846013963de8,f92806d7-1768-443f-afe8-12bcde84d0f0,dd3a144d-ab7f-41f0-82b8-2e43a090d496,f0416e68-0200-4b77-a926-4f9d16e494da,511d2633-09a7-4bdd-ac42-f778032124b3,5d45aa00-e064-4938-b314-4265f0c2258c,9361fd90-ba52-4f84-aa93-6e878fd576ca,970b0598-bcb0-4714-91fb-2e81440dccd8,bcd64cc6-2dd9-43f6-abbe-66318d332032,d930590d-bb92-4cc8-8bd1-23cd027f9edf,a3cd009f-0ab0-420d-9278-b9fdab939bbc,c27215d8-6835-4b68-bfbb-bdeac6100c04,b5d6115f-0370-4d7c-aad3-c194cc71cf98,d1346436-ac96-4271-b863-1f4fdead95b0,971bdb23-3ff6-43eb-b422-1c30165a3663,17debcc3-0a6b-4b8a-b00b-dc58b885581e,711ebe11-f673-4cd9-9a83-63c60ba54c5b,c0143906-9aed-447e-9436-2ae8512d1b6e,14da1725-c4c2-42b4-ab08-ee0aeb6898b3,081cab31-dccd-428e-8652-f2404cc81c47,78e0584a-4343-4727-8f37-e14e65c2a2db,ba21476f-2866-4f81-9c4d-6e359316e448,871c3b6c-7379-419d-bda3-794b239ab90d,1d08ef62-a503-4ce2-8b9a-46c90873f7d3\r\n\n2026-9-21 19:50:50 - debug:   Number of all scenes: 2\r\n\n2026-9-21 19:50:50 - debug:   Number of all scripts: 62\r\n\n2026-9-21 19:50:50 - debug:   Number of other assets: 692\r\n\n2026-9-21 19:50:50 - debug: Init bundle root assets success..., progress: 11%\r\n\n2026-9-21 19:50:50 - debug: reload all scripts.\r\n\n2026-9-21 19:50:50 - debug: Set detail map pack:///resolution-detail-map.json: {}\r\n\n2026-9-21 19:50:50 - groupCollapsed: Invalidate all modules\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\93\\93ba276ea7b26ffcdc433fab14afc1ed6f05647b.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\93\\93ba276ea7b26ffcdc433fab14afc1ed6f05647b.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"cce:/internal/x/cc-fu/base\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"cce:/internal/x/cc-fu/gfx-webgl\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"cce:/internal/x/cc-fu/gfx-webgl2\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"cce:/internal/x/cc-fu/gfx-empty\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"cce:/internal/x/cc-fu/3d\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"cce:/internal/x/cc-fu/animation\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"cce:/internal/x/cc-fu/skeletal-animation\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"cce:/internal/x/cc-fu/2d\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"cce:/internal/x/cc-fu/sorting\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"cce:/internal/x/cc-fu/ui\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"cce:/internal/x/cc-fu/particle\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"cce:/internal/x/cc-fu/particle-2d\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"cce:/internal/x/cc-fu/physics-framework\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"cce:/internal/x/cc-fu/physics-2d-framework\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"cce:/internal/x/cc-fu/physics-2d-box2d-wasm\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"cce:/internal/x/cc-fu/intersection-2d\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"cce:/internal/x/cc-fu/primitive\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"cce:/internal/x/cc-fu/profiler\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"cce:/internal/x/cc-fu/geometry-renderer\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"cce:/internal/x/cc-fu/audio\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"cce:/internal/x/cc-fu/video\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"cce:/internal/x/cc-fu/xr\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"cce:/internal/x/cc-fu/light-probe\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"cce:/internal/x/cc-fu/terrain\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"cce:/internal/x/cc-fu/webview\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"cce:/internal/x/cc-fu/tween\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"cce:/internal/x/cc-fu/tiled-map\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"cce:/internal/x/cc-fu/spine\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"cce:/internal/x/cc-fu/dragon-bones\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"cce:/internal/x/cc-fu/custom-pipeline\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"cce:/internal/x/cc-fu/base\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"cce:/internal/x/cc-fu/gfx-webgl\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"cce:/internal/x/cc-fu/gfx-webgl2\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"cce:/internal/x/cc-fu/gfx-empty\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"cce:/internal/x/cc-fu/3d\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"cce:/internal/x/cc-fu/animation\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"cce:/internal/x/cc-fu/skeletal-animation\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"cce:/internal/x/cc-fu/2d\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"cce:/internal/x/cc-fu/sorting\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"cce:/internal/x/cc-fu/ui\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"cce:/internal/x/cc-fu/particle\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"cce:/internal/x/cc-fu/particle-2d\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"cce:/internal/x/cc-fu/physics-framework\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"cce:/internal/x/cc-fu/physics-2d-framework\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"cce:/internal/x/cc-fu/physics-2d-box2d-wasm\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"cce:/internal/x/cc-fu/intersection-2d\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"cce:/internal/x/cc-fu/primitive\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"cce:/internal/x/cc-fu/profiler\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"cce:/internal/x/cc-fu/geometry-renderer\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"cce:/internal/x/cc-fu/audio\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"cce:/internal/x/cc-fu/video\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"cce:/internal/x/cc-fu/xr\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"cce:/internal/x/cc-fu/light-probe\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"cce:/internal/x/cc-fu/terrain\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"cce:/internal/x/cc-fu/webview\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"cce:/internal/x/cc-fu/tween\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"cce:/internal/x/cc-fu/tiled-map\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"cce:/internal/x/cc-fu/spine\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"cce:/internal/x/cc-fu/dragon-bones\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"cce:/internal/x/cc-fu/custom-pipeline\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/93/93ba276ea7b26ffcdc433fab14afc1ed6f05647b.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: Invalidating 'pack:///chunks/93/93ba276ea7b26ffcdc433fab14afc1ed6f05647b.js'\r\n\n2026-9-21 19:50:50 - groupEnd: Invalidate all modules\r\n\n2026-9-21 19:50:50 - groupCollapsed: Imports all modules\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/93/93ba276ea7b26ffcdc433fab14afc1ed6f05647b.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\6d\\6d8fd2b0177941b032ddc0733af48a561fb60657.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\6d\\6d8fd2b0177941b032ddc0733af48a561fb60657.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/6d/6d8fd2b0177941b032ddc0733af48a561fb60657.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\c8\\c8b6a709c03b1f3a3069932b4b22bfbc5834b962.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\c8\\c8b6a709c03b1f3a3069932b4b22bfbc5834b962.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Register DebugViewRuntimeControl\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/c8/c8b6a709c03b1f3a3069932b4b22bfbc5834b962.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\f6\\f63b5cdfbf227c57df63c1410ab9c8109d53716f.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\f6\\f63b5cdfbf227c57df63c1410ab9c8109d53716f.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\6a\\6a5019a719a9014c047e67aa1cf34453ab8392ce.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\6a\\6a5019a719a9014c047e67aa1cf34453ab8392ce.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\13\\13779d6c4891aadc1279530a6cbab840323f1772.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\13\\13779d6c4891aadc1279530a6cbab840323f1772.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/6a/6a5019a719a9014c047e67aa1cf34453ab8392ce.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/13/13779d6c4891aadc1279530a6cbab840323f1772.js\" loaded.\r\n\n2026-9-21 19:50:50 - log: 📊 [Analytics] game_launch\r{}\r\n\n2026-9-21 19:50:50 - log: 📊 [Analytics] session_start\r{}\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/f6/f63b5cdfbf227c57df63c1410ab9c8109d53716f.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\8c\\8c9f2397a158a2518094849356da5b7222966448.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\8c\\8c9f2397a158a2518094849356da5b7222966448.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/8c/8c9f2397a158a2518094849356da5b7222966448.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\6a\\6a3d6d30af4cfb412a2eaec5ea292f83de06c8ca.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\6a\\6a3d6d30af4cfb412a2eaec5ea292f83de06c8ca.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/6a/6a3d6d30af4cfb412a2eaec5ea292f83de06c8ca.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\c6\\c60c18fa251070a47e237fd39423879166d4c78c.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\c6\\c60c18fa251070a47e237fd39423879166d4c78c.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/c6/c60c18fa251070a47e237fd39423879166d4c78c.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\f2\\f294a72d664d0fde8ad6b1007c3ab99b8b1fab29.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\f2\\f294a72d664d0fde8ad6b1007c3ab99b8b1fab29.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/f2/f294a72d664d0fde8ad6b1007c3ab99b8b1fab29.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\2f\\2f7c5a15d0c75df063809620eb2d9d2277520ebd.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\2f\\2f7c5a15d0c75df063809620eb2d9d2277520ebd.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/2f/2f7c5a15d0c75df063809620eb2d9d2277520ebd.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\4c\\4c92a7ef2159f2d1b235bbc9e2d06db2f8c64def.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\4c\\4c92a7ef2159f2d1b235bbc9e2d06db2f8c64def.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/4c/4c92a7ef2159f2d1b235bbc9e2d06db2f8c64def.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\0d\\0daf1f881d140e7ba6c961b4882cb08dfe734a46.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\0d\\0daf1f881d140e7ba6c961b4882cb08dfe734a46.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\74\\7431633bac342e8dc5b7130563ea577d67b4b0a8.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\74\\7431633bac342e8dc5b7130563ea577d67b4b0a8.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\1b\\1be044856aad5f18bf6d944fca9ee3ea33e81e89.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\1b\\1be044856aad5f18bf6d944fca9ee3ea33e81e89.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\6e\\6e66c500ae6f351a516362aed5a1d63607551b2c.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\6e\\6e66c500ae6f351a516362aed5a1d63607551b2c.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\bb\\bb6a33e318519d9b2f33d9ae24767b09f6b26fa1.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\bb\\bb6a33e318519d9b2f33d9ae24767b09f6b26fa1.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\89\\89e5bf9e55a968837d1b0036304f911cd3d387b8.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\89\\89e5bf9e55a968837d1b0036304f911cd3d387b8.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\eb\\eb9456edb878c3a3d1469fbae882de102584eeb9.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\eb\\eb9456edb878c3a3d1469fbae882de102584eeb9.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\91\\9171239f37498e62004345ec4e692fd555ce7b2f.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\91\\9171239f37498e62004345ec4e692fd555ce7b2f.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\8f\\8f92ccadee109d0d39701b145a6c4721214eaef8.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\8f\\8f92ccadee109d0d39701b145a6c4721214eaef8.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/74/7431633bac342e8dc5b7130563ea577d67b4b0a8.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/eb/eb9456edb878c3a3d1469fbae882de102584eeb9.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/91/9171239f37498e62004345ec4e692fd555ce7b2f.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/8f/8f92ccadee109d0d39701b145a6c4721214eaef8.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Register ArenaHUDController\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/bb/bb6a33e318519d9b2f33d9ae24767b09f6b26fa1.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Register MapPreviewGraphic\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/89/89e5bf9e55a968837d1b0036304f911cd3d387b8.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Register RuntimePageInputRouter\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/1b/1be044856aad5f18bf6d944fca9ee3ea33e81e89.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/6e/6e66c500ae6f351a516362aed5a1d63607551b2c.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/0d/0daf1f881d140e7ba6c961b4882cb08dfe734a46.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\69\\694c8d1d21a585f78167310998b4c8d26d056fdf.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\69\\694c8d1d21a585f78167310998b4c8d26d056fdf.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\e9\\e95afe5912f7e0955ae3360d3ef3360a77841957.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\e9\\e95afe5912f7e0955ae3360d3ef3360a77841957.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\9b\\9b96719302629922d6d7341d6850818df7e66f7f.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\9b\\9b96719302629922d6d7341d6850818df7e66f7f.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\39\\39a7ec5376a6352d387e450d3c6770ce47257d6e.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\39\\39a7ec5376a6352d387e450d3c6770ce47257d6e.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Register MachineVisualLibrary\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/9b/9b96719302629922d6d7341d6850818df7e66f7f.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Register WorldArtLibrary\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/39/39a7ec5376a6352d387e450d3c6770ce47257d6e.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Register BlackHoleMachine\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/e9/e95afe5912f7e0955ae3360d3ef3360a77841957.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Register ArenaMatchManager\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/69/694c8d1d21a585f78167310998b4c8d26d056fdf.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\1d\\1d5de88a81c2c5c923aecb8de2fb1d9aed3d70cc.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\1d\\1d5de88a81c2c5c923aecb8de2fb1d9aed3d70cc.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\8a\\8ab8e266e46e0f4c09d2d881387d9c8c6944cd25.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\8a\\8ab8e266e46e0f4c09d2d881387d9c8c6944cd25.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\16\\164d5d76a9854835e716dc901fb2a4c6a80df3df.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\16\\164d5d76a9854835e716dc901fb2a4c6a80df3df.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/8a/8ab8e266e46e0f4c09d2d881387d9c8c6944cd25.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/16/164d5d76a9854835e716dc901fb2a4c6a80df3df.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Register CompressibleObject\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/1d/1d5de88a81c2c5c923aecb8de2fb1d9aed3d70cc.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\a7\\a7774d7391ad3a182d3dbbcc204ce311f90d0aba.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\a7\\a7774d7391ad3a182d3dbbcc204ce311f90d0aba.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\e9\\e98499d0bde1161bd04994d2b46c5dc594fc5d15.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\e9\\e98499d0bde1161bd04994d2b46c5dc594fc5d15.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/e9/e98499d0bde1161bd04994d2b46c5dc594fc5d15.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Register CompressionSystem\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/a7/a7774d7391ad3a182d3dbbcc204ce311f90d0aba.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\82\\82439df3f7688b0c1999771832534d297f706bd7.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\82\\82439df3f7688b0c1999771832534d297f706bd7.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\ee\\ee5e8aa5c66dcf6080ffccc060a4e8ed2c56a353.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\ee\\ee5e8aa5c66dcf6080ffccc060a4e8ed2c56a353.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\fe\\fe0f6b3576b97fe33809b42668c48064547721d1.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\fe\\fe0f6b3576b97fe33809b42668c48064547721d1.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\ee\\ee4f05e98125c10a579b45abf5f60bf586c3ed39.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\ee\\ee4f05e98125c10a579b45abf5f60bf586c3ed39.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\ed\\ed8050b2f783013da72ec510432a2e1efe74e783.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\ed\\ed8050b2f783013da72ec510432a2e1efe74e783.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\a0\\a01dc171705fdaa8e912198140db1ece7bf63d5f.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\a0\\a01dc171705fdaa8e912198140db1ece7bf63d5f.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\91\\91f64db118ad5ca0ddf2358234b54c279de2c43b.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\91\\91f64db118ad5ca0ddf2358234b54c279de2c43b.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\2d\\2dd84cc26a5abe5c1a3e108ae31af6664a6ca743.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\2d\\2dd84cc26a5abe5c1a3e108ae31af6664a6ca743.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\46\\463d5e89efdbe75d5d13a24377ee0832b11cd18a.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\46\\463d5e89efdbe75d5d13a24377ee0832b11cd18a.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\37\\37ea5868a5a41e6dc9781dca668d6acc5acc1dd4.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\37\\37ea5868a5a41e6dc9781dca668d6acc5acc1dd4.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\1c\\1c83cea185b04ec98797fac6ea5031b59e36ee71.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\1c\\1c83cea185b04ec98797fac6ea5031b59e36ee71.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\df\\df14b6ce2576752f322e9a920d31958caa8dfff1.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\df\\df14b6ce2576752f322e9a920d31958caa8dfff1.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\2d\\2dcb84948ba127c55653f005c016564c14807a1e.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\2d\\2dcb84948ba127c55653f005c016564c14807a1e.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\1e\\1eb7228a187e13ba4eeb6f58e773709e3fe49cfb.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\1e\\1eb7228a187e13ba4eeb6f58e773709e3fe49cfb.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\df\\dfcb45a83d8b5b9702e2f02c1332a458de4deacc.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\df\\dfcb45a83d8b5b9702e2f02c1332a458de4deacc.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\06\\0649cdc04b1e558be5a3de243c1547f861d426d3.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\06\\0649cdc04b1e558be5a3de243c1547f861d426d3.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\60\\60a71a57d667bc7013d339e473ce35ed50407414.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\60\\60a71a57d667bc7013d339e473ce35ed50407414.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\9d\\9dc5274518e3f62aa6f00b0aea687040af76fcb1.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\9d\\9dc5274518e3f62aa6f00b0aea687040af76fcb1.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\c5\\c56f929bba9059936877d4cf54d6ed54c29bcd1e.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\c5\\c56f929bba9059936877d4cf54d6ed54c29bcd1e.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\69\\69210eaf9a1b5f311838c26c7a6803137c6edf58.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\69\\69210eaf9a1b5f311838c26c7a6803137c6edf58.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\5e\\5eef2a75ca40abec331aaa96387398e9a33a039b.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\5e\\5eef2a75ca40abec331aaa96387398e9a33a039b.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\bf\\bf4d81b389f506d2bfeef94151a0da04c1e12c41.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\bf\\bf4d81b389f506d2bfeef94151a0da04c1e12c41.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\5d\\5d01e8c8f3ccb073f2017ddccdbcf72dbed50df4.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\5d\\5d01e8c8f3ccb073f2017ddccdbcf72dbed50df4.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\5f\\5f49641bdc47d5f81c0ab7b604581919be2480fb.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\5f\\5f49641bdc47d5f81c0ab7b604581919be2480fb.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\1f\\1fe68692e49dfec22fdc16cfa74e3f5ee6d7c649.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\1f\\1fe68692e49dfec22fdc16cfa74e3f5ee6d7c649.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\aa\\aa4054bd9237c8d515dbbb06c6eb0085b656618e.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\aa\\aa4054bd9237c8d515dbbb06c6eb0085b656618e.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\9e\\9e5ce5166294b093bd9fda26ca01229f7a75a88f.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\9e\\9e5ce5166294b093bd9fda26ca01229f7a75a88f.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\4c\\4c96bc00d2d7dc63892a615d37aa2c3751e33427.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\4c\\4c96bc00d2d7dc63892a615d37aa2c3751e33427.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\78\\787d6fb9a8cfd460d77a1be7e3c2e7a5d5b6b2ce.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\78\\787d6fb9a8cfd460d77a1be7e3c2e7a5d5b6b2ce.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\90\\90d930fadbd6caeb0b34b47ef2c737024eef7356.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\90\\90d930fadbd6caeb0b34b47ef2c737024eef7356.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\3a\\3a890b2ce6c62fb85daac5f6a8ad582aaadc8628.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\3a\\3a890b2ce6c62fb85daac5f6a8ad582aaadc8628.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\d4\\d419870a45e6d7af82cd3eeaa63c48288ad866d4.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\d4\\d419870a45e6d7af82cd3eeaa63c48288ad866d4.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\e6\\e6f505311429c7ed835118b54b55846f451e350f.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\e6\\e6f505311429c7ed835118b54b55846f451e350f.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\1f\\1f3984d1195b550037c3a65be0022d96b96a090f.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\1f\\1f3984d1195b550037c3a65be0022d96b96a090f.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\e4\\e495e7cb4ef056f419f416bf719fb5dcbf9ba5c6.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\e4\\e495e7cb4ef056f419f416bf719fb5dcbf9ba5c6.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\df\\df277548ee04e5d2a6dcaf29deecc47869e6ed1e.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\df\\df277548ee04e5d2a6dcaf29deecc47869e6ed1e.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\68\\68a3030109d59aa930f4104143f7ae79abcb4bff.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\68\\68a3030109d59aa930f4104143f7ae79abcb4bff.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\21\\21c3e0eff97ae0126946bcca5cb0b2bc43c42c13.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\21\\21c3e0eff97ae0126946bcca5cb0b2bc43c42c13.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\c6\\c6f5df94d267580d199c8ea133e4bbcb1130a5ed.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\c6\\c6f5df94d267580d199c8ea133e4bbcb1130a5ed.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\83\\833ee3f2141636ea09fd80c6c8bff1f5a71a258e.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\83\\833ee3f2141636ea09fd80c6c8bff1f5a71a258e.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\87\\87d215a6bf1985b7b3383d8d0460288b6b4a387f.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\87\\87d215a6bf1985b7b3383d8d0460288b6b4a387f.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\1b\\1ba40e13363a08dac9babda08b50a56cfec4a2b4.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\1b\\1ba40e13363a08dac9babda08b50a56cfec4a2b4.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\84\\847a8376cf9d689754c6eae3d01f78bb3ae1cce2.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\84\\847a8376cf9d689754c6eae3d01f78bb3ae1cce2.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\cc\\cc41998350d9842800d768b782087b475b8925b5.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\cc\\cc41998350d9842800d768b782087b475b8925b5.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\5f\\5f965020d36170b16205a5ba5ce91094ee309ca9.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\5f\\5f965020d36170b16205a5ba5ce91094ee309ca9.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\cc\\cc92bdc7362b945e314dc9dd6945266e0dfd6f7c.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\cc\\cc92bdc7362b945e314dc9dd6945266e0dfd6f7c.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\9b\\9b93eb948e618bcf32ed369221d2cf1dcda2c0c2.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\9b\\9b93eb948e618bcf32ed369221d2cf1dcda2c0c2.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\f0\\f01a6aba959a8a6abf65b5e05b33c730dca3ef72.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\f0\\f01a6aba959a8a6abf65b5e05b33c730dca3ef72.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\f3\\f3cea94ec096acb102517d9c49db2d6c173ab4ee.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\f3\\f3cea94ec096acb102517d9c49db2d6c173ab4ee.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\94\\94c8e84bacaf7587c967989fe2ab7759dda1d723.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\94\\94c8e84bacaf7587c967989fe2ab7759dda1d723.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\4e\\4e53000b125359371e89a97baef223499e8d25c8.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\4e\\4e53000b125359371e89a97baef223499e8d25c8.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\40\\40e0fb0635fd824704fbb9b9b00e2b517271c209.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\40\\40e0fb0635fd824704fbb9b9b00e2b517271c209.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\19\\1989d102dd7da14baa13c353a49996ab5fe076cd.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\19\\1989d102dd7da14baa13c353a49996ab5fe076cd.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\ae\\ae181f80e850cec2cde6c884d57fb69d90f809b4.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\ae\\ae181f80e850cec2cde6c884d57fb69d90f809b4.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\49\\49251af803c04a252b4f098637fdd0883b42446d.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\49\\49251af803c04a252b4f098637fdd0883b42446d.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\b3\\b32781fbd7d10a7df5a722f2a57d307667699096.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\b3\\b32781fbd7d10a7df5a722f2a57d307667699096.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\36\\3692f16ed094e08aa253d0fa1253bb5ab9d76c25.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\36\\3692f16ed094e08aa253d0fa1253bb5ab9d76c25.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\25\\2507bef136ab35581f72d8ac21678f5904d3e00f.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\25\\2507bef136ab35581f72d8ac21678f5904d3e00f.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\29\\292bef774f8ba8caa41ed3ced5b415a808911fee.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\29\\292bef774f8ba8caa41ed3ced5b415a808911fee.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\a8\\a8daea7e0cea78cd8a3fbd832687ea07f5df402d.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\a8\\a8daea7e0cea78cd8a3fbd832687ea07f5df402d.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\9f\\9f6db667ab945b04379406e23d7b932e04c650ee.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\9f\\9f6db667ab945b04379406e23d7b932e04c650ee.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\a0\\a0d063530de23ddade53e1a935bf64c81277c061.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\a0\\a0d063530de23ddade53e1a935bf64c81277c061.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\aa\\aaa58b944f1f008d43bf6ead5454f7b61e689490.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\aa\\aaa58b944f1f008d43bf6ead5454f7b61e689490.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/2d/2dd84cc26a5abe5c1a3e108ae31af6664a6ca743.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/46/463d5e89efdbe75d5d13a24377ee0832b11cd18a.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/1c/1c83cea185b04ec98797fac6ea5031b59e36ee71.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/37/37ea5868a5a41e6dc9781dca668d6acc5acc1dd4.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/2d/2dcb84948ba127c55653f005c016564c14807a1e.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Register InfiniteWorldManager\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/fe/fe0f6b3576b97fe33809b42668c48064547721d1.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/ee/ee5e8aa5c66dcf6080ffccc060a4e8ed2c56a353.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Register EndlessHUDController\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/df/df14b6ce2576752f322e9a920d31958caa8dfff1.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Register SettlementPageController\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/1e/1eb7228a187e13ba4eeb6f58e773709e3fe49cfb.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Register RevivePageController\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/df/dfcb45a83d8b5b9702e2f02c1332a458de4deacc.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Register HUDView\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/ee/ee4f05e98125c10a579b45abf5f60bf586c3ed39.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/06/0649cdc04b1e558be5a3de243c1547f861d426d3.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Register PlayerController\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/ed/ed8050b2f783013da72ec510432a2e1efe74e783.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/9d/9dc5274518e3f62aa6f00b0aea687040af76fcb1.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/c6/c6f5df94d267580d199c8ea133e4bbcb1130a5ed.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/5d/5d01e8c8f3ccb073f2017ddccdbcf72dbed50df4.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/69/69210eaf9a1b5f311838c26c7a6803137c6edf58.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/4c/4c96bc00d2d7dc63892a615d37aa2c3751e33427.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/a8/a8daea7e0cea78cd8a3fbd832687ea07f5df402d.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/1b/1ba40e13363a08dac9babda08b50a56cfec4a2b4.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/68/68a3030109d59aa930f4104143f7ae79abcb4bff.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/cc/cc92bdc7362b945e314dc9dd6945266e0dfd6f7c.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/19/1989d102dd7da14baa13c353a49996ab5fe076cd.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/84/847a8376cf9d689754c6eae3d01f78bb3ae1cce2.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/83/833ee3f2141636ea09fd80c6c8bff1f5a71a258e.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/29/292bef774f8ba8caa41ed3ced5b415a808911fee.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/25/2507bef136ab35581f72d8ac21678f5904d3e00f.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/36/3692f16ed094e08aa253d0fa1253bb5ab9d76c25.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/21/21c3e0eff97ae0126946bcca5cb0b2bc43c42c13.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/b3/b32781fbd7d10a7df5a722f2a57d307667699096.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/a0/a0d063530de23ddade53e1a935bf64c81277c061.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/aa/aaa58b944f1f008d43bf6ead5454f7b61e689490.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/9f/9f6db667ab945b04379406e23d7b932e04c650ee.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/ae/ae181f80e850cec2cde6c884d57fb69d90f809b4.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/df/df277548ee04e5d2a6dcaf29deecc47869e6ed1e.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/1f/1fe68692e49dfec22fdc16cfa74e3f5ee6d7c649.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/e6/e6f505311429c7ed835118b54b55846f451e350f.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/87/87d215a6bf1985b7b3383d8d0460288b6b4a387f.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/bf/bf4d81b389f506d2bfeef94151a0da04c1e12c41.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/cc/cc41998350d9842800d768b782087b475b8925b5.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/5f/5f965020d36170b16205a5ba5ce91094ee309ca9.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/5f/5f49641bdc47d5f81c0ab7b604581919be2480fb.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/49/49251af803c04a252b4f098637fdd0883b42446d.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/e4/e495e7cb4ef056f419f416bf719fb5dcbf9ba5c6.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/d4/d419870a45e6d7af82cd3eeaa63c48288ad866d4.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/c5/c56f929bba9059936877d4cf54d6ed54c29bcd1e.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/1f/1f3984d1195b550037c3a65be0022d96b96a090f.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/5e/5eef2a75ca40abec331aaa96387398e9a33a039b.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/aa/aa4054bd9237c8d515dbbb06c6eb0085b656618e.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/f3/f3cea94ec096acb102517d9c49db2d6c173ab4ee.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/4e/4e53000b125359371e89a97baef223499e8d25c8.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/9b/9b93eb948e618bcf32ed369221d2cf1dcda2c0c2.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/f0/f01a6aba959a8a6abf65b5e05b33c730dca3ef72.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/94/94c8e84bacaf7587c967989fe2ab7759dda1d723.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/78/787d6fb9a8cfd460d77a1be7e3c2e7a5d5b6b2ce.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/9e/9e5ce5166294b093bd9fda26ca01229f7a75a88f.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/90/90d930fadbd6caeb0b34b47ef2c737024eef7356.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/40/40e0fb0635fd824704fbb9b9b00e2b517271c209.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/3a/3a890b2ce6c62fb85daac5f6a8ad582aaadc8628.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/60/60a71a57d667bc7013d339e473ce35ed50407414.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/a0/a01dc171705fdaa8e912198140db1ece7bf63d5f.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/91/91f64db118ad5ca0ddf2358234b54c279de2c43b.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Register GameManager\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/82/82439df3f7688b0c1999771832534d297f706bd7.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\f7\\f7a947c7e9131ad0672e1e0e7679baca234be167.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\f7\\f7a947c7e9131ad0672e1e0e7679baca234be167.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/f7/f7a947c7e9131ad0672e1e0e7679baca234be167.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\70\\70248e748556e46af10a7955ebcd75305402b6ab.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\70\\70248e748556e46af10a7955ebcd75305402b6ab.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/70/70248e748556e46af10a7955ebcd75305402b6ab.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\6c\\6cb11a54edef54a34b134a8bcc4309eb5c15aa87.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\6c\\6cb11a54edef54a34b134a8bcc4309eb5c15aa87.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Register HomePageController\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/6c/6cb11a54edef54a34b134a8bcc4309eb5c15aa87.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\12\\1202cb588461159c93da426007897d218955140c.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\12\\1202cb588461159c93da426007897d218955140c.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Register HomePageVisual\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/12/1202cb588461159c93da426007897d218955140c.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\20\\20e2914718a765ff0c0fb9da6169c3a71059e45f.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\20\\20e2914718a765ff0c0fb9da6169c3a71059e45f.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Register JoystickVisual\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/20/20e2914718a765ff0c0fb9da6169c3a71059e45f.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\1f\\1fa50acf1473d498c7fba9fb205ad25965b06f4f.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\1f\\1fa50acf1473d498c7fba9fb205ad25965b06f4f.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Register MachineInfoPageController\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/1f/1fa50acf1473d498c7fba9fb205ad25965b06f4f.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\e9\\e9506c898c673d78d43396bd263dd50952855d04.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\e9\\e9506c898c673d78d43396bd263dd50952855d04.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Register ModeReadyPageController\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/e9/e9506c898c673d78d43396bd263dd50952855d04.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\68\\6858e0d6d0f998b0649bed7b50f338133dddc8a3.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\68\\6858e0d6d0f998b0649bed7b50f338133dddc8a3.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Register ModeSelectPageController\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/68/6858e0d6d0f998b0649bed7b50f338133dddc8a3.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\d2\\d21c72b1b957ca71e0aed7b40428364db70842a5.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\d2\\d21c72b1b957ca71e0aed7b40428364db70842a5.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Register PausePageController\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/d2/d21c72b1b957ca71e0aed7b40428364db70842a5.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\1b\\1b9be1c28820abe071ede2ce4a6c26788e353aac.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\1b\\1b9be1c28820abe071ede2ce4a6c26788e353aac.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Register RoundedPanelGraphic\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/1b/1b9be1c28820abe071ede2ce4a6c26788e353aac.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\5f\\5fb257ad275bd7bb4f316338ee2609369c01cd38.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\5f\\5fb257ad275bd7bb4f316338ee2609369c01cd38.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Register SkinSelectionPageController\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/5f/5fb257ad275bd7bb4f316338ee2609369c01cd38.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\1b\\1b773f84603ad71887a236ab4b206964378f2a5c.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\1b\\1b773f84603ad71887a236ab4b206964378f2a5c.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\60\\6048f17d6101ab8a83ef86fa75e4619f9f21b164.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\60\\6048f17d6101ab8a83ef86fa75e4619f9f21b164.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/60/6048f17d6101ab8a83ef86fa75e4619f9f21b164.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Register UIPage\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/1b/1b773f84603ad71887a236ab4b206964378f2a5c.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\ca\\cad04588ca9a6dcb215bb3802a9885103da36941.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\ca\\cad04588ca9a6dcb215bb3802a9885103da36941.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Register UIPageRouter\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/ca/cad04588ca9a6dcb215bb3802a9885103da36941.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\d6\\d6bd726a12e8e6f1715f4488b03e71d328917996.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\d6\\d6bd726a12e8e6f1715f4488b03e71d328917996.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\67\\67bfebdaccd52aa59e1d53d1fc78e0154fcf190b.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\67\\67bfebdaccd52aa59e1d53d1fc78e0154fcf190b.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\dd\\dd89bdb932165b97889be738b58843736abe526b.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\dd\\dd89bdb932165b97889be738b58843736abe526b.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Register AuthoredResourceCluster\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/67/67bfebdaccd52aa59e1d53d1fc78e0154fcf190b.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Register AuthoredTrafficRoute\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/dd/dd89bdb932165b97889be738b58843736abe526b.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/d6/d6bd726a12e8e6f1715f4488b03e71d328917996.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\c0\\c00ae27bfb586d5a2c534671ef9ccd0e0a23ca10.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\c0\\c00ae27bfb586d5a2c534671ef9ccd0e0a23ca10.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Register WorldChunkManager\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/c0/c00ae27bfb586d5a2c534671ef9ccd0e0a23ca10.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\d0\\d0819f3b5859e2170c138151338310ed67c7bd6f.js resolved to C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\temp\\programming\\packer-driver\\targets\\editor\\chunks\\d0\\d0819f3b5859e2170c138151338310ed67c7bd6f.js is not in module cache!\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/d0/d0819f3b5859e2170c138151338310ed67c7bd6f.js\" loaded.\r\n\n2026-9-21 19:50:50 - debug: [[Executor]] Module \"pack:///chunks/6d/6d8fd2b0177941b032ddc0733af48a561fb60657.js\" loaded.\r\n\n2026-9-21 19:50:50 - groupEnd: Imports all modules\r\n\n2026-9-21 19:50:50 - debug: Incremental keys: \r\n\n2026-9-21 19:50:50 - debug: Init bundle share assets start..., progress: 11%\r\n\n2026-9-21 19:50:50 - debug: Init bundle share assets success..., progress: 11%\r\n\n2026-9-21 19:50:50 - debug: handle json group in bundle internal\r\n\n2026-9-21 19:50:50 - debug: handle json group in bundle internal success\r\n\n2026-9-21 19:50:50 - debug: handle json group in bundle resources\r\n\n2026-9-21 19:50:50 - debug: handle json group in bundle main\r\n\n2026-9-21 19:50:50 - debug: init image compress task 0 in bundle internal\r\n\n2026-9-21 19:50:50 - debug: handle json group in bundle resources success\r\n\n2026-9-21 19:50:50 - debug: init image compress task 0 in bundle resources\r\n\n2026-9-21 19:50:50 - debug: handle json group in bundle main success\r\n\n2026-9-21 19:50:50 - debug: init image compress task 0 in bundle main\r\n\n2026-9-21 19:50:50 - debug: // ---- build task 查询 Asset Bundle ---- (753ms)\r\n\n2026-9-21 19:50:50 - debug: run build task 查询 Asset Bundle success in 753 ms√, progress: 16%\r\n\n2026-9-21 19:50:50 - debug: [Build Memory track]: 查询 Asset Bundle start:167.47MB, end 175.82MB, increase: 8.34MB\r\n\n2026-9-21 19:50:50 - debug: 查询 Asset Bundle start, progress: 16%\r\n\n2026-9-21 19:50:50 - debug: // ---- build task 查询 Asset Bundle ----\r\n\n2026-9-21 19:50:50 - debug: // ---- build task 查询 Asset Bundle ---- (3ms)\r\n\n2026-9-21 19:50:50 - debug: run build task 查询 Asset Bundle success in 3 ms√, progress: 21%\r\n\n2026-9-21 19:50:50 - debug: [Build Memory track]: 查询 Asset Bundle start:175.84MB, end 175.98MB, increase: 144.37KB\r\n\n2026-9-21 19:50:50 - debug: 打包脚本 start, progress: 21%\r\n\n2026-9-21 19:50:50 - debug: // ---- build task 打包脚本 ----\r\n\n2026-9-21 19:50:54 - debug: Generate systemJs..., progress: 21%\r\n\n2026-9-21 19:51:00 - debug: 构建项目脚本 start..., progress: 21%\r\n\n2026-9-21 19:51:00 - debug: Build script in bundle start, progress: 21%\r\n\n2026-9-21 19:51:00 - log: Run build task(build-script) in child, see: chrome://inspect/#devices\r\n\n2026-9-21 19:51:01 - log: [build-script]enter sub process 42636, C:\\ProgramData\\cocos\\editors\\Creator\\3.8.3\\CocosCreator.exe,C:\\ProgramData\\cocos\\editors\\Creator\\3.8.3\\resources\\app.asar\\builtin\\builder\\static\\sub-process-index\r\r\r\n\n2026-9-21 19:51:11 - log: [build-script]Create cjs interop url for 'file:///C:/Users/zyu33/Documents/Codex/2026-08-28/ji/cocos/node_modules/ws/browser.js'\r\r\r\n\n2026-9-21 19:51:16 - debug: excute-script over with build-script 16153ms\r\n\n2026-9-21 19:51:16 - debug: Copy externalScripts success!\r\n\n2026-9-21 19:51:16 - debug: Build script in bundle success, progress: 21%\r\n\n2026-9-21 19:51:16 - debug: 构建项目脚本 in (16399 ms) √, progress: 21%\r\n\n2026-9-21 19:51:16 - debug: 构建引擎脚本 start..., progress: 21%\r\n\n2026-9-21 19:51:17 - debug: Use cache engine: {link(C:\\Users\\zyu33\\AppData\\Local\\Temp\\CocosCreator\\3.8.3\\builder\\engine\\215b4822c10ecdba68a5b2feca4ecd1d)}\r\n\n2026-9-21 19:51:17 - debug: {\"debug\":false,\"sourceMaps\":false,\"includeModules\":[\"2d\",\"3d\",\"animation\",\"audio\",\"base\",\"dragon-bones\",\"gfx-webgl\",\"intersection-2d\",\"light-probe\",\"marionette\",\"meshopt\",\"particle\",\"particle-2d\",\"physics-2d-box2d\",\"physics-ammo\",\"primitive\",\"profiler\",\"skeletal-animation\",\"spine\",\"terrain\",\"tiled-map\",\"tween\",\"ui\",\"video\",\"websocket\",\"webview\",\"gfx-webgl2\"],\"engineVersion\":\"3.8.3\",\"md5Map\":[],\"engineName\":\"cocos-js\",\"platform\":\"HTML5\",\"useCache\":true,\"isNative\":false,\"nativeCodeBundleMode\":\"both\",\"wasmCompressionMode\":false,\"split\":false,\"assetURLFormat\":\"runtime-resolved\",\"output\":\"C:\\\\Users\\\\zyu33\\\\Documents\\\\Codex\\\\2026-08-28\\\\ji\\\\cocos\\\\build\\\\web-mobile\\\\cocos-js\",\"flags\":{\"DEBUG\":false},\"entry\":\"C:\\\\ProgramData\\\\cocos\\\\editors\\\\Creator\\\\3.8.3\\\\resources\\\\resources\\\\3d\\\\engine\"}\r\n\n2026-9-21 19:51:18 - debug: 构建引擎脚本 in (1265 ms) √, progress: 21%\r\n\n2026-9-21 19:51:18 - debug: Copy plugin script ..., progress: 21%\r\n\n2026-9-21 19:51:18 - debug: Generate import-map..., progress: 21%\r\n\n2026-9-21 19:51:18 - debug: // ---- build task 打包脚本 ---- (27360ms)\r\n\n2026-9-21 19:51:18 - debug: run build task 打包脚本 success in 27 s√, progress: 26%\r\n\n2026-9-21 19:51:18 - debug: [Build Memory track]: 打包脚本 start:176.12MB, end 177.42MB, increase: 1.31MB\r\n\n2026-9-21 19:51:18 - debug: Build Assets start, progress: 26%\r\n\n2026-9-21 19:51:18 - debug: // ---- build task Build Assets ----\r\n\n2026-9-21 19:51:18 - debug: Build bundles..., progress: 26%\r\n\n2026-9-21 19:51:18 - debug: Pack Images start, progress: 26%\r\n\n2026-9-21 19:51:18 - debug: Pack Images success, progress: 26%\r\n\n2026-9-21 19:51:18 - debug: Compress image start..., progress: 26%\r\n\n2026-9-21 19:51:18 - group: Compress image...\r\n\n2026-9-21 19:51:18 - debug: sort compress task {}\r\n\n2026-9-21 19:51:18 - debug: Num of all image compress task 0, really: 0, configTasks: 0\r\n\n2026-9-21 19:51:18 - debug: No image need to compress\r\n\n2026-9-21 19:51:18 - groupEnd: Compress image...\r\n\n2026-9-21 19:51:18 - debug: Compress image success..., progress: 26%\r\n\n2026-9-21 19:51:18 - debug: Output asset in bundles start, progress: 26%\r\n\n2026-9-21 19:51:18 - debug: Handle all json groups in bundle internal\r\n\n2026-9-21 19:51:18 - debug: handle json group\r\n\n2026-9-21 19:51:18 - debug: Handle all json groups in bundle resources\r\n\n2026-9-21 19:51:18 - debug: handle json group\r\n\n2026-9-21 19:51:18 - debug: Handle all json groups in bundle main\r\n\n2026-9-21 19:51:18 - debug: handle json group\r\n\n2026-9-21 19:51:18 - debug: Json group(070fab595) compile success，json number: 6\r\n\n2026-9-21 19:51:18 - debug: Json group(025c4c7a4) compile success，json number: 6\r\n\n2026-9-21 19:51:18 - debug: Json group(0db51cb80) compile success，json number: 6\r\n\n2026-9-21 19:51:18 - debug: handle single json\r\n\n2026-9-21 19:51:18 - debug: Json group(0a6de0d7d) compile success，json number: 6\r\n\n2026-9-21 19:51:19 - debug: Json group(059a65b63) compile success，json number: 6\r\n\n2026-9-21 19:51:19 - debug: Json group(0699aaa4c) compile success，json number: 6\r\n\n2026-9-21 19:51:19 - debug: Json group(06add430f) compile success，json number: 6\r\n\n2026-9-21 19:51:20 - debug: Json group(0b2bbb7a0) compile success，json number: 6\r\n\n2026-9-21 19:51:20 - debug: handle single json\r\n\n2026-9-21 19:51:20 - debug: Json group(0fa2e28b4) compile success，json number: 6\r\n\n2026-9-21 19:51:20 - debug: handle single json\r\n\n2026-9-21 19:51:23 - debug: Output asset in bundles success, progress: 26%\r\n\n2026-9-21 19:51:23 - debug: Output asset in bundles start, progress: 26%\r\n\n2026-9-21 19:51:23 - debug: compress config of bundle internal...\r\n\n2026-9-21 19:51:23 - debug: compress config of bundle internal success\r\n\n2026-9-21 19:51:23 - debug: compress config of bundle resources...\r\n\n2026-9-21 19:51:23 - debug: compress config of bundle resources success\r\n\n2026-9-21 19:51:23 - debug: compress config of bundle main...\r\n\n2026-9-21 19:51:23 - debug: compress config of bundle main success\r\n\n2026-9-21 19:51:23 - debug: output config of bundle internal\r\n\n2026-9-21 19:51:23 - debug: output config of bundle internal success\r\n\n2026-9-21 19:51:23 - debug: output config of bundle resources\r\n\n2026-9-21 19:51:23 - debug: output config of bundle resources success\r\n\n2026-9-21 19:51:23 - debug: output config of bundle main\r\n\n2026-9-21 19:51:23 - debug: output config of bundle main success\r\n\n2026-9-21 19:51:23 - debug: Output asset in bundles success, progress: 26%\r\n\n2026-9-21 19:51:23 - debug: // ---- build task Build Assets ---- (5678ms)\r\n\n2026-9-21 19:51:23 - debug: run build task Build Assets success in 5 s√, progress: 31%\r\n\n2026-9-21 19:51:23 - debug: [Build Memory track]: Build Assets start:177.44MB, end 185.10MB, increase: 7.66MB\r\n\n2026-9-21 19:51:23 - debug: 整理部分构建选项内数据到 settings.json start, progress: 31%\r\n\n2026-9-21 19:51:23 - debug: // ---- build task 整理部分构建选项内数据到 settings.json ----\r\n\n2026-9-21 19:51:23 - debug: // ---- build task 整理部分构建选项内数据到 settings.json ---- (1ms)\r\n\n2026-9-21 19:51:23 - debug: run build task 整理部分构建选项内数据到 settings.json success in 1 ms√, progress: 33%\r\n\n2026-9-21 19:51:23 - debug: [Build Memory track]: 整理部分构建选项内数据到 settings.json start:185.19MB, end 185.22MB, increase: 23.16KB\r\n\n2026-9-21 19:51:23 - debug: 填充脚本数据到 settings.json start, progress: 33%\r\n\n2026-9-21 19:51:23 - debug: // ---- build task 填充脚本数据到 settings.json ----\r\n\n2026-9-21 19:51:23 - debug: // ---- build task 填充脚本数据到 settings.json ---- (1ms)\r\n\n2026-9-21 19:51:23 - debug: run build task 填充脚本数据到 settings.json success in 1 ms√, progress: 34%\r\n\n2026-9-21 19:51:23 - debug: [Build Memory track]: 填充脚本数据到 settings.json start:185.24MB, end 185.25MB, increase: 19.43KB\r\n\n2026-9-21 19:51:23 - debug: 整理部分构建选项内数据到 settings.json start, progress: 34%\r\n\n2026-9-21 19:51:23 - debug: // ---- build task 整理部分构建选项内数据到 settings.json ----\r\n\n2026-9-21 19:51:23 - debug: // ---- build task 整理部分构建选项内数据到 settings.json ---- (10ms)\r\n\n2026-9-21 19:51:23 - debug: run build task 整理部分构建选项内数据到 settings.json success in 10 ms√, progress: 36%\r\n\n2026-9-21 19:51:23 - debug: [Build Memory track]: 整理部分构建选项内数据到 settings.json start:185.27MB, end 185.41MB, increase: 136.84KB\r\n\n2026-9-21 19:51:23 - debug: web-mobile:(onBeforeCompressSettings) start..., progress: 36%\r\n\n2026-9-21 19:51:23 - debug: // ---- build task web-mobile：onBeforeCompressSettings ----\r\n\n2026-9-21 19:51:23 - debug: // ---- build task web-mobile：onBeforeCompressSettings ---- (2ms)\r\n\n2026-9-21 19:51:23 - debug: web-mobile:(onBeforeCompressSettings) in 2 ms ✓, progress: 38%\r\n\n2026-9-21 19:51:23 - debug: cocos-service:(onBeforeCompressSettings) start..., progress: 38%\r\n\n2026-9-21 19:51:23 - debug: // ---- build task cocos-service：onBeforeCompressSettings ----\r\n\n2026-9-21 19:51:23 - debug: // ---- build task cocos-service：onBeforeCompressSettings ---- (3ms)\r\n\n2026-9-21 19:51:23 - debug: cocos-service:(onBeforeCompressSettings) in 3 ms ✓, progress: 40%\r\n\n2026-9-21 19:51:23 - debug: 整理静态模板文件 start, progress: 40%\r\n\n2026-9-21 19:51:23 - debug: // ---- build task 整理静态模板文件 ----\r\n\n2026-9-21 19:51:23 - debug: // ---- build task 整理静态模板文件 ---- (137ms)\r\n\n2026-9-21 19:51:23 - debug: run build task 整理静态模板文件 success in 137 ms√, progress: 45%\r\n\n2026-9-21 19:51:23 - debug: [Build Memory track]: 整理静态模板文件 start:185.54MB, end 186.38MB, increase: 868.36KB\r\n\n2026-9-21 19:51:23 - debug: cocos-service:(onAfterCompressSettings) start..., progress: 45%\r\n\n2026-9-21 19:51:23 - debug: // ---- build task cocos-service：onAfterCompressSettings ----\r\n\n2026-9-21 19:51:23 - debug: // ---- build task cocos-service：onAfterCompressSettings ---- (5ms)\r\n\n2026-9-21 19:51:23 - debug: cocos-service:(onAfterCompressSettings) in 5 ms ✓, progress: 46%\r\n\n2026-9-21 19:51:23 - debug: web-mobile:(onBeforeCopyBuildTemplate) start..., progress: 46%\r\n\n2026-9-21 19:51:23 - debug: // ---- build task web-mobile：onBeforeCopyBuildTemplate ----\r\n\n2026-9-21 19:51:24 - debug: // ---- build task web-mobile：onBeforeCopyBuildTemplate ---- (80ms)\r\n\n2026-9-21 19:51:24 - debug: web-mobile:(onBeforeCopyBuildTemplate) in 80 ms ✓, progress: 48%\r\n\n2026-9-21 19:51:24 - debug: 给所有的资源加上 MD5 后缀 start, progress: 48%\r\n\n2026-9-21 19:51:24 - debug: // ---- build task 给所有的资源加上 MD5 后缀 ----\r\n\n2026-9-21 19:51:24 - debug: // ---- build task 给所有的资源加上 MD5 后缀 ---- (2ms)\r\n\n2026-9-21 19:51:24 - debug: run build task 给所有的资源加上 MD5 后缀 success in 2 ms√, progress: 58%\r\n\n2026-9-21 19:51:24 - debug: [Build Memory track]: 给所有的资源加上 MD5 后缀 start:189.25MB, end 189.27MB, increase: 20.32KB\r\n\n2026-9-21 19:51:24 - debug: cocos-service:(onAfterBuild) start..., progress: 58%\r\n\n2026-9-21 19:51:24 - debug: // ---- build task cocos-service：onAfterBuild ----\r\n\n2026-9-21 19:51:24 - debug: // ---- build task cocos-service：onAfterBuild ---- (11ms)\r\n\n",
+  "bundleProvenance": {
+    "status": "BUNDLE_STABLE",
+    "reason": null,
+    "comparisonWindow": {
+      "start": {
+        "fileCount": 187,
+        "truncated": false,
+        "censusDigest": "310970c2"
+      },
+      "end": {
+        "fileCount": 187,
+        "truncated": false,
+        "censusDigest": "310970c2"
+      }
+    },
+    "start": {
+      "fileCount": 187,
+      "truncated": false,
+      "censusDigest": "310970c2"
+    },
+    "end": {
+      "fileCount": 187,
+      "truncated": false,
+      "censusDigest": "310970c2"
+    }
+  },
+  "viewports": [
+    {
+      "id": "390x844",
+      "canvasRect": {
+        "left": 0,
+        "top": 0,
+        "width": 390,
+        "height": 844
+      },
+      "portrait": {
+        "targetRatio": 0.5625,
+        "frameRatio": 0.46208530805687204,
+        "viewport": {
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 844
+        },
+        "designIsPortrait": true,
+        "frameIsPortrait": true,
+        "viewportIsPortrait": true,
+        "viewportWithinFrame": true,
+        "viewportRatio": 0.46208530805687204
+      },
+      "screenshot": "C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\artifacts\\qa\\portrait\\portrait-390x844-home.png"
+    }
+  ],
+  "touch": [],
+  "multiTouch": null,
+  "camera": {
+    "fov": 44,
+    "fovAxis": 0,
+    "offset": {
+      "x": 0,
+      "y": 20,
+      "z": 18.5
+    },
+    "playerViewport": {
+      "x": 0.49999999999999994,
+      "y": 0.6042947434631648,
+      "width": 0.3534770817375735,
+      "measured": true
+    },
+    "position": {
+      "x": 0,
+      "y": 20.084652057761765,
+      "z": 18.658722608303314
+    },
+    "forward": {
+      "x": 0,
+      "z": -0.7431448254773942
+    },
+    "right": {
+      "x": 1,
+      "z": 0
+    }
+  },
+  "infiniteWorld": {
+    "initial": null,
+    "cardinal500m": []
+  },
+  "dynamicVehicles": null,
+  "machineMaterialDiagnostics": null,
+  "constructionLandmark": null,
+  "openingWorldVisuals": null,
+  "verticalSlice": null,
+  "runtimePages": null,
+  "arena": null,
+  "settlement": null,
+  "uiFullFlow": null,
+  "arenaTimer": null,
+  "network": {
+    "status": "CONNECTED",
+    "lastError": null,
+    "snapshot": {
+      "phase": "FINISHED",
+      "matchId": "798bc739-223c-4245-ab72-46199261c52d",
+      "finishReason": "FORFEIT",
+      "elapsedMilliseconds": 7178,
+      "durationMilliseconds": 180000,
+      "localSessionId": "ZG_Q2w-4j",
+      "players": [
+        {
+          "id": "bot-1",
+          "displayName": "矿石",
+          "x": 5.461079120635986,
+          "z": 5.485763072967529,
+          "lastInputSequence": 0,
+          "mass": 140,
+          "level": 1,
+          "maxTier": 1,
+          "suctionRadius": 2.4000000953674316,
+          "collected": 0,
+          "kills": 0,
+          "isBot": true,
+          "alive": true,
+          "respawnMilliseconds": 0,
+          "shieldMilliseconds": 0,
+          "settlementCoins": 32,
+          "settlementMassCoins": 1,
+          "settlementCollectedCoins": 0,
+          "settlementEliminationCoins": 0,
+          "settlementSurvivalCoins": 10,
+          "settlementPlacementCoins": 21
+        },
+        {
+          "id": "bot-2",
+          "displayName": "风暴",
+          "x": 0.017454050481319427,
+          "z": 7.740586280822754,
+          "lastInputSequence": 0,
+          "mass": 140,
+          "level": 1,
+          "maxTier": 1,
+          "suctionRadius": 2.4000000953674316,
+          "collected": 0,
+          "kills": 0,
+          "isBot": true,
+          "alive": true,
+          "respawnMilliseconds": 0,
+          "shieldMilliseconds": 0,
+          "settlementCoins": 29,
+          "settlementMassCoins": 1,
+          "settlementCollectedCoins": 0,
+          "settlementEliminationCoins": 0,
+          "settlementSurvivalCoins": 10,
+          "settlementPlacementCoins": 18
+        },
+        {
+          "id": "bot-3",
+          "displayName": "火花",
+          "x": -5.485763072967529,
+          "z": 5.461079120635986,
+          "lastInputSequence": 0,
+          "mass": 140,
+          "level": 1,
+          "maxTier": 1,
+          "suctionRadius": 2.4000000953674316,
+          "collected": 0,
+          "kills": 0,
+          "isBot": true,
+          "alive": true,
+          "respawnMilliseconds": 0,
+          "shieldMilliseconds": 0,
+          "settlementCoins": 26,
+          "settlementMassCoins": 1,
+          "settlementCollectedCoins": 0,
+          "settlementEliminationCoins": 0,
+          "settlementSurvivalCoins": 10,
+          "settlementPlacementCoins": 15
+        },
+        {
+          "id": "bot-4",
+          "displayName": "雪球",
+          "x": -7.740586280822754,
+          "z": 0.017454050481319427,
+          "lastInputSequence": 0,
+          "mass": 140,
+          "level": 1,
+          "maxTier": 1,
+          "suctionRadius": 2.4000000953674316,
+          "collected": 0,
+          "kills": 0,
+          "isBot": true,
+          "alive": true,
+          "respawnMilliseconds": 0,
+          "shieldMilliseconds": 0,
+          "settlementCoins": 23,
+          "settlementMassCoins": 1,
+          "settlementCollectedCoins": 0,
+          "settlementEliminationCoins": 0,
+          "settlementSurvivalCoins": 10,
+          "settlementPlacementCoins": 12
+        },
+        {
+          "id": "bot-5",
+          "displayName": "流光",
+          "x": -5.461079120635986,
+          "z": -5.485763072967529,
+          "lastInputSequence": 0,
+          "mass": 140,
+          "level": 1,
+          "maxTier": 1,
+          "suctionRadius": 2.4000000953674316,
+          "collected": 0,
+          "kills": 0,
+          "isBot": true,
+          "alive": true,
+          "respawnMilliseconds": 0,
+          "shieldMilliseconds": 0,
+          "settlementCoins": 20,
+          "settlementMassCoins": 1,
+          "settlementCollectedCoins": 0,
+          "settlementEliminationCoins": 0,
+          "settlementSurvivalCoins": 10,
+          "settlementPlacementCoins": 9
+        },
+        {
+          "id": "bot-6",
+          "displayName": "哨兵",
+          "x": -0.017454050481319427,
+          "z": -7.740586280822754,
+          "lastInputSequence": 0,
+          "mass": 140,
+          "level": 1,
+          "maxTier": 1,
+          "suctionRadius": 2.4000000953674316,
+          "collected": 0,
+          "kills": 0,
+          "isBot": true,
+          "alive": true,
+          "respawnMilliseconds": 0,
+          "shieldMilliseconds": 0,
+          "settlementCoins": 17,
+          "settlementMassCoins": 1,
+          "settlementCollectedCoins": 0,
+          "settlementEliminationCoins": 0,
+          "settlementSurvivalCoins": 10,
+          "settlementPlacementCoins": 6
+        },
+        {
+          "id": "bot-7",
+          "displayName": "哨兵·零",
+          "x": 5.485763072967529,
+          "z": -5.461079120635986,
+          "lastInputSequence": 0,
+          "mass": 140,
+          "level": 1,
+          "maxTier": 1,
+          "suctionRadius": 2.4000000953674316,
+          "collected": 0,
+          "kills": 0,
+          "isBot": true,
+          "alive": true,
+          "respawnMilliseconds": 0,
+          "shieldMilliseconds": 0,
+          "settlementCoins": 14,
+          "settlementMassCoins": 1,
+          "settlementCollectedCoins": 0,
+          "settlementEliminationCoins": 0,
+          "settlementSurvivalCoins": 10,
+          "settlementPlacementCoins": 3
+        },
+        {
+          "id": "ZG_Q2w-4j",
+          "displayName": "Cocos Runtime Prob",
+          "x": 0.1547347754240036,
+          "z": 0.0023795864544808865,
+          "lastInputSequence": 98,
+          "mass": 940,
+          "level": 2,
+          "maxTier": 2,
+          "suctionRadius": 3.4000000953674316,
+          "collected": 16,
+          "kills": 0,
+          "isBot": false,
+          "alive": true,
+          "respawnMilliseconds": 0,
+          "shieldMilliseconds": 0,
+          "settlementCoins": 75,
+          "settlementMassCoins": 9,
+          "settlementCollectedCoins": 32,
+          "settlementEliminationCoins": 0,
+          "settlementSurvivalCoins": 10,
+          "settlementPlacementCoins": 24
+        }
+      ],
+      "pickups": [
+        {
+          "id": "opening-t1-0",
+          "x": 0.15000000596046448,
+          "z": 0,
+          "tier": 1,
+          "mass": 50,
+          "state": "ABSORBED",
+          "capturedBy": ""
+        },
+        {
+          "id": "opening-t1-1",
+          "x": 0,
+          "z": 0,
+          "tier": 1,
+          "mass": 50,
+          "state": "ABSORBED",
+          "capturedBy": ""
+        },
+        {
+          "id": "opening-t1-2",
+          "x": 0.12869343161582947,
+          "z": 0.12869343161582947,
+          "tier": 1,
+          "mass": 50,
+          "state": "ABSORBED",
+          "capturedBy": ""
+        },
+        {
+          "id": "opening-t1-3",
+          "x": 0,
+          "z": 0,
+          "tier": 1,
+          "mass": 50,
+          "state": "ABSORBED",
+          "capturedBy": ""
+        },
+        {
+          "id": "opening-t1-4",
+          "x": 9.184851394388759e-18,
+          "z": 0.15000000596046448,
+          "tier": 1,
+          "mass": 50,
+          "state": "ABSORBED",
+          "capturedBy": ""
+        },
+        {
+          "id": "opening-t1-5",
+          "x": 0,
+          "z": 0,
+          "tier": 1,
+          "mass": 50,
+          "state": "ABSORBED",
+          "capturedBy": ""
+        },
+        {
+          "id": "opening-t1-6",
+          "x": -0.12869343161582947,
+          "z": 0.12869343161582947,
+          "tier": 1,
+          "mass": 50,
+          "state": "ABSORBED",
+          "capturedBy": ""
+        },
+        {
+          "id": "opening-t1-7",
+          "x": 0,
+          "z": 0,
+          "tier": 1,
+          "mass": 50,
+          "state": "ABSORBED",
+          "capturedBy": ""
+        },
+        {
+          "id": "opening-t1-8",
+          "x": -0.15000000596046448,
+          "z": 1.8369702788777518e-17,
+          "tier": 1,
+          "mass": 50,
+          "state": "ABSORBED",
+          "capturedBy": ""
+        },
+        {
+          "id": "opening-t1-9",
+          "x": 0,
+          "z": 0,
+          "tier": 1,
+          "mass": 50,
+          "state": "ABSORBED",
+          "capturedBy": ""
+        },
+        {
+          "id": "opening-t1-10",
+          "x": -0.12869343161582947,
+          "z": -0.12869343161582947,
+          "tier": 1,
+          "mass": 50,
+          "state": "ABSORBED",
+          "capturedBy": ""
+        },
+        {
+          "id": "opening-t1-11",
+          "x": 0,
+          "z": 0,
+          "tier": 1,
+          "mass": 50,
+          "state": "ABSORBED",
+          "capturedBy": ""
+        },
+        {
+          "id": "opening-t1-12",
+          "x": -2.7554552528805052e-17,
+          "z": -0.15000000596046448,
+          "tier": 1,
+          "mass": 50,
+          "state": "ABSORBED",
+          "capturedBy": ""
+        },
+        {
+          "id": "opening-t1-13",
+          "x": 0,
+          "z": 0,
+          "tier": 1,
+          "mass": 50,
+          "state": "ABSORBED",
+          "capturedBy": ""
+        },
+        {
+          "id": "opening-t1-14",
+          "x": 0.12869343161582947,
+          "z": -0.12869343161582947,
+          "tier": 1,
+          "mass": 50,
+          "state": "ABSORBED",
+          "capturedBy": ""
+        },
+        {
+          "id": "opening-t1-15",
+          "x": 0,
+          "z": 0,
+          "tier": 1,
+          "mass": 50,
+          "state": "ABSORBED",
+          "capturedBy": ""
+        },
+        {
+          "id": "opening-t2",
+          "x": 0,
+          "z": -4.400000095367432,
+          "tier": 2,
+          "mass": 180,
+          "state": "IDLE",
+          "capturedBy": ""
+        }
+      ]
+    },
+    "replica": {
+      "localSessionId": "ZG_Q2w-4j",
+      "localPosition": {
+        "x": 0.1547347754240036,
+        "z": 0.0023795864544808865
+      },
+      "visiblePlayers": 8,
+      "visiblePickups": 1,
+      "playerIds": [
+        "ZG_Q2w-4j",
+        "bot-1",
+        "bot-2",
+        "bot-3",
+        "bot-4",
+        "bot-5",
+        "bot-6",
+        "bot-7"
+      ],
+      "pickupIds": [
+        "opening-t1-0",
+        "opening-t1-1",
+        "opening-t1-10",
+        "opening-t1-11",
+        "opening-t1-12",
+        "opening-t1-13",
+        "opening-t1-14",
+        "opening-t1-15",
+        "opening-t1-2",
+        "opening-t1-3",
+        "opening-t1-4",
+        "opening-t1-5",
+        "opening-t1-6",
+        "opening-t1-7",
+        "opening-t1-8",
+        "opening-t1-9",
+        "opening-t2"
+      ]
+    },
+    "inputForwarding": {
+      "before": {
+        "id": "ZG_Q2w-4j",
+        "displayName": "Cocos Runtime Prob",
+        "x": 0,
+        "z": 0,
+        "lastInputSequence": 32,
+        "mass": 940,
+        "level": 2,
+        "maxTier": 2,
+        "suctionRadius": 3.4000000953674316,
+        "collected": 16,
+        "kills": 0,
+        "isBot": false,
+        "alive": true,
+        "respawnMilliseconds": 0,
+        "shieldMilliseconds": 247,
+        "settlementCoins": 0,
+        "settlementMassCoins": 0,
+        "settlementCollectedCoins": 0,
+        "settlementEliminationCoins": 0,
+        "settlementSurvivalCoins": 0,
+        "settlementPlacementCoins": 0
+      },
+      "after": {
+        "id": "ZG_Q2w-4j",
+        "displayName": "Cocos Runtime Prob",
+        "x": 0.4984559416770935,
+        "z": 0.23260657489299774,
+        "lastInputSequence": 57,
+        "mass": 940,
+        "level": 2,
+        "maxTier": 2,
+        "suctionRadius": 3.4000000953674316,
+        "collected": 16,
+        "kills": 0,
+        "isBot": false,
+        "alive": true,
+        "respawnMilliseconds": 0,
+        "shieldMilliseconds": 0,
+        "settlementCoins": 0,
+        "settlementMassCoins": 0,
+        "settlementCollectedCoins": 0,
+        "settlementEliminationCoins": 0,
+        "settlementSurvivalCoins": 0,
+        "settlementPlacementCoins": 0
+      }
+    },
+    "reconnect": {
+      "sessionId": "ZG_Q2w-4j",
+      "before": {
+        "mass": 940,
+        "level": 2,
+        "collected": 16,
+        "kills": 0,
+        "sequence": 57
+      },
+      "after": {
+        "id": "ZG_Q2w-4j",
+        "displayName": "Cocos Runtime Prob",
+        "x": 0.8931952714920044,
+        "z": 0.4166169762611389,
+        "lastInputSequence": 60,
+        "mass": 940,
+        "level": 2,
+        "maxTier": 2,
+        "suctionRadius": 3.4000000953674316,
+        "collected": 16,
+        "kills": 0,
+        "isBot": false,
+        "alive": true,
+        "respawnMilliseconds": 0,
+        "shieldMilliseconds": 0,
+        "settlementCoins": 0,
+        "settlementMassCoins": 0,
+        "settlementCollectedCoins": 0,
+        "settlementEliminationCoins": 0,
+        "settlementSurvivalCoins": 0,
+        "settlementPlacementCoins": 0
+      },
+      "postReconnectInput": {
+        "id": "ZG_Q2w-4j",
+        "displayName": "Cocos Runtime Prob",
+        "x": 0.5080311298370361,
+        "z": 0.20186114311218262,
+        "lastInputSequence": 89,
+        "mass": 940,
+        "level": 2,
+        "maxTier": 2,
+        "suctionRadius": 3.4000000953674316,
+        "collected": 16,
+        "kills": 0,
+        "isBot": false,
+        "alive": true,
+        "respawnMilliseconds": 0,
+        "shieldMilliseconds": 0,
+        "settlementCoins": 0,
+        "settlementMassCoins": 0,
+        "settlementCollectedCoins": 0,
+        "settlementEliminationCoins": 0,
+        "settlementSurvivalCoins": 0,
+        "settlementPlacementCoins": 0
+      }
+    },
+    "settlement": {
+      "matchId": "798bc739-223c-4245-ab72-46199261c52d",
+      "running": false,
+      "elapsedSeconds": 7.178,
+      "remainingSeconds": 172.822,
+      "combatWarmupRemainingSeconds": 0,
+      "durationSeconds": 180,
+      "competitorCount": 8,
+      "localRank": 1,
+      "localAlive": true,
+      "localRespawnSeconds": 0,
+      "localKills": 0,
+      "localConsumed": 16,
+      "localMass": 940,
+      "leaderboard": [
+        {
+          "id": "ZG_Q2w-4j",
+          "name": "Cocos Runtime Prob",
+          "isLocal": true,
+          "mass": 940,
+          "kills": 0,
+          "consumed": 16,
+          "alive": true,
+          "shieldSeconds": 0,
+          "behavior": "LOCAL",
+          "position": {
+            "x": 0.1547347754240036,
+            "z": 0.0023795864544808865
+          }
+        },
+        {
+          "id": "bot-1",
+          "name": "矿石",
+          "isLocal": false,
+          "mass": 140,
+          "kills": 0,
+          "consumed": 0,
+          "alive": true,
+          "shieldSeconds": 0,
+          "behavior": "ROAM",
+          "position": {
+            "x": 5.461079120635986,
+            "z": 5.485763072967529
+          }
+        },
+        {
+          "id": "bot-2",
+          "name": "风暴",
+          "isLocal": false,
+          "mass": 140,
+          "kills": 0,
+          "consumed": 0,
+          "alive": true,
+          "shieldSeconds": 0,
+          "behavior": "ROAM",
+          "position": {
+            "x": 0.017454050481319427,
+            "z": 7.740586280822754
+          }
+        },
+        {
+          "id": "bot-3",
+          "name": "火花",
+          "isLocal": false,
+          "mass": 140,
+          "kills": 0,
+          "consumed": 0,
+          "alive": true,
+          "shieldSeconds": 0,
+          "behavior": "ROAM",
+          "position": {
+            "x": -5.485763072967529,
+            "z": 5.461079120635986
+          }
+        },
+        {
+          "id": "bot-4",
+          "name": "雪球",
+          "isLocal": false,
+          "mass": 140,
+          "kills": 0,
+          "consumed": 0,
+          "alive": true,
+          "shieldSeconds": 0,
+          "behavior": "ROAM",
+          "position": {
+            "x": -7.740586280822754,
+            "z": 0.017454050481319427
+          }
+        },
+        {
+          "id": "bot-5",
+          "name": "流光",
+          "isLocal": false,
+          "mass": 140,
+          "kills": 0,
+          "consumed": 0,
+          "alive": true,
+          "shieldSeconds": 0,
+          "behavior": "ROAM",
+          "position": {
+            "x": -5.461079120635986,
+            "z": -5.485763072967529
+          }
+        },
+        {
+          "id": "bot-6",
+          "name": "哨兵",
+          "isLocal": false,
+          "mass": 140,
+          "kills": 0,
+          "consumed": 0,
+          "alive": true,
+          "shieldSeconds": 0,
+          "behavior": "ROAM",
+          "position": {
+            "x": -0.017454050481319427,
+            "z": -7.740586280822754
+          }
+        },
+        {
+          "id": "bot-7",
+          "name": "哨兵·零",
+          "isLocal": false,
+          "mass": 140,
+          "kills": 0,
+          "consumed": 0,
+          "alive": true,
+          "shieldSeconds": 0,
+          "behavior": "ROAM",
+          "position": {
+            "x": 5.485763072967529,
+            "z": -5.461079120635986
+          }
+        }
+      ],
+      "botStates": {},
+      "eliminationCount": 0,
+      "reason": "FORFEIT",
+      "settlementReward": {
+        "coins": 75,
+        "massCoins": 9,
+        "collectedCoins": 32,
+        "eliminationCoins": 0,
+        "survivalCoins": 10,
+        "placementCoins": 24
+      }
+    },
+    "pause": {
+      "x": 346.878125,
+      "y": 92.3125
+    },
+    "settle": {
+      "x": 195,
+      "y": 483.98125000000005
+    }
+  },
+  "regions": null,
+  "fullProgression": null,
+  "trafficReplenishment": null,
+  "machineSaveResume": null,
+  "saveResume": null,
+  "cellLifecycle": null,
+  "paidSkinUnlock": null,
+  "goldenCity": null,
+  "runtimeObservations": [
+    {
+      "viewport": "390x844",
+      "phase": "home",
+      "performance": {
+        "cocos": {
+          "sceneNodeCount": 4038,
+          "activeNodeCount": 3003,
+          "activeMeshRendererCount": 937,
+          "activeMeshPrimitiveCount": 1042,
+          "meshAssetCount": "BLOCKED_UNEXPOSED",
+          "drawCalls": "BLOCKED_UNEXPOSED",
+          "batches": "BLOCKED_UNEXPOSED"
+        },
+        "world": {
+          "activeCellRegisteredObjectCount": 231,
+          "activeObjectCount": 231,
+          "lifecycleVisibleObjectCount": 231,
+          "activeCollectibleCount": 218,
+          "lifecycleVisibleCollectibleCount": 218,
+          "activeVehicleCount": 13,
+          "lifecycleVisibleVehicleCount": 13
+        }
+      }
+    }
+  ],
+  "consoleErrors": [],
+  "failures": [],
+  "initialLayout": {
+    "design": {
+      "width": 720,
+      "height": 1280
+    },
+    "visible": {
+      "width": 720,
+      "height": 1558.1538461538462
+    },
+    "frame": {
+      "width": 390,
+      "height": 844
+    },
+    "portrait": {
+      "targetRatio": 0.5625,
+      "frameRatio": 0.46208530805687204,
+      "viewport": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 844
+      },
+      "designIsPortrait": true,
+      "frameIsPortrait": true,
+      "viewportIsPortrait": true,
+      "viewportWithinFrame": true,
+      "viewportRatio": 0.46208530805687204
+    },
+    "canvas": {
+      "active": true,
+      "interactable": null,
+      "x": 360,
+      "y": 640,
+      "width": 720,
+      "height": 1280,
+      "scaleX": 1,
+      "scaleY": 1,
+      "world": {
+        "x": 360,
+        "y": 640,
+        "z": 0
+      },
+      "screen": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "alignCanvasWithScreen": false
+    },
+    "uiCamera": {
+      "projection": 0,
+      "orthoHeight": 640,
+      "x": 0,
+      "y": 0,
+      "z": 1000
+    },
+    "home": {
+      "active": true,
+      "interactable": null,
+      "x": 0,
+      "y": 0,
+      "width": 720,
+      "height": 1280,
+      "scaleX": 1,
+      "scaleY": 1,
+      "world": {
+        "x": 360,
+        "y": 640,
+        "z": 0
+      },
+      "screen": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "modePage": {
+      "active": false,
+      "interactable": null,
+      "x": 0,
+      "y": 0,
+      "width": 720,
+      "height": 1280,
+      "scaleX": 1,
+      "scaleY": 1,
+      "world": {
+        "x": 360,
+        "y": 640,
+        "z": 0
+      },
+      "screen": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "machineInfo": {
+      "active": false,
+      "interactable": null,
+      "x": 0,
+      "y": 0,
+      "width": 720,
+      "height": 1280,
+      "scaleX": 1,
+      "scaleY": 1,
+      "world": {
+        "x": 360,
+        "y": 640,
+        "z": 0
+      },
+      "screen": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "skinSelection": {
+      "active": false,
+      "interactable": null,
+      "x": 0,
+      "y": 0,
+      "width": 720,
+      "height": 1280,
+      "scaleX": 1,
+      "scaleY": 1,
+      "world": {
+        "x": 360,
+        "y": 640,
+        "z": 0
+      },
+      "screen": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "skinSelectionBack": {
+      "active": false,
+      "interactable": true,
+      "x": 0,
+      "y": -488,
+      "width": 390,
+      "height": 84,
+      "scaleX": 1,
+      "scaleY": 1,
+      "world": {
+        "x": 360,
+        "y": 152,
+        "z": 0
+      },
+      "screen": {
+        "x": 0.5,
+        "y": 0.88125
+      }
+    },
+    "skinSelectionData": {
+      "coin": "0",
+      "previewName": "紫晶奇点",
+      "previewDescription": "当前装备的引力核心",
+      "status": "选择免费皮肤，或使用局内获得的金币解锁",
+      "states": [
+        "点击使用",
+        "点击使用",
+        "点击使用",
+        "点击使用",
+        "点击使用"
+      ]
+    },
+    "skinSelectionButtons": [
+      {
+        "active": false,
+        "interactable": true,
+        "x": 210,
+        "y": 190,
+        "width": 112,
+        "height": 56,
+        "scaleX": 1,
+        "scaleY": 1,
+        "world": {
+          "x": 570,
+          "y": 830,
+          "z": 0
+        },
+        "screen": {
+          "x": 0.8550480769230769,
+          "y": 0.3515625
+        }
+      },
+      {
+        "active": false,
+        "interactable": true,
+        "x": 210,
+        "y": 82,
+        "width": 112,
+        "height": 56,
+        "scaleX": 1,
+        "scaleY": 1,
+        "world": {
+          "x": 570,
+          "y": 722,
+          "z": 0
+        },
+        "screen": {
+          "x": 0.8550480769230769,
+          "y": 0.4359375
+        }
+      },
+      {
+        "active": false,
+        "interactable": true,
+        "x": 210,
+        "y": -26,
+        "width": 112,
+        "height": 56,
+        "scaleX": 1,
+        "scaleY": 1,
+        "world": {
+          "x": 570,
+          "y": 614,
+          "z": 0
+        },
+        "screen": {
+          "x": 0.8550480769230769,
+          "y": 0.5203125
+        }
+      },
+      {
+        "active": false,
+        "interactable": true,
+        "x": 210,
+        "y": -134,
+        "width": 112,
+        "height": 56,
+        "scaleX": 1,
+        "scaleY": 1,
+        "world": {
+          "x": 570,
+          "y": 506,
+          "z": 0
+        },
+        "screen": {
+          "x": 0.8550480769230769,
+          "y": 0.6046875
+        }
+      },
+      {
+        "active": false,
+        "interactable": true,
+        "x": 210,
+        "y": -242,
+        "width": 112,
+        "height": 56,
+        "scaleX": 1,
+        "scaleY": 1,
+        "world": {
+          "x": 570,
+          "y": 398,
+          "z": 0
+        },
+        "screen": {
+          "x": 0.8550480769230769,
+          "y": 0.6890624999999999
+        }
+      }
+    ],
+    "machineInfoBack": {
+      "active": false,
+      "interactable": true,
+      "x": 0,
+      "y": -502,
+      "width": 390,
+      "height": 84,
+      "scaleX": 1,
+      "scaleY": 1,
+      "world": {
+        "x": 360,
+        "y": 138,
+        "z": 0
+      },
+      "screen": {
+        "x": 0.5,
+        "y": 0.8921875
+      }
+    },
+    "machineInfoData": {
+      "currentName": "初级黑洞 · LV.1",
+      "currentMass": "0 kg",
+      "currentRadius": "2.4 m",
+      "currentTier": "T1",
+      "progress": "下一等级：0 / 900 kg",
+      "levelRows": [
+        "LV.1",
+        "LV.2",
+        "LV.3",
+        "LV.4",
+        "LV.5"
+      ]
+    },
+    "modeArena": {
+      "active": false,
+      "interactable": true,
+      "x": 0,
+      "y": 274,
+      "width": 610,
+      "height": 202,
+      "scaleX": 1,
+      "scaleY": 1,
+      "world": {
+        "x": 360,
+        "y": 914,
+        "z": 0
+      },
+      "screen": {
+        "x": 0.5,
+        "y": 0.28593749999999996
+      }
+    },
+    "modeEndless": {
+      "active": false,
+      "interactable": true,
+      "x": 0,
+      "y": 34,
+      "width": 610,
+      "height": 202,
+      "scaleX": 1,
+      "scaleY": 1,
+      "world": {
+        "x": 360,
+        "y": 674,
+        "z": 0
+      },
+      "screen": {
+        "x": 0.5,
+        "y": 0.47343749999999996
+      }
+    },
+    "modeBrawlLocked": null,
+    "modeLeaderboardLocked": null,
+    "runtimeHUD": {
+      "endless": {
+        "active": false,
+        "interactable": null,
+        "x": 0,
+        "y": 0,
+        "width": 720,
+        "height": 1280,
+        "scaleX": 1,
+        "scaleY": 1,
+        "world": {
+          "x": 360,
+          "y": 640,
+          "z": 0
+        },
+        "screen": {
+          "x": 0.5,
+          "y": 0.5
+        }
+      },
+      "pauseButton": {
+        "active": false,
+        "interactable": true,
+        "x": 274,
+        "y": 474,
+        "width": 58,
+        "height": 58,
+        "scaleX": 1,
+        "scaleY": 1,
+        "world": {
+          "x": 634,
+          "y": 1114,
+          "z": 0
+        },
+        "screen": {
+          "x": 0.9632532051282052,
+          "y": 0.12968749999999996
+        }
+      },
+      "joystick": {
+        "active": false,
+        "interactable": null,
+        "x": 232,
+        "y": -470,
+        "width": 196,
+        "height": 196,
+        "scaleX": 1,
+        "scaleY": 1,
+        "world": {
+          "x": 592,
+          "y": 170,
+          "z": 0
+        },
+        "screen": {
+          "x": 0.8922435897435897,
+          "y": 0.8671875
+        }
+      },
+      "joystickBase": {
+        "active": false,
+        "interactable": null,
+        "x": 0,
+        "y": 0,
+        "width": 196,
+        "height": 196,
+        "scaleX": 1,
+        "scaleY": 1,
+        "world": {
+          "x": 592,
+          "y": 170,
+          "z": 0
+        },
+        "screen": {
+          "x": 0.8922435897435897,
+          "y": 0.8671875
+        }
+      },
+      "joystickKnob": {
+        "active": false,
+        "interactable": null,
+        "x": 0,
+        "y": 0,
+        "width": 76,
+        "height": 76,
+        "scaleX": 1,
+        "scaleY": 1,
+        "world": {
+          "x": 592,
+          "y": 170,
+          "z": 0
+        },
+        "screen": {
+          "x": 0.8922435897435897,
+          "y": 0.8671875
+        }
+      },
+      "safeArea": null,
+      "pills": {
+        "coin": {
+          "active": false,
+          "interactable": null,
+          "x": -188,
+          "y": 430,
+          "width": 132,
+          "height": 48,
+          "scaleX": 1,
+          "scaleY": 1,
+          "world": {
+            "x": 172,
+            "y": 1070,
+            "z": 0
+          },
+          "screen": {
+            "x": 0.18214743589743587,
+            "y": 0.1640625
+          }
+        },
+        "mass": {
+          "active": false,
+          "interactable": null,
+          "x": 106,
+          "y": 409,
+          "width": 238,
+          "height": 30,
+          "scaleX": 1,
+          "scaleY": 1,
+          "world": {
+            "x": 466,
+            "y": 1049,
+            "z": 0
+          },
+          "screen": {
+            "x": 0.6792147435897437,
+            "y": 0.18046874999999996
+          }
+        },
+        "level": {
+          "active": false,
+          "interactable": null,
+          "x": 106,
+          "y": 443,
+          "width": 238,
+          "height": 34,
+          "scaleX": 1,
+          "scaleY": 1,
+          "world": {
+            "x": 466,
+            "y": 1083,
+            "z": 0
+          },
+          "screen": {
+            "x": 0.6792147435897437,
+            "y": 0.1539062499999999
+          }
+        },
+        "region": {
+          "active": false,
+          "interactable": null,
+          "x": 0,
+          "y": 346,
+          "width": 240,
+          "height": 32,
+          "scaleX": 1,
+          "scaleY": 1,
+          "world": {
+            "x": 360,
+            "y": 986,
+            "z": 0
+          },
+          "screen": {
+            "x": 0.5,
+            "y": 0.22968749999999993
+          }
+        }
+      },
+      "pillPanels": {
+        "coin": {
+          "active": false,
+          "interactable": null,
+          "x": -210,
+          "y": 430,
+          "width": 218,
+          "height": 64,
+          "scaleX": 1,
+          "scaleY": 1,
+          "world": {
+            "x": 150,
+            "y": 1070,
+            "z": 0
+          },
+          "screen": {
+            "x": 0.14495192307692306,
+            "y": 0.1640625
+          }
+        },
+        "level": {
+          "active": false,
+          "interactable": null,
+          "x": 106,
+          "y": 430,
+          "width": 250,
+          "height": 64,
+          "scaleX": 1,
+          "scaleY": 1,
+          "world": {
+            "x": 466,
+            "y": 1070,
+            "z": 0
+          },
+          "screen": {
+            "x": 0.6792147435897437,
+            "y": 0.1640625
+          }
+        },
+        "region": {
+          "active": false,
+          "interactable": null,
+          "x": 0,
+          "y": 346,
+          "width": 258,
+          "height": 54,
+          "scaleX": 1,
+          "scaleY": 1,
+          "world": {
+            "x": 360,
+            "y": 986,
+            "z": 0
+          },
+          "screen": {
+            "x": 0.5,
+            "y": 0.22968749999999993
+          }
+        }
+      },
+      "pillText": {
+        "coin": "0",
+        "mass": "质量 0 kg",
+        "level": "LV.1 回收小车",
+        "region": "卧室杂物区"
+      }
+    },
+    "pickupFeedback": {
+      "endless": null,
+      "arena": null
+    },
+    "tierUpgrade": {
+      "endless": null,
+      "arena": null
+    },
+    "tierLock": {
+      "endless": null,
+      "arena": null
+    },
+    "endlessReady": {
+      "root": {
+        "active": false,
+        "interactable": null,
+        "x": 0,
+        "y": 0,
+        "width": 720,
+        "height": 1280,
+        "scaleX": 1,
+        "scaleY": 1,
+        "world": {
+          "x": 360,
+          "y": 640,
+          "z": 0
+        },
+        "screen": {
+          "x": 0.5,
+          "y": 0.5
+        }
+      },
+      "back": {
+        "active": false,
+        "interactable": true,
+        "x": -238,
+        "y": 486,
+        "width": 104,
+        "height": 104,
+        "scaleX": 1,
+        "scaleY": 1,
+        "world": {
+          "x": 122,
+          "y": 1126,
+          "z": 0
+        },
+        "screen": {
+          "x": 0.09761217948717948,
+          "y": 0.12031249999999993
+        }
+      },
+      "title": "无尽探索",
+      "header": {
+        "active": false,
+        "interactable": null,
+        "x": 24,
+        "y": 478,
+        "width": 430,
+        "height": 100,
+        "scaleX": 1,
+        "scaleY": 1,
+        "world": {
+          "x": 384,
+          "y": 1118,
+          "z": 0
+        },
+        "screen": {
+          "x": 0.5405769230769231,
+          "y": 0.1265624999999999
+        }
+      },
+      "preview": {
+        "active": false,
+        "interactable": null,
+        "x": 0,
+        "y": 34,
+        "width": 610,
+        "height": 202,
+        "scaleX": 1,
+        "scaleY": 1,
+        "world": {
+          "x": 360,
+          "y": 674,
+          "z": 0
+        },
+        "screen": {
+          "x": 0.5,
+          "y": 0.47343749999999996
+        }
+      },
+      "previewArt": null,
+      "start": {
+        "active": false,
+        "interactable": true,
+        "x": 0,
+        "y": 34,
+        "width": 610,
+        "height": 202,
+        "scaleX": 1,
+        "scaleY": 1,
+        "world": {
+          "x": 360,
+          "y": 674,
+          "z": 0
+        },
+        "screen": {
+          "x": 0.5,
+          "y": 0.47343749999999996
+        }
+      },
+      "startLabel": "开始探索",
+      "stat": "0",
+      "machine": "0",
+      "intro": "最高分"
+    },
+    "arenaReady": {
+      "root": {
+        "active": false,
+        "interactable": null,
+        "x": 0,
+        "y": 0,
+        "width": 720,
+        "height": 1280,
+        "scaleX": 1,
+        "scaleY": 1,
+        "world": {
+          "x": 360,
+          "y": 640,
+          "z": 0
+        },
+        "screen": {
+          "x": 0.5,
+          "y": 0.5
+        }
+      },
+      "back": {
+        "active": false,
+        "interactable": true,
+        "x": -238,
+        "y": 486,
+        "width": 104,
+        "height": 104,
+        "scaleX": 1,
+        "scaleY": 1,
+        "world": {
+          "x": 122,
+          "y": 1126,
+          "z": 0
+        },
+        "screen": {
+          "x": 0.09761217948717948,
+          "y": 0.12031249999999993
+        }
+      },
+      "title": "竞技乱斗",
+      "header": {
+        "active": false,
+        "interactable": null,
+        "x": 24,
+        "y": 478,
+        "width": 430,
+        "height": 100,
+        "scaleX": 1,
+        "scaleY": 1,
+        "world": {
+          "x": 384,
+          "y": 1118,
+          "z": 0
+        },
+        "screen": {
+          "x": 0.5405769230769231,
+          "y": 0.1265624999999999
+        }
+      },
+      "preview": {
+        "active": false,
+        "interactable": null,
+        "x": 0,
+        "y": 274,
+        "width": 610,
+        "height": 202,
+        "scaleX": 1,
+        "scaleY": 1,
+        "world": {
+          "x": 360,
+          "y": 914,
+          "z": 0
+        },
+        "screen": {
+          "x": 0.5,
+          "y": 0.28593749999999996
+        }
+      },
+      "previewArt": null,
+      "start": {
+        "active": false,
+        "interactable": true,
+        "x": 0,
+        "y": 274,
+        "width": 610,
+        "height": 202,
+        "scaleX": 1,
+        "scaleY": 1,
+        "world": {
+          "x": 360,
+          "y": 914,
+          "z": 0
+        },
+        "screen": {
+          "x": 0.5,
+          "y": 0.28593749999999996
+        }
+      },
+      "startLabel": "开始乱斗",
+      "stat": "0",
+      "machine": "0",
+      "intro": "最高分"
+    },
+    "arenaHUD": {
+      "root": {
+        "active": false,
+        "interactable": null,
+        "x": 0,
+        "y": 0,
+        "width": 720,
+        "height": 1280,
+        "scaleX": 1,
+        "scaleY": 1,
+        "world": {
+          "x": 360,
+          "y": 640,
+          "z": 0
+        },
+        "screen": {
+          "x": 0.5,
+          "y": 0.5
+        }
+      },
+      "pauseButton": {
+        "active": false,
+        "interactable": true,
+        "x": 294,
+        "y": 500,
+        "width": 58,
+        "height": 58,
+        "scaleX": 1,
+        "scaleY": 1,
+        "world": {
+          "x": 654,
+          "y": 1140,
+          "z": 0
+        },
+        "screen": {
+          "x": 0.9970673076923078,
+          "y": 0.109375
+        }
+      },
+      "joystick": {
+        "active": false,
+        "interactable": null,
+        "x": 232,
+        "y": -470,
+        "width": 196,
+        "height": 196,
+        "scaleX": 1,
+        "scaleY": 1,
+        "world": {
+          "x": 592,
+          "y": 170,
+          "z": 0
+        },
+        "screen": {
+          "x": 0.8922435897435897,
+          "y": 0.8671875
+        }
+      },
+      "timer": {
+        "active": false,
+        "interactable": null,
+        "x": 0,
+        "y": 492,
+        "width": 148,
+        "height": 46,
+        "scaleX": 1,
+        "scaleY": 1,
+        "world": {
+          "x": 360,
+          "y": 1132,
+          "z": 0
+        },
+        "screen": {
+          "x": 0.5,
+          "y": 0.11562499999999998
+        }
+      },
+      "nameplates": []
+    },
+    "formalPages": {
+      "pause": {
+        "active": false,
+        "interactable": null,
+        "x": 0,
+        "y": 0,
+        "width": 720,
+        "height": 1280,
+        "scaleX": 1,
+        "scaleY": 1,
+        "world": {
+          "x": 360,
+          "y": 640,
+          "z": 0
+        },
+        "screen": {
+          "x": 0.5,
+          "y": 0.5
+        }
+      },
+      "pauseResume": {
+        "active": false,
+        "interactable": true,
+        "x": 0,
+        "y": 44,
+        "width": 390,
+        "height": 104,
+        "scaleX": 1,
+        "scaleY": 1,
+        "world": {
+          "x": 360,
+          "y": 684,
+          "z": 0
+        },
+        "screen": {
+          "x": 0.5,
+          "y": 0.46562499999999996
+        }
+      },
+      "pauseSettle": {
+        "active": false,
+        "interactable": true,
+        "x": 0,
+        "y": -94,
+        "width": 340,
+        "height": 88,
+        "scaleX": 1,
+        "scaleY": 1,
+        "world": {
+          "x": 360,
+          "y": 546,
+          "z": 0
+        },
+        "screen": {
+          "x": 0.5,
+          "y": 0.5734375
+        }
+      },
+      "pauseHome": {
+        "active": false,
+        "interactable": true,
+        "x": 0,
+        "y": -208,
+        "width": 340,
+        "height": 78,
+        "scaleX": 1,
+        "scaleY": 1,
+        "world": {
+          "x": 360,
+          "y": 432,
+          "z": 0
+        },
+        "screen": {
+          "x": 0.5,
+          "y": 0.6625
+        }
+      },
+      "settlement": {
+        "active": false,
+        "interactable": null,
+        "x": 0,
+        "y": 0,
+        "width": 720,
+        "height": 1280,
+        "scaleX": 1,
+        "scaleY": 1,
+        "world": {
+          "x": 360,
+          "y": 640,
+          "z": 0
+        },
+        "screen": {
+          "x": 0.5,
+          "y": 0.5
+        }
+      },
+      "settlementRestart": {
+        "active": false,
+        "interactable": true,
+        "x": -142,
+        "y": -480,
+        "width": 270,
+        "height": 94,
+        "scaleX": 1,
+        "scaleY": 1,
+        "world": {
+          "x": 218,
+          "y": 160,
+          "z": 0
+        },
+        "screen": {
+          "x": 0.2599198717948718,
+          "y": 0.875
+        }
+      },
+      "settlementHome": {
+        "active": false,
+        "interactable": true,
+        "x": 142,
+        "y": -480,
+        "width": 270,
+        "height": 94,
+        "scaleX": 1,
+        "scaleY": 1,
+        "world": {
+          "x": 502,
+          "y": 160,
+          "z": 0
+        },
+        "screen": {
+          "x": 0.7400801282051283,
+          "y": 0.875
+        }
+      },
+      "settlementData": {
+        "title": "本局结算",
+        "subtitle": "无尽吞噬 · 本局数据",
+        "result": "第 - / 8 名 · 0 kg",
+        "mass": "0 kg",
+        "kills": "0 次",
+        "time": "0:00",
+        "reward": "+0",
+        "breakdown": "质量 0 · 收集 0 · 淘汰 0 · 生存 0 · 名次 0",
+        "localRow": {
+          "badge": "-",
+          "name": "我",
+          "score": "0 kg · 0 淘汰"
+        },
+        "rows": [
+          {
+            "active": false,
+            "badge": "1",
+            "name": "选手 1",
+            "score": "0 kg · 0 淘汰"
+          },
+          {
+            "active": false,
+            "badge": "2",
+            "name": "选手 2",
+            "score": "0 kg · 0 淘汰"
+          },
+          {
+            "active": false,
+            "badge": "3",
+            "name": "选手 3",
+            "score": "0 kg · 0 淘汰"
+          },
+          {
+            "active": false,
+            "badge": "4",
+            "name": "选手 4",
+            "score": "0 kg · 0 淘汰"
+          },
+          {
+            "active": false,
+            "badge": "5",
+            "name": "选手 5",
+            "score": "0 kg · 0 淘汰"
+          }
+        ]
+      },
+      "revive": {
+        "active": false,
+        "interactable": null,
+        "x": 0,
+        "y": 0,
+        "width": 720,
+        "height": 1280,
+        "scaleX": 1,
+        "scaleY": 1,
+        "world": {
+          "x": 360,
+          "y": 640,
+          "z": 0
+        },
+        "screen": {
+          "x": 0.5,
+          "y": 0.5
+        }
+      },
+      "reviveNow": {
+        "active": false,
+        "interactable": true,
+        "x": 0,
+        "y": -250,
+        "width": 392,
+        "height": 98,
+        "scaleX": 1,
+        "scaleY": 1,
+        "world": {
+          "x": 360,
+          "y": 390,
+          "z": 0
+        },
+        "screen": {
+          "x": 0.5,
+          "y": 0.6953125
+        }
+      },
+      "reviveGiveUp": {
+        "active": false,
+        "interactable": true,
+        "x": 0,
+        "y": -378,
+        "width": 340,
+        "height": 78,
+        "scaleX": 1,
+        "scaleY": 1,
+        "world": {
+          "x": 360,
+          "y": 262,
+          "z": 0
+        },
+        "screen": {
+          "x": 0.5,
+          "y": 0.7953125
+        }
+      }
+    },
+    "runtimePageInput": {
+      "targetName": null,
+      "touchX": 0,
+      "touchY": 0,
+      "uiTouchX": 0,
+      "uiTouchY": 0,
+      "action": "NONE"
+    },
+    "registrationBranding": {
+      "active": false,
+      "interactable": null,
+      "x": 0,
+      "y": 580,
+      "width": 280,
+      "height": 48,
+      "scaleX": 1,
+      "scaleY": 1,
+      "world": {
+        "x": 360,
+        "y": 1220,
+        "z": 0
+      },
+      "screen": {
+        "x": 0.5,
+        "y": 0.046875
+      }
+    },
+    "registrationBrandingText": "黑洞回收站",
+    "logo": {
+      "active": true,
+      "interactable": null,
+      "x": 0,
+      "y": 370,
+      "width": 600,
+      "height": 180,
+      "scaleX": 1,
+      "scaleY": 1,
+      "world": {
+        "x": 360,
+        "y": 1010,
+        "z": 0
+      },
+      "screen": {
+        "x": 0.5,
+        "y": 0.2109375
+      }
+    },
+    "hero": {
+      "active": true,
+      "interactable": null,
+      "x": 0,
+      "y": 30,
+      "width": 360,
+      "height": 360,
+      "scaleX": 1,
+      "scaleY": 1,
+      "world": {
+        "x": 360,
+        "y": 670,
+        "z": 0
+      },
+      "screen": {
+        "x": 0.5,
+        "y": 0.4765625
+      }
+    },
+    "start": {
+      "active": true,
+      "interactable": true,
+      "x": 0,
+      "y": -312,
+      "width": 360,
+      "height": 104,
+      "scaleX": 1,
+      "scaleY": 1,
+      "world": {
+        "x": 360,
+        "y": 328,
+        "z": 0
+      },
+      "screen": {
+        "x": 0.5,
+        "y": 0.7437499999999999
+      }
+    },
+    "mode": {
+      "active": true,
+      "interactable": true,
+      "x": -208,
+      "y": -468,
+      "width": 160,
+      "height": 112,
+      "scaleX": 1,
+      "scaleY": 1,
+      "world": {
+        "x": 152,
+        "y": 172,
+        "z": 0
+      },
+      "screen": {
+        "x": 0.14833333333333332,
+        "y": 0.865625
+      }
+    },
+    "skin": {
+      "active": true,
+      "interactable": true,
+      "x": 0,
+      "y": -468,
+      "width": 160,
+      "height": 112,
+      "scaleX": 1,
+      "scaleY": 1,
+      "world": {
+        "x": 360,
+        "y": 172,
+        "z": 0
+      },
+      "screen": {
+        "x": 0.5,
+        "y": 0.865625
+      }
+    },
+    "machine": {
+      "active": true,
+      "interactable": true,
+      "x": 208,
+      "y": -468,
+      "width": 160,
+      "height": 112,
+      "scaleX": 1,
+      "scaleY": 1,
+      "world": {
+        "x": 568,
+        "y": 172,
+        "z": 0
+      },
+      "screen": {
+        "x": 0.8516666666666668,
+        "y": 0.865625
+      }
+    },
+    "settings": {
+      "active": false,
+      "interactable": true,
+      "x": 288,
+      "y": -540,
+      "width": 80,
+      "height": 80,
+      "scaleX": 1,
+      "scaleY": 1,
+      "world": {
+        "x": 648,
+        "y": 100,
+        "z": 0
+      },
+      "screen": {
+        "x": 0.986923076923077,
+        "y": 0.921875
+      }
+    }
+  }
+}

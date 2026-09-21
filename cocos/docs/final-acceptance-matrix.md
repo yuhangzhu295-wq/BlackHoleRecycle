@@ -39,31 +39,98 @@
 `cocos/build/web-mobile` through the Creator CLI (the script has no skip-build
 switch) and reads the same directory, so the scopes must run serially.
 
-The runner declares **16** scopes. Eleven are verified by a re-run alone on the
-slot and carry `bundleProvenance`. The rest hold older reports that predate both
-the provenance guard and the fixes recorded below, so they are **not** evidence
-of the current build.
+The runner declares **16** scopes. All sixteen were re-run alone on the slot on
+`09-21` and carry `bundleProvenance`. No scope still holds a stale report, and
+none fails: the last one to be repaired (`save-resume`) turned out to be a real
+product defect rather than a stale pass — see below.
 
 | Scope | State | Provenance | Report |
 | :--- | :--- | :--- | :--- |
-| `full` | **PASS** — 375x667 + 390x844 + 430x932, `failures: []` | `BUNDLE_STABLE` `fe685340` | `09-20 19:08` |
-| `arena-ai` | **PASS** — real 180 s match, all four bot states | `BUNDLE_STABLE` `333e265f` | `09-20 19:18` |
-| `arena-timer` | **PASS** — 180.0057 s, `reason: TIME`, reward paid | `BUNDLE_STABLE` | `09-20 19:23` |
-| `golden-city` | **PASS** — 31/31, `deficits: []`; but the width check is unstable, see below | `BUNDLE_STABLE` (earlier evidence committed `413b1e9`) | `09-21 00:20` |
-| `cell-lifecycle` | **PASS** — 375x667 + 390x844 + 430x932, 6/6 checkpoints | `BUNDLE_STABLE` | `09-20 19:32` |
-| `regions` | **PASS** — all six regions over the 940 m route | `BUNDLE_STABLE` | `09-20 23:28` |
-| `skins` | **PASS** — home skin switched `skin_classic` → `skin_violet_vortex`, locked tap at 0 coins | `BUNDLE_STABLE` | `09-21 00:43` |
-| `skin-unlock` | **PASS** — LV1→LV5 by real touch, then a paid unlock; T5 `container` absorbed | `BUNDLE_STABLE` | `09-21 01:31` |
-| `progression` | **PASS** — same five-level route through the shared helper; T5 `container` absorbed | `BUNDLE_STABLE` | `09-21 01:46` |
-| `pages` | **PASS** — pause → resume → settle by real touch, `finalScreen: "Settlement"` | `BUNDLE_STABLE` | `09-21 01:49` |
-| `arena` | **PASS** — 3 viewports + live match: 8 competitors, leaderboard, bot `COLLECT`/`FLEE`, shields | `BUNDLE_STABLE` `d0022470` | `09-21 02:09` |
-| `network`, `revive`, `save-resume`, `settlement`, `ui-full-flow` | **PASS**, never re-run | none | `09-18` **stale** |
+| `full` | **PASS** — 375x667 + 390x844 + 430x932, `failures: []` | `BUNDLE_STABLE` `c42a45eb` | `09-21 19:20` |
+| `pages` | **PASS** — pause → resume → settle by real touch, `finalScreen: "Settlement"` | `BUNDLE_STABLE` `65c0d14b` | `09-21 19:22` |
+| `arena` | **PASS** — 3 viewports + live match: 8 competitors, leaderboard, bot `COLLECT`/`FLEE`, shields | `BUNDLE_STABLE` `41f49e80` | `09-21 19:23` |
+| `arena-ai` | **PASS** — real 180 s match, all four bot states | `BUNDLE_STABLE` `0baecc71` | `09-21 19:28` |
+| `revive` | **PASS** — `failures: []`, `consoleErrors: []` | `BUNDLE_STABLE` `978a7d1b` | `09-21 19:29` |
+| `settlement` | **PASS** — `failures: []`, `consoleErrors: []` | `BUNDLE_STABLE` `4b68a184` | `09-21 19:31` |
+| `ui-full-flow` | **PASS** — `failures: []`, `consoleErrors: []` | `BUNDLE_STABLE` `6e066e00` | `09-21 19:32` |
+| `skins` | **PASS** — home skin switched `skin_classic` → `skin_violet_vortex`, locked tap at 0 coins | `BUNDLE_STABLE` `950aa440` | `09-21 19:33` |
+| `skin-unlock` | **PASS** — LV1→LV5 by real touch, then a paid unlock; T5 `container` absorbed | `BUNDLE_STABLE` `41daa2b5` | `09-21 19:45` |
+| `arena-timer` | **PASS** — 180.0057 s, `reason: TIME`, reward paid | `BUNDLE_STABLE` `fe24f269` | `09-21 19:50` |
+| `network` | **PASS** — Colyseus room, 8 players / 17 pickups, reconnect | `BUNDLE_STABLE` `310970c2` | `09-21 19:51` |
+| `regions` | **PASS** — all six regions over the 940 m route | `BUNDLE_STABLE` `c9aa5158` | `09-21 19:55` |
+| `progression` | **PASS** — same five-level route through the shared helper; T5 `container` absorbed | `BUNDLE_STABLE` `45bbea19` | `09-21 20:07` |
+| `cell-lifecycle` | **PASS** — 375x667 + 390x844 + 430x932, 6/6 checkpoints | `BUNDLE_STABLE` `911fcb0f` | `09-21 20:13` |
+| `golden-city` | **PASS** — 31/31, `deficits: []`; but the width check is unstable, see below | `BUNDLE_STABLE` `551d1f84` | `09-21 20:15` |
+| `save-resume` | **PASS** — `preReload.mass 240 == afterReload.mass 240`, no repeat grant | `BUNDLE_STABLE` `b162ac03` | `09-21 19:12` |
 
-**"The chain is green" is therefore still not a true statement.** Eleven scopes
-are defensible; five carry stale passes. The eleven above are what this session
-actually verified.
+**All sixteen scopes were re-run on the current source and all sixteen PASS.**
+Every report carries `failures: []`, `consoleErrors: []` and a `BUNDLE_STABLE`
+provenance whose start and end digests match, at 187 files. The last change to
+`cocos/assets/**` was `09-21 19:10:47`, and the sixteen runs span `19:12`–`20:15`,
+so the reports and the source describe the same build.
 
-Two of them were verified but went unrecorded for a while, which is its own small
+### `save-resume`: arena bots were overwriting the player's save (found and fixed `09-21`)
+
+This scope failed on the `09-21` morning build, and the failure was real — not
+stale evidence, not the environment, not a flake:
+
+`FAIL_SAVE_RESUME_MASS_MISMATCH: {"preReload":240,"afterReload":295}`, and `320`
+on another run. The live machine mass at settlement is always exactly `240`
+(`ArenaMatchManager` `START_MASS`), while the persisted `machineMass` was
+whatever the last arena **bot** had absorbed. Measured directly, read-only:
+
+```
+persistedBeforeReload.machineMass : 320   // before the reload, already 320
+persistedAfterReload.machineMass  : 320   // the reload itself is correct
+preReload (live machine.currentMass): 240
+coins: 3 == 3                             // the coin assertions pass
+```
+
+So persistence was not broken — the value being persisted was the wrong actor's.
+`saveService` is an app-wide singleton, and `BlackHoleMachine.addMass` /
+`applyEvolutionLevel` wrote it unconditionally, with no notion of *which* machine
+owns the player's progression. `ArenaMatchManager.ts:511` awards bot mass through
+`competitor.machine.addMass(...)`, so **every bot absorb rewrote the player's
+save**; `NetworkArenaReplica` did the same for replicated remote players. Because
+`setMachineProgression` does `machineLevel = Math.max(data.machineLevel,
+nextLevel)`, a bot reaching LV2+ would also have handed the player a free level.
+
+The write was introduced by `6f7de14` (`09-15 12:27`); the bot `addMass` path is
+older (`3a530da`, `09-04`). That makes the `09-18` PASS a lucky one: the check
+passes only when no bot absorb lands before the harness reads the save.
+
+**Fix (`09-21 19:10`).** `BlackHoleMachine` gained one owner flag,
+`persistsProgression`, and every write now goes through a single gate
+(`persistProgression()`); `ArenaMatchManager` clears the flag on its seven bots
+and `NetworkArenaReplica` clears it on replicated opponents. `onLoad` mirrors the
+save through `withoutPersisting(...)`, because a bot is created with
+`addComponent`, which runs `onLoad` before its owner can clear the flag. The
+`save-resume` scope is itself the regression guard: it fails without the fix.
+Verified after the fix — `preReload.mass 240 == afterReload.mass 240`, plus the
+coin idempotency assertions (no repeat grant, claimed id preserved).
+
+### Where the evidence lives, and how far release readiness got (`09-21 20:2x`)
+
+The reports themselves are **not** in `artifacts/` (gitignored). They are curated
+into `cocos/docs/evidence/final/`, which is the directory `.gitignore` has always
+named for product-level evidence, with a `README.md` index that lists every
+scope's digest and run time. `golden-city-composition-before.json` is in there
+too, and it is **write-once** — do not re-capture over it.
+
+Two release steps were run on the current source:
+
+- `npm run build:all` — **PASS**: `web-mobile` 187 files, `wechatgame` 191 files
+  (real AppID `wx6ac3f5090a6b99c5`), `bytedance-mini-game` 190 files (placeholder).
+- `npm run preflight:release` — **FAIL**, for an **owner-owned reason, not a code
+  defect**: `wechatgame` passes with its configured AppID and
+  `bytedance-mini-game requires a real AppID for release preflight; found
+  testappId.`
+
+So the gate chain is green, but **the build is not releasable yet**: the Douyin
+AppID is still a placeholder, and no WeChat/Douyin developer-tool or on-device
+acceptance has been performed. Building is not device acceptance.
+
+Two of the scopes above were verified but went unrecorded for a while, which is its own small
 lesson: `pages` passed at `01:49` and `arena` at `02:09`, and the table above
 kept listing both as stale until they were counted from the reports rather than
 from memory. The scope list is the thing to diff against the report directory,

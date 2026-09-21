@@ -3,11 +3,13 @@
 ## V4 (current)
 
 Date: 2026-09-20
-Local HEAD: `d87d10f`. **Nothing is pushed.**
-`git push origin HEAD:main` is **BLOCKED_EXTERNAL_NETWORK** (`CONNECT tunnel failed,
+Local HEAD: `d87d10f`. **Pushed.** (Corrected 2026-09-21: this line used to read
+"Nothing is pushed" and the `git push` failure below was already resolved — the
+09-21 session pushed 40 commits and `origin/main` == local `main` == `6b14ce6`.)
+Historical note, kept because the diagnosis was correct at the time:
+`git push origin HEAD:main` was **BLOCKED_EXTERNAL_NETWORK** (`CONNECT tunnel failed,
 502`; `OpenSSL SSL_read: unexpected eof`; `github.com` returns `000` while
-`api.github.com` returns `200`). Retrying is not worth the time until the network
-path is restored. All commits are safe locally; `origin/main` is far behind.
+`api.github.com` returns `200`). All commits were safe locally while that lasted.
 
 ### Gate chain state — read this before trusting any PASS
 
@@ -132,6 +134,25 @@ Use `find . -printf '%T@ %p\n' | sort -rn`. `buildCocosWebMobile` now bounds the
 wait itself (`BHR_COCOS_BUILD_TIMEOUT_MS`, default 15 min) and kills the process
 **tree** on expiry, so a stall fails loudly instead of hanging forever.
 
+**The ambient proxy is no longer a hazard (fixed `09-21 18:5x`).** Every scope is
+loopback-only, but Chromium still inherited the shell's `http_proxy`/`https_proxy`
+and a proxy that does not recognise the loopback address turns
+`ws://127.0.0.1:<port>` into `net::ERR_INTERNET_DISCONNECTED`. That is exactly how
+`--scope=network` failed at `09-21 02:11` with `BUNDLE_STABLE`. The launch now
+passes `--no-proxy-server`, so the chain no longer depends on the shell that
+launched it. Verified both ways on `09-21`: with the proxies **unset** the scope
+passed at `17:34`, and with `http_proxy=http://127.0.0.1:62150` deliberately left
+**set** it passed again at `18:55` (`BUNDLE_STABLE` `98b25c34`). No `unset` or
+`no_proxy` export is needed any more.
+
+**The stall rate observed on `09-21` was far worse than 2%.** Three of nine builds
+froze at the documented signature (builder log stuck at 3 lines / 1710 bytes,
+six `CocosCreator.exe` processes resident, zero writes for 6–9 minutes): the
+`save-resume` builds at `17:39`, `17:58` and `18:05`. Retrying recovered each one,
+as the record predicts, but do not assume a stall is rare — budget for it, watch
+the builder log's line count rather than the clock, and `taskkill /F /IM
+CocosCreator.exe` when it freezes.
+
 Reports carry `bundleProvenance {status, start, end, comparisonWindow}` and, since
 `f39f689`, a clobber **fails the run** (`FAIL_BUNDLE_CLOBBERED`, exit 1). The
 promotion waited for its precondition: three scopes re-run alone all reported
@@ -140,6 +161,37 @@ deliberately non-fatal — a clobber is positive evidence the report is incohere
 an unverified census is only the absence of evidence.
 
 ### Open items, in priority order
+
+0. **`save-resume` FAILED because arena bots overwrote the player's save — FIXED
+   `09-21 19:10`, and all sixteen scopes were re-run afterwards.** The scope
+   reported `FAIL_SAVE_RESUME_MASS_MISMATCH` with the live mass at `START_MASS`
+   (`240`) against a persisted `295`, and `320` on another run. `saveService` is
+   an app-wide singleton, and `BlackHoleMachine.addMass` / `applyEvolutionLevel`
+   called `setMachineProgression(this.currentMass, this.currentLevel)` with no
+   notion of *which* machine owns the player's progression. `ArenaMatchManager.ts`
+   awarded bot mass through `competitor.machine.addMass(...)`, so **every bot
+   absorb rewrote the player's `machineMass`**; `NetworkArenaReplica` did the same
+   for replicated opponents. Because `setMachineProgression` does
+   `machineLevel = Math.max(data.machineLevel, nextLevel)`, a bot reaching LV2+
+   would also have handed the player a free level. Introduced by `6f7de14`
+   (`09-15 12:27`); the bot `addMass` path predates it (`3a530da`, `09-04`), so the
+   `09-18` PASS was a lucky one.
+
+   **Fix.** `BlackHoleMachine` now exposes one owner flag, `persistsProgression`,
+   and every write goes through the single gate `persistProgression()`.
+   `ArenaMatchManager` clears the flag on its seven bots before
+   `prepareMachine`, and `NetworkArenaReplica` clears it on replicated opponents.
+   `onLoad` mirrors the save through `withoutPersisting(...)` because a bot is
+   created with `addComponent`, which runs `onLoad` before its owner can clear the
+   flag. `save-resume` is itself the regression guard — it fails without the fix.
+
+   Because `cocos/assets/**` changed, **all sixteen scopes were re-run
+   `09-21 19:12`–`20:15` on the new source: 16/16 PASS**, each with
+   `failures: []`, `consoleErrors: []` and a `BUNDLE_STABLE` provenance whose
+   start and end digests match. `typecheck:cocos` is 0 errors and `test:full`
+   exits 0. The chain is green on the current source — that is now a true
+   statement, and the digests in `final-acceptance-matrix.md` are what to re-check
+   it against.
 
 1. **Golden City requirement 3 is NOT MET.** The brief said "add the 1 missing
    visible collectible". **No collectible was ever added** — the 19 → 23 movement
@@ -242,6 +294,68 @@ from a gate that happened to pass once.
    `max(1.0, suctionRadius * 0.62)` and therefore also rely on coasting past a
    target to cross the 0.6 m SUCKING gate rather than driving into it; stages 3–5
    passed this way, so it was left alone rather than changed without evidence.
+
+   **The sweep was run (`09-21 20:4x`), and it is a bounded result.** Grepping the
+   harness for the arrival radius finds exactly four uses of `0.62`, of which
+   three are arrival radii and one (`:2758`) is a suction-strength curve, not a
+   drive:
+
+   | Site | Target | Arrival radius | `allowMiss` | SUCKING gate |
+   | :--- | :--- | :--- | :--- | :--- |
+   | `:3043` | `LV<n>` heaviest edible tier (T2→T5) | `max(1.0, r*0.62)` → 1.49–4.96 m | `false` | 0.6 m |
+   | `:3372` | traffic replenishment, T5 | `max(1.5, r*0.48)` → 1.5–3.84 m | `true` | 0.6 m |
+   | `:4121` | opening T1→T2 loop, T1 | `max(1.0, r*0.62)` → 1.49 m | `false` | 0.6 m |
+
+   All three therefore stop short of the 0.6 m promotion distance and rely on the
+   ATTRACTED pull closing the gap. **They are latent, not failing** — every one of
+   them passed on `09-21`, and `:3372` tolerates a miss outright. So the same
+   judgement the previous session made still holds: changing them now would be
+   changing without evidence.
+
+   What *would* justify it is a failure, and the cheapest way to look for one is
+   `:3043`, because it is the only one that both stops short **and** samples after
+   only 900 ms while driving a T4/T5 target whose `SUCTION_TIER_PROFILES` entry
+   can be `{pullResistance: 3.6, suckDuration: 3.2}` — the exact shape that failed
+   item 10's check until it was given a 12 s trace. If `progression` or
+   `skin-unlock` ever fails `FAIL_FULL_PROGRESSION_LEVEL_4/5` with mass stalled,
+   that is the cause, and the fix is item 10's: drive into the core and trace the
+   tier ledger instead of sampling once.
+
+   The other half of this item — the flat 60 s budget for the opening T1→T2 loop —
+   is unchanged and unproven either way; no run has yet run out of it.
+12. **Evidence is curated and the release preflight was run (`09-21 20:2x`).**
+   `cocos/docs/evidence/final/` now exists — `.gitignore` has always declared it
+   the home for product-level evidence, and until now nothing was there. It holds
+   the sixteen reports, the Golden City one-shot baseline and gate, the P0-B
+   probe, the runtime screenshots, and both platform build reports, plus a
+   `README.md` index recording each scope's digest and run time.
+
+   Measured on the current source:
+
+   - `npm run build:all` — **PASS**: `web-mobile` 187 files, `wechatgame` 191
+     files (real AppID `wx6ac3f5090a6b99c5`), `bytedance-mini-game` 190 files
+     (placeholder).
+   - `npm run preflight:release` — **FAIL**, and it is an **owner-owned blocker,
+     not a code defect**: `wechatgame` passes with its configured AppID, then
+     `bytedance-mini-game requires a real AppID for release preflight; found
+     testappId.` Supply a real Douyin AppID and re-run.
+
+   Note that `verify_cocos_minigame_builds.mjs` writes its report to
+   `cocos/docs/evidence/v2/platform/`, which is **tracked**. Running it rewrites
+   committed V2 evidence — the `09-21` run did exactly that, and those two files
+   were restored from `HEAD` afterwards while the V4 results were copied to
+   `evidence/final/` instead. Re-running the platform builds will clobber them
+   again; restore or re-curate deliberately rather than committing it by accident.
+13. **Two items above are already corrected in the record — do not redo them.**
+   The *documentation* half of item 2 and item 7 is done:
+   `final-acceptance-matrix.md` already records Golden City requirement 1 as
+   **PARTIAL** (the predicate is *intersects*, not *contains*, and the "~13 m band"
+   has no code predicate) and requirement 4 as **ENDPOINT MET, BASELINE
+   UNVERIFIABLE** (the `0.34` exists only as prose), and it already states the
+   write-once rule for `-before` evidence. What remains on both is only the
+   *decision*: whether to add a real band predicate, and whether to give the
+   `0.34` baseline a machine-readable home. Nothing is missing from the record
+   itself.
 
 ---
 
