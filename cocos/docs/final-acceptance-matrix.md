@@ -39,7 +39,7 @@
 `cocos/build/web-mobile` through the Creator CLI (the script has no skip-build
 switch) and reads the same directory, so the scopes must run serially.
 
-The runner declares **16** scopes. Nine are verified by a re-run alone on the
+The runner declares **16** scopes. Eleven are verified by a re-run alone on the
 slot and carry `bundleProvenance`. The rest hold older reports that predate both
 the provenance guard and the fixes recorded below, so they are **not** evidence
 of the current build.
@@ -55,18 +55,26 @@ of the current build.
 | `skins` | **PASS** — home skin switched `skin_classic` → `skin_violet_vortex`, locked tap at 0 coins | `BUNDLE_STABLE` | `09-21 00:43` |
 | `skin-unlock` | **PASS** — LV1→LV5 by real touch, then a paid unlock; T5 `container` absorbed | `BUNDLE_STABLE` | `09-21 01:31` |
 | `progression` | **PASS** — same five-level route through the shared helper; T5 `container` absorbed | `BUNDLE_STABLE` | `09-21 01:46` |
-| `arena`, `network`, `pages`, `revive`, `save-resume`, `settlement`, `ui-full-flow` | **PASS**, never re-run | none | `09-16` – `09-18` **stale** |
+| `pages` | **PASS** — pause → resume → settle by real touch, `finalScreen: "Settlement"` | `BUNDLE_STABLE` | `09-21 01:49` |
+| `arena` | **PASS** — 3 viewports + live match: 8 competitors, leaderboard, bot `COLLECT`/`FLEE`, shields | `BUNDLE_STABLE` `d0022470` | `09-21 02:09` |
+| `network`, `revive`, `save-resume`, `settlement`, `ui-full-flow` | **PASS**, never re-run | none | `09-18` **stale** |
 
-**"The chain is green" is therefore still not a true statement.** Nine scopes are
-defensible; seven carry stale passes. The nine above are what this session
+**"The chain is green" is therefore still not a true statement.** Eleven scopes
+are defensible; five carry stale passes. The eleven above are what this session
 actually verified.
+
+Two of them were verified but went unrecorded for a while, which is its own small
+lesson: `pages` passed at `01:49` and `arena` at `02:09`, and the table above
+kept listing both as stale until they were counted from the reports rather than
+from memory. The scope list is the thing to diff against the report directory,
+not against what the last edit happened to mention.
 
 `regions` was the one recorded failure and is now resolved — but only after the
 re-run disproved the diagnosis. It failed reproducibly (`BUNDLE_STABLE`,
 `consoleErrors: []`), and the guess that `7661123` had superseded it by moving
 `ResidentialHouseWest` was **wrong**. See below.
 
-Measured for the nine verified scopes:
+Measured for the eleven verified scopes:
 
 - `full`: `failures: []` across all three viewports; digest `fe685340`.
 - `arena-ai`: `reason: TIME` at `elapsedSeconds 180.014`, 8 competitors,
@@ -76,6 +84,21 @@ Measured for the nine verified scopes:
   `remainingSeconds 0`, 8 competitors, `eliminationCount 28`, and a real
   `settlementReward {coins 15, survivalCoins 12, placementCoins 3}`,
   `consoleErrors: []`.
+- `arena`: `failures: []`, `consoleErrors: []`, `BUNDLE_STABLE` with identical
+  start/end digests (`d0022470`, 187 files) across all three viewports — and it
+  is not the shallow "the match starts" check its 1m44s runtime suggests. It
+  samples six phases of one real match (`local-arena-mua4rh3e-1-ddwmwj`):
+  `initial` at 0.897 s (8 competitors, `localRank 6`, all seven bots
+  `COLLECT`/`FLEE` under a shared 2.103 s spawn shield); `collected` at 15.398 s
+  with `localAlive: false`, `localRespawnSeconds 2.5` and `eliminationCount 1`;
+  `hunter`, which *names the killer* — `bot-3` at mass 600 having `consumed: 4`,
+  sitting on the origin (0.003, -0.003) where the local player had been;
+  `revived` at 15.440 s with `localAlive: true` and the respawn timer back to 0;
+  `settled` at 17.235 s with `running: false`, `reason: FORFEIT` and a real
+  `settlementReward {coins 4, survivalCoins 1, placementCoins 3}`; and
+  `returnMode`, an active 720x1280 overlay. Across those phases the bots pass
+  through **all four** states — `COLLECT`, `ROAM`, `CHASE`, `FLEE` — which is the
+  behaviour set `arena-ai` then runs out to the full 180 s.
 - `golden-city`: 31 checks, `deficits: []`.
 - `cell-lifecycle`: `failures: []` across all three viewports, 6/6 checkpoints
   reached (`EAST`, `NORTH`, `WEST`, `SOUTH`, `RETURN_X`, `OPENING`), `rebaseCount`
@@ -108,6 +131,13 @@ Measured for the nine verified scopes:
   `cluster_alley-boxes_DOWNTOWN_0_-16_3` `container`. Two independent runs
   agreeing on both the tier choice per level and the terminal asset is what
   separates a fixed gate from a gate that happened to pass once.
+- `pages`: `failures: []`, `consoleErrors: []`, `BUNDLE_STABLE`, with the flow
+  driven by three real taps — pause at (346.9, 109.5), resume at (195, 393.0),
+  settle at (195, 484.0) — to `finalScreen: "Settlement"`. Its 390x844 viewport
+  reports `designIsPortrait`, `frameIsPortrait`, `viewportIsPortrait` and
+  `viewportWithinFrame` all true, with a measured `frameRatio` 0.4620 against a
+  `targetRatio` of 0.5625. This is the UI counterpart to the runtime scopes: it
+  asserts the screens a player actually reaches, not that they drew.
 
 That clean `BUNDLE_STABLE` observation licensed promoting a clobber from a
 warning to a failure, which `f39f689` did — see below.
