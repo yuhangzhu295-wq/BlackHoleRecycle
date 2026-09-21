@@ -254,6 +254,34 @@ const world = readFile('cocos/assets/scripts/world/InfiniteWorldManager.ts');
 record('V4_COMPOSITION_DIAGNOSTIC',
   world.includes('gameplayComposition') && world.includes('computeCompositionBuckets'),
   'opening-cell buckets (singles / smallGroups / hotspots) are exposed at runtime');
+
+// ---- 12.1 the authored opening cell is a ring, not a pile -----------------
+// The authored cell carries `cluster_<name>_<n>` ids, so `byTag` buckets all 20
+// of its T1 objects as `hotspot`. That is a naming convention, not a cadence
+// decision, and reading it as a §4 violation would be wrong: §4.2 adjudicates
+// the cell as INTENTIONAL_TUTORIAL_EXCEPTION and §7 forbids re-spacing it.
+// The geometric signal is the `spacing` block, which §4.2 relies on. This guard
+// is what stops that exception from quietly widening into the real "a dozen
+// objects piled on one point" regression §4 exists to catch.
+const AUTHORED_OPENING_CELL_CEILING = {
+  maxObjectsWithinDenseRadius: 12,
+  nearestNeighbourMedianMetersMin: 0.5,
+};
+const v4Evidence = JSON.parse(readFile('cocos/docs/evidence/v4-design/v4-design-evidence.json'));
+const openingSpacing = v4Evidence?.gameplay?.opening?.gameplayComposition?.spacing;
+record('V4_AUTHORED_OPENING_CELL_MEASURED',
+  Boolean(openingSpacing) && typeof openingSpacing.maxObjectsWithinDenseRadius === 'number',
+  'committed evidence carries the authored opening cell spacing block');
+record('V4_AUTHORED_OPENING_CELL_NOT_A_PILE',
+  openingSpacing.maxObjectsWithinDenseRadius <= AUTHORED_OPENING_CELL_CEILING.maxObjectsWithinDenseRadius
+  && openingSpacing.nearestNeighbourMedianMeters >= AUTHORED_OPENING_CELL_CEILING.nearestNeighbourMedianMetersMin,
+  `dense-disc ${openingSpacing.maxObjectsWithinDenseRadius} <= `
+  + `${AUTHORED_OPENING_CELL_CEILING.maxObjectsWithinDenseRadius}, nn-median `
+  + `${openingSpacing.nearestNeighbourMedianMeters} >= `
+  + `${AUTHORED_OPENING_CELL_CEILING.nearestNeighbourMedianMetersMin}`);
+record('V4_AUTHORED_CELL_EXCEPTION_DECLARED',
+  readFile(`${V4_DIR}/gameplay-composition-contract.md`).includes('AUTHORED_OPENING_CELL_CADENCE_EXCEPTION'),
+  'contract §4.2 declares the authored opening cell exception by name');
 // The authored opening cell runs no CellItemGenerator, so it needs its own pass
 // or it ships with tierCounts {1:20, 2:1, 3:0, 4:0, 5:0} and no T4/T5 at all.
 record('V4_AUTHORED_CELL_EXPOSES_T4_T5',

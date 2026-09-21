@@ -139,6 +139,65 @@ Per cell, the placed collectibles must decompose as:
 Explicitly forbidden regression: a single hotspot surrounded by a dozen or more
 objects. That was the old cadence and it produced the "满地垃圾" look.
 
+### 4.1 Scope — the bands describe the procedural generator
+
+The three bands are enforced by `scripts/test_ui_v4_design_contract.mjs` as
+`V4_SINGLE_BAND` / `V4_SMALL_GROUP_BAND` / `V4_HOTSPOT_BAND`, which read the
+placement budgets in `cocos/assets/scripts/world/ChunkConfig.ts`
+(`scatter` / `group_${g}` / `cluster_${cluster.id}`). They are therefore a
+property of **procedurally generated cells**.
+
+The `byTag` view of `gameplayComposition` buckets by that same prefix
+convention (`cluster_` → hotspot, `group_` → smallGroup, `scatter` → single,
+`aspirational` → aspirational). An **authored** cell carries
+`cluster_<name>_<n>` ids from `CollectibleSpawnPoints`, so every one of its
+objects buckets as `hotspot` — by naming convention, not by any distribution
+decision. `byTag` must not be read as a cadence verdict on an authored cell.
+The `spacing` block is the measurement that distinguishes a pile from a spread;
+`byTag` cannot.
+
+### 4.2 Adjudication — authored opening cell
+
+`AUTHORED_OPENING_CELL_CADENCE_EXCEPTION` — adjudicated
+**`INTENTIONAL_TUTORIAL_EXCEPTION`**, the same call as §7. Do **not** re-author
+the two spawn rings.
+
+Measured on the committed evidence
+(`cocos/docs/evidence/v4-design/v4-design-evidence.json` →
+`gameplay.opening.gameplayComposition`):
+
+| Field | Value | Reading |
+| --- | --- | --- |
+| `collectibles` | 23 | 20 × T1, 1 × T2, 1 × T4, 1 × T5 |
+| `byTag` | singles 0 / smallGroups 0 / hotspots 20 | naming artifact — every authored id is `cluster_*` |
+| `spacing.nearestNeighbourMinMeters` | 1.00 | two concentric rings, r = 5 m and r = 6 m |
+| `spacing.nearestNeighbourMedianMeters` | 1.00 | min = median ⇒ **flat** distribution |
+| `spacing.nearestNeighbourP90Meters` | 1.48 | the §7 figure |
+| `spacing.maxObjectsWithinDenseRadius` | 9 | see below |
+| `spacing.isolatedCount` | 2 | the T4 / T5 aspirational targets |
+
+§4 forbids *"a single hotspot surrounded by a dozen or more objects"*. The
+authored cell does not have that geometry:
+
+- A 6 m disc centred on a ring point spans ≈ 12 m of arc. At r = 5 m that is
+  137° of 360° ⇒ ≈ 3.8 of 10 points; the outer ring contributes ≈ 3.2 more, plus
+  the radially-paired partner ⇒ **8–9 objects** — exactly the measured
+  `maxObjectsWithinDenseRadius = 9`. All 20 T1 objects piled on one point would
+  read ≈ 20.
+- A pile is **heavy-tailed**: min ≈ 0.1–0.3 m with the median far above it. This
+  cell reads min **1.00** = median **1.00** — a flat distribution, which is the
+  signature of an even ring.
+
+So the geometry is an evenly spaced teaching ring. `byTag` is the artifact;
+§4 is not violated.
+
+**Guard.** So the exception cannot quietly widen into the real regression §4
+exists to catch, the contract test asserts the committed evidence stays inside a
+bounded ceiling — `V4_AUTHORED_OPENING_CELL_NOT_A_PILE`:
+`maxObjectsWithinDenseRadius ≤ 12` and `nearestNeighbourMedianMeters ≥ 0.5`.
+Re-authoring the rings into a pile, or any future capture that reports one,
+fails the contract test instead of passing silently under the exception.
+
 ## 5. Tier Population Rules
 
 | Tier | Count character | Visibility rule |
@@ -174,6 +233,70 @@ large thing gets silently dragged in and disappears.
 Locked targets receive a **gentle outer pull** only. They never enter the formal
 `ATTRACTED → SUCKING → ABSORBED` chain. The standoff distance keeps them outside
 the black-hole rim so that no "already eaten" illusion is possible.
+
+### 6.1 How "can see" is proved — frustum arithmetic, not `lockVisible`
+
+`lockVisible` cannot answer this question and must not be used to. It is a
+**state** flag: it only turns true once the machine is already inside the
+target's suction range. Over the real drive trace
+(`v4-design-evidence.json → targets.drive.samples`, n = 92) it is non-zero in
+35 samples (**38.0 %**), so it is a live duty cycle rather than a stuck-false
+flag — but at spawn the machine is nowhere near the target, so it cannot report
+"was a static T4/T5 on screen at spawn". An earlier reading of this field as
+"all false" was a sampling artifact of a shorter trace.
+
+Visibility is instead bounded by the camera frustum, published in the acceptance
+report's `camera` block:
+
+| Field | Value |
+| --- | --- |
+| `fov` / `fovAxis` | 44° / 0 |
+| `position`, relative to the player | (0, 19.878, 18.272) |
+| camera → player distance | √(19.878² + 18.272²) = **27.00 m** |
+
+Half-angle = 22°, so the frustum cross-section in the plane through the player is
+`27.00 × tan 22° = 10.909 m` on the `fov` axis and `10.909 × (390/844) = 5.041 m`
+on the other. The **narrower** semi-axis is therefore **5.041 m**.
+
+The spawn distance comes from `targets.drive.samples[].targetDistance` — the
+distance from the machine to the nearest body it cannot yet swallow, computed
+player-relative (`Math.hypot(object.x - player.x, object.z - player.z)` in
+`capture_v4_design_evidence.mjs`). Its first sample, at LV.1 / mass 0, reads
+**4.17 m**.
+
+That is *not* what `openingTierLadder.nearestOverTier[].distance` used to report.
+That field read `3.89 m` because it computed distance from the **world origin**
+while publishing it under a name that reads as player distance — design-review
+**N8**, MAJOR. The two agree only because this authored cell is authored around
+the origin and the machine spawns on it (`32 × 0.62 = 19.84` is how the authored
+T4 figure arose), which is precisely why the defect survived: it produced
+plausible numbers. The runner now publishes `distance` (player-relative) and
+`originDistance` side by side, so neither can be mistaken for the other.
+
+A ground-plane point 4.17 m from the player lies at most 4.17 m off the view
+axis, and `4.17 < 5.041`, so it is inside the frustum **in every horizontal
+direction** — there is no bearing at which a T5 target 4.17 m away is off screen.
+The bound is robust to the `fovAxis` convention: if `fovAxis` were horizontal
+instead, the narrower semi-axis would be `10.909 m`, larger still. It is also
+robust to the target's depth: the tightest case is a purely lateral target at the
+player's own depth, where the half-width is `5.086 m` against a `4.17 m` offset,
+a margin of ≈ `0.9 m`.
+
+It is also clear of the HUD exclusion band (`topRatio 0.16` / `bottomRatio 0.18`).
+The player sits at `playerViewport.y = 0.610`, and a target 4.17 m away projects
+near the player — near mid-frame, not under the coin/level pills.
+
+So §6 is satisfied at LV.1 by `highestPresentTier: 5` + `exposesLockedTier: true`
++ a T5 target at 4.17 m inside the frustum.
+
+**Documented follow-up, deliberately not a gate this round.** The bound above
+comes from the camera only; it does not account for occlusion by buildings. A
+stronger instrument would describe the aspirational nodes through
+`QABridge.describe()` so each carries a viewport-normalised `screen` rect, then
+intersect that rect with the content band. It is not added in this round: the
+composition block is `NOT_A_GATE`, the RC gate list does not include it, and
+adding a field would invalidate the already-validated build. Recorded here so the
+next round can pick it up without re-deriving the analysis.
 
 ## 7. Tutorial Exception — Intentional, Do Not "Fix"
 

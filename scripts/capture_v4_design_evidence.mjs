@@ -265,30 +265,62 @@ function evaluateBudgetBands(budget) {
     static: [0.10, 0.15],
     dynamic: [0.05, 0.10],
   };
+  /**
+   * Describe, do not verdict.
+   *
+   * This block used to publish `allInBand`, a pass/fail-shaped boolean produced
+   * by comparing the runtime shares against the §2 bands. That contradicted the
+   * block's own `status: 'NOT_A_GATE'` demotion and it is what review finding
+   * N1(c) cites: the bands are a property of the REFERENCE IMAGE, measured by
+   * DOM-box rasterisation in `scripts/render_ui_v4_references.mjs`, while this
+   * instrument classifies projected world bounding quads. The two measure
+   * different things, so a shared band table cannot yield a verdict here.
+   *
+   * The per-bucket `inBand` boolean was removed for the same reason -- it is the
+   * same category error one level down. Each check now carries the runtime value
+   * and the reference band side by side so an auditor can compare them by hand,
+   * which is the only honest use of these numbers.
+   *
+   * The reference-image values are deliberately NOT copied in here: a hard-coded
+   * copy would drift on the next render. Read them from
+   * `reference-manifest.json` under `references[].spaceBudget`, or from
+   * `design-lock.md` §08.
+   */
   const checks = Object.entries(bands).map(([bucket, [min, max]]) => {
     const value = bucket === 'open' ? budget.openShare
       : bucket === 'environment' ? budget.environmentShare
         : bucket === 'static' ? budget.staticShare
           : budget.dynamicShare;
-    return { bucket, min, max, value, inBand: value !== null && value >= min && value <= max };
+    return {
+      bucket,
+      runtimeValue: value,
+      referenceBand: { min, max },
+      referenceBandSource: 'reference image 08 (DOM-box rasterisation), not this instrument',
+    };
   });
   return {
+    status: 'NOT_A_GATE',
+    admissibility: 'INADMISSIBLE_RUNTIME_SCREEN_SPACE',
     /**
      * The band table is a property of reference 08 and is measured on
      * reference 08 (see design-lock.md §08 and gameplay-composition-contract.md
-     * §2.1). Reporting it here would be misleading, so this block exists only
-     * to record that the runtime screen-space instrument was consulted and is
-     * not admissible evidence either way.
+     * §2.1). Reporting a verdict against it here would be misleading, so this
+     * block exists only to record that the runtime screen-space instrument was
+     * consulted and is not admissible evidence either way.
      */
-    status: 'NOT_A_GATE',
-    admissibility: 'INADMISSIBLE_RUNTIME_SCREEN_SPACE',
+    bandVerdict: 'NOT_APPLICABLE',
+    bandTableComparable: false,
+    bandTableSource: 'reference image 08, DOM-box rasterisation in scripts/render_ui_v4_references.mjs',
+    comparabilityNote:
+      'gameplay-composition-contract.md §2.1 measures its bands on the reference image by rasterising '
+      + 'the reference HTML DOM boxes. This block classifies projected world bounding quads from the live '
+      + 'cell, which over-counts. The bands do not apply to these numbers and no in-band/out-of-band '
+      + 'conclusion may be drawn from them in either direction.',
     bands,
     checks,
     note:
-      'Do not read allInBand as a pass/fail. Use probePlayableOpenAreaRatio ' +
-      '(world space) for the runtime spatial gate, and the reference manifest ' +
-      'references[].spaceBudget for the reference-image budget.',
-    allInBand: checks.every((check) => check.inBand),
+      'Use probePlayableOpenAreaRatio (world space) for the runtime spatial gate, and the reference '
+      + 'manifest references[].spaceBudget for the reference-image budget.',
   };
 }
 
@@ -408,6 +440,134 @@ function measureHudGeometry(snapshot) {
      * whether the clamp ran and computed zero or never ran at all.
      */
     safeArea: hud.safeArea || null,
+  };
+}
+
+/**
+ * N2: can a level-1 player actually SEE a static T4/T5 on the spawn frame?
+ *
+ * `gameplayComposition` cannot answer this. It is a cell-level census: it counts
+ * objects in the target cell whether or not they project inside the 390x844
+ * frame. And `objects[].lockVisible` cannot answer it either, for a different
+ * reason: `CompressibleObject.showLockAlert()` only fires once the machine is
+ * already inside suction range of the locked body (lockTimer 1.4s on a 4.9s
+ * cycle), so it is a proximity pulse, not a viewport predicate.
+ *
+ * `WorldCompositionProbe.collectCollectibleEntries` already publishes one entry
+ * per collectible whose `name` IS the object's `runtimeId`, carrying the
+ * projected `screenBounds` plus `visible` / `clipped` / `behindCamera`. So the
+ * screen-space answer is already in the payload and needs no product change.
+ *
+ * Deliberately reports the rect and the reason, not just a boolean: an object
+ * can be inside the viewport and still sit under the HUD pills, which would make
+ * a bare `visible: true` misleading.
+ */
+function measureAspirationalVisibility(composition, aspirational, viewport, frame) {
+  if (!composition) return { status: 'UNAVAILABLE', reason: 'NO_COMPOSITION' };
+  if (composition.status !== 'MEASURED') {
+    return { status: 'UNAVAILABLE', reason: `COMPOSITION_${composition.status || 'UNKNOWN'}` };
+  }
+  if (!Array.isArray(composition.entries)) {
+    return { status: 'UNAVAILABLE', reason: 'NO_ENTRIES' };
+  }
+  if (!Array.isArray(aspirational) || aspirational.length === 0) {
+    return { status: 'UNAVAILABLE', reason: 'NO_ASPIRATIONAL_OBJECTS' };
+  }
+  const hudExclusion = { topRatio: 0.16, bottomRatio: 0.18 };
+  const hudTop = viewport.y + viewport.height * hudExclusion.topRatio;
+  const hudBottom = viewport.y + viewport.height * (1 - hudExclusion.bottomRatio);
+  // The probe projects into viewport space. Frame space equals it only when the
+  // viewport is the frame; say so rather than silently assuming it.
+  const viewportMatchesFrame = viewport.x === 0 && viewport.y === 0
+    && viewport.width === frame.width && viewport.height === frame.height;
+  const objects = aspirational.map((object) => {
+    const entry = composition.entries.find(
+      (candidate) => candidate.category === 'COLLECTIBLE' && candidate.name === object.runtimeId,
+    );
+    if (!entry) {
+      // Absent from the projected census: either it is outside the target cell
+      // the probe scans, or it is no longer in an IDLE/ATTRACTED/SUCKING state.
+      return {
+        runtimeId: object.runtimeId,
+        type: object.type,
+        tier: object.tier,
+        entryFound: false,
+        onScreen: false,
+        clearOfHud: false,
+        legibilityCaveat: 'not present in the projected census (outside the probe target cell, or no longer in an absorbable state)',
+      };
+    }
+    const bounds = entry.screenBounds;
+    if (!bounds) {
+      return {
+        runtimeId: object.runtimeId,
+        type: object.type,
+        tier: object.tier,
+        entryFound: true,
+        hasBounds: false,
+        onScreen: false,
+        clearOfHud: false,
+        legibilityCaveat: 'entry present but the probe published no screenBounds',
+      };
+    }
+    const centreY = (bounds.top + bounds.bottom) * 0.5;
+    const centreX = (bounds.left + bounds.right) * 0.5;
+    const insideFrame = bounds.right >= 0 && bounds.left <= frame.width
+      && bounds.bottom >= 0 && bounds.top <= frame.height;
+    const inViewport = Boolean(entry.visible) && !entry.behindCamera && insideFrame;
+    // Being under the HUD band is NOT the same as being invisible: the HUD is
+    // translucent furniture, so an object whose centre lands in the band is
+    // still seen, just partly occluded. Kept separate from `inViewport` so the
+    // visibility answer is not silently downgraded to a legibility answer.
+    const underHudBand = centreY < hudTop || centreY > hudBottom;
+    return {
+      runtimeId: object.runtimeId,
+      type: object.type,
+      tier: object.tier,
+      entryFound: true,
+      hasBounds: true,
+      visible: entry.visible,
+      clipped: entry.clipped,
+      behindCamera: entry.behindCamera,
+      screenBounds: {
+        left: Number(bounds.left.toFixed(2)),
+        top: Number(bounds.top.toFixed(2)),
+        right: Number(bounds.right.toFixed(2)),
+        bottom: Number(bounds.bottom.toFixed(2)),
+        width: Number(bounds.width.toFixed(2)),
+        height: Number(bounds.height.toFixed(2)),
+      },
+      centre: { x: Number(centreX.toFixed(2)), y: Number(centreY.toFixed(2)) },
+      insideFrame,
+      /** The answer to the question an LV.1 player faces: is it on the screen? */
+      onScreen: inViewport,
+      /** Secondary: is it also clear of the HUD furniture? */
+      clearOfHud: !underHudBand,
+      underHudBand,
+      legibilityCaveat: inViewport && underHudBand
+        ? 'visible in the viewport, but its centre lies inside the HUD band and is partly occluded by HUD furniture'
+        : null,
+    };
+  });
+  const onScreenLocked = objects.filter((object) => object.onScreen && object.tier > 1);
+  return {
+    status: 'MEASURED',
+    source: 'WorldCompositionProbe goldenCityComposition.entries (COLLECTIBLE, keyed by runtimeId)',
+    predicate: 'onScreen = entry.visible && !entry.behindCamera && projected rect intersects the frame',
+    clearOfHudPredicate: 'clearOfHud = rect centre outside the HUD exclusion band (reported separately, never folded into onScreen)',
+    hudExclusion,
+    viewport,
+    frame,
+    viewportMatchesFrame,
+    viewportMatchesFrameNote: viewportMatchesFrame
+      ? 'viewport equals the frame, so projected rects are frame-space as reported'
+      : 'viewport differs from the frame; projected rects are viewport-space and were compared against the frame unscaled',
+    objects,
+    entryFoundCount: objects.filter((object) => object.entryFound).length,
+    onScreenCount: objects.filter((object) => object.onScreen).length,
+    clearOfHudCount: objects.filter((object) => object.onScreen && object.clearOfHud).length,
+    exposesLockedTierOnScreen: onScreenLocked.length > 0,
+    onScreenLockedTierIds: onScreenLocked.map((object) => object.runtimeId),
   };
 }
 
@@ -544,22 +704,29 @@ async function main() {
       }
       const machineMaxTier = opening.machine?.maxTier ?? 1;
       const overTier = objects.filter((object) => object.tier > machineMaxTier);
+      // `distance` is the distance a *player* would read: from the machine, not
+      // from the world origin. Publishing origin distance under this name was a
+      // real defect (design-review N8). The two agree only while the machine
+      // happens to sit on the cell origin, and this authored cell is authored
+      // around that origin, so the number looked plausible and would have gone
+      // silently wrong the moment the machine spawned off-origin. Both
+      // quantities are now published side by side so neither can be mistaken
+      // for the other, matching the screen-space / world-space split that the
+      // composition contract uses for the same reason.
+      const player = opening.player || { x: 0, z: 0 };
+      const place = (object) => ({
+        runtimeId: object.runtimeId,
+        type: object.type,
+        tier: object.tier,
+        distance: Number(Math.hypot(object.x - player.x, object.z - player.z).toFixed(2)),
+        originDistance: Number(Math.hypot(object.x, object.z).toFixed(2)),
+      });
       const nearestOverTier = overTier
-        .map((object) => ({
-          runtimeId: object.runtimeId,
-          type: object.type,
-          tier: object.tier,
-          distance: Number(Math.hypot(object.x, object.z).toFixed(2)),
-        }))
+        .map(place)
         .sort((a, b) => a.distance - b.distance);
       const authored = objects
         .filter((object) => String(object.runtimeId).startsWith('aspirational_authored_'))
-        .map((object) => ({
-          runtimeId: object.runtimeId,
-          type: object.type,
-          tier: object.tier,
-          distance: Number(Math.hypot(object.x, object.z).toFixed(2)),
-        }));
+        .map(place);
       const presentTiers = Object.keys(tierCounts).map(Number);
       return {
         machineMaxTier,
@@ -571,6 +738,17 @@ async function main() {
         exposesLockedTier: overTier.length > 0,
         nearestOverTier: nearestOverTier.slice(0, 5),
         authoredAspirational: authored,
+        /**
+         * N2: `exposesLockedTier` above is only a cell-level census and cannot
+         * answer whether the player can SEE the locked tier. This is the
+         * screen-space answer, computed from the probe's projected entries.
+         */
+        authoredAspirationalVisibility: measureAspirationalVisibility(
+          opening.world?.streaming?.goldenCityComposition || null,
+          authored,
+          opening.world?.streaming?.goldenCityComposition?.viewport || { x: 0, y: 0, ...VIEWPORT },
+          { width: VIEWPORT.width, height: VIEWPORT.height },
+        ),
       };
     })();
 
