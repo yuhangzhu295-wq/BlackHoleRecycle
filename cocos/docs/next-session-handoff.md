@@ -2,10 +2,19 @@
 
 ## V4 (current)
 
-Date: 2026-09-20
-Local HEAD: `d87d10f`. **Pushed.** (Corrected 2026-09-21: this line used to read
-"Nothing is pushed" and the `git push` failure below was already resolved — the
-09-21 session pushed 40 commits and `origin/main` == local `main` == `6b14ce6`.)
+Date: 2026-09-21 (V4 RC wrap-up)
+Push state: **not pushed.** `origin/main` is at `6b14ce6`; local `main` is ahead
+of it. Run `git log --oneline origin/main..main` to see exactly what is pending.
+
+**This file deliberately names no local SHA.** Committing this file changes
+`HEAD`, so any SHA written here is stale the instant it is committed — that is
+precisely how this line drifted twice, once reading "Nothing is pushed" and once
+reading `d87d10f / Pushed` while `HEAD` was actually `6b14ce6`. Trust `git log -1`.
+
+The session that wrote this added three commits: the save-progression fix
+(`fix(save)`), the QA proxy fix plus evidence curation (`test(qa)`), and this
+handoff correction (`docs(handoff)`).
+
 Historical note, kept because the diagnosis was correct at the time:
 `git push origin HEAD:main` was **BLOCKED_EXTERNAL_NETWORK** (`CONNECT tunnel failed,
 502`; `OpenSSL SSL_read: unexpected eof`; `github.com` returns `000` while
@@ -13,23 +22,22 @@ Historical note, kept because the diagnosis was correct at the time:
 
 ### Gate chain state — read this before trusting any PASS
 
-The runner declares **16** scopes. Only these seven were re-run alone on the slot:
+The runner declares **16** scopes, and **all sixteen now hold a PASS produced on
+the current source.** The last change to `cocos/assets/**` was `09-21 19:10:47`
+and the runs span `19:12`–`20:15`, so no report predates the fixes described
+below.
 
-| Scope | State | Provenance |
-| :--- | :--- | :--- |
-| `full` | **PASS** — 375x667 + 390x844 + 430x932, `failures: []` | `BUNDLE_STABLE` `fe685340` |
-| `arena-ai` | **PASS** — 180.014 s, `reason: TIME`, all four bot states | `BUNDLE_STABLE` `333e265f` |
-| `arena-timer` | **PASS** — 180.0057 s, `reason: TIME`, reward paid | `BUNDLE_STABLE` |
-| `golden-city` | **PASS** 31/31 — but `PLAYER_WIDTH_RATIO_MIN` is a *level* reading, see below | `413b1e9`, re-run since |
-| `cell-lifecycle` | **PASS** — 375x667 + 390x844 + 430x932, 6/6 checkpoints | `BUNDLE_STABLE` |
-| `regions` | **PASS** — all six regions over the 940 m route | `BUNDLE_STABLE` |
-| `skins` | **PASS** — home skin switched `skin_classic` → `skin_violet_vortex` | `BUNDLE_STABLE` |
+**This file no longer duplicates the verdict table.** Read the authoritative
+copies instead: `cocos/docs/final-acceptance-matrix.md` for the per-scope detail,
+and `cocos/docs/evidence/final/README.md` for the curated reports with each
+digest and run time. The copy that used to live here drifted badly — it still
+claimed eight scopes were stale and that `skin-unlock` had no report at all, long
+after both had passed.
 
-**Do not read that as "the chain is green".** The remaining eight scopes hold
-reports from `09-16`–`09-18` that predate both the provenance guard and the fixes
-below, so they say nothing about the current build, and **`skin-unlock` has no
-report at all** — it drives the full five-level progression plus a paid purchase,
-so it is the slowest of the set.
+**Do not read "16/16" as "the chain is green" in the release sense.** Two things
+still stand between this and a release, and neither is a code defect: the Douyin
+build carries the Creator placeholder AppID so `preflight:release` fails, and no
+WeChat or Douyin developer-tool or on-device acceptance has been run.
 
 `regions` is resolved (`d87d10f`) but worth reading, because it was misdiagnosed
 twice. It was a **live** failure, not a stale one, and the landmark was never
@@ -118,13 +126,14 @@ runs `cocos-service` (7 ms), `scene` (0 ms) and `black-hole-home-builder` (2 ms)
 at that point, then `Start lock asset db` ten seconds later.
 A healthy build finishes in **25–60 s** and grows that log to ~400–520 lines /
 80 KB. The trigger is **not** the two messages once blamed for it: `report.build`
-keeps the editor console for every run, and the 400 appears in four **passing**
-reports (`arena-timer`, `golden-city`, `progression`, `skin-unlock`) while the
-login-server message appears in seven (`arena-ai`, `cell-lifecycle`, `full`,
-`pages`, `regions`, `revive`, `skins`) — eleven of fifteen, all passing, so
-neither distinguishes a stall from a healthy build. The cause is unknown; the
-rate is **11 stalls in 697 builds over three days**, and a retry has recovered
-every one. So **retry rather than debug**, and clear a
+keeps the editor console for every run. Measured across the current sixteen
+reports on `09-21`, the `400`-status noise from the editor's own network calls
+appears in **all sixteen** and the login-server message appears in **none**, so
+neither distinguishes a stall from a healthy build. (This paragraph used to name
+four and seven reports respectively — those counts came from the pre-fix report
+set and no longer describe anything on disk.) The cause is unknown; the
+documented rate is **11 stalls in 697 builds over three days**, and a retry has
+recovered every one. So **retry rather than debug**, and clear a
 confirmed stall with `taskkill /F /IM CocosCreator.exe`.
 
 Two traps when diagnosing this, both hit: `find <dir> -newermt "-3 minutes"`
