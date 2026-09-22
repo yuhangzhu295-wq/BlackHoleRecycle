@@ -231,6 +231,33 @@ export class BlackHoleMachine extends Component {
     return rows;
   }
 
+  /**
+   * The decorative layers whose transform changes every frame: the four
+   * rotating/pulsing swirls and the rotating level-indicator rim.
+   *
+   * They are drawn, so they belong in a render audit, but they must never be
+   * merged into a *silhouette* measurement. `MeshRenderer.model.worldBounds`
+   * is the AABB of the node's local AABB box transformed into world space, so
+   * for a node that spins about Y it reports the box's rotated extent, which
+   * inflates by up to sqrt(2) and oscillates with the animation phase. Merging
+   * these into `playerWidthRatio` turns a camera-framing metric into a reading
+   * of `visualElapsed`: HoleRing spins at 18 deg/s, so its apparent width has a
+   * 5 s period and the metric swung between 0.221 and 0.304 against a declared
+   * 0.22-0.30 band (measured 0.3038/0.3041/0.3036 on three consecutive runs at
+   * HEAD, against a 0.2792 sample from the previous harness revision).
+   *
+   * The structural body (`AbyssBase` + `HoleInner`) is static, and its true
+   * half-extent (1.10 x 1.85 = 2.035) is larger than the ring's phase-invariant
+   * radius (1.07 x 1.85 = 1.9795), so the structural body *is* the
+   * phase-invariant silhouette. Exposing the set here keeps one source of truth
+   * next to the code that animates it, instead of a node-name list in the QA
+   * layer that could silently drift.
+   */
+  public getAnimatedDecorationNodes(): readonly Node[] {
+    return [this.innerSwirl, this.midSwirl, this.outerSwirl, this.shimmerSwirl, this.holeRim]
+      .filter((node): node is Node => !!node && node.isValid);
+  }
+
   /** Receives camera-relative, normalized intent. It contains no arena/world boundary logic. */
   public setMovementDirection(direction: Readonly<Vec3>, magnitude: number): void {
     this.movementDirection.set(direction.x, 0, direction.z);
@@ -363,7 +390,19 @@ export class BlackHoleMachine extends Component {
       // half the phone width and obscured the nearby vehicles.  This size
       // keeps the local singularity near the 18–23% target without changing
       // physical suction range, mass or collisions.
-      const coreScale = this.presentation === 'SINGULARITY' ? 1.85 : 1.32;
+      //
+      // 1.85 -> 1.92 (2026-09-22). The old `playerWidthRatio` reading was not a
+      // framing measurement: it merged the frame-animated decorative layers,
+      // and `model.worldBounds` reports a rotating node's rotated *box* AABB, so
+      // the number oscillated 0.221-0.304 with HoleRing's 5 s spin period. With
+      // the decorations excluded the metric is deterministic, and it measured
+      // the structural body at 0.2173 on two consecutive runs — 0.0027 under
+      // the LOCKED contract floor of `cameraComposition.playerWidthRatioMin`
+      // (0.22). This is a visual-only scale (X/Z; Y is untouched, so
+      // `playerScreenYRatio` cannot move): +3.8% takes the silhouette to ~0.2255,
+      // inside both the contract band [0.22, 0.30] and this comment's 18-23%
+      // intent. It changes no suction radius, mass, or collision.
+      const coreScale = this.presentation === 'SINGULARITY' ? 1.92 : 1.32;
       this.coreNode.setScale(coreScale, 1.0, coreScale);
     }
     if (this.presentation === 'BOT') this.ensureArenaBotVisual();

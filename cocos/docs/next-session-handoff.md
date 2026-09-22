@@ -162,6 +162,19 @@ as the record predicts, but do not assume a stall is rare — budget for it, wat
 the builder log's line count rather than the clock, and `taskkill /F /IM
 CocosCreator.exe` when it freezes.
 
+**The signature above is incomplete: the editor processes can already be gone.**
+`09-22 00:11` produced a variant where the builder log froze at the same 3 lines /
+1710 bytes but `CocosCreator.exe` counted **0** — the launcher had died, so
+`buildCocosWebMobile` never receives its child `close` event and the harness sits
+on its own `BHR_COCOS_BUILD_TIMEOUT_MS` (default 15 min) with nothing to show for
+it. A watchdog that requires resident editor processes misses this variant
+entirely, which is how the first `09-22` attempt burned its whole timeout. Key the
+retry decision on evidence that survives both variants instead: the builder log is
+frozen at the stall signature **and** the harness has not yet printed
+`Verifying` — it only prints that after the build call has returned, so the
+builder log is still authoritative evidence about the run. `09-22 12:46` caught a
+stall this way within 171 s instead of waiting out the timeout.
+
 Reports carry `bundleProvenance {status, start, end, comparisonWindow}` and, since
 `f39f689`, a clobber **fails the run** (`FAIL_BUNDLE_CLOBBERED`, exit 1). The
 promotion waited for its precondition: three scopes re-run alone all reported
@@ -228,10 +241,22 @@ an unverified census is only the absence of evidence.
    COLLECTIBLE/VEHICLE/COMPETITOR count as occupants. Quantified residual; the
    proven fix (exclude those three → 0.1828) is deliberately deferred because it
    invalidates committed evidence for a 0.010 gain.
-6. **Arena duplicate-reward coverage still open.** The "bots do not move" half of
+6. **Arena duplicate-reward coverage: the TIME path was already guarded; the
+   increment/uniqueness layer is new on `09-22`.** The "bots do not move" half of
    this gap is **closed** — the bot-movement gate added in `9fa1c1f` did exactly
    its job and caught the `BOT_TELEPORT_CLAMP_METERS` `ReferenceError` in
-   `arena-ai`. No scope yet asserts the TIME path cannot pay a reward twice.
+   `arena-ai`. The second sentence that used to sit here, *"No scope yet asserts
+   the TIME path cannot pay a reward twice"*, is **stale at `HEAD`** and was
+   wrong when read: `arena-ai` has asserted it since
+   `FAIL_ARENA_AI_REWARD_DUPLICATED` (`HEAD:2455`) — after the `TIME` settlement
+   it re-reads the finished match and requires `settlementReward` to be identical
+   and `claimedArenaSettlementIds.length` to be unchanged. What that guard does
+   **not** cover is the ledger's *increment* or *uniqueness*, so `arena-timer` now
+   additionally requires the match id to appear exactly once, the ledger to have
+   grown by exactly one entry against its pre-match baseline, and the ledger to
+   hold no duplicate ids (`FAIL_ARENA_TIMER_SETTLEMENT_NOT_EXACTLY_ONCE`,
+   `_LEDGER_GROWTH`, `_LEDGER_DUPLICATE`). The overlap is deliberate and the
+   relationship is recorded in the harness so the two guards cannot drift apart.
 7. **Golden City requirement 1 is PARTIAL.** The band predicate is *intersects*,
    not *contains*, so three of four buildings are only partly on screen, and the
    "~13 m band" has no code predicate at all.

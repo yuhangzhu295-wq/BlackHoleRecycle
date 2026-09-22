@@ -149,30 +149,50 @@ export interface GoldenCityCompositionDiagnostics {
     }>[];
   }>;
   readonly player: Readonly<{
+    /**
+     * The player's *phase-invariant* silhouette: every drawn renderer except
+     * the frame-animated decorative layers (see `animatedDecorationNames`).
+     * This is what `widthRatio` is measured from.
+     */
     worldBounds: GoldenCityWorldBounds | null;
     screenBounds: GoldenCityScreenBounds | null;
     visible: boolean;
+    /**
+     * The gated camera-framing metric: `worldBounds` projected through the
+     * gameplay camera, as a fraction of the viewport width.
+     */
     widthRatio: number | null;
     screenYRatio: number | null;
     /**
+     * The same projection over *every* drawn renderer, decorative layers
+     * included. Kept as a diagnostic only, never gated: `model.worldBounds` is
+     * the AABB of a node's local AABB box, so a node spinning about Y reports
+     * the box's rotated extent (up to sqrt(2) too wide) and this number
+     * therefore tracks the animation clock rather than the framing.
+     */
+    rawWidthRatio: number | null;
+    rawScreenBounds: GoldenCityScreenBounds | null;
+    /** Node names excluded from `worldBounds` because they animate every frame. */
+    animatedDecorationNames: readonly string[];
+    /**
      * Which renderers actually fed `worldBounds`, and which were skipped
-     * because they are not drawn. The machine's subtree carries decorative
-     * rings and swirls whose scale is driven by gameplay (the suction-radius
-     * indicator) and whose rotation is driven by time, so a merged bounds
-     * without this list cannot be told apart from a real change in the
-     * player's silhouette.
+     * because they are not drawn or because they are frame-animated
+     * decorations. The machine's subtree carries decorative rings and swirls
+     * whose scale is driven by gameplay (the suction-radius indicator) and
+     * whose rotation is driven by time, so a merged bounds without this list
+     * cannot be told apart from a real change in the player's silhouette.
      */
     contributors: readonly Readonly<{
       name: string;
       drawn: boolean;
+      excludedAsAnimatedDecoration: boolean;
       halfExtents: Readonly<{ x: number; y: number; z: number }>;
     }>[];
     /**
-     * The machine state the silhouette was measured against. `playerWidthRatio`
-     * is not level-independent: the machine's luminous outer ring scales with
-     * the suction radius, so the ratio moves with the player's level. Without
-     * these two numbers beside it, a level-driven pass or failure is
-     * indistinguishable from a change in the camera framing.
+     * The machine state the silhouette was measured against. The decorative
+     * layers are excluded from `widthRatio`, but the structural body still
+     * scales with the machine's level `scale`, so a level-driven pass or
+     * failure must remain distinguishable from a change in camera framing.
      */
     machineLevel: number | null;
     machineSuctionRadius: number | null;
@@ -211,6 +231,7 @@ export class WorldCompositionProbe {
     playerNode: Node | null,
     competitors: readonly CompositionCompetitor[],
     playerMachine: Readonly<{ level: number; suctionRadius: number }> | null = null,
+    animatedDecorationRoots: readonly Node[] = [],
   ): GoldenCityCompositionDiagnostics | null {
     if (!world) return null;
     const viewport = view.getViewportRect();
@@ -240,6 +261,9 @@ export class WorldCompositionProbe {
         visible: false,
         widthRatio: null,
         screenYRatio: null,
+        rawWidthRatio: null,
+        rawScreenBounds: null,
+        animatedDecorationNames: [],
         contributors: [],
         machineLevel: null,
         machineSuctionRadius: null,
@@ -266,20 +290,28 @@ export class WorldCompositionProbe {
       if (entry.visible) counts[entry.category] += entry.logicalUnits;
     }
 
-    // The player's silhouette is the geometry that is actually drawn. The
-    // machine's subtree also carries decorative swirls and a luminous outer
-    // ring, and that ring's scale is driven by the gameplay suction radius
-    // (`1 + min(0.38, (suctionRadius - 2.4) * 0.075)`), not by the camera. A
-    // merged bounds over every renderer therefore reports the suction
-    // indicator as though it were the player, and moves with the player's
-    // level instead of with the framing.
+    // The player's silhouette is the geometry that is actually drawn, minus the
+    // layers that animate every frame. `MeshRenderer.model.worldBounds` is the
+    // AABB of the node's local AABB box transformed into world space, so a node
+    // spinning about Y reports the *box's* rotated extent: it inflates by up to
+    // sqrt(2) and oscillates with the animation phase. HoleRing spins at
+    // 18 deg/s, so merging it made `playerWidthRatio` a reading of
+    // `visualElapsed` — it swung between 0.221 and 0.304 against the declared
+    // 0.22-0.30 band. The decorative layers are therefore excluded from the
+    // gated silhouette and reported separately through `rawWidthRatio`, so the
+    // removal stays auditable instead of hidden.
+    const animatedDecorationSet = new Set<Node>(animatedDecorationRoots.filter((node) => !!node && node.isValid));
     const playerContributors = playerNode?.isValid && playerNode.activeInHierarchy
-      ? this.collectRenderableContributors([playerNode])
+      ? this.collectRenderableContributors([playerNode], animatedDecorationSet)
       : [];
     const playerBounds = playerNode?.isValid && playerNode.activeInHierarchy
+      ? this.collectMergedWorldBounds([playerNode], { drawnOnly: true, exclude: animatedDecorationSet })
+      : null;
+    const rawPlayerBounds = playerNode?.isValid && playerNode.activeInHierarchy
       ? this.collectMergedWorldBounds([playerNode], { drawnOnly: true })
       : null;
     const playerProjection = playerBounds ? this.projectBounds(camera, viewport, playerBounds) : null;
+    const rawPlayerProjection = rawPlayerBounds ? this.projectBounds(camera, viewport, rawPlayerBounds) : null;
     const player = {
       worldBounds: this.serializeWorldBounds(playerBounds),
       screenBounds: playerProjection?.screenBounds || null,
@@ -288,6 +320,11 @@ export class WorldCompositionProbe {
       screenYRatio: playerProjection?.screenBounds
         ? ((playerProjection.screenBounds.top + playerProjection.screenBounds.bottom) * 0.5 - viewport.y) / viewport.height
         : null,
+      rawWidthRatio: rawPlayerProjection?.screenBounds ? rawPlayerProjection.screenBounds.width / viewport.width : null,
+      rawScreenBounds: rawPlayerProjection?.screenBounds || null,
+      animatedDecorationNames: animatedDecorationRoots
+        .filter((node) => !!node && node.isValid)
+        .map((node) => node.name),
       contributors: playerContributors,
       machineLevel: playerMachine?.level ?? null,
       machineSuctionRadius: playerMachine?.suctionRadius ?? null,
@@ -759,7 +796,7 @@ export class WorldCompositionProbe {
    */
   private static collectMergedWorldBounds(
     roots: readonly Node[],
-    options: Readonly<{ drawnOnly?: boolean }> = {},
+    options: Readonly<{ drawnOnly?: boolean; exclude?: ReadonlySet<Node> }> = {},
   ): GoldenCityLiveBounds | null {
     let min: Vec3 | null = null;
     let max: Vec3 | null = null;
@@ -774,6 +811,10 @@ export class WorldCompositionProbe {
     };
     const visit = (node: Node): void => {
       if (!node.activeInHierarchy) return;
+      // An excluded subtree contributes nothing: the decorative layers are
+      // leaves, and skipping the subtree keeps the rule correct if one ever
+      // gains children.
+      if (options.exclude?.has(node)) return;
       const renderer = node.getComponent(MeshRenderer);
       // A disabled renderer still owns a model with world bounds, so it must be
       // filtered here rather than relied on to be absent. Its children are
@@ -793,15 +834,25 @@ export class WorldCompositionProbe {
     return min && max ? { min, max } : null;
   }
 
-  /** Lists every renderer under the roots with its size and whether it is drawn. */
-  private static collectRenderableContributors(roots: readonly Node[]): Array<Readonly<{
+  /**
+   * Lists every renderer under the roots with its size, whether it is drawn,
+   * and whether it was excluded from the silhouette as a frame-animated
+   * decoration. Excluded renderers stay in the list on purpose: the report has
+   * to show what the gate removed, not just what it kept.
+   */
+  private static collectRenderableContributors(
+    roots: readonly Node[],
+    exclude: ReadonlySet<Node> = new Set<Node>(),
+  ): Array<Readonly<{
     name: string;
     drawn: boolean;
+    excludedAsAnimatedDecoration: boolean;
     halfExtents: Readonly<{ x: number; y: number; z: number }>;
   }>> {
     const contributors: Array<Readonly<{
       name: string;
       drawn: boolean;
+      excludedAsAnimatedDecoration: boolean;
       halfExtents: Readonly<{ x: number; y: number; z: number }>;
     }>> = [];
     const visit = (node: Node): void => {
@@ -812,6 +863,7 @@ export class WorldCompositionProbe {
         contributors.push({
           name: node.name,
           drawn: renderer.enabled,
+          excludedAsAnimatedDecoration: exclude.has(node),
           halfExtents: { x: halfExtents.x, y: halfExtents.y, z: halfExtents.z },
         });
       }

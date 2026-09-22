@@ -103,11 +103,17 @@ export class QABridge {
       mainCamera,
       machine?.node || null,
       arenaManager?.getCompositionCompetitors() || [],
-      // Record the machine state beside the silhouette. The outer ring scales
-      // with the suction radius, so the player's measured width moves with its
-      // level; without this the gate cannot tell a level change from a framing
-      // change.
+      // Record the machine state beside the silhouette. The structural body
+      // scales with the machine's level, so the player's measured width moves
+      // with its level; without this the gate cannot tell a level change from a
+      // framing change.
       machine ? { level: machine.currentLevel, suctionRadius: machine.getSuctionRadius() } : null,
+      // The frame-animated decorative layers are excluded from the silhouette.
+      // They spin every frame, and `model.worldBounds` reports a rotating
+      // node's rotated *box* AABB (up to sqrt(2) too wide), so merging them made
+      // `playerWidthRatio` track the animation clock instead of the camera.
+      // The machine owns the list; the QA layer never hardcodes node names.
+      machine ? machine.getAnimatedDecorationNodes() : [],
     );
     const currentCellVisualDiagnostics = WorldCompositionProbe.getCurrentCellVisualDiagnostics(world);
     const goldenPlayer = goldenCityComposition?.player || null;

@@ -1749,10 +1749,19 @@ function evaluateGoldenCityGate(contract, composition, devicePixelRatio) {
     playerWidthRatio: player.widthRatio ?? null,
     playerScreenYRatio: player.screenYRatio ?? null,
     playerVisible: player.visible === true,
-    // The measured width is not level-independent: the machine's luminous
-    // outer ring scales with the suction radius, so the ratio moves with the
-    // player's level rather than with the camera. Record the level and radius
-    // beside it, so a level-driven verdict cannot be read as a framing change.
+    // Diagnostic only, never gated. `playerWidthRatio` is measured from the
+    // player's phase-invariant silhouette: the machine's frame-animated
+    // decorative layers are excluded, because `model.worldBounds` is the AABB
+    // of a node's local AABB *box*, so a node spinning about Y reports the
+    // box's rotated extent — up to sqrt(2) too wide, oscillating with the
+    // animation phase. HoleRing spins at 18 deg/s, so including it made this
+    // metric swing between 0.221 and 0.304 against the declared 0.22-0.30 band
+    // (0.3038 / 0.3041 / 0.3036 on three consecutive runs at HEAD). The
+    // unfiltered number is kept here so the exclusion stays auditable.
+    playerWidthRatioRaw: player.rawWidthRatio ?? null,
+    playerAnimatedDecorationNames: player.animatedDecorationNames ?? [],
+    // The structural body still scales with the machine's level `scale`, so a
+    // level-driven verdict must remain distinguishable from a framing change.
     playerMachineLevel: player.machineLevel ?? null,
     playerMachineSuctionRadius: player.machineSuctionRadius ?? null,
     viewportWidth: viewport.width ?? null,
@@ -2078,6 +2087,13 @@ async function collectGoldenCityBaseline(cdp, page, canvasRect, homeSnapshot) {
  */
 async function verifyArenaTimerExpiry(cdp, page, canvasRect) {
   const homeSnapshot = await readRuntimeSnapshot(page);
+  // Read-only ledger capture. `saveService.claimArenaSettlement` keys the
+  // account-side grant on the match id, and `showArenaSettlement` has **no**
+  // idempotency guard of its own — unlike `showNetworkArenaSettlement`, which
+  // returns early on `networkSettlementShown`. That key is therefore the only
+  // thing between a repeated delivery and a second payout, so record what the
+  // account already holds before the match and check the settlement against it.
+  const claimedBefore = [...(homeSnapshot.save?.claimedArenaSettlementIds || [])];
   const startButton = homeSnapshot.ui?.start;
   const homeStart = pointForVisibleNode(canvasRect, homeSnapshot, startButton, 'ARENA_TIMER_HOME_START');
   await dispatchTouchTap(cdp, homeStart.x, homeStart.y);
@@ -2167,8 +2183,62 @@ async function verifyArenaTimerExpiry(cdp, page, canvasRect) {
     `FAIL_ARENA_TIMER_REWARD: ${JSON.stringify(settled.arena?.settlementReward)}`);
   assert((settled.session?.coinsEarned || 0) >= settled.arena.settlementReward.coins,
     `FAIL_ARENA_TIMER_REWARD_NOT_SAVED: ${JSON.stringify({ session: settled.session, reward: settled.arena.settlementReward })}`);
+
+  // Exactly-once accounting for the TIME payout. `claimArenaSettlement` appends
+  // the match id *before* it credits coins, so a repeated delivery shows up as a
+  // duplicate entry — which makes the ledger the observable that proves a single
+  // grant.
+  //
+  // `verifyArenaAiRuntime` already covers the TIME path from the other side: it
+  // re-reads the settled match and fails `FAIL_ARENA_AI_REWARD_DUPLICATED` if the
+  // reward changes or the claimed-id count moves on re-observation. This is not a
+  // replacement for that. What it adds is the *delta* and the ledger's *shape*,
+  // which that check does not look at: growth of exactly one against the
+  // pre-match baseline, exactly one occurrence of this match id, and no
+  // duplicate ids at all. Keep the two in step — if either is reworded, check the
+  // other, because overlapping guards that drift are worse than one honest guard.
+  //
+  // Scope of this claim, stated plainly: it locks in the invariant, it does not
+  // *exercise* the repeat path. The harness has no hook that re-fires
+  // `onMatchFinished`, and `ArenaMatchManager.finish` returns early unless the
+  // match is running, so this run cannot itself produce a second delivery. It
+  // fails if the match-id key is removed or bypassed and a repeat ever does
+  // occur; it does not claim to have provoked one.
+  const settledMatchId = settled.arena?.matchId;
+  const claimedAfter = [...(settled.save?.claimedArenaSettlementIds || [])];
+  assert(settledMatchId,
+    `FAIL_ARENA_TIMER_NO_MATCH_ID: ${JSON.stringify(settled.arena)}`);
+  const settlementOccurrences = claimedAfter.filter((id) => id === settledMatchId).length;
+  assert(settlementOccurrences === 1,
+    `FAIL_ARENA_TIMER_SETTLEMENT_NOT_EXACTLY_ONCE: ${JSON.stringify({
+      matchId: settledMatchId,
+      occurrences: settlementOccurrences,
+      claimedBefore,
+      claimedAfter,
+    })}`);
+  assert(claimedAfter.length === claimedBefore.length + 1,
+    `FAIL_ARENA_TIMER_SETTLEMENT_LEDGER_GROWTH: ${JSON.stringify({
+      matchId: settledMatchId,
+      claimedBeforeCount: claimedBefore.length,
+      claimedAfterCount: claimedAfter.length,
+      claimedAfter,
+    })}`);
+  assert(new Set(claimedAfter).size === claimedAfter.length,
+    `FAIL_ARENA_TIMER_SETTLEMENT_LEDGER_DUPLICATE: ${JSON.stringify({ claimedAfter })}`);
+
   await page.screenshot({ path: path.join(evidenceDirectory, 'portrait-390x844-arena-time-settlement.png') });
-  return { started: started.arena, settled: settled.arena };
+  return {
+    started: started.arena,
+    settled: settled.arena,
+    settlementLedger: {
+      matchId: settledMatchId,
+      claimedBefore,
+      claimedAfter,
+      coinsBefore: homeSnapshot.save?.coins,
+      coinsAfter: settled.save?.coins,
+      coinsEarned: settled.session?.coinsEarned,
+    },
+  };
 }
 
 /**
@@ -3093,11 +3163,25 @@ async function verifyFiveLevelProgression(cdp, page, joystick) {
   // Resolve live authored T1 positions instead of relying on the former
   // opening-cell coordinate. Creator retains ownership of WHERE; this
   // evidence only drives real portrait input to the registered objects.
-  const openingDeadline = Date.now() + 60_000;
+  //
+  // Budget derived from progress, not from a fixed clock — the same defect
+  // `collectUntil` documents above, left behind in this one loop. Reaching LV2
+  // needs `MACHINE_EVOLUTION_CONFIG[1].massThreshold` (900) of mass, T1 clusters
+  // average 65 mass and a measured absorb costs ~6.3 s, so the route needs ~88 s
+  // before any travel between targets is counted. The flat 60 s this replaced
+  // expired mid-route and surfaced as `FAIL_FULL_PROGRESSION_LV2`, which reads
+  // like a product defect rather than a budget that was simply too small.
+  // Fail on a stall (no mass progress at all) under an absolute ceiling, so a
+  // genuinely wedged run still terminates instead of burning the cap.
+  const openingStartedAt = Date.now();
   const openingAbsorptions = [];
   let latest = await readRuntimeSnapshot(page);
   observeCompression(latest);
-  while (latest.machine.level < 2 && Date.now() < openingDeadline) {
+  let openingLastProgressAt = Date.now();
+  let openingLastMass = latest.machine.mass;
+  while (latest.machine.level < 2
+    && Date.now() - openingStartedAt < 300_000
+    && Date.now() - openingLastProgressAt < 120_000) {
     const origin = validateInfiniteWorldSnapshot(latest).logicalOrigin;
     const player = getLogicalPlayerPosition(latest);
     const target = latest.objects
@@ -3155,12 +3239,26 @@ async function verifyFiveLevelProgression(cdp, page, joystick) {
       observedIntermediateState,
       stateTrace,
     });
+    if (latest.machine.mass > openingLastMass) {
+      openingLastMass = latest.machine.mass;
+      openingLastProgressAt = Date.now();
+    }
   }
   await page.waitForTimeout(3200);
   latest = await readRuntimeSnapshot(page);
   observeCompression(latest);
   assert(latest.machine.level >= 2 && latest.machine.maxTier >= 2,
-    `FAIL_FULL_PROGRESSION_LV2: ${JSON.stringify({ machine: latest.machine, openingAbsorptions })}`);
+    `FAIL_FULL_PROGRESSION_LV2: ${JSON.stringify({
+      machine: latest.machine,
+      openingAbsorptions,
+      // Distinguish "the world stopped yielding mass" (a product signal) from
+      // "the loop ran out of its own budget" (not a product signal). Without
+      // these three the failure cannot be adjudicated from the report.
+      elapsedMs: Date.now() - openingStartedAt,
+      stalledForMs: Date.now() - openingLastProgressAt,
+      lastProgressMass: openingLastMass,
+      absorbedCount: openingAbsorptions.length,
+    })}`);
   const t2Origin = validateInfiniteWorldSnapshot(latest).logicalOrigin;
   const t2Player = getLogicalPlayerPosition(latest);
   const t2Target = latest.objects
@@ -3633,6 +3731,52 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
         report.fullProgression = await verifyFiveLevelProgression(cdp, page, joystick);
         report.trafficReplenishment = await verifyTrafficReplenishment(cdp, page, joystick);
         await page.screenshot({ path: path.join(evidenceDirectory, 'portrait-390x844-lv5-city.png') });
+
+        // Freeze the live run before capturing the value the reload must
+        // reproduce. `BlackHoleMachine.addMass` is the only mutation of
+        // `currentMass` and it persists synchronously inside the same call, so
+        // `save.machineMass === machine.currentMass` holds at every instant —
+        // but the machine keeps playing while this harness reads the snapshot
+        // and then navigates away. Absorbed objects are not injected
+        // immediately: `CompressionSystem.absorbObject` buffers them and only
+        // `COLLECTING` calls `machine.addMass(bufferMass)` (~0.42 s COMPRESSING
+        // + 0.45 s EJECTING after the first object, given massThreshold 180 /
+        // countThreshold 3). A batch landing in the read-then-reload window
+        // therefore makes the reloaded value legitimately *larger* than the
+        // captured one. Observed exactly once, as
+        // `FAIL_MACHINE_SAVE_RESUME_MASS: {"before":549240,"after":557240}` —
+        // a delta of 8000, i.e. precisely one T4 crate
+        // (`GameConfig.ts:273`, the only template with mass 8000). The earlier
+        // attempt passed, which is why this must not be papered over by
+        // loosening the comparison: the race is in the harness, so the harness
+        // is what has to become deterministic. `GameManager.setPaused` sets
+        // `compressionSystem.isPaused`, and `CompressionSystem.update()`
+        // returns immediately while paused, so the real pause button stops the
+        // pipeline from advancing and the exact-equality assertion stays.
+        const beforeSaveResumePause = await readRuntimeSnapshot(page);
+        const saveResumePause = pointForVisibleNode(
+          canvasRect,
+          beforeSaveResumePause,
+          beforeSaveResumePause.ui?.runtimeHUD?.pauseButton,
+          'FULL_PROGRESSION_SAVE_RESUME_PAUSE',
+        );
+        await dispatchTouchTap(cdp, saveResumePause.x, saveResumePause.y);
+        try {
+          await page.waitForFunction(() => {
+            const snapshot = window.__BHR_QA__.snapshot();
+            return snapshot.gameState === 'PAUSED' && snapshot.ui?.formalPages?.pause?.active === true;
+          }, undefined, { timeout: 5000 });
+        } catch (error) {
+          const actual = await readRuntimeSnapshot(page);
+          throw new Error(`FAIL_FULL_PROGRESSION_SAVE_RESUME_PAUSE: ${JSON.stringify({
+            pause: saveResumePause,
+            state: actual.gameState,
+            uiScreen: actual.uiScreen,
+            pauseButton: actual.ui?.runtimeHUD?.pauseButton,
+            compression: actual.compression,
+            error: error instanceof Error ? error.message : String(error),
+          })}`);
+        }
         const machineBeforeReload = await readRuntimeSnapshot(page);
         const savedMachine = {
           mass: machineBeforeReload.machine.mass,
@@ -3642,12 +3786,26 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
         await page.waitForFunction(() => Boolean(window.__BHR_QA__?.snapshot), undefined, { timeout: 45000 });
         const machineAfterReload = await readRuntimeSnapshot(page);
         assert(machineAfterReload.machine.mass === savedMachine.mass,
-          `FAIL_MACHINE_SAVE_RESUME_MASS: ${JSON.stringify({ before: savedMachine.mass, after: machineAfterReload.machine.mass })}`);
+          `FAIL_MACHINE_SAVE_RESUME_MASS: ${JSON.stringify({
+            before: savedMachine.mass,
+            after: machineAfterReload.machine.mass,
+            compressionAtCapture: machineBeforeReload.compression,
+          })}`);
         assert(machineAfterReload.machine.level === savedMachine.level,
-          `FAIL_MACHINE_SAVE_RESUME_LEVEL: ${JSON.stringify({ before: savedMachine.level, after: machineAfterReload.machine.level })}`);
+          `FAIL_MACHINE_SAVE_RESUME_LEVEL: ${JSON.stringify({
+            before: savedMachine.level,
+            after: machineAfterReload.machine.level,
+            compressionAtCapture: machineBeforeReload.compression,
+          })}`);
         report.machineSaveResume = {
           status: 'PASS',
-          method: 'real-touch progression + page.reload() + read-only snapshot',
+          method: 'real-touch progression + real pause (freezes CompressionSystem) + page.reload() + read-only snapshot',
+          captureIsQuiescent: true,
+          compressionAtCapture: {
+            state: machineBeforeReload.compression?.state ?? null,
+            bufferMass: machineBeforeReload.compression?.bufferMass ?? null,
+            bufferCount: machineBeforeReload.compression?.bufferCount ?? null,
+          },
           beforeReload: savedMachine,
           afterReload: {
             mass: machineAfterReload.machine.mass,
