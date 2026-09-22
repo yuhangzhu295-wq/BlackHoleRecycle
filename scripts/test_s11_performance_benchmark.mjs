@@ -34,6 +34,21 @@ const reportPath = path.join(evidenceDirectory, 's11-performance-evidence.json')
 
 const WARMUP_FRAMES = 30;
 const SAMPLE_FRAMES = 120;
+
+/**
+ * The scenario sequence this runner intends to collect, declared up front.
+ *
+ * This must NOT be derived from what actually ran. `report.scenarios` only holds
+ * the scenarios that were reached, so a run that aborts after scenario A would
+ * otherwise report "1 declared, 1 complete, 0 incomplete" — a self-consistent
+ * description of a run that silently collected a third of its evidence.
+ */
+const DECLARED_SCENARIO_IDS = [
+  'home_ui_scene',
+  'endless_gameplay_moving',
+  'endless_gameplay_sustained_travel',
+];
+
 const LAUNCH_FLAGS = [
   '--use-gl=angle',
   '--use-angle=swiftshader',
@@ -110,6 +125,43 @@ function tapPointForNode(canvasRect, node, name) {
 
 function offsetFromJoystick(joystickTapPoint, offsetX, offsetY) {
   return { x: joystickTapPoint.x + offsetX, y: joystickTapPoint.y + offsetY };
+}
+
+/**
+ * Mode Ready flow (product rule): tapping a mode card opens that mode's Ready
+ * page (`gameState === 'MODE_READY'`); only that page's explicit `BtnStart` may
+ * enter gameplay. Tapping the mode card and then waiting for `PLAYING` skips the
+ * Ready state entirely and times out — which is exactly what happened before this
+ * helper existed, aborting scenarios B and C.
+ *
+ * The `FIXED_WIDTH` canvas is taller than the nominal 720x1280 design space on
+ * modern phones, so `BtnStart`'s layout centre `(0, -290)` maps to the screen
+ * through the *visible* canvas height:
+ *   visibleHeight = 720 * (canvasHeight / canvasWidth)
+ *   yFraction     = 0.5 + 290 / visibleHeight
+ * Neighbouring fallback points keep the helper robust against safe-area shifts;
+ * every candidate is a real touch, and the helper fails loudly if none works.
+ */
+async function tapReadyStartButton(cdp, page, canvasRect) {
+  await page.waitForFunction(
+    () => window.__BHR_QA__.snapshot().gameState === 'MODE_READY',
+    undefined,
+    { timeout: 5000 },
+  );
+  const visibleHeight = 720 * (canvasRect.height / canvasRect.width);
+  const baseFraction = 0.5 + 290 / visibleHeight;
+  const fractions = [baseFraction, baseFraction + 0.04, baseFraction - 0.04];
+  for (const fraction of fractions) {
+    await dispatchTouchTap(
+      cdp,
+      canvasRect.left + canvasRect.width * 0.5,
+      canvasRect.top + canvasRect.height * fraction,
+    );
+    await page.waitForTimeout(400);
+    const state = await page.evaluate(() => window.__BHR_QA__.snapshot().gameState);
+    if (state !== 'MODE_READY') return;
+  }
+  throw new Error('FAIL_READY_START_TOUCH: BtnStart did not leave MODE_READY at any sampled point');
 }
 
 async function measureScenario(page, definition) {
@@ -320,6 +372,10 @@ async function runBenchmark() {
     const modeSnapshot = await page.evaluate(() => window.__BHR_QA__.snapshot());
     const endlessPoint = tapPointForNode(canvasRect, modeSnapshot.ui && modeSnapshot.ui.modeEndless, 'BtnEndless');
     await dispatchTouchTap(cdp, endlessPoint.x, endlessPoint.y);
+    // The mode card opens the Ready page; gameplay starts only from the Ready
+    // page's own BtnStart. Waiting for PLAYING straight after the card tap skips
+    // MODE_READY and never resolves.
+    await tapReadyStartButton(cdp, page, canvasRect);
     await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'PLAYING', undefined, { timeout: 10000 });
 
     // Let the opening cell finish its initial load before sampling.
@@ -392,16 +448,34 @@ async function runBenchmark() {
     server.close();
   }
 
+  const ranScenarioIds = report.scenarios.map((scenario) => scenario.id);
   const incompleteScenarios = report.scenarios.filter((scenario) => !scenario.evidenceComplete);
+  const missingScenarioIds = DECLARED_SCENARIO_IDS.filter((id) => ranScenarioIds.indexOf(id) < 0);
+  const abortedByError = Boolean(report.error);
   report.conclusion = {
-    declaredScenarioCount: report.scenarios.length,
+    declaredScenarioCount: DECLARED_SCENARIO_IDS.length,
+    ranScenarioCount: report.scenarios.length,
     completeScenarioCount: report.scenarios.length - incompleteScenarios.length,
     incompleteScenarios: incompleteScenarios.map((scenario) => ({ id: scenario.id, evidenceGaps: scenario.evidenceGaps })),
+    missingScenarios: missingScenarioIds,
+    abortedByError,
   };
-  report.status = incompleteScenarios.length === 0 && consoleErrors.length === 0 ? 'PASS' : 'FAIL';
+  // An aborted run must never be able to report PASS.
+  //
+  // `report.error` is set by the catch above, but this recomputation used to
+  // overwrite that FAIL unconditionally and only ask whether the scenarios that
+  // *did* run were complete. Because `declaredScenarioCount` was itself derived
+  // from `report.scenarios.length`, a run that threw after scenario A wrote
+  // `status: PASS` with `error` set and exit code 0 — a false green in the
+  // evidence chain. Completeness is now measured against DECLARED_SCENARIO_IDS.
+  report.status = !abortedByError
+    && missingScenarioIds.length === 0
+    && incompleteScenarios.length === 0
+    && consoleErrors.length === 0
+    ? 'PASS' : 'FAIL';
   report.statusMeaning = report.status === 'PASS'
     ? 'Evidence completeness only: every declared scenario produced a full frame-timing sample with read-only engine and world counters, and the run recorded no console errors. This is not a performance budget verdict.'
-    : 'Evidence incomplete or console errors were recorded. See conclusion.incompleteScenarios and consoleErrors. This result must not be reported as a performance PASS.';
+    : 'Evidence incomplete, the scenario sequence aborted before every declared scenario ran, or console errors were recorded. See conclusion and consoleErrors. This result must not be reported as a performance PASS.';
 
   writeFileSync(reportPath, JSON.stringify(report, null, 2), 'utf8');
   console.log('\nScenario observations:');

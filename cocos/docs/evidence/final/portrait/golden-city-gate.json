@@ -9,7 +9,7 @@
     "height": 844
   },
   "devicePixelRatio": 1,
-  "measuredAt": "2026-09-21T12:14:57.777Z",
+  "measuredAt": "2026-09-22T09:21:37.007Z",
   "verdict": "PASS",
   "metrics": {
     "buildings": 4,
@@ -24,7 +24,7 @@
     "resourceClusters": 2,
     "liveResourceClusters": 0,
     "authoredResourceClusterTotal": 2,
-    "largeEmptyGroundRatio": 0.16953125,
+    "largeEmptyGroundRatio": 0.17734375,
     "playableOpenAreaRatio": 0.986328125,
     "playableOpenAreaGroundSamples": 2048,
     "playableOpenAreaSampleSpacingMeters": 1,
@@ -33,9 +33,17 @@
       "BUILDING": 10,
       "POI": 18
     },
-    "playerWidthRatio": 0.2791741979025915,
-    "playerScreenYRatio": 0.572620660142442,
+    "playerWidthRatio": 0.22576679125591131,
+    "playerScreenYRatio": 0.5734154805616091,
     "playerVisible": true,
+    "playerWidthRatioRaw": 0.3150877041077543,
+    "playerAnimatedDecorationNames": [
+      "InnerSwirl",
+      "MidSwirl",
+      "OuterSwirl",
+      "ShimmerSwirl",
+      "HoleRing"
+    ],
     "playerMachineLevel": 1,
     "playerMachineSuctionRadius": 2.4,
     "viewportWidth": 390,
@@ -119,7 +127,7 @@
       "id": "LARGE_EMPTY_GROUND_MAX",
       "label": "large empty ground ratio",
       "relation": "<=",
-      "actual": 0.16953125,
+      "actual": 0.17734375,
       "required": 0.25,
       "pass": true,
       "deficit": null
@@ -146,7 +154,7 @@
       "id": "PLAYER_WIDTH_RATIO_MIN",
       "label": "player width ratio",
       "relation": ">=",
-      "actual": 0.2791741979025915,
+      "actual": 0.22576679125591131,
       "required": 0.22,
       "pass": true,
       "deficit": null
@@ -155,7 +163,7 @@
       "id": "PLAYER_WIDTH_RATIO_MAX",
       "label": "player width ratio",
       "relation": "<=",
-      "actual": 0.2791741979025915,
+      "actual": 0.22576679125591131,
       "required": 0.3,
       "pass": true,
       "deficit": null
@@ -164,7 +172,7 @@
       "id": "PLAYER_SCREEN_Y_RATIO_MIN",
       "label": "player screen-Y ratio",
       "relation": ">=",
-      "actual": 0.572620660142442,
+      "actual": 0.5734154805616091,
       "required": 0.5,
       "pass": true,
       "deficit": null
@@ -173,7 +181,7 @@
       "id": "PLAYER_SCREEN_Y_RATIO_MAX",
       "label": "player screen-Y ratio",
       "relation": "<=",
-      "actual": 0.572620660142442,
+      "actual": 0.5734154805616091,
       "required": 0.67,
       "pass": true,
       "deficit": null

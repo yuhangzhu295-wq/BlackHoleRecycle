@@ -328,6 +328,26 @@ function createStaticServer(rootDirectory) {
 const networkProbePort = 25784;
 const networkProbeEndpoint = `http://127.0.0.1:${networkProbePort}`;
 
+// `verifyNetworkProbe` deliberately puts the browser transport offline to prove
+// the room's reservation/restoration path. Chromium refuses the socket itself
+// while that emulation is active, and the client retries every <=1s
+// (`ColyseusArenaClient.ts` sets `reconnection.maxDelay = 1000`), so whenever a
+// retry lands inside the window the browser logs its own transport refusal.
+// That line names no product code: the failure is the instrument, not the app.
+//
+// Attribution is therefore bounded by three conjunctive conditions -- the
+// message must name the local probe origin, must be a `net::ERR_*` transport
+// failure, and must arrive while the emulated window is open. Anything else
+// (any other console error, or any error outside the window) still fails the
+// scope, and every attributed line is preserved verbatim in the report as
+// `networkTransportEmulation.consoleErrorsAttributedToEmulation`.
+const isEmulatedOfflineTransportError = (text) =>
+  text.includes(`127.0.0.1:${networkProbePort}`) && /net::ERR_[A-Z_]+/.test(text);
+
+function createTransportAttribution() {
+  return { active: false, startedAt: 0, endedAt: 0, attributed: [] };
+}
+
 /** Start the shipped arena service; this never substitutes a mocked room. */
 function startNetworkProbeServer() {
   const child = spawn(process.execPath, ['src/index.mjs', String(networkProbePort)], {
@@ -489,7 +509,7 @@ async function readRuntimeSnapshot(page) {
  * Only server-replicated data is observed here: no test setter may create a
  * player, mass value, pickup or room state.
  */
-async function verifyNetworkProbe(cdp, page, canvasRect) {
+async function verifyNetworkProbe(cdp, page, canvasRect, transportAttribution) {
   try {
     await page.waitForFunction(() => window.__BHR_QA__.snapshot().network?.status === 'CONNECTED', undefined, { timeout: 10_000 });
   } catch (error) {
@@ -607,6 +627,10 @@ async function verifyNetworkProbe(cdp, page, canvasRect) {
   let transportRestored = false;
   try {
     await cdp.send('Network.enable');
+    // Open the attribution window *before* the emulation starts so a refusal
+    // logged on the first refused retry cannot escape the window.
+    transportAttribution.active = true;
+    transportAttribution.startedAt = Date.now();
     await cdp.send('Network.emulateNetworkConditions', {
       offline: true,
       latency: 0,
@@ -628,6 +652,10 @@ async function verifyNetworkProbe(cdp, page, canvasRect) {
       connectionType: 'none',
     });
     transportRestored = true;
+    // Close the window the instant the transport is back: from here on a
+    // failed socket is a real defect and must reach `runtimeErrors`.
+    transportAttribution.endedAt = Date.now();
+    transportAttribution.active = false;
     await page.waitForFunction((expected) => {
       const network = window.__BHR_QA__.snapshot().network;
       const local = network?.snapshot?.players?.find((player) => player.id === expected.sessionId);
@@ -652,6 +680,12 @@ async function verifyNetworkProbe(cdp, page, canvasRect) {
         uploadThroughput: -1,
         connectionType: 'none',
       });
+    }
+    // A throw here is already a hard scope failure, so the window only has to
+    // stop attributing; it must never stay open past this probe.
+    if (transportAttribution.active) {
+      transportAttribution.endedAt = Date.now();
+      transportAttribution.active = false;
     }
   }
   const reconnected = await readRuntimeSnapshot(page);
@@ -3591,9 +3625,16 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
   const page = await context.newPage();
   const runtimeErrors = [];
   const failedResponses = [];
+  const transportAttribution = createTransportAttribution();
   page.on('pageerror', (error) => runtimeErrors.push(error.message));
   page.on('console', (message) => {
-    if (message.type() === 'error') runtimeErrors.push(message.text());
+    if (message.type() !== 'error') return;
+    const text = message.text();
+    if (transportAttribution.active && isEmulatedOfflineTransportError(text)) {
+      transportAttribution.attributed.push(text);
+      return;
+    }
+    runtimeErrors.push(text);
   });
   // A resource that fails during boot only reaches the console as
   // "Failed to load resource: the server responded with a status of 404",
@@ -3653,7 +3694,15 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
         return;
       }
       if (acceptanceScope === 'network') {
-        report.network = await verifyNetworkProbe(cdp, page, canvasRect);
+        report.network = await verifyNetworkProbe(cdp, page, canvasRect, transportAttribution);
+        // Kept separate from `consoleErrors` on purpose: these lines are the
+        // browser refusing a socket the harness itself took offline. They are
+        // evidence about the instrument, so they are recorded rather than
+        // discarded, and `consoleErrors` stays the product-level verdict.
+        report.networkTransportEmulation = {
+          emulatedOfflineWindowMs: transportAttribution.endedAt - transportAttribution.startedAt,
+          consoleErrorsAttributedToEmulation: transportAttribution.attributed,
+        };
         assert(runtimeErrors.length === 0, `Runtime console errors after Colyseus connection: ${runtimeErrors.join(' | ')}`);
         return;
       }
@@ -4618,6 +4667,7 @@ const report = {
   uiFullFlow: null,
   arenaTimer: null,
   network: null,
+  networkTransportEmulation: null,
   regions: null,
   fullProgression: null,
   trafficReplenishment: null,
