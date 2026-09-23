@@ -1,0 +1,201 @@
+{
+  "steps": [
+    {
+      "label": "boot",
+      "after": {
+        "gameState": "HOME",
+        "uiScreen": "Home",
+        "activeCellCount": 8,
+        "constructionLandmark": {
+          "loadState": "READY",
+          "visible": false
+        },
+        "activeCells": [
+          "-1:-1",
+          "-1:0",
+          "-1:1",
+          "0:-1",
+          "0:1",
+          "1:-1",
+          "1:0",
+          "1:1"
+        ],
+        "currentRegionName": "卧室杂物区"
+      }
+    },
+    {
+      "label": "home-start",
+      "design": {
+        "x": 0,
+        "y": -294
+      },
+      "screen": {
+        "x": 360,
+        "y": 934
+      },
+      "after": {
+        "gameState": "MODE_SELECT",
+        "uiScreen": "Home",
+        "activeCellCount": 8,
+        "constructionLandmark": {
+          "loadState": "READY",
+          "visible": false
+        },
+        "activeCells": [
+          "-1:-1",
+          "-1:0",
+          "-1:1",
+          "0:-1",
+          "0:1",
+          "1:-1",
+          "1:0",
+          "1:1"
+        ],
+        "currentRegionName": "卧室杂物区"
+      }
+    },
+    {
+      "label": "mode-select-endless",
+      "design": {
+        "x": 0,
+        "y": -119
+      },
+      "screen": {
+        "x": 360,
+        "y": 759
+      },
+      "after": {
+        "gameState": "MODE_READY",
+        "uiScreen": "Home",
+        "activeCellCount": 8,
+        "constructionLandmark": {
+          "loadState": "READY",
+          "visible": false
+        },
+        "activeCells": [
+          "-1:-1",
+          "-1:0",
+          "-1:1",
+          "0:-1",
+          "0:1",
+          "1:-1",
+          "1:0",
+          "1:1"
+        ],
+        "currentRegionName": "卧室杂物区"
+      }
+    },
+    {
+      "label": "mode-ready-start",
+      "design": {
+        "x": 0,
+        "y": -290
+      },
+      "screen": {
+        "x": 360,
+        "y": 930
+      },
+      "after": {
+        "gameState": "PLAYING",
+        "uiScreen": "Gameplay",
+        "activeCellCount": 9,
+        "constructionLandmark": {
+          "loadState": "READY",
+          "visible": true
+        },
+        "activeCells": [
+          "-1:-1",
+          "-1:0",
+          "-1:1",
+          "0:-1",
+          "0:0",
+          "0:1",
+          "1:-1",
+          "1:0",
+          "1:1"
+        ],
+        "currentRegionName": "卧室杂物区"
+      }
+    }
+  ],
+  "consoleMessages": [
+    {
+      "type": "warning",
+      "text": "[.WebGL-0x71fc001c9400]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels"
+    },
+    {
+      "type": "log",
+      "text": "📊 [Analytics] game_launch {}"
+    },
+    {
+      "type": "log",
+      "text": "📊 [Analytics] session_start {}"
+    },
+    {
+      "type": "warning",
+      "text": "[.WebGL-0x71fc001c9400]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels"
+    },
+    {
+      "type": "warning",
+      "text": "[.WebGL-0x71fc001c9400]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels"
+    },
+    {
+      "type": "warning",
+      "text": "[.WebGL-0x71fc001c9400]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)"
+    },
+    {
+      "type": "timeEnd",
+      "text": "LoadScene db://assets/scenes/Game.scene: 331.891845703125 ms"
+    },
+    {
+      "type": "log",
+      "text": "[Platform] Initialized on Cocos Creator Editor / Web"
+    },
+    {
+      "type": "log",
+      "text": "📊 [Analytics] game_launch {}"
+    },
+    {
+      "type": "log",
+      "text": "🎮 [GameManager] Cocos 3D World Initialized successfully!"
+    },
+    {
+      "type": "warning",
+      "text": "[DEFERRED_AUTHORING] TutorialT2Target is missing; using ClusterAnchor_RecyclingSquare."
+    },
+    {
+      "type": "log",
+      "text": "📊 [Analytics] endless_start {initialCoins: 0}"
+    }
+  ],
+  "pageErrors": [],
+  "failedRequests": [],
+  "probe": {
+    "gameState": "PLAYING",
+    "uiScreen": "Gameplay",
+    "activeCellCount": 9,
+    "constructionLandmark": {
+      "loadState": "READY",
+      "visible": true
+    },
+    "activeCells": [
+      "-1:-1",
+      "-1:0",
+      "-1:1",
+      "0:-1",
+      "0:0",
+      "0:1",
+      "1:-1",
+      "1:0",
+      "1:1"
+    ],
+    "currentRegionName": "卧室杂物区"
+  },
+  "probeError": null,
+  "canvasRect": {
+    "left": 0,
+    "top": 0,
+    "width": 720,
+    "height": 1280
+  }
+}

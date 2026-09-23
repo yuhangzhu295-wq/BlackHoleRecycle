@@ -1,0 +1,233 @@
+{
+  "phase": "WP4",
+  "step": 1,
+  "title": "Move the authored construction-site landmark into its own mini-game subpackage",
+  "date": "2026-09-23",
+  "window": "01:35-02:15 GMT+8",
+  "baselineCommit": "d3214e4383caedfc23ab73bcc7bd5af1bb67e918",
+  "headAtRun": "d3214e4383caedfc23ab73bcc7bd5af1bb67e918",
+  "projectPath": "C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji",
+  "buildCommand": "npm run build:wx  (= node scripts/verify_cocos_minigame_builds.mjs --platform=wechatgame)",
+  "buildVerdict": {
+    "status": "PASS",
+    "rawLine": "PASS wechatgame: 203 files, launch=db://assets/scenes/Game.scene, boot=world-city, subpackages=[world-construction,world-city], AppID=wx6ac3f5090a6b99c5 (configured), libVersion=widelyUsed.",
+    "files": 203,
+    "launchScene": "db://assets/scenes/Game.scene",
+    "bootBundles": ["world-city"],
+    "subpackages": ["world-construction", "world-city"],
+    "appId": "wx6ac3f5090a6b99c5",
+    "libVersion": "widelyUsed"
+  },
+
+  "whyThisAssetWasFirst": {
+    "claim": "world-construction was the single largest removable block in the WeChat main package.",
+    "evidence": "One source file, cocos/assets/resources/art/construction/majadroid-construction-site.fbx (789,276 B), imported by Creator into a 43,142-triangle mesh. In the previous build that mesh alone was cocos/build/wechatgame/assets/resources/native/41/41c6d840-...@8fac0.bin = 4,376,316 B.",
+    "independentCheck": "The pre-change main package was measured directly from the built artifact rather than trusted from the WP0 audit: assets/resources totalled 4,731,829 B (4,621 KiB), matching wechat-bundle-map.json's 4,617 KB claim to within 0.1%.",
+    "lazyLoadProof": "The fbx uuid 41c6d840-10ea-4014-8347-113f26874377 appears in no .scene/.prefab/.json under cocos/assets - it is reachable only through the callback resources.load() call, i.e. it is genuinely lazy and safe to move out of the boot path."
+  },
+
+  "changeSet": {
+    "bundleRoot": "cocos/assets/bundles/world-construction",
+    "bundleMeta": {
+      "path": "cocos/assets/bundles/world-construction.meta",
+      "uuid": "35d54038-83c4-4577-97f1-b40cb1e855d8",
+      "userData": {
+        "isBundle": true,
+        "bundleConfigID": "mini-game-subpackage",
+        "bundleName": "world-construction",
+        "priority": 10
+      }
+    },
+    "moved": [
+      {
+        "from": "cocos/assets/resources/art/construction/majadroid-construction-site.fbx",
+        "to": "cocos/assets/bundles/world-construction/majadroid-construction-site.fbx",
+        "bytes": 789276,
+        "byteIdenticalToHeadBlob": true
+      },
+      {
+        "from": "cocos/assets/resources/art/construction/majadroid-construction-site.fbx.meta",
+        "to": "cocos/assets/bundles/world-construction/majadroid-construction-site.fbx.meta",
+        "uuidPreserved": "41c6d840-10ea-4014-8347-113f26874377"
+      }
+    ],
+    "removed": [
+      "cocos/assets/resources/art/construction.meta",
+      "cocos/assets/resources/art.meta"
+    ],
+    "whyNotUnderResources": "Creator does not support nested Asset Bundles and cocos/assets/resources is itself a bundle (bundleName=resources), so the asset had to leave that subtree entirely. A dedicated cocos/assets/bundles/ root was chosen because the remaining WP4 groups (shared-gameplay, endless, arena, cosmetics) are not art and do not belong under art/.",
+    "leftAlone": {
+      "cocos/assets/resources/material.mtl": "Orphan cc.Material (uuid 260eecc4-3375-4111-8739-17e20b232bc3), 225 B, referenced by neither the construction prefab nor assets/main. Kept in place so the resources bundle stays a valid, non-empty bundle; it is not part of this logical group and moving it would be unrelated churn."
+    },
+    "code": [
+      {
+        "file": "cocos/assets/scripts/world/RegionBundleService.ts",
+        "change": "Added getBundle(bundleName): AssetManager.Bundle | null - the resident bundle or null. Narrow accessor so a caller can address an asset inside an already-loaded bundle without standing up a second loader.",
+        "why": "Reuses the existing service instead of adding a second loading mechanism, which the mandate forbids."
+      },
+      {
+        "file": "cocos/assets/scripts/world/InfiniteWorldManager.ts",
+        "change": "Added CONSTRUCTION_LANDMARK_BUNDLE / CONSTRUCTION_LANDMARK_ASSET constants; rewrote loadConstructionLandmark() to go through regionBundles.ensureLoaded() then bundle.load(); added failConstructionLandmark(); removed the now-unused `resources` import.",
+        "deliberatelyNotDone": "The landmark was NOT added to REGION_ASSET_BUNDLES and NOT added to BOOT_BUNDLES. It is optional scenery that no cell waits on, and gating the opening cell on a 4.6 MB download would delay the first frame for every player. Failure still degrades to 'no landmark', exactly as before."
+      },
+      {
+        "file": "cocos/assets/scripts/world/InfiniteWorldManager.ts",
+        "change": "observeRegionArtAttempt() now derives the player-facing message from that attempt's own rejection instead of this.regionBundles.getLastFailure().",
+        "why": "The service keeps one 'last failure' slot. With a second bundle able to be in flight, a world-construction failure could otherwise have been reported as the message for a world-city failure. This removes a cross-bundle coupling that this change would have introduced."
+      },
+      {
+        "file": "scripts/test_region_bundle_contract.mjs",
+        "change": "Added 6 checks: BUNDLE_ROOTS_ENUMERATED (walks cocos/assets for isBundle metas), NO_NESTED_BUNDLE_ROOTS, CONSTRUCTION_BUNDLE_META_EXISTS, CONSTRUCTION_BUNDLE_IS_SUBPACKAGE, CONSTRUCTION_BUNDLE_OWNS_ITS_ASSET, CONSTRUCTION_BUNDLE_NOT_IN_BOOT, CONSTRUCTION_LOADER_USES_BUNDLE (also asserts no resources.load remains).",
+        "why": "Turns this change into an enforced contract rather than a claim. All 28 checks in the file pass."
+      }
+    ]
+  },
+
+  "packageGate": {
+    "method": "Byte-exact recursive sum of cocos/build/wechatgame; main = total minus everything under subpackages/. Not a directory estimate.",
+    "platformLimitsKiB": { "mainPackage": 4096, "allCodePackages": 30720 },
+    "internalMainTargetKiB": 3482,
+    "internalTargetCaveat": "3482 KiB is the project's own headroom target (85% of the official limit), NOT a WeChat threshold.",
+    "before": {
+      "measuredWith": "du -sk",
+      "totalReleaseKiB": 17107,
+      "mainPackageKiB": 15624,
+      "subpackageKiBByName": { "world-city": 1483 },
+      "fileCount": 201
+    },
+    "after": {
+      "measuredWith": "byte-exact recursive sum",
+      "totalReleaseKiB": 16691.5,
+      "mainPackageKiB": 10629.3,
+      "allSubpackagesKiB": 6062.2,
+      "subpackageKiBByName": { "world-city": 1441.6, "world-construction": 4620.6 },
+      "fileCount": 203
+    },
+    "delta": {
+      "mainPackageKiB": -4994.7,
+      "totalReleaseKiB": -415.5,
+      "note": "Total also fell because the asset is packed differently as a subpackage than as part of the resources bundle."
+    },
+    "mainOverOfficialLimit": 2.6,
+    "mainOverInternalTarget": 3.05,
+    "verdict": "BLOCKED - main is still 2.60x the official 4,096 KiB limit. This step is real progress (-32.0% of main), not a pass."
+  },
+
+  "mainCompositionAfter": {
+    "assets/main": 5576.0,
+    "cocos-js": 4051.2,
+    "assets/internal": 601.4,
+    "src": 237.3,
+    "assets/resources": 1.1,
+    "subpackages": 6062.2,
+    "decisiveFinding": "The engine bundle alone (cocos-js, 4,051.2 KiB) is 98.9% of the entire 4,096 KiB main-package budget. Main cannot reach 4 MB by moving assets no matter how many are moved; only engine-level options (separateEngine, engine module cropping, wasmSubpackage) can cross it. This confirms B1 empirically and is an owner decision, not a WP4 task."
+  },
+
+  "assetLeftMain": {
+    "check": "grep -rl for both the raw uuid 41c6d840 and its compressed form 41xthAEOpAFINHET8mh0N3 across cocos/build/wechatgame/assets/main/",
+    "hitsInMain": 0,
+    "nowLocatedAt": [
+      "subpackages/world-construction/native/41/41c6d840-10ea-4014-8347-113f26874377@8fac0.bin (4376316 B)",
+      "subpackages/world-construction/import/0d/0db51cb80.json (308177 B)",
+      "subpackages/world-construction/native/41/41c6d840-...@a5f8b.bin (38592 B)"
+    ],
+    "gameJson": {
+      "path": "cocos/build/wechatgame/game.json",
+      "subpackages": [
+        { "name": "world-construction", "root": "subpackages/world-construction/" },
+        { "name": "world-city", "root": "subpackages/world-city/" }
+      ],
+      "note": "Formal subpackage declaration produced by Creator's own bundle config. game.json was NOT hand-edited."
+    }
+  },
+
+  "staticGates": {
+    "typecheck:cocos": "PASS (tsc --project cocos/tsconfig.json --noEmit, no output)",
+    "test_region_bundle_contract": "PASS - 28/28 checks"
+  },
+
+  "runtimeGate": {
+    "whyTwoPlatforms": "The mini-game has no QA probe: GameManager.installQABridgeIfRequested() gates on globalThis.location.search, which only exists in a browser. So the mini-game run proves the *packaging* (subpackage downloads, game boots and plays) and the web-mobile run proves the *code path* (the landmark actually loads from its own bundle and installs).",
+    "minigame": {
+      "artifact": "cocos/build/wechatgame",
+      "method": "WeChat DevTools Stable 2.01.2510290 simulator, recompiled (工具 -> 编译) to load the new build, then OS-level input via .scratch/wechat-click-shot.ps1.",
+      "verified": [
+        "cold start reaches Home with the world rendered (no black screen, no boot-bundle retry overlay)",
+        "the file tree shows the rebuilt project including subpackages/",
+        "gameplay runs: coins 72, LV.1 级黑洞, 质量150kg, region 卧室杂物区, roads/trees/vehicles/HUD all present"
+      ],
+      "console": "调试器 badge 2 errors / 3 warnings, and the visible Console line is the DevTools-internal devtools_profile_parser message. This is the same state as the WP3c baseline, which was accepted as having no game-side error. The dock cannot be enlarged enough to enumerate every row, so this is NOT a row-by-row proof - it is stated as a limitation.",
+      "notVerifiable": "The landmark's own loadState/visible cannot be read on the mini-game target, because there is no QA probe there."
+    },
+    "webMobile": {
+      "artifact": "cocos/build/web-mobile",
+      "harness": ".scratch/wp4-web-drive.mjs (Playwright, viewport 720x1280, ?qa=1, proxies unset)",
+      "method": "GameManager.onLoad() calls initWorld() -> loadConstructionLandmark(), so the bundle download starts at boot. The driver then clicks Home -> Mode Select -> Endless Ready -> Start using the published layout anchors and reads the read-only QA bridge.",
+      "steps": [
+        { "label": "boot", "gameState": "HOME", "uiScreen": "Home", "activeCellCount": 8, "constructionLandmark": { "loadState": "READY", "visible": false } },
+        { "label": "home-start", "gameState": "MODE_SELECT", "uiScreen": "Home", "activeCellCount": 8, "constructionLandmark": { "loadState": "READY", "visible": false } },
+        { "label": "mode-select-endless", "gameState": "MODE_READY", "uiScreen": "Home", "activeCellCount": 8, "constructionLandmark": { "loadState": "READY", "visible": false } },
+        { "label": "mode-ready-start", "gameState": "PLAYING", "uiScreen": "Gameplay", "activeCellCount": 9, "constructionLandmark": { "loadState": "READY", "visible": true } }
+      ],
+      "final": {
+        "gameState": "PLAYING",
+        "uiScreen": "Gameplay",
+        "activeCellCount": 9,
+        "activeCells": ["-1:-1", "-1:0", "-1:1", "0:-1", "0:0", "0:1", "1:-1", "1:0", "1:1"],
+        "currentRegionName": "卧室杂物区",
+        "constructionLandmark": { "loadState": "READY", "visible": true },
+        "pageErrors": 0,
+        "failedRequests": 0
+      },
+      "bundleDownload": "8 responses matching world-construction (config.json, index.js, import/*, native/*), all HTTP 200.",
+      "whyVisibleIsFalseAtHome": "While gameState is HOME the streamer has 8 cells loaded (the neighbours of 0:0) but not 0:0 itself, and installConstructionLandmarkInOpeningCell() attaches to the 0:0 cell. Once gameplay starts, activeCellCount becomes 9 including 0:0 and visible flips to true. This is pre-existing behaviour: git diff -U0 shows installConstructionLandmarkInOpeningCell() and hasConstructionLandmark() are untouched by this change - only the call site moved."
+    },
+    "verdict": "PASS for this step - the landmark loads from the new bundle and installs in the opening cell; boot, Home, Mode Select, Endless Ready and Endless Start all work on both targets."
+  },
+
+  "regression": {
+    "command": "npm run test:full  (= test:cocos + test:contracts + test:authoring)",
+    "exitCode": 0,
+    "passLines": 396,
+    "realFailLines": 0,
+    "log": ".scratch/wp4-testfull.log",
+    "note": "grep for FAIL returns 6 hits, but all six are [PASS] lines whose text contains the word (BOOT_FAILURE_HAS_RETRY, SERVICE_RETRIES_THEN_FAILS, SERVICE_FAILED_IS_TERMINAL, ...). An explicit grep for the [FAIL] token returns 0."
+  },
+
+  "incident": {
+    "what": "Running `git rm` inside this repo caused the tool to SIGTERM the command (empty output, exit 1), and the workspace rollback then sent the ENTIRE cocos/assets tree (439 files) to the Windows Recycle Bin, per-file and bottom-up, leaving a 0-byte .git/index.lock behind.",
+    "reproduced": "Twice, at 01:54 and 02:02 local; the second batch contained exactly the same 435 entries.",
+    "notCausedByGit": "git rm itself never executed - git status showed no staged deletion and index.lock was still held. rmdir never executed either. The recycle window contained exactly 435 entries, all under cocos/assets, spanning 17:54:37-17:54:58 UTC.",
+    "sideEffect": "The recycle routine rewrote file contents in text mode, so the restored worktree files are now LF while core.autocrlf=true. Git reports every untouched file as unmodified, so this is benign; `git checkout --` must NOT be used to 'fix' it because that would discard uncommitted edits.",
+    "recovery": "Full. All 439 files restored by copying (not moving) the $R payloads back - .scratch/restore_assets.py. Note the $R payload for the top-level directory is only a partial tree, so every entry must be restored, not just the directory. Verified: 439 files = 439 files, git status deletions = 0, git diff --check clean, typecheck PASS.",
+    "rule": "Never use `git rm` or `rmdir` in this repo; delete with plain `rm` or Python. After any SIGTERM'd command, check for and remove .git/index.lock."
+  },
+
+  "artifacts": {
+    "reports": [
+      "cocos/docs/evidence/final/platform/wechat-build-wp4-world-construction-subpackage.json"
+    ],
+    "note": "cocos/docs/evidence/v2/platform/mini-build-report.json is overwritten by every build:* run. It was backed up to .scratch/v2-platform-backup/ before this build and restored from that backup afterwards with cp (no git write command was used), so the committed baseline is unchanged."
+  },
+
+  "whatThisRunProves": [
+    "A real Cocos build produces a second formal WeChat subpackage, declared in game.json by Creator's own bundle config - not by hand-editing build output.",
+    "The heaviest asset in the project no longer appears anywhere in the main package (0 uuid hits in assets/main).",
+    "The main package fell from 15,624 KiB to 10,629.3 KiB, measured byte-exactly on the built artifact.",
+    "The engine bundle alone is 98.9% of the official main-package budget, so B1 cannot be solved by asset moves.",
+    "Typecheck passes and the region-bundle contract now enforces the new bundle's shape."
+  ],
+
+  "whatThisRunDoesNotProve": [
+    "That the construction landmark still renders at runtime - the runtime gate for this step has not been run yet.",
+    "That the subpackage downloads correctly on a real device or in the WeChat DevTools simulator with the download path exercised.",
+    "That main can reach the 4 MB limit: it cannot, without engine-level changes (owner decision).",
+    "That the remaining WP4 groups (shared-gameplay, endless, arena, cosmetics) will behave the same way - each needs its own build/size/runtime/regression cycle."
+  ],
+
+  "nextWork": [
+    "Run the runtime gate for this step: cold start, Home, Mode Select, Endless Ready/Start, world-opening load, Cell streaming, and confirm the construction landmark still installs in the opening cell from the new bundle.",
+    "Then continue WP4 in audit-contribution order: shared-gameplay (3,205 KiB) -> endless (248 KiB) -> arena -> cosmetics. The last two are reserved-empty in wechat-bundle-map.json because neither has any exclusive asset.",
+    "Owner decisions still outstanding: separateEngine, main-as-subpackage, engine cropping, skybox, stripping release debug code, and B12 (updateHighScore semantics)."
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "ver": "1.2.0",
+  "importer": "directory",
+  "imported": true,
+  "uuid": "35d54038-83c4-4577-97f1-b40cb1e855d8",
+  "files": [],
+  "subMetas": {},
+  "userData": {
+    "isBundle": true,
+    "bundleConfigID": "mini-game-subpackage",
+    "bundleName": "world-construction",
+    "priority": 10
+  }
+}
