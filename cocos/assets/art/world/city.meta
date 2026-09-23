@@ -5,5 +5,10 @@
   "uuid": "dfd11403-4682-487d-ade7-f5f5cb4ee318",
   "files": [],
   "subMetas": {},
-  "userData": {}
+  "userData": {
+    "isBundle": true,
+    "bundleConfigID": "mini-game-subpackage",
+    "bundleName": "world-city",
+    "priority": 9
+  }
 }
