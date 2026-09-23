@@ -1,0 +1,146 @@
+{
+  "schema": "bhr.wechat-bundle-map/1",
+  "generatedBy": "scripts/audit_wechat_package.mjs",
+  "note": "PHASE WP0 proposal. Nothing has been moved. Sizes are computed from the current release build by attributing each output file back to its source asset.",
+  "platformLimitsKB": {
+    "wechatMainPackageMaxKB": 4096,
+    "wechatAllPackagesMaxKB": 30720,
+    "wechatSingleNormalSubpackage": "unlimited",
+    "wechatSingleIndependentSubpackageMaxKB": 4096,
+    "internalMainTargetKB": 3482,
+    "internalTargetNote": "Internal headroom target (85% of the official 4 MB main-package limit). This is our own margin, not a WeChat threshold."
+  },
+  "bundleConfiguration": {
+    "compressionType": "小游戏分包 (mini-game subpackage)",
+    "targetPlatform": "wechatgame",
+    "remote": false,
+    "remoteNote": "A 小游戏分包 cannot be a remote package — Creator locks the 配置为远程包 checkbox. Remote delivery is therefore a separate, later decision."
+  },
+  "bundles": [
+    {
+      "name": "main",
+      "bytes": 8814316,
+      "KB": 8608,
+      "builtIn": true,
+      "assetBytes": 8814316
+    },
+    {
+      "name": "world-construction",
+      "bytes": 4728318,
+      "KB": 4617,
+      "builtIn": false,
+      "assetBytes": 4728318
+    },
+    {
+      "name": "shared-gameplay",
+      "bytes": 3281764,
+      "KB": 3205,
+      "builtIn": false,
+      "assetBytes": 3281764
+    },
+    {
+      "name": "endless",
+      "bytes": 253722,
+      "KB": 248,
+      "builtIn": false,
+      "assetBytes": 253722
+    },
+    {
+      "name": "world-opening",
+      "bytes": 12717,
+      "KB": 12,
+      "builtIn": false,
+      "assetBytes": 12717
+    },
+    {
+      "name": "arena",
+      "bytes": 0,
+      "KB": 0,
+      "builtIn": false,
+      "reserved": true,
+      "note": "Reserved. The audit found no asset that belongs to Arena alone: Arena reuses the shared gameplay art and the same Game.scene. Creating this bundle now would only duplicate assets, so it stays empty until Arena gains dedicated art."
+    },
+    {
+      "name": "cosmetics",
+      "bytes": 0,
+      "KB": 0,
+      "builtIn": false,
+      "reserved": true,
+      "note": "Reserved. All five skins in SKINS_CONFIG are colour/rimColor data applied to the existing machine art; there is no cosmetic-only mesh or texture to split."
+    }
+  ],
+  "rules": [
+    {
+      "bundle": "world-construction",
+      "sourcePathPattern": "/^cocos\\/assets\\/resources\\/art\\/construction\\//"
+    },
+    {
+      "bundle": "world-city",
+      "sourcePathPattern": "/^cocos\\/assets\\/art\\/world\\/city\\//"
+    },
+    {
+      "bundle": "endless",
+      "sourcePathPattern": "/^cocos\\/assets\\/art\\/world\\/residential\\//"
+    },
+    {
+      "bundle": "endless",
+      "sourcePathPattern": "/^cocos\\/assets\\/prefabs\\/chunks\\//"
+    },
+    {
+      "bundle": "world-opening",
+      "sourcePathPattern": "/^cocos\\/assets\\/prefabs\\/world\\/GoldenCityCell\\.prefab$/"
+    },
+    {
+      "bundle": "shared-gameplay",
+      "sourcePathPattern": "/^cocos\\/assets\\/art\\/machines\\//"
+    },
+    {
+      "bundle": "shared-gameplay",
+      "sourcePathPattern": "/^cocos\\/assets\\/art\\/machine-modules\\//"
+    },
+    {
+      "bundle": "shared-gameplay",
+      "sourcePathPattern": "/^cocos\\/assets\\/art\\/vehicles\\//"
+    },
+    {
+      "bundle": "shared-gameplay",
+      "sourcePathPattern": "/^cocos\\/assets\\/art\\/recyclables\\//"
+    },
+    {
+      "bundle": "shared-gameplay",
+      "sourcePathPattern": "/^cocos\\/assets\\/art\\/props\\//"
+    },
+    {
+      "bundle": "shared-gameplay",
+      "sourcePathPattern": "/^cocos\\/assets\\/art\\/world\\//"
+    },
+    {
+      "bundle": "shared-gameplay",
+      "sourcePathPattern": "/^cocos\\/assets\\/prefabs\\/(art|machine|objects)\\//"
+    },
+    {
+      "bundle": "shared-gameplay",
+      "sourcePathPattern": "/^cocos\\/assets\\/prefabs\\/ui\\/(HUD|EndlessHUD|PausePage|SettlementPage)\\.prefab$/"
+    },
+    {
+      "bundle": "shared-gameplay",
+      "sourcePathPattern": "/^cocos\\/assets\\/textures\\/ui\\//"
+    },
+    {
+      "bundle": "main",
+      "sourcePathPattern": "/.*/"
+    }
+  ],
+  "totals": {
+    "proposedMainBytes": 8814316,
+    "proposedMainKB": 8608,
+    "proposedSubpackageBytes": 8276522,
+    "proposedSubpackageKB": 8083,
+    "proposedTotalKB": 16690
+  },
+  "verdict": {
+    "mainUnderOfficialLimit": false,
+    "mainUnderInternalTarget": false,
+    "totalUnderOfficialLimit": true
+  }
+}

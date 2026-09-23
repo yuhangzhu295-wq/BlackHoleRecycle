@@ -1,0 +1,585 @@
+{
+  "schema": "bhr.wechat-package-audit/1",
+  "generatedBy": "scripts/audit_wechat_package.mjs",
+  "releaseDirectory": "cocos/build/wechatgame",
+  "fileCount": 201,
+  "uuidIndexSources": [
+    {
+      "file": "cocos/library/.assets-info1.0.0.json",
+      "entries": 245
+    },
+    {
+      "file": "cocos/library/.internal-info1.0.0.json",
+      "entries": 479
+    }
+  ],
+  "uuidIndexEntries": 724,
+  "subpackageDeclaration": {
+    "declared": true,
+    "roots": [
+      "subpackages/world-city"
+    ],
+    "note": "game.json declares subpackages; the main package excludes those roots."
+  },
+  "totals": {
+    "totalReleaseBytes": 17090838,
+    "mainPackageBytes": 15614636,
+    "subpackageBytesByName": {
+      "subpackages/world-city": 1476202
+    },
+    "allSubpackagesBytes": 1476202,
+    "totalReleaseKB": 16690,
+    "mainPackageKB": 15249,
+    "allSubpackagesKB": 1442
+  },
+  "assetResolution": {
+    "assetFileCount": 153,
+    "resolvedFileCount": 147,
+    "resolvedBytes": 10727552,
+    "unresolvedBytes": 329575,
+    "resolvedPercentOfAssetBytes": 97.02
+  },
+  "sizeByCategory": {
+    "Mesh": 7776167,
+    "EngineJS": 4148465,
+    "Texture": 1899867,
+    "AssetDataJSON": 1088498,
+    "Other": 883608,
+    "ConfigJSON": 592757,
+    "BundleJS": 318581,
+    "ProjectJS": 242932,
+    "PlatformJS": 139963
+  },
+  "sizeByBundle": {
+    "null": 6033711,
+    "main": 5709449,
+    "resources": 4731829,
+    "internal": 615849
+  },
+  "sizeByOwner": {
+    "BOOT_REQUIRED": 6798640,
+    "WORLD_CONSTRUCTION": 4728318,
+    "SHARED_RUNTIME": 3821238,
+    "UNRESOLVED": 1476202,
+    "ENDLESS_ONLY": 253722,
+    "WORLD_OPENING": 12717
+  },
+  "mainPackageSizeByOwner": {
+    "BOOT_REQUIRED": 6798640,
+    "WORLD_CONSTRUCTION": 4728318,
+    "SHARED_RUNTIME": 3821238,
+    "ENDLESS_ONLY": 253722,
+    "WORLD_OPENING": 12717
+  },
+  "mainPackageSizeByCategory": {
+    "Mesh": 7776167,
+    "EngineJS": 4148465,
+    "Texture": 1888865,
+    "AssetDataJSON": 1088498,
+    "BundleJS": 318581,
+    "ProjectJS": 242932,
+    "PlatformJS": 139355,
+    "ConfigJSON": 11773
+  },
+  "mainPackageSizeBySourceGroup": {
+    "resources/art": 4421301,
+    "cocos-js (engine)": 4148465,
+    "art/machines": 1500206,
+    "(build) assets": 1413809,
+    "textures/home": 929265,
+    "(engine internal asset)": 870844,
+    "art/vehicles": 668268,
+    "art/world": 666757,
+    "art/recyclables": 365340,
+    "(build) src": 242932,
+    "art/machine-modules": 151433,
+    "(build) web-adapter.js": 90040,
+    "art/props": 67848,
+    "(build) engine-adapter.js": 20270,
+    "(build) first-screen.js": 17876,
+    "(build) logo.png": 14496,
+    "(build) slogan.png": 11482,
+    "(build) application.js": 8561,
+    "(build) game.js": 2608,
+    "scenes": 1935,
+    "(build) project.config.json": 465,
+    "(build) game.json": 314,
+    "resources/material.mtl": 121
+  },
+  "proposedMainSizeBySourceGroup": {
+    "cocos-js (engine)": 4148465,
+    "(build) subpackages": 1476202,
+    "(build) assets": 978440,
+    "textures/home": 929265,
+    "(engine internal asset)": 870844,
+    "(build) src": 242932,
+    "(build) web-adapter.js": 90040,
+    "(build) engine-adapter.js": 20270,
+    "(build) first-screen.js": 17876,
+    "(build) logo.png": 14496,
+    "(build) slogan.png": 11482,
+    "(build) application.js": 8561,
+    "(build) game.js": 2608,
+    "scenes": 1935,
+    "(build) project.config.json": 465,
+    "(build) game.json": 314,
+    "resources/material.mtl": 121
+  },
+  "proposedMainSizeByOwner": {
+    "BOOT_REQUIRED": 6785316,
+    "UNRESOLVED": 1476202,
+    "SHARED_RUNTIME": 551002,
+    "WORLD_CONSTRUCTION": 1285,
+    "ENDLESS_ONLY": 510
+  },
+  "proposedMainSizeByCategory": {
+    "EngineJS": 4148465,
+    "Texture": 1835457,
+    "Other": 883608,
+    "AssetDataJSON": 652552.7031510639,
+    "ConfigJSON": 592757,
+    "BundleJS": 318581,
+    "ProjectJS": 242932,
+    "PlatformJS": 139963
+  },
+  "trimCandidates": [
+    {
+      "id": "ENGINE_FEATURE_CROPPING_BULLET",
+      "bytes": 495571,
+      "rationale": "cocos/settings/v2/packages/engine.json declares no feature cropping, so the bullet physics module ships. No gameplay script constructs a Collider or RigidBody; the only two matches in the codebase are comments stating the runtime ships none.",
+      "risk": "LOW — remove only after confirming no scene component references a physics type.",
+      "requiresOwnerSignOff": false
+    },
+    {
+      "id": "ENGINE_FEATURE_CROPPING_SPINE",
+      "bytes": 482630,
+      "rationale": "No spine reference exists anywhere in cocos/assets/scripts or the scenes; the module is shipped by default.",
+      "risk": "LOW — remove only after confirming no Skeleton component is serialised in a scene or prefab.",
+      "requiresOwnerSignOff": false
+    },
+    {
+      "id": "SKYBOX_PAYLOAD",
+      "bytes": 870364,
+      "fileCount": 12,
+      "rationale": "Two HDR skyboxes ship as 12 mip-mapped PNGs. The renderer is builtin-unlit with no lighting, and both scenes reference a skybox, so this is a composition decision rather than dead data.",
+      "risk": "MEDIUM — visible background change; needs the owner to confirm the skybox is wanted.",
+      "requiresOwnerSignOff": true
+    }
+  ],
+  "splitProjection": {
+    "basis": "A bundle split only moves bytes out of main; it does not shrink the total release.",
+    "proposedBundleBytes": {
+      "main": 8814316,
+      "world-construction": 4728318,
+      "shared-gameplay": 3281764,
+      "endless": 253722,
+      "world-opening": 12717
+    },
+    "proposedMainBytes": 8814316,
+    "proposedMainKB": 8608,
+    "proposedMainWithLowRiskTrimKB": 7652,
+    "lowRiskTrimBytes": 978201
+  },
+  "topLargestFiles": [
+    {
+      "path": "assets/resources/native/41/41c6d840-10ea-4014-8347-113f26874377@8fac0.bin",
+      "bytes": 4376316,
+      "category": "Mesh",
+      "owner": "WORLD_CONSTRUCTION",
+      "ownerBasis": "exact",
+      "sourcePath": "cocos/assets/resources/art/construction/majadroid-construction-site.fbx"
+    },
+    {
+      "path": "cocos-js/_virtual_cc-bf7083ae.js",
+      "bytes": 3151754,
+      "category": "EngineJS",
+      "owner": "BOOT_REQUIRED",
+      "ownerBasis": "unresolved",
+      "sourcePath": null
+    },
+    {
+      "path": "assets/main/native/9b/9b34ec81-60b6-4407-8b7a-b6b2c821d44a@77daa.png",
+      "bytes": 1236674,
+      "category": "Mesh",
+      "owner": "SHARED_RUNTIME",
+      "ownerBasis": "exact",
+      "sourcePath": "cocos/assets/art/machines/poly-google-bulldozer.glb"
+    },
+    {
+      "path": "assets/internal/import/0b/0b2bbb7a0.json",
+      "bytes": 612125,
+      "category": "AssetDataJSON",
+      "owner": "BOOT_REQUIRED",
+      "ownerBasis": "pack-uniform",
+      "sourcePath": null
+    },
+    {
+      "path": "subpackages/world-city/import/01/0151de9a4.json",
+      "bytes": 565972,
+      "category": "ConfigJSON",
+      "owner": "UNRESOLVED",
+      "ownerBasis": "unresolved",
+      "sourcePath": null
+    },
+    {
+      "path": "assets/main/native/6b/6b875dba-663b-4ae6-9c56-32b5519631b5.png",
+      "bytes": 469422,
+      "category": "Texture",
+      "owner": "BOOT_REQUIRED",
+      "ownerBasis": "exact",
+      "sourcePath": "cocos/assets/textures/home/home_city_park.png"
+    },
+    {
+      "path": "cocos-js/assets/bullet.release.wasm-10f8cbd4.wasm",
+      "bytes": 468807,
+      "category": "EngineJS",
+      "owner": "BOOT_REQUIRED",
+      "ownerBasis": "unresolved",
+      "sourcePath": null
+    },
+    {
+      "path": "cocos-js/assets/spine-59f406dc.wasm",
+      "bytes": 453850,
+      "category": "EngineJS",
+      "owner": "BOOT_REQUIRED",
+      "ownerBasis": "unresolved",
+      "sourcePath": null
+    },
+    {
+      "path": "assets/main/index.js",
+      "bytes": 317374,
+      "category": "BundleJS",
+      "owner": "SHARED_RUNTIME",
+      "ownerBasis": "unresolved",
+      "sourcePath": null
+    },
+    {
+      "path": "assets/resources/import/0d/0db51cb80.json",
+      "bytes": 308177,
+      "category": "AssetDataJSON",
+      "owner": "WORLD_CONSTRUCTION(100%)+BOOT_REQUIRED(0%)",
+      "ownerBasis": "pack-shared-source-weighted",
+      "sourcePath": null
+    },
+    {
+      "path": "assets/main/native/9b/9b34ec81-60b6-4407-8b7a-b6b2c821d44a@17fd0.bin",
+      "bytes": 263460,
+      "category": "Mesh",
+      "owner": "SHARED_RUNTIME",
+      "ownerBasis": "exact",
+      "sourcePath": "cocos/assets/art/machines/poly-google-bulldozer.glb"
+    },
+    {
+      "path": "src/chunks/bundle.js",
+      "bytes": 204182,
+      "category": "ProjectJS",
+      "owner": "SHARED_RUNTIME",
+      "ownerBasis": "unresolved",
+      "sourcePath": null
+    },
+    {
+      "path": "subpackages/world-city/native/66/66fcf59d-9d72-41e5-8a0b-a98576a6b5c3@ecd75.bin",
+      "bytes": 164484,
+      "category": "Other",
+      "owner": "UNRESOLVED",
+      "ownerBasis": "unresolved",
+      "sourcePath": null
+    },
+    {
+      "path": "subpackages/world-city/native/16/16ed6d87-4476-47b9-b40b-e67b149357a9@9638c.bin",
+      "bytes": 147180,
+      "category": "Other",
+      "owner": "UNRESOLVED",
+      "ownerBasis": "unresolved",
+      "sourcePath": null
+    },
+    {
+      "path": "assets/main/native/36/36562b4b-70f1-433f-bd15-4554d9a9b2e8@788fe.bin",
+      "bytes": 144792,
+      "category": "Mesh",
+      "owner": "ENDLESS_ONLY",
+      "ownerBasis": "exact",
+      "sourcePath": "cocos/assets/art/world/residential/building-type-b.glb"
+    },
+    {
+      "path": "subpackages/world-city/native/2c/2cbe6492-d5a7-4351-a7ff-34d4ae9c03af@24146.bin",
+      "bytes": 136560,
+      "category": "Other",
+      "owner": "UNRESOLVED",
+      "ownerBasis": "unresolved",
+      "sourcePath": null
+    },
+    {
+      "path": "subpackages/world-city/native/da/dab10dbb-e8a5-4fc0-ae7f-74adb3863dd9@dd72a.bin",
+      "bytes": 125616,
+      "category": "Other",
+      "owner": "UNRESOLVED",
+      "ownerBasis": "unresolved",
+      "sourcePath": null
+    },
+    {
+      "path": "assets/main/native/d0/d032ac98-05e1-4090-88bb-eb640dcb5fc1@b47c0@74afd.png",
+      "bytes": 117874,
+      "category": "Texture",
+      "owner": "BOOT_REQUIRED",
+      "ownerBasis": "exact",
+      "sourcePath": "../../../../../../programdata/cocos/editors/creator/3.8.3/resources/resources/3d/engine/editor/assets/default_skybox/default_skybox.hdr"
+    },
+    {
+      "path": "assets/main/import/0c/0ce6dbdd0.json",
+      "bytes": 117542,
+      "category": "AssetDataJSON",
+      "owner": "SHARED_RUNTIME(84%)+BOOT_REQUIRED(14%)+ENDLESS_ONLY(2%)",
+      "ownerBasis": "pack-shared-source-weighted",
+      "sourcePath": null
+    },
+    {
+      "path": "assets/main/native/d0/d032ac98-05e1-4090-88bb-eb640dcb5fc1@b47c0@bb97f.png",
+      "bytes": 117218,
+      "category": "Texture",
+      "owner": "BOOT_REQUIRED",
+      "ownerBasis": "exact",
+      "sourcePath": "../../../../../../programdata/cocos/editors/creator/3.8.3/resources/resources/3d/engine/editor/assets/default_skybox/default_skybox.hdr"
+    },
+    {
+      "path": "assets/main/native/d0/d032ac98-05e1-4090-88bb-eb640dcb5fc1@b47c0@e9a6d.png",
+      "bytes": 116066,
+      "category": "Texture",
+      "owner": "BOOT_REQUIRED",
+      "ownerBasis": "exact",
+      "sourcePath": "../../../../../../programdata/cocos/editors/creator/3.8.3/resources/resources/3d/engine/editor/assets/default_skybox/default_skybox.hdr"
+    },
+    {
+      "path": "subpackages/world-city/native/68/684f4ad6-0c3c-4a32-b8fb-a215d09cc6a3@57a6c.bin",
+      "bytes": 109416,
+      "category": "Other",
+      "owner": "UNRESOLVED",
+      "ownerBasis": "unresolved",
+      "sourcePath": null
+    },
+    {
+      "path": "assets/main/native/5f/5fa238ec-3ac9-4eff-8118-4f64ba9fdf4e.png",
+      "bytes": 107134,
+      "category": "Texture",
+      "owner": "BOOT_REQUIRED",
+      "ownerBasis": "exact",
+      "sourcePath": "cocos/assets/textures/home/home_blackhole_hero.png"
+    },
+    {
+      "path": "subpackages/world-city/native/5c/5cef1a38-6af5-4c76-86b0-a08995b23be7@359ab.bin",
+      "bytes": 107064,
+      "category": "Other",
+      "owner": "UNRESOLVED",
+      "ownerBasis": "unresolved",
+      "sourcePath": null
+    },
+    {
+      "path": "assets/main/native/d0/d032ac98-05e1-4090-88bb-eb640dcb5fc1@b47c0@8fd34.png",
+      "bytes": 103826,
+      "category": "Texture",
+      "owner": "BOOT_REQUIRED",
+      "ownerBasis": "exact",
+      "sourcePath": "../../../../../../programdata/cocos/editors/creator/3.8.3/resources/resources/3d/engine/editor/assets/default_skybox/default_skybox.hdr"
+    },
+    {
+      "path": "assets/main/native/d0/d032ac98-05e1-4090-88bb-eb640dcb5fc1@b47c0@40c10.png",
+      "bytes": 99071,
+      "category": "Texture",
+      "owner": "BOOT_REQUIRED",
+      "ownerBasis": "exact",
+      "sourcePath": "../../../../../../programdata/cocos/editors/creator/3.8.3/resources/resources/3d/engine/editor/assets/default_skybox/default_skybox.hdr"
+    },
+    {
+      "path": "assets/main/native/2a/2a5b1e57-0808-4c15-963e-a80564a75a68@679bd.bin",
+      "bytes": 97704,
+      "category": "Mesh",
+      "owner": "ENDLESS_ONLY",
+      "ownerBasis": "exact",
+      "sourcePath": "cocos/assets/art/world/residential/building-type-c.glb"
+    },
+    {
+      "path": "subpackages/world-city/native/6d/6d726725-5eb7-462c-99b8-6e1cf831bbb5@9d802.bin",
+      "bytes": 93288,
+      "category": "Other",
+      "owner": "UNRESOLVED",
+      "ownerBasis": "unresolved",
+      "sourcePath": null
+    },
+    {
+      "path": "web-adapter.js",
+      "bytes": 90040,
+      "category": "PlatformJS",
+      "owner": "BOOT_REQUIRED",
+      "ownerBasis": "unresolved",
+      "sourcePath": null
+    },
+    {
+      "path": "assets/main/native/6b/6be84dff-3e4d-4803-8a87-9b37e723c805@5e001.bin",
+      "bytes": 89820,
+      "category": "Mesh",
+      "owner": "SHARED_RUNTIME",
+      "ownerBasis": "exact",
+      "sourcePath": "cocos/assets/art/vehicles/delivery-van.glb"
+    },
+    {
+      "path": "assets/main/native/7a/7ab5c3e5-c3ce-4096-b924-f220ea19a549.png",
+      "bytes": 87229,
+      "category": "Texture",
+      "owner": "BOOT_REQUIRED",
+      "ownerBasis": "exact",
+      "sourcePath": "cocos/assets/textures/home/mode_arena_card.png"
+    },
+    {
+      "path": "assets/main/native/7e/7ead3af3-1fe0-4acd-9687-9d20e307dfa3.png",
+      "bytes": 77010,
+      "category": "Texture",
+      "owner": "BOOT_REQUIRED",
+      "ownerBasis": "exact",
+      "sourcePath": "cocos/assets/textures/home/mode_background.png"
+    },
+    {
+      "path": "assets/main/native/a8/a8a5e581-a02c-4853-a8ce-7a30f1f4919d@5e001.bin",
+      "bytes": 74448,
+      "category": "Mesh",
+      "owner": "SHARED_RUNTIME",
+      "ownerBasis": "exact",
+      "sourcePath": "cocos/assets/art/vehicles/garbage-truck.glb"
+    },
+    {
+      "path": "assets/main/native/96/96aa37ba-33e7-40f7-826b-b881cd976416@a9ca4.bin",
+      "bytes": 70848,
+      "category": "Mesh",
+      "owner": "SHARED_RUNTIME",
+      "ownerBasis": "exact",
+      "sourcePath": "cocos/assets/art/world/pretty-park/cobble_stones_large.gltf"
+    },
+    {
+      "path": "assets/main/native/84/8431c71e-95cc-41a8-9513-20dcbabd1b48@1ff32.bin",
+      "bytes": 69732,
+      "category": "Mesh",
+      "owner": "SHARED_RUNTIME",
+      "ownerBasis": "exact",
+      "sourcePath": "cocos/assets/art/recyclables/props/toy-duck.glb"
+    },
+    {
+      "path": "assets/main/native/42/428b3b7f-97db-4ee7-b86c-c0e733645fcf.png",
+      "bytes": 69026,
+      "category": "Texture",
+      "owner": "BOOT_REQUIRED",
+      "ownerBasis": "exact",
+      "sourcePath": "cocos/assets/textures/home/mode_endless_card.png"
+    },
+    {
+      "path": "assets/main/native/6f/6f01cf7f-81bf-4a7e-bd5d-0afc19696480@b47c0@bb97f.png",
+      "bytes": 60699,
+      "category": "Texture",
+      "owner": "BOOT_REQUIRED",
+      "ownerBasis": "exact",
+      "sourcePath": "../../../../../../programdata/cocos/editors/creator/3.8.3/resources/resources/3d/engine/editor/assets/default_skybox/default_skybox.png"
+    },
+    {
+      "path": "assets/main/native/b1/b15be442-019a-41a4-a6a2-e9fe114c2820@e3f35.bin",
+      "bytes": 60432,
+      "category": "Mesh",
+      "owner": "SHARED_RUNTIME",
+      "ownerBasis": "exact",
+      "sourcePath": "cocos/assets/art/world/pretty-park/fountain.gltf"
+    },
+    {
+      "path": "assets/main/native/6f/6f01cf7f-81bf-4a7e-bd5d-0afc19696480@b47c0@8fd34.png",
+      "bytes": 57592,
+      "category": "Texture",
+      "owner": "BOOT_REQUIRED",
+      "ownerBasis": "exact",
+      "sourcePath": "../../../../../../programdata/cocos/editors/creator/3.8.3/resources/resources/3d/engine/editor/assets/default_skybox/default_skybox.png"
+    },
+    {
+      "path": "assets/main/native/de/de3d2cfd-35ab-447f-bc16-27947df4293d@5e001.bin",
+      "bytes": 55680,
+      "category": "Mesh",
+      "owner": "SHARED_RUNTIME",
+      "ownerBasis": "exact",
+      "sourcePath": "cocos/assets/art/vehicles/sedan.glb"
+    },
+    {
+      "path": "assets/main/native/6f/6f01cf7f-81bf-4a7e-bd5d-0afc19696480@b47c0@74afd.png",
+      "bytes": 54380,
+      "category": "Texture",
+      "owner": "BOOT_REQUIRED",
+      "ownerBasis": "exact",
+      "sourcePath": "../../../../../../programdata/cocos/editors/creator/3.8.3/resources/resources/3d/engine/editor/assets/default_skybox/default_skybox.png"
+    },
+    {
+      "path": "assets/main/native/6f/6f01cf7f-81bf-4a7e-bd5d-0afc19696480@b47c0@40c10.png",
+      "bytes": 54213,
+      "category": "Texture",
+      "owner": "BOOT_REQUIRED",
+      "ownerBasis": "exact",
+      "sourcePath": "../../../../../../programdata/cocos/editors/creator/3.8.3/resources/resources/3d/engine/editor/assets/default_skybox/default_skybox.png"
+    },
+    {
+      "path": "assets/main/native/fc/fcac3127-ec2d-4566-b563-1432d3a3873b@77b7e.bin",
+      "bytes": 48792,
+      "category": "Mesh",
+      "owner": "SHARED_RUNTIME",
+      "ownerBasis": "exact",
+      "sourcePath": "cocos/assets/art/recyclables/props/trash-bag.glb"
+    },
+    {
+      "path": "assets/main/native/6f/6f01cf7f-81bf-4a7e-bd5d-0afc19696480@b47c0@e9a6d.png",
+      "bytes": 48101,
+      "category": "Texture",
+      "owner": "BOOT_REQUIRED",
+      "ownerBasis": "exact",
+      "sourcePath": "../../../../../../programdata/cocos/editors/creator/3.8.3/resources/resources/3d/engine/editor/assets/default_skybox/default_skybox.png"
+    },
+    {
+      "path": "assets/resources/native/41/41c6d840-10ea-4014-8347-113f26874377@a5f8b.bin",
+      "bytes": 38592,
+      "category": "Mesh",
+      "owner": "WORLD_CONSTRUCTION",
+      "ownerBasis": "exact",
+      "sourcePath": "cocos/assets/resources/art/construction/majadroid-construction-site.fbx"
+    },
+    {
+      "path": "assets/main/native/06/06c81dc8-5cb1-4b39-a30a-22077d5dcfa6@4e913.bin",
+      "bytes": 36984,
+      "category": "Mesh",
+      "owner": "SHARED_RUNTIME",
+      "ownerBasis": "exact",
+      "sourcePath": "cocos/assets/art/recyclables/props/paint-bucket.glb"
+    },
+    {
+      "path": "assets/main/native/d0/d032ac98-05e1-4090-88bb-eb640dcb5fc1@b47c0@7d38f.png",
+      "bytes": 35222,
+      "category": "Texture",
+      "owner": "BOOT_REQUIRED",
+      "ownerBasis": "exact",
+      "sourcePath": "../../../../../../programdata/cocos/editors/creator/3.8.3/resources/resources/3d/engine/editor/assets/default_skybox/default_skybox.hdr"
+    },
+    {
+      "path": "assets/main/native/6b/6be84dff-3e4d-4803-8a87-9b37e723c805@2b01b.bin",
+      "bytes": 34824,
+      "category": "Mesh",
+      "owner": "SHARED_RUNTIME",
+      "ownerBasis": "exact",
+      "sourcePath": "cocos/assets/art/vehicles/delivery-van.glb"
+    },
+    {
+      "path": "assets/main/native/6b/6be84dff-3e4d-4803-8a87-9b37e723c805@4651a.bin",
+      "bytes": 34824,
+      "category": "Mesh",
+      "owner": "SHARED_RUNTIME",
+      "ownerBasis": "exact",
+      "sourcePath": "cocos/assets/art/vehicles/delivery-van.glb"
+    },
+    {
+      "path": "assets/main/native/6b/6be84dff-3e4d-4803-8a87-9b37e723c805@8eae8.bin",
+      "bytes": 34824,
+      "category": "Mesh",
+      "owner": "SHARED_RUNTIME",
+      "ownerBasis": "exact",
+      "sourcePath": "cocos/assets/art/vehicles/delivery-van.glb"
+    }
+  ]
+}
