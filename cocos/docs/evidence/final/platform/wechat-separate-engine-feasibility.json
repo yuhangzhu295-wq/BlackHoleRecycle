@@ -1,0 +1,131 @@
+{
+  "schema": "bhr.wechat-separate-engine-feasibility/1",
+  "phase": "WP4",
+  "step": 3,
+  "title": "separateEngine（微信引擎插件 / 分离引擎）可行性实测",
+  "date": "2026-09-23",
+  "window": "12:48 - 12:56",
+  "baselineCommit": "d3214e4383caedfc23ab73bcc7bd5af1bb67e918",
+  "headAtRun": "d1ca96a440007da52e3463344ae5480769e3032f",
+  "originMainAtRun": "d1ca96a440007da52e3463344ae5480769e3032f",
+  "projectPath": "C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji",
+  "editor": "C:\\ProgramData\\cocos\\editors\\Creator\\3.8.3\\CocosCreator.exe",
+  "authorizedBy": "业主本轮明确批准『批准，先做可行性实测』",
+
+  "why": [
+    "WP4 步骤 2 已证明：把 assets/main 一件不留全搬空，主包下界仍是 5,053.3 KB = 4,096 KB 上限的 1.23 倍。",
+    "因此唯一可能跨过门禁的是引擎级开关，其中 separateEngine 是决定性的一半。",
+    "本步只做可行性实测：确认本机能不能启用它、启用后产物变成什么样。**没有把它写进项目配置。**"
+  ],
+
+  "howItIsEnabled": {
+    "optionKey": "packages.wechatgame.separateEngine（boolean）",
+    "sourceOfTruth": "编辑器内 modules/platform-extensions/extensions/wechatgame/@types/index.d.ts 的 IOptions 明文声明",
+    "trap": "⚠️ 顶层写法 `--build \"...;separateEngine=true;\"` 会被**静默忽略**：解析后 options 里顶层出现 \"separateEngine\":\"true\"（字符串），而平台真正读取的 packages.wechatgame.separateEngine 仍是 false（默认值）。对照：同一个字符串里的 orientation=portrait **确实**被平台接收，因为它属于通用 schema。",
+    "trap2": "`--build \"...;packages.wechatgame.separateEngine=true;\"` 同样被忽略（点号路径不是 CLI 的解析方式）。",
+    "workingForm": "`--build \"configPath=<绝对路径>/wechat-build.json\"`，配置文件里写 {\"platform\":\"wechatgame\",\"debug\":false,\"packages\":{\"wechatgame\":{\"separateEngine\":true,...}}}",
+    "howToConfirmItWasActuallyRead": "构建日志会打印解析后的完整 options。必须核对 packages.wechatgame.separateEngine 是否为 true —— 只看命令行没被报错**不算**启用成功。"
+  },
+
+  "preconditionsFromOfficialDoc": {
+    "pluginI18n": "『仅支持 Cocos Creator 正式版本和非调试模式』；另有独立错误键 separate_engine_only_in_normal_version = 『微信引擎插件无法在非正式版本使用』",
+    "verifiedOnThisMachine": {
+      "editorIsOfficialRelease": "是 —— Dashboard 安装的 3.8.3，非自编译版；实测构建成功且产物出现 plugins 声明，故正式版本限制未触发",
+      "debugFalse": "是 —— 构建选项 debug=false",
+      "builtInEngine": "是 —— 未使用自定义引擎"
+    },
+    "notStackable": "启用后 wasm 打包模式与 wasm 压缩设置失效 ⇒ 与 wasmSubpackage 不叠加（插件 i18n: separate_engine_with_wasm）"
+  },
+
+  "buildCommand": "CocosCreator.exe --project <repo>/cocos --build \"configPath=<repo>/.scratch/wechat-build-sepengine.json\"",
+  "buildVerdict": "SUCCESS（编辑器进程退出码 36 是常态，不是失败；产物完整：273 文件、两个分包齐全）",
+
+  "artifactChange": {
+    "gameJsonGainsPluginDeclaration": {
+      "plugins": {
+        "cocos": {
+          "version": "3.8.3",
+          "provider": "wx0446ba2621dda60a"
+        }
+      }
+    },
+    "note": "该条目**没有 path 字段**，这一点很关键 —— 见 wechatDocEvidence。"
+  },
+
+  "measuredOnRealArtifact": {
+    "baselineWithoutSeparateEngine": {
+      "mainPackageBytes": 10884421,
+      "mainPackageKB": 10629.3,
+      "cocosJsBytes": 4148465,
+      "cocosJsKB": 4051.2,
+      "enginePluginDirBytes": 0,
+      "fileCount": 203
+    },
+    "withSeparateEngine": {
+      "mainPackageBytes": 11130663,
+      "mainPackageKB": 10869.8,
+      "cocosJsBytes": 1801190,
+      "cocosJsKB": 1759.0,
+      "enginePluginDirBytes": 2590866,
+      "enginePluginDirKB": 2530.1,
+      "fileCount": 273
+    },
+    "subpackagesUnchanged": { "world-city": 1476202, "world-construction": 4731501 },
+    "delta": {
+      "cocosJsBytes": -2347275,
+      "cocosJsKB": -2292.2,
+      "mainPackageBytes": 246242,
+      "mainPackageKB": 240.5,
+      "totalReleaseKB": 240.5
+    },
+    "interpretation": "引擎确实被拆出去了：cocos-js 少了 2,292.2 KB。但构建同时**新产生**一个 2,530.1 KB 的 cocos/ 引擎插件目录，其体积大于拆出去的部分，所以按『目录字节相加』口径主包反而**变大** 240.5 KB。"
+  },
+
+  "wechatDocEvidence": {
+    "docUrl": "https://developers.weixin.qq.com/minigame/dev/guide/base-ability/game-engine-plugin.html",
+    "retrieved": "2026-09-23",
+    "quotes": [
+      "引擎插件能力即是游戏引擎(作为插件)单独在微信客户端进行缓存。当小游戏首次启动时，如果本地已经存在同类别游戏引擎插件，可直接复用或可通过增量下载的方式快速下载，从而提升启动速度。",
+      "注意：目前支持整包小游戏使用插件，以及**分包小游戏的主包使用插件**（本项目正是分包小游戏 ⇒ 适用）。",
+      "引擎插件为单独目录，内置plugin.json和signature.json，其中signature.json用于校验，此两个文件不会打包到代码包中。",
+      "对于 plugins 中**无 path 字段**的使用方式，上传/预览时，系统会直接**使用线上**已发布的全量的 provider 的 version 版本的文件作为引用的插件代码。"
+    ],
+    "implication": "本产物的 plugins 条目没有 path 字段 ⇒ 按官方说明，上传/预览时使用的是**线上已发布**的插件代码，本地 cocos/ 目录的代码不作为插件代码被引用。"
+  },
+
+  "theDecidingNumberIsStillUnverified": {
+    "question": "微信开发者工具统计『主包大小』时，是否把本地 cocos/ 引擎插件目录排除在外？",
+    "whyItMatters": "排除 ⇒ separateEngine 真实有效，主包会降到约 8,340 KB；不排除 ⇒ 主包反而变大，该开关对本项目无益。",
+    "status": "NOT_VERIFIED",
+    "whyNotVerified": "官方文档明确写了 plugin.json/signature.json 不进代码包、无 path 时用线上插件，但**没有**直接说明本地插件目录是否计入主包字节。这只能由真实微信开发者工具显示的包体大小来判定。",
+    "howToVerify": "在微信开发者工具打开本项目，读『详情 → 本地代码/代码包大小』或上传预览对话框里的主包字节数。",
+    "trap": "不得用目录字节相加冒充这个数字 —— 那正是本次得到『主包变大』的算法。"
+  },
+
+  "whatThisRunProves": [
+    "本机（正式版 3.8.3 + 内置引擎 + debug=false）**可以**启用 separateEngine，构建成功，产物出现 game.json 的 plugins 声明。",
+    "启用后 cocos-js 从 4,051.2 KB 降到 1,759.0 KB，确实拆出了 2,292.2 KB。",
+    "构建同时新增 2,530.1 KB 的 cocos/ 引擎插件目录；按目录字节相加，主包从 10,629.3 KB 变成 10,869.8 KB（+240.5 KB）。",
+    "CLI 顶层 separateEngine=true 与点号路径 packages.wechatgame.separateEngine=true **都会被静默忽略**；只有 configPath 形式生效。",
+    "官方文档确认该能力适用于『分包小游戏的主包』，且无 path 时引用线上插件。"
+  ],
+
+  "whatThisRunDoesNotProve": [
+    "微信开发者工具口径下的主包字节数（未读，见 theDecidingNumberIsStillUnverified）。",
+    "separateEngine 是否真的让首次下载变小 —— 需要客户端实测 plugin inject success。",
+    "在真实 DevTools 里能否编译通过并跑起来（本轮未打开 DevTools 验证该产物）。",
+    "与 wasmSubpackage 的互斥在实测中的表现。"
+  ],
+
+  "stateChangesToRepo": {
+    "projectConfigChanged": "无 —— 未把 separateEngine 写进任何已入库配置；构建用的是 .scratch/ 下的临时配置文件。",
+    "buildArtifact": "cocos/build/wechatgame 被本次实测覆盖，**已从 .scratch/build-wp4-baseline 还原为基线产物**，以免与已入库的 WP4 证据（主包 10,629.3 KB）不符。",
+    "tempConfig": ".scratch/wechat-build-sepengine.json（未入库）"
+  },
+
+  "nextWork": [
+    "在真实微信开发者工具里读主包字节数，判定 cocos/ 是否计入 —— 这是 separateEngine 值不值得的唯一判据。",
+    "若判定为排除：separateEngine + 搬 shared-gameplay ⇒ 主包约 3,373 KB，同时满足 4,096 KB 上限与 3,482 KB 内部目标。",
+    "若判定为计入：separateEngine 对本项目无益，需要回到 mainBundleCompressionType（G）等其它引擎级开关。"
+  ]
+}
