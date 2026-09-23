@@ -1,0 +1,99 @@
+{
+  "scope": "PHASE WP3b - real WeChat DevTools simulator acceptance",
+  "recordedAt": "2026-09-23T00:33:00+08:00",
+  "status": "PASS_WITH_UNVERIFIED_ITEMS",
+  "environment": {
+    "wechatDevTools": "Stable 2.01.2510290",
+    "cocosCreator": "3.8.3",
+    "project": "cocos/build/wechatgame",
+    "appId": "wx6ac3f5090a6b99c5"
+  },
+  "defect": {
+    "id": "WECHAT_LIB_VERSION_INVALID",
+    "severity": "release-blocker",
+    "field": "project.config.json -> libVersion",
+    "producedBy": "Cocos Creator 3.8.3 template resources/resources/3d/engine/templates/wechatgame/project.config.json:13",
+    "producedValue": "game",
+    "authoritativeSchema": "code/package.nw/js/common/miniprogram-builder/schema/dist/projectconfig.js ($version 1754364153193)",
+    "schemaRule": {
+      "anyOf": [
+        { "enum": ["", "development", "latest", "trial", "widelyUsed"], "type": "string" },
+        { "type": "string", "pattern": "^[0-9]*.[0-9]*.[0-9]*$" }
+      ]
+    },
+    "devToolsLogBefore": [
+      "simulator launch catch error CustomError: project.config.json: libVersion 字段需为 string, string",
+      "appservice.js checkPluginInfo fail with error: Error: project.config.json: libVersion 字段需为 string, string",
+      "simulator game launch error TypeError: Cannot read property 'getPreCompileOptions' of undefined"
+    ],
+    "whyNoGateCaughtIt": "The Cocos build itself does not validate this field, so build:wx stayed PASS while the package could not be launched in the DevTools at all.",
+    "regressionEvidence": "The repo's earlier Three.js build (legacy/threejs-prototype/platform/wx/project.config.json, tracked) uses \"libVersion\": \"3.3.4\", which is valid - so this was introduced by the port to Cocos."
+  },
+  "fix": {
+    "file": "cocos/build-templates/wechatgame/project.config.json",
+    "content": { "libVersion": "widelyUsed" },
+    "mergeSemantics": "deep JSON merge - verified by the existing partial cocos/build-templates/wechatgame/game.json, which keeps the template's networkTimeout in the built output",
+    "builtValue": "widelyUsed",
+    "appIdPreserved": "wx6ac3f5090a6b99c5",
+    "gates": [
+      "scripts/verify_cocos_minigame_builds.mjs -> isValidLibVersion(project.libVersion) asserted on the real build output",
+      "scripts/test_region_bundle_contract.mjs -> WECHAT_TEMPLATE_OVERRIDES_LIB_VERSION, BUILD_ASSERTS_LIB_VERSION"
+    ]
+  },
+  "buildAfterFix": {
+    "command": "npm run build:wx",
+    "status": "PASS",
+    "fileCount": 201,
+    "launchScene": "db://assets/scenes/Game.scene",
+    "bootBundles": ["world-city"],
+    "subpackages": ["world-city"],
+    "libVersion": "widelyUsed",
+    "releaseIdStatus": "configured",
+    "totalReleaseKB": 17107,
+    "mainPackageKB": 15624
+  },
+  "devToolsLogAfterFix": [
+    "compile onFileChange contentChange project.config.json",
+    "request to download vendor https://res.servicewechat.com/weapp/public/commlib/1647.wxapkg 3.17.3",
+    "vendor ... 3.17.3 downloaded"
+  ],
+  "runtimeGate": {
+    "verified": {
+      "coldStart": "wechat-runtime-01-home.png - real Home screen (logo, black-hole machine, 开始吞噬, 商店/皮肤/排行)",
+      "home": "wechat-runtime-01-home.png",
+      "modeSelect": "wechat-runtime-02-mode-select.png - 竞技乱斗 (1v7 已开放) + 无尽探索 (已开放)",
+      "endlessReady": "wechat-runtime-03-endless-ready.png - 历史最高纪录 / 当前机器 / 开始探索",
+      "endlessStart": "wechat-runtime-04-endless-gameplay.png",
+      "worldOpeningLoad": "wechat-runtime-04-endless-gameplay.png - region label 卧室杂物区",
+      "cellStreaming": "wechat-runtime-04-endless-gameplay.png - roads/buildings/trees rendered",
+      "vehicle": "wechat-runtime-04-endless-gameplay.png - vehicle visible on the road",
+      "bootBundleWorldCity": "Game.scene references the world-city meshes and WorldArtLibrary.validateTemplates() throws when commercialColorTexture (= world-city/colormap.png) is missing; the scene renders, so the bundle was resident at boot",
+      "templateFixReproducesCleanBuild": "wechat-runtime-05-home-after-template-fix.png - simulator launched from a freshly rebuilt output with no manual patching"
+    },
+    "notVerified": [
+      "arenaReady",
+      "arenaStart",
+      "exit",
+      "reEnter",
+      "saveResume",
+      "settlement",
+      "bundleRetryPath",
+      "networkPanelByteLevelSubpackageDownload"
+    ],
+    "notVerifiedNote": "This run proves the subpackage split and the boot-time wiring are runnable in the real WeChat runtime. It does NOT prove every RUNTIME GATE item."
+  },
+  "remainingBlocker": {
+    "id": "WECHAT_ACCOUNT_NOT_DEVELOPER",
+    "log": "getexptinfosync?appid=wx6ac3f5090a6b99c5 Error: 登录用户不是该小游戏的开发者, [20260923 00:41:30][wx6ac3f5090a6b99c5]",
+    "errcode": -80002,
+    "impact": "Does not block the simulator (the game ran), but blocks appid-bound cloud capabilities: 体验版, 真机预览, 上传.",
+    "classification": "external configuration, same class as the Douyin testappid blocker"
+  },
+  "artifacts": [
+    "cocos/docs/evidence/final/platform/wechat-runtime-01-home.png",
+    "cocos/docs/evidence/final/platform/wechat-runtime-02-mode-select.png",
+    "cocos/docs/evidence/final/platform/wechat-runtime-03-endless-ready.png",
+    "cocos/docs/evidence/final/platform/wechat-runtime-04-endless-gameplay.png",
+    "cocos/docs/evidence/final/platform/wechat-runtime-05-home-after-template-fix.png"
+  ]
+}

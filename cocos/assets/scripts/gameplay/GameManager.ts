@@ -300,6 +300,14 @@ export class GameManager extends Component {
       this.startEndlessGame();
     });
 
+    // A region whose art never arrived cannot be shown at all, so the player gets
+    // an explicit message and a real Retry instead of an empty world.
+    eventBus.on('UI_REGION_ART_FAILED', ({ message, coord }: { message: string; coord: { x: number; z: number } }) => {
+      platformAdapter.showRetryDialog('区域资源加载失败', message, () => {
+        void this.infiniteWorldManager?.retryRegionArt(coord);
+      });
+    });
+
     eventBus.on('GAME_RETURN_HOME', () => {
       this.returnToHome();
     });

@@ -1,0 +1,32 @@
+{
+  "status": "PASS",
+  "creatorExe": "C:\\ProgramData\\cocos\\editors\\Creator\\3.8.3\\CocosCreator.exe",
+  "requestedPlatform": "web-mobile",
+  "requireReleaseIds": false,
+  "startedAt": "2026-09-22T16:26:37.006Z",
+  "builds": [
+    {
+      "platform": "web-mobile",
+      "outputDirectory": "C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\build\\web-mobile",
+      "fileCount": 197,
+      "requiredFiles": [
+        "index.html",
+        "application.js",
+        "src/settings.json"
+      ],
+      "releaseIdStatus": "not-applicable",
+      "launchScene": "db://assets/scenes/Game.scene",
+      "preloadBundles": [
+        "resources",
+        "main"
+      ],
+      "bootBundles": [
+        "world-city"
+      ],
+      "subpackages": [],
+      "launcherExitCode": 36
+    }
+  ],
+  "failures": [],
+  "finishedAt": "2026-09-22T16:27:34.311Z"
+}

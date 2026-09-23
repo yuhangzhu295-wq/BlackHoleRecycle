@@ -1,0 +1,160 @@
+{
+  "phase": "WP3c",
+  "title": "WeChat RUNTIME GATE driven in the real WeChat DevTools simulator",
+  "date": "2026-09-23",
+  "window": "00:56 - 01:30 GMT+8",
+  "baselineCommit": "d3214e4383caedfc23ab73bcc7bd5af1bb67e918",
+  "headAtRun": "d3214e4",
+  "projectPath": "C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji",
+  "artifactUnderTest": {
+    "path": "cocos/build/wechatgame",
+    "fileCount": 201,
+    "totalReleaseBytes": 17517568,
+    "totalReleaseKiB": 17107,
+    "mainPackageKiB_excludingSubpackagesDir": 15624,
+    "subpackageKiBByName": { "world-city": 1483 },
+    "allSubpackagesKiB": 1483,
+    "officialLimits": { "mainPackageKiB": 4096, "totalPackageKiB": 30720 },
+    "mainPackageVsOfficialLimit": "3.81x over the 4 MiB main-package limit -> PACKAGE GATE still BLOCKED (B1)",
+    "totalPackageVsOfficialLimit": "within limit"
+  },
+  "harness": {
+    "tool": "WeChat DevTools Stable 2.01.2510290",
+    "installDir": "C:\\Program Files (x86)\\Tencent\\微信web开发者工具",
+    "launchedVia": "Windows scheduled task WB_WeChatDevTools -> cmd /c \"<cli.bat> open --project <abs>\"",
+    "whyScheduledTask": "cli.bat open prints a success line but its child process tree is reaped when invoked from a non-interactive shell (gotcha 26); the scheduled task keeps the GUI process alive across tool invocations.",
+    "driver": "OS-level trusted input (SetCursorPos + mouse_event LEFTDOWN/LEFTUP, and stepwise drags) plus full-screen CopyFromScreen captures, scripts under .scratch/wechat-{click,drag,swipe-n,key}-shot.ps1",
+    "canvasRectPhysicalPx": { "x": [1707, 2267], "y": [137, 1333] },
+    "designSpace": "720x1280, fitWidth=false, fitHeight=false (cocos/settings/v2/packages/project.json)",
+    "designToScreenMapping": "x = 1707 + (designX + 360)/720*561 ; y = 137 + (640 - designY)/1280*1196",
+    "screenScaleForReadingFullScreenshots": 2.3704
+  },
+  "runtimeGate": {
+    "verified": {
+      "coldStart": {
+        "evidence": "wechat-runtime-16-cold-restart-home-coins-4.png",
+        "note": "Home rendered after a full process kill + relaunch (11 wechatdevtools processes, main window pid 47784). Not the empty Bootstrap.scene."
+      },
+      "home": { "evidence": "wechat-runtime-16-cold-restart-home-coins-4.png", "observed": "coin counter 4, BtnStart 开始吞噬, 模式 / 皮肤 / 机器" },
+      "modeSelect": { "evidence": "wechat-runtime-02-mode-select.png", "observed": "竞技乱斗 (1v7 本地竞技 · 已开放) and 无尽探索 (最高 0 最高分) only; no locked / coming-soon / VIP entries" },
+      "endlessReady": { "evidence": "wechat-runtime-03-endless-ready.png", "observed": "历史最高纪录 0, 当前机器 LV.1 初级黑洞, CTA 开始探索" },
+      "arenaReady": { "evidence": "wechat-runtime-06-arena-ready.png", "observed": "对局规则 8 人 · 3:00, five-line rule list, CTA 开始乱斗" },
+      "endlessStart": { "evidence": "wechat-runtime-04-endless-gameplay.png", "observed": "world opened, region label 卧室杂物区" },
+      "arenaStart": { "evidence": "wechat-runtime-07-arena-revive.png", "observed": "match ran; revive page 复活继续 with 当前第 8 / 8, i.e. 8 participants spawned" },
+      "worldOpeningLoad": { "evidence": "wechat-runtime-04-endless-gameplay.png", "observed": "region label 卧室杂物区; the world renders, which requires the boot bundle world-city to be resident (WorldArtLibrary.validateTemplates() throws when commercialColorTexture is absent)" },
+      "regionTransition": {
+        "evidence": "wechat-runtime-10-region-transition-warehouse.png",
+        "observed": "region label changed 卧室杂物区 -> 废弃仓库区 after 22 consecutive swipes; coin counter 17 -> 68 across the transition"
+      },
+      "cellStreaming": { "evidence": "wechat-runtime-09-endless-suction-and-car-swallow.png and wechat-runtime-10-region-transition-warehouse.png", "observed": "different buildings / roads / props / trees before and after moving; no holes, no magenta, no frozen cell" },
+      "vehicle": { "evidence": "wechat-runtime-09-endless-suction-and-car-swallow.png", "observed": "road vehicles present; a green vehicle swallowed with a +50 popup (CAR_SWALLOW)" },
+      "progressiveSuction": { "evidence": "wechat-runtime-09-endless-suction-and-car-swallow.png", "observed": "mass 0kg -> 188kg, coins 0 -> 17" },
+      "tierLock": { "evidence": "wechat-runtime-11-tier-lock-needs-lv2.png", "observed": "a locked object renders the 需要 LV.2 gate label" },
+      "pause": { "evidence": "wechat-runtime-12-pause-menu.png", "observed": "游戏暂停 / 当前进度已冻结 / 继续游戏 / 结束并结算 / 返回首页" },
+      "arenaSettlement": { "evidence": "wechat-runtime-08-arena-settlement.png", "observed": "竞技结算 黑洞乱斗 · 已退出, 8-row leaderboard (风暴 620kg 1淘汰, 流光 485kg, 矿石 465kg, 链钥 440kg ... 我 140kg), 最终质量 140kg / 击败对手 0 / 生存时长 0:43, 本局获得金币 +4" },
+      "endlessSettlement": { "evidence": "wechat-runtime-13-endless-settlement.png", "observed": "本局结算 无尽吞噬 · 本局数据: 吞噬物品 8, 最终质量 750 kg, 获得金币 68, 最终等级 LV.1, 探索区域 1" },
+      "exit": { "evidence": "wechat-runtime-14-exit-to-home-coins-persisted.png", "observed": "返回首页 returned to the Home screen; coin counter 4 -> 72 (4 carried in + 68 earned)" },
+      "reEnter": { "evidence": "wechat-runtime-15-reenter-highscore-still-zero.png", "observed": "模式选择 -> 无尽探索 Ready page reached again with no error and no stuck button" },
+      "saveResumeCoins": {
+        "evidence": "wechat-runtime-16-cold-restart-home-coins-4.png then wechat-runtime-14-exit-to-home-coins-persisted.png",
+        "observed": "The arena settlement granted +4 coins; after a full DevTools process kill and relaunch the Home coin counter read 4. A later endless run raised it to 72.",
+        "verdict": "PASS for the coin balance"
+      },
+      "saveResumeHighScore": {
+        "evidence": "wechat-runtime-15-reenter-highscore-still-zero.png",
+        "observed": "After a 750 kg endless run was settled via 结束并结算 and the player returned Home, re-entering 无尽探索 still showed 历史最高纪录 0.",
+        "verdict": "FAIL - see defect WP3C-D2"
+      }
+    },
+    "notVerified": [
+      "bundlePreloadPath",
+      "bundleRetryPath",
+      "networkPanelByteLevelSubpackageDownload"
+    ],
+    "notVerifiedNote": "These three need either fault injection into RegionBundleService or readable page-console output inside the DevTools; neither was obtainable in this environment (see consoleAttribution). They remain covered by static contract tests only (e.g. SERVICE_FAILED_IS_TERMINAL, BOOT_PRELOAD_PRECEDES_RUN), which the mandate explicitly does not accept as runtime evidence."
+  },
+  "defects": {
+    "WP3B-D1_libVersion": {
+      "status": "FIXED and verified in this run",
+      "summary": "Cocos Creator 3.8.3 shipped \"libVersion\": \"game\" in the built project.config.json, which the DevTools schema rejects, so the simulator refused to start while build:wx stayed PASS.",
+      "fix": "cocos/build-templates/wechatgame/project.config.json = {\"libVersion\":\"widelyUsed\"} (build-templates/ deep-merges, so appid/projectname from the builder survive)",
+      "evidence": "wechat-runtime-wp3b-libversion-and-simulator.json"
+    },
+    "WP3C-D2_highScoreNeverWritten": {
+      "status": "OPEN - pre-existing product defect, reported not patched (out of scope for the packaging mandate)",
+      "symptom": "无尽探索's 历史最高纪录 and 模式选择's 最高分 badge are always 0, even after a settled 750 kg run.",
+      "rootCause": "SaveService.updateHighScore(score) (cocos/assets/scripts/data/SaveService.ts:248) has ZERO call sites in the whole project. The endless settlement path GameManager.openEndlessSettlement (cocos/assets/scripts/gameplay/GameManager.ts:639-655) only pushes the numbers into the HUD via hud.updateSettlement(...) and never persists the run result.",
+      "proof": "Grep for updateHighScore across cocos/assets/scripts returns only its own declaration. By contrast setMachineProgression (BlackHoleMachine.ts:91) and setMachineLevel (GameManager.ts:290) do have callers, and addCoins (CompressionSystem.ts:135) is what makes the coin balance persist.",
+      "relatedDeadFields": ["highestRegion", "tasks.*", "tutorialCompleted", "metaUpgrades.*"],
+      "relatedDeadFieldsNote": "These ISaveData fields are declared and defaulted but never assigned anywhere in cocos/assets/scripts.",
+      "whyNoGateCaughtIt": "Every automated gate reads highScore only through ModeReadyPageController/ModeSelectPageController label text, and the contract tests assert the label wiring, not that anything ever writes the value. It is a silent 0.",
+      "proposedMinimalFix": "Call saveService.updateHighScore(<final mass>) in GameManager.openEndlessSettlement. Requires an owner decision on the unit/semantics first: the settlement screen reports 最终质量 750 kg and GameManager:878 already maps bestMass -> data.highScore, but the session snapshot also carries a separate score field, so which one is 'the record' is a product decision.",
+      "ownerDecisionRequired": true
+    }
+  },
+  "consoleAttribution": {
+    "pageConsole": {
+      "context": "mg (mini game)",
+      "onlyEntry": "(env: windows,mg,2.01.2510290, lib: 3.17.3)",
+      "verdict": "No error or warning entry originates from the game. No Missing UUID / Missing Prefab / Missing Material / Missing Script / Bundle Load Failure was observed anywhere in the session.",
+      "baseLibraryActuallyInUse": "3.17.3"
+    },
+    "debuggerTabBadge": {
+      "observed": "2 errors / 3-5 warnings",
+      "attribution": "IDE-level, not page-level.",
+      "matchingLogLines": [
+        "WeappLog/logs/*.log: [ERROR] [ideplugin] get devtools manifest.json catch error Error: not installed",
+        "WeappLog/logs/*.log: [ERROR] [ideplugin] get version manifest.json catch error Error: not installed",
+        "WeappLog/logs/*.log: [ERROR] .../checkaccountcardaccess?... Error: 登录用户不是该小程序的开发者",
+        "WeappLog/logs/*.log: [ERROR] .../getexptinfosync?... Error: 登录用户不是该小程序的开发者",
+        "WeappLog/logs/*.log: [ERROR] .../gettestpublib?... Error: 系统错误，错误码：41002,appid missing",
+        "WeappLog/logs/*.log: [ERROR] markDevLaunchEnv timingData not found",
+        "WeappLog/logs/*.log: [ERROR] start cli server error: [object Object]"
+      ],
+      "caveat": "The bottom dock cannot be enlarged enough to list every console row, and the badge did not reset when the clear button was pressed, so the badge could not be resolved row-by-row. The enumerated IDE log lines are the best available attribution and none of them come from the game. Treat 'page console has no game-originated error' as proven by the single-entry console; treat the badge count as IDE noise."
+    }
+  },
+  "automationSdkAttempt": {
+    "what": "cli.bat auto --project <built wechatgame dir> --auto-port 9420, then miniprogram-automator 0.12.1 via automator.connect({wsEndpoint:'ws://127.0.0.1:9420'})",
+    "result": "The WebSocket connects and the Tool.* namespace answers, but every App.* command never replies.",
+    "protocolTrace": [
+      "SEND {\"method\":\"Tool.getInfo\"} -> RECV {\"result\":{\"version\":\"2.01.2510290\",\"SDKVersion\":\"3.17.3\"}}",
+      "SEND {\"method\":\"App.enableLog\"} -> no response",
+      "SEND {\"method\":\"App.callWxMethod\",\"params\":{\"method\":\"getSystemInfoSync\"}} -> no response",
+      "SEND {\"method\":\"App.getPageStack\"} -> no response",
+      "SEND {\"method\":\"App.getCurrentPage\"} -> no response",
+      "SEND {\"method\":\"App.captureScreenshot\"} -> no response"
+    ],
+    "conclusion": "miniprogram-automator's App.* surface is aimed at mini programs (App/Page). This project builds a mini GAME (game.json), so the App channel never binds. Do not spend time on this route for this project; drive the simulator with OS-level input instead.",
+    "sideEffect": "cli.bat auto re-opens the project, which reloads the mini program (the run under test restarts at Home). Also opens a listener on 0.0.0.0:9420 that should be closed afterwards.",
+    "probeScript": ".scratch/wx-auto-probe.cjs (per-step time-boxed, flushes its report after every step so a hang still leaves evidence)"
+  },
+  "toolingTraps": {
+    "httpProxyInShell": "The shell exports http_proxy/https_proxy=http://127.0.0.1:60719, so a naive `curl http://127.0.0.1:<port>/json/version` is answered by the proxy (502 'upstream connect failed' / 403 / 426) and looks like the IDE rejecting the request. Always pass --noproxy '*' when probing localhost.",
+    "readingCoordinatesFromCrops": "The Read tool rescales images, so pixel positions read off a cropped image are NOT source pixels. Derive click coordinates only from a full-screen capture (displayed 1080x675 for a 2560x1600 capture, factor 2.3704) or from a 1:1 crop that is small enough not to be rescaled.",
+    "cliOpenReapsItsChild": "cli.bat open --project prints a success line but leaves zero processes when run from a non-interactive shell; use a Windows scheduled task.",
+    "wechatDevToolsHasNoCdp": "WeChat DevTools (NW.js) writes no DevToolsActivePort file; %APPDATA%\\小程序开发者工具\\DevToolsActivePort belongs to the Alipay IDE. Raw /json/version probes on the WeChat ports are answered by the proxy, not the IDE.",
+    "sceneValueOverlayTrap": "Clicking near the top-right inside the simulator can open the IDE's 查找场景值 dropdown, which covers the canvas and does not close with Esc, an outside click, 编译, or a dock resize. Only a full DevTools restart cleared it. The game's own pause button is at physical (2206, 290); (2223, 225) is IDE chrome."
+  },
+  "artifacts": [
+    "wechat-runtime-01-home.png",
+    "wechat-runtime-02-mode-select.png",
+    "wechat-runtime-03-endless-ready.png",
+    "wechat-runtime-04-endless-gameplay.png",
+    "wechat-runtime-05-home-after-template-fix.png",
+    "wechat-runtime-06-arena-ready.png",
+    "wechat-runtime-07-arena-revive.png",
+    "wechat-runtime-08-arena-settlement.png",
+    "wechat-runtime-09-endless-suction-and-car-swallow.png",
+    "wechat-runtime-10-region-transition-warehouse.png",
+    "wechat-runtime-11-tier-lock-needs-lv2.png",
+    "wechat-runtime-12-pause-menu.png",
+    "wechat-runtime-13-endless-settlement.png",
+    "wechat-runtime-14-exit-to-home-coins-persisted.png",
+    "wechat-runtime-15-reenter-highscore-still-zero.png",
+    "wechat-runtime-16-cold-restart-home-coins-4.png",
+    "wechat-runtime-17-page-console-banner-only.png"
+  ],
+  "whatThisRunProves": "The world-city subpackage split and the boot-time bundle wiring are runnable end to end in the real WeChat runtime: Home -> Mode Select -> Ready -> gameplay -> region transition -> settlement -> Home -> re-enter, in both modes, with no missing asset, no bundle load failure, and no state loss beyond the high-score defect above.",
+  "whatThisRunDoesNotProve": "It does not prove the PACKAGE GATE (the main package is still 3.81x the 4 MiB limit) and it does not prove the bundle preload / bundle retry code paths, which need fault injection."
+}

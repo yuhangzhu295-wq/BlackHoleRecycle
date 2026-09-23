@@ -3,7 +3,7 @@
  * WorldChunkManager, this owns a real two-dimensional X/Z grid around the
  * player and keeps logical world coordinates separate from rendered ones.
  */
-import { _decorator, Component, director, instantiate, Node, Prefab, resources, Vec3 } from 'cc';
+import { _decorator, Component, director, instantiate, Node, Prefab, Vec3 } from 'cc';
 import { IObjectTemplate, IRegionThemeConfig, OBJECT_TEMPLATES, ObjectTier, REGION_THEMES } from '../data/GameConfig';
 import { ObjectPool } from '../core/ObjectPool';
 import { eventBus } from '../core/EventBus';
@@ -14,11 +14,42 @@ import { DynamicVehicle, RoadRoutePoint, VehicleSuctionInfluence } from './Dynam
 import { WorldArtKind, WorldArtLibrary } from './WorldArtLibrary';
 import { WorldStreamer } from './WorldStreamer';
 import { WorldCellFactory } from './WorldCellFactory';
+import { RegionBundleService } from './RegionBundleService';
 import type { WorldCellCoord as SharedWorldCellCoord, WorldRebase as SharedWorldRebase } from './WorldTypes';
 
 const { ccclass, property } = _decorator;
 const V3 = (x: number, y: number, z: number): Vec3 => new Vec3(x, y, z);
 const ONE = new Vec3(1, 1, 1);
+
+/**
+ * Region-scoped Asset Bundles, keyed by the authored world area that consumes
+ * them. `WorldStreamer` still decides which coordinates are needed; this table
+ * only answers "which bundle must already be resident before that area can be
+ * instantiated".
+ *
+ * `opening` is the authored Golden City cell at (0, 0). Its commercial district
+ * meshes live in the `world-city` bundle, which the engine pulls in before the
+ * launch scene (see build-templates/<platform>/application.js) because no
+ * project script can run earlier than the launch scene deserialize. Every later
+ * region is loaded on demand through RegionBundleService.
+ */
+const REGION_ASSET_BUNDLES: Readonly<Record<string, string>> = {
+  opening: 'world-city',
+};
+
+/**
+ * The authored construction-site landmark lives in its own mini-game
+ * subpackage. It is deliberately *not* a region bundle: no cell waits on it and
+ * the opening cell must not be gated behind a multi-megabyte download, so it is
+ * pulled in parallel with the world and a failure simply leaves it out.
+ */
+const CONSTRUCTION_LANDMARK_BUNDLE = 'world-construction';
+
+/**
+ * Resource key of the FBX's generated Prefab *inside* that bundle. A bundle root
+ * is the path root, so this is relative to the bundle rather than to `assets/`.
+ */
+const CONSTRUCTION_LANDMARK_ASSET = 'majadroid-construction-site/majadroid-construction-site';
 
 export type WorldCellCoord = SharedWorldCellCoord;
 
@@ -1139,6 +1170,10 @@ export class InfiniteWorldManager extends Component {
     vehicleCount: number;
   }> = [];
   private cellLifecycleSequence: number = 0;
+  /** Owns only load state for region-scoped art bundles; never world layout. */
+  private readonly regionBundles = new RegionBundleService();
+  /** Bundles whose failure was already surfaced to the player. */
+  private readonly reportedRegionArtFailures = new Set<string>();
   private readonly streamer = new WorldStreamer({
     cellSize: InfiniteWorldManager.CELL_SIZE,
     activeRadius: InfiniteWorldManager.ACTIVE_RADIUS,
@@ -1541,6 +1576,11 @@ export class InfiniteWorldManager extends Component {
     const theme = this.themeFor(coord);
     const district = getDistrictTemplateForRegion(theme.id, coord.x, coord.z);
 
+    // Region art must be resident before a cell can be instantiated from it.
+    // The required set is recomputed every frame by updateCells(), so returning
+    // here costs one frame and the cell is built as soon as the bundle lands.
+    if (!this.ensureRegionArt(coord)) return;
+
     let cellNode: Node | null = null;
     let isAuthored = false;
 
@@ -1588,6 +1628,83 @@ export class InfiniteWorldManager extends Component {
     if (coord.x === 0 && coord.z === 0) this.installConstructionLandmarkInOpeningCell();
   }
 
+  /**
+   * True when the region art this coordinate needs is already resident. When it
+   * is not, the download is started (and retried) and the cell waits a frame;
+   * `updateCells()` re-derives the required set every frame, so no pending
+   * coordinate bookkeeping is needed here.
+   *
+   * A failed bundle is never re-requested automatically: the player-facing
+   * failure is reported once and the state stays FAILED until an explicit
+   * `retryRegionArt()` resets it. That keeps a broken download from being
+   * retried every frame and from spamming the player with dialogs.
+   */
+  private ensureRegionArt(coord: WorldCellCoord): boolean {
+    const bundleName = this.regionBundleFor(coord);
+    if (!bundleName) return true;
+    if (this.regionBundles.isLoaded(bundleName)) return true;
+    const state = this.regionBundles.getStatus(bundleName).state;
+    if (state === 'FAILED' || state === 'LOADING') return false;
+    this.observeRegionArtAttempt(bundleName, coord, this.regionBundles.ensureLoaded(bundleName, cellKey(coord)));
+    return false;
+  }
+
+  /** The bundle that must be resident before this coordinate's art can exist. */
+  private regionBundleFor(coord: Readonly<WorldCellCoord>): string | null {
+    return coord.x === 0 && coord.z === 0 ? REGION_ASSET_BUNDLES.opening : null;
+  }
+
+  /**
+   * Reports a region-art download failure exactly once per attempt budget, so a
+   * UI layer can show an explicit message plus a Retry action instead of leaving
+   * the player on an empty world.
+   */
+  private observeRegionArtAttempt(bundleName: string, coord: WorldCellCoord, attempt: Promise<void>): void {
+    attempt.then(
+      () => { this.reportedRegionArtFailures.delete(bundleName); },
+      (error: unknown) => {
+        if (this.reportedRegionArtFailures.has(bundleName)) return;
+        this.reportedRegionArtFailures.add(bundleName);
+        // Read the reason off this attempt's own rejection rather than the
+        // service's single "last failure" slot: more than one bundle can be in
+        // flight, and the player must never be told about a different one.
+        const message = error instanceof Error && error.message
+          ? error.message
+          : `区域资源加载失败：${bundleName}`;
+        eventBus.emit('UI_REGION_ART_FAILED', {
+          bundleName,
+          message,
+          coord: { x: coord.x, z: coord.z },
+        });
+      },
+    );
+  }
+
+  /** Region-bundle state for the world area a coordinate belongs to. */
+  public getRegionArtStatus(coord: Readonly<WorldCellCoord>): ReturnType<RegionBundleService['getStatus']> | null {
+    const bundleName = this.regionBundleFor(coord);
+    return bundleName ? this.regionBundles.getStatus(bundleName) : null;
+  }
+
+  /**
+   * The last region-art load failure, so a UI layer can show an explicit message
+   * and a Retry action instead of leaving the player on an empty world.
+   */
+  public getRegionArtFailure(): ReturnType<RegionBundleService['getLastFailure']> {
+    return this.regionBundles.getLastFailure();
+  }
+
+  /** Clears a failed region-art state and starts the download again. */
+  public retryRegionArt(coord: Readonly<WorldCellCoord>): Promise<void> {
+    const bundleName = this.regionBundleFor(coord);
+    if (!bundleName) return Promise.resolve();
+    this.regionBundles.reset(bundleName);
+    this.reportedRegionArtFailures.delete(bundleName);
+    const attempt = this.regionBundles.ensureLoaded(bundleName, cellKey({ x: coord.x, z: coord.z }));
+    this.observeRegionArtAttempt(bundleName, { x: coord.x, z: coord.z }, attempt);
+    return attempt;
+  }
+
   private recordCellLifecycle(action: 'LOAD' | 'UNLOAD', cell: InfiniteWorldCell): void {
     this.cellLifecycle.push({
       sequence: ++this.cellLifecycleSequence,
@@ -1601,27 +1718,47 @@ export class InfiniteWorldManager extends Component {
   }
 
   /**
-   * `majadroid-construction-site.fbx` is imported by Creator into the
-   * resources bundle. Loading its generated Prefab keeps the model's mesh and
-   * material declarations entirely engine-owned; no prefab UUID or model
-   * serialization is authored by code.
+   * `majadroid-construction-site.fbx` -- a 43k-triangle mesh, the single
+   * heaviest asset in the project -- is imported by Creator into a generated
+   * Prefab. Its mesh and material declarations stay engine-owned; no prefab UUID
+   * or model serialization is authored by code.
+   *
+   * The download is owned by RegionBundleService so the retry budget and the
+   * terminal FAILED state are the same ones region art uses. It is deliberately
+   * not part of `ensureRegionArt`: the landmark is optional scenery, and making
+   * the opening cell wait on it would delay the first frame for every player.
+   * A failure therefore degrades to "no landmark", exactly as it did while this
+   * asset still sat in the `resources` bundle.
    */
   private loadConstructionLandmark(): void {
     if (this.constructionSiteLoadState !== 'IDLE') return;
     this.constructionSiteLoadState = 'LOADING';
-    // Creator exposes the FBX's generated prefab as a subasset. The resource
-    // key is read from the Creator-produced resources bundle, rather than
-    // inferred from the source FBX filename.
-    resources.load('art/construction/majadroid-construction-site/majadroid-construction-site', Prefab, (error, prefab) => {
-      if (error || !prefab) {
-        this.constructionSiteLoadState = 'FAILED';
-        console.warn('[InfiniteWorldManager] CC0 construction landmark could not load.', error || 'missing Prefab');
-        return;
-      }
-      this.constructionSitePrefab = prefab;
-      this.constructionSiteLoadState = 'READY';
-      this.installConstructionLandmarkInOpeningCell();
-    });
+    this.regionBundles.ensureLoaded(CONSTRUCTION_LANDMARK_BUNDLE).then(
+      () => {
+        const bundle = this.regionBundles.getBundle(CONSTRUCTION_LANDMARK_BUNDLE);
+        if (!bundle) {
+          this.failConstructionLandmark('bundle reported LOADED but is not resident');
+          return;
+        }
+        // Creator exposes the FBX's generated prefab as a subasset; the key is
+        // read from the built bundle rather than inferred from the filename.
+        bundle.load(CONSTRUCTION_LANDMARK_ASSET, Prefab, (error, prefab) => {
+          if (error || !prefab) {
+            this.failConstructionLandmark(error || 'missing Prefab');
+            return;
+          }
+          this.constructionSitePrefab = prefab;
+          this.constructionSiteLoadState = 'READY';
+          this.installConstructionLandmarkInOpeningCell();
+        });
+      },
+      (error: unknown) => { this.failConstructionLandmark(error || 'bundle unavailable'); },
+    );
+  }
+
+  private failConstructionLandmark(reason: unknown): void {
+    this.constructionSiteLoadState = 'FAILED';
+    console.warn('[InfiniteWorldManager] CC0 construction landmark could not load.', reason);
   }
 
   private installConstructionLandmarkInOpeningCell(): void {

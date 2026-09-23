@@ -1,0 +1,36 @@
+{
+  "status": "PASS",
+  "creatorExe": "C:\\ProgramData\\cocos\\editors\\Creator\\3.8.3\\CocosCreator.exe",
+  "requestedPlatform": "wechatgame",
+  "requireReleaseIds": false,
+  "startedAt": "2026-09-22T16:24:37.784Z",
+  "builds": [
+    {
+      "platform": "wechatgame",
+      "outputDirectory": "C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\build\\wechatgame",
+      "fileCount": 201,
+      "requiredFiles": [
+        "game.json",
+        "project.config.json",
+        "application.js",
+        "src/system.bundle.js"
+      ],
+      "releaseIdStatus": "configured",
+      "launchScene": "db://assets/scenes/Game.scene",
+      "preloadBundles": [
+        "resources",
+        "main"
+      ],
+      "bootBundles": [
+        "world-city"
+      ],
+      "subpackages": [
+        "world-city"
+      ],
+      "appId": "wx6ac3f5090a6b99c5",
+      "launcherExitCode": 36
+    }
+  ],
+  "failures": [],
+  "finishedAt": "2026-09-22T16:25:42.871Z"
+}

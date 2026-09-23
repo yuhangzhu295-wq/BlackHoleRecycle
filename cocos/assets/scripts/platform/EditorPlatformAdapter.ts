@@ -41,6 +41,11 @@ export class EditorPlatformAdapter implements IPlatformAdapter {
   public showToast(title: string, icon: 'success' | 'none' = 'none'): void {
     console.log(`[Toast ${icon}] ${title}`);
   }
+
+  public showRetryDialog(title: string, message: string, onRetry: () => void): void {
+    console.error(`[RetryDialog] ${title}: ${message}`);
+    if (typeof confirm === 'function' && confirm(`${title}\n\n${message}`)) onRetry();
+  }
 }
 
 export class WeChatPlatformAdapter implements IPlatformAdapter {
@@ -84,6 +89,20 @@ export class WeChatPlatformAdapter implements IPlatformAdapter {
       wx.showToast({ title, icon, duration: 1500 });
     }
   }
+
+  public showRetryDialog(title: string, message: string, onRetry: () => void): void {
+    if (typeof wx !== 'undefined' && wx.showModal) {
+      wx.showModal({
+        title,
+        content: message,
+        confirmText: '重试',
+        cancelText: '稍后',
+        success: (result: { confirm?: boolean }) => { if (result?.confirm) onRetry(); },
+      });
+      return;
+    }
+    console.error(`[RetryDialog] ${title}: ${message}`);
+  }
 }
 
 export class DouyinPlatformAdapter implements IPlatformAdapter {
@@ -126,6 +145,20 @@ export class DouyinPlatformAdapter implements IPlatformAdapter {
     if (typeof tt !== 'undefined' && tt.showToast) {
       tt.showToast({ title, icon, duration: 1500 });
     }
+  }
+
+  public showRetryDialog(title: string, message: string, onRetry: () => void): void {
+    if (typeof tt !== 'undefined' && tt.showModal) {
+      tt.showModal({
+        title,
+        content: message,
+        confirmText: '重试',
+        cancelText: '稍后',
+        success: (result: { confirm?: boolean }) => { if (result?.confirm) onRetry(); },
+      });
+      return;
+    }
+    console.error(`[RetryDialog] ${title}: ${message}`);
   }
 }
 
