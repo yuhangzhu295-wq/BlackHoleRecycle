@@ -1,0 +1,206 @@
+{
+  "schema": "bhr.wechat-wp4-boundary-audit/1",
+  "phase": "WP4",
+  "step": 2,
+  "title": "WP4 边界审计：剩余候选组的可搬性判定 + 主包理论下界",
+  "date": "2026-09-23",
+  "window": "03:05 - 04:05",
+  "baselineCommit": "d3214e4383caedfc23ab73bcc7bd5af1bb67e918",
+  "headAtRun": "d3214e4383caedfc23ab73bcc7bd5af1bb67e918",
+  "originMainAtRun": "d3214e4383caedfc23ab73bcc7bd5af1bb67e918",
+  "gitDiffCheck": "clean",
+  "projectPath": "C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji",
+
+  "whyThisStepExists": [
+    "WP4 步骤 1（world-construction）完成后，下一步必须按逻辑组继续。",
+    "但 mandate 的 WP4 列表（world-warehouse / world-supermarket / world-parking / world-city / arena / endless / cosmetics）里，多数名字在真实审计中并不对应任何资源组。",
+    "先证明『到底还有没有东西可搬』，再决定搬什么 —— 否则就会硬造一个空包来满足流程。"
+  ],
+
+  "method": {
+    "question": "一个资源能不能搬进分包？",
+    "naiveAnswerRejected": "按目录路径归组（WP0 的做法）",
+    "whyRejected": "Cocos 里 launch scene 序列化的依赖必须在 loadScene 之前就位，而引擎不会自动加载依赖包。所以『按目录』会把启动必需资源误判成可搬。",
+    "correctMethod": "引用图闭包：从 cocos/assets/scenes/*.scene 出发，沿 uuid 引用做传递闭包，凡被闭包覆盖的资源即『启动可达』。",
+    "tools": [
+      "scripts/audit_wechat_boot_closure.mjs —— uuid→源文件索引 + 从场景出发的传递闭包，按候选组汇总 boot/free 字节",
+      "scripts/audit_wechat_uuid_owner.mjs —— 解码构建产物里 base64 压缩形式的 uuid，定位资源真实归属包"
+    ],
+    "importantTrap": "构建产物把 uuid 存成压缩 base64 形式（41c6d840-… → 41xthAEOpAFINHET8mh0N3），直接 grep 原始 uuid 永远 0 命中。定位归属必须解码。"
+  },
+
+  "bootClosure": {
+    "bootEntries": [
+      "cocos/assets/scenes/Bootstrap.scene",
+      "cocos/assets/scenes/Game.scene"
+    ],
+    "note": "Bootstrap.scene 是官方默认空场景；真实启动场景是 Game.scene（settings.json 的 launchScene 已确认）。",
+    "groups": [
+      { "name": "endless", "totalKB": 242, "bootReferencedKB": 241, "freeKB": 1, "movable": false },
+      { "name": "shared-gameplay/art-machines", "totalKB": 1386, "bootReferencedKB": 1386, "freeKB": 0, "movable": false },
+      { "name": "shared-gameplay/art-machine-modules", "totalKB": 158, "bootReferencedKB": 158, "freeKB": 0, "movable": false },
+      { "name": "shared-gameplay/art-vehicles", "totalKB": 676, "bootReferencedKB": 676, "freeKB": 0, "movable": false },
+      { "name": "shared-gameplay/art-recyclables", "totalKB": 314, "bootReferencedKB": 314, "freeKB": 0, "movable": false },
+      { "name": "shared-gameplay/art-props", "totalKB": 85, "bootReferencedKB": 73, "freeKB": 12, "movable": false },
+      { "name": "shared-gameplay/art-world", "totalKB": 1510, "bootReferencedKB": 1283, "freeKB": 228, "movable": false },
+      { "name": "shared-gameplay/textures-ui", "totalKB": 0, "bootReferencedKB": 0, "freeKB": 0, "movable": false },
+      { "name": "shared-gameplay/prefabs-art", "totalKB": 101, "bootReferencedKB": 0, "freeKB": 101, "movable": true },
+      { "name": "shared-gameplay/prefabs-machine", "totalKB": 177, "bootReferencedKB": 176, "freeKB": 1, "movable": false },
+      { "name": "shared-gameplay/prefabs-objects", "totalKB": 1, "bootReferencedKB": 0, "freeKB": 1, "movable": true },
+      { "name": "world-opening", "totalKB": 193, "bootReferencedKB": 193, "freeKB": 0, "movable": false }
+    ],
+    "interpretation": "『启动可达』不等于『不可搬』。见 bootBundleMechanism —— world-city 本身就是启动可达却已成功分包。"
+  },
+
+  "bootBundleMechanism": {
+    "finding": "被 launch scene 引用的资源仍然可以搬进分包，前提是该分包在 loadScene 之前被加载。",
+    "existingProof": "world-city：Game.scene 的 Golden City 单元格序列化了 7 个商业区 mesh（位于 world-city 包），该包已是分包且运行时门禁通过。",
+    "how": "cocos/build-templates/wechatgame/application.js 的 ensureBootBundles()：在 game.init() 与 game.run() 之间加载 BOOT_BUNDLES，每个包最多重试 4 次，失败弹真实 Retry 弹窗。",
+    "bootBundles": ["world-city"],
+    "notTheMechanism": "settings.assets.preloadBundles（= [resources, main]，无错误出口）；config.json 的 deps 字段（引擎只把它当作路径/重定向映射，不触发加载）。",
+    "consequence": "搬到 BOOT_BUNDLES 的分包会在启动时下载 ⇒ 主包变小，但首次下载总量不变。PACKAGE GATE 量的是主包，所以仍算达标；这一点必须在报告里说清楚，不能声称『首屏下载减少』。"
+  },
+
+  "groupVerdicts": [
+    {
+      "group": "world-warehouse",
+      "verdict": "NO_MOVABLE_CONTENT",
+      "evidence": "warehouse 是 DistrictKind（cocos/assets/scripts/world/DistrictTemplates.ts:65），只定义资源簇中心点与偏好类型；文件头注释明确 'every visual is resolved through the Creator-saved WorldArtLibrary'。审计的 sizeByOwner 里不存在任何 per-district owner。",
+      "action": "不建包"
+    },
+    {
+      "group": "world-supermarket",
+      "verdict": "NO_MOVABLE_CONTENT",
+      "evidence": "同上，DistrictTemplates.ts:48 SUPERMARKET 为数据定义；无独占资源。",
+      "action": "不建包"
+    },
+    {
+      "group": "world-parking",
+      "verdict": "NO_MOVABLE_CONTENT",
+      "evidence": "同上，DistrictTemplates.ts:70 PARKING 为数据定义；无独占资源。",
+      "action": "不建包"
+    },
+    {
+      "group": "world-construction",
+      "verdict": "DONE",
+      "evidence": "WP4 步骤 1，见 wechat-build-wp4-world-construction-subpackage.json",
+      "action": "已完成"
+    },
+    {
+      "group": "world-city",
+      "verdict": "DONE",
+      "evidence": "WP2 pilot，subpackages/world-city = 1,441.6 KB",
+      "action": "已完成"
+    },
+    {
+      "group": "arena",
+      "verdict": "NO_MOVABLE_CONTENT",
+      "evidence": "全资产树内 iname *arena* 只命中 .ts 脚本 + textures/home/mode_arena_card.png（一张首页模式卡）。无 arena 专属美术目录。竞技场复用共享 gameplay 美术与同一个 Game.scene。",
+      "action": "不建包（首页模式卡属于首屏资产，搬走是错的）"
+    },
+    {
+      "group": "endless",
+      "verdict": "MOVABLE_BUT_LOW_VALUE",
+      "proposedKB": 247.8,
+      "composition": [
+        { "file": "cocos/assets/art/world/residential/building-type-b.glb", "bytes": 146720, "bootReachable": true, "referencedBy": ["prefabs/art/WorldArtLibrary.prefab", "prefabs/world/GoldenCityCell.prefab", "scenes/Game.scene"] },
+        { "file": "cocos/assets/art/world/residential/building-type-c.glb", "bytes": 99592, "bootReachable": true, "referencedBy": ["prefabs/art/WorldArtLibrary.prefab", "scenes/Game.scene"] },
+        { "file": "cocos/assets/prefabs/chunks/BedroomChunk.prefab", "bytes": 1028, "bootReachable": false, "referencedBy": [] }
+      ],
+      "finding": "241 KB 的两个 glb 被 launch scene 与开场单元格直接引用（开场单元格就是玩家看到的第一屏）。第 3 个文件 BedroomChunk.prefab 全资产树 0 引用，且 uuid 是手写的 prefab-chunk-0003-8888-9999-aaaabbbbcccc（非 Creator 十六进制格式）⇒ 是死资产，不是可搬资产。",
+      "action": "暂不建包：收益 241 KB 而代价是给首屏增加一个启动分包依赖；应先由业主决定是否值得。死资产的清理属独立决策。"
+    },
+    {
+      "group": "cosmetics",
+      "verdict": "NO_MOVABLE_CONTENT",
+      "evidence": "SKINS_CONFIG（cocos/assets/scripts/data/GameConfig.ts:296-304）5 个皮肤只有 color / rimColor 两个十六进制字符串，没有任何 mesh 或 texture。",
+      "action": "不建包"
+    },
+    {
+      "group": "shared-gameplay",
+      "verdict": "MOVABLE_AND_DECISIVE",
+      "proposedKB": 3204.8,
+      "compositionKB": { "art/machines": 1386, "art/machine-modules": 158, "art/vehicles": 676, "art/recyclables": 314, "art/props": 85, "art/world (residual, city already split)": 650, "prefabs/art+machine+objects": 279 },
+      "constraint": "不能以 cocos/assets/art/world 为包根 —— world-city 已在 art/world/city，会构成嵌套包（平台禁止，且已被 test_region_bundle_contract.mjs 的 NO_NESTED_BUNDLE_ROOTS 拦截）。包根必须另择，例如 cocos/assets/bundles/shared-gameplay/。",
+      "finding": "这是唯一体量足够跨过门禁的资产杠杆，但必须与 separateEngine 一起使用才有意义。",
+      "action": "等业主对 separateEngine 的决定"
+    }
+  ],
+
+  "packageGate": {
+    "measuredFrom": "cocos/build/wechatgame（WP4 步骤 1 之后的真实产物，未重新构建）",
+    "officialMainLimitKB": 4096,
+    "internalMainTargetKB": 3482,
+    "officialTotalLimitKB": 30720,
+    "mainPackageBytes": 10884421,
+    "mainPackageKB": 10629.3,
+    "subpackageBytesByName": { "world-city": 1476202, "world-construction": 4731501 },
+    "subpackageKBByName": { "world-city": 1441.6, "world-construction": 4620.6 },
+    "allSubpackagesBytes": 6207703,
+    "allSubpackagesKB": 6062.2,
+    "totalReleaseBytes": 17092124,
+    "totalReleaseKB": 16691.5,
+    "mainOverOfficialLimitRatio": 2.6,
+    "mainOverInternalTargetRatio": 3.05,
+    "totalUnderOfficialLimit": true
+  },
+
+  "mainPackageCompositionKB": {
+    "assets/main": 5576.0,
+    "cocos-js": 4051.2,
+    "assets/internal": 601.4,
+    "src": 237.3,
+    "assets/resources": 1.1,
+    "rootBootFiles": 162.4,
+    "assetsMainInternal": { "native": 5095.6, "index.js": 310.3, "import": 163.9, "config.json": 6.2 },
+    "crossCheck": "assets/main/native 的 67 个 uuid 前缀桶里，9b = 1,465.0 KB 与审计的 art/machines = 1,465.0 KB 逐字节吻合 ⇒ 桶前缀即 uuid 前两位，可用于按资源组反查。"
+  },
+
+  "theoreticalFloor": {
+    "statement": "把 assets/main 全部搬空后主包的字节数。",
+    "withoutSeparateEngineKB": 5053.3,
+    "withoutSeparateEngineRatio": 1.23,
+    "withoutSeparateEngineInternalRatio": 1.45,
+    "conclusion1": "即使把所有游戏资源都搬进分包，主包下界仍是 5,053.3 KB —— 超过官方 4,096 KB 上限 1.23 倍。搬资源在数学上不可能跨过这个门禁。",
+    "withSeparateEngineKB": 1002.1,
+    "withSeparateEngineBudgetForAssetsMainKB": 3093.9,
+    "assetsMainNowKB": 5576.0,
+    "bytesThatMustLeaveAssetsMainKB": 2482.1,
+    "conclusion2": "若 separateEngine 把 cocos-js 移出主包，主包下界降到 1,002.1 KB，assets/main 可保留 3,093.9 KB ⇒ 需要搬走 2,482.1 KB。shared-gameplay（约 2,900–3,205 KB）一个包就够。",
+    "viablePath": "separateEngine（业主决定，且需 release 编辑器构建才能实测）+ 搬 shared-gameplay ⇒ 主包约 3,373 KB，同时满足 4,096 KB 上限与 3,482 KB 内部目标。"
+  },
+
+  "engineLeverCaveats": [
+    "separateEngine 需要 release 版本编辑器 + 非 debug 构建 ⇒ 本机（开发版编辑器）无法实测，只能引用官方插件说明，标注为 NOT_MEASURED。",
+    "separateEngine 生效后 wasm 打包模式与 wasm 压缩设置失效 ⇒ 与 wasmSubpackage 不叠加。",
+    "引擎裁剪（bullet 484 KB + spine 471 KB）只减 cocos-js：4,051.2 − 955 ≈ 3,096 KB，加上 internal/src/根脚本 1,002.1 KB = 4,098 KB，仍在 4,096 KB 上限之上且无任何游戏资源 ⇒ 单靠裁剪也不可行。",
+    "skybox 850 KB 属画面构成决策，非死数据。"
+  ],
+
+  "whatThisRunProves": [
+    "mandate 的 WP4 列表里，world-warehouse / world-supermarket / world-parking / arena / cosmetics 五组经独立复现，确实没有可搬资源 —— 不是漏查。",
+    "endless 组的 247.8 KB 里 241 KB 是开场首屏必需资源，剩下 1 KB 是死资产。",
+    "主包存在一个 5,053.3 KB 的数学下界，搬资源无法跨过 4,096 KB 门禁。",
+    "存在一条可行路径：separateEngine + shared-gameplay 分包。",
+    "被 launch scene 引用的资源可以分包，机制是 application.js 的 BOOT_BUNDLES（world-city 已实证）。"
+  ],
+
+  "whatThisRunDoesNotProve": [
+    "separateEngine 的实际效果未实测（需 release 编辑器构建），只有官方文档依据。",
+    "shared-gameplay 尚未分包，3,373 KB 是投影而非测量值。",
+    "BOOT_BUNDLES 增加分包后的启动耗时与失败率未测。",
+    "endless 若分包的实际收益未实测。"
+  ],
+
+  "nextWork": [
+    "业主决定 separateEngine（以及 mainBundleCompressionType / 引擎裁剪 / skybox / 剥离调试码）。",
+    "若批准 separateEngine：搬 shared-gameplay（包根另择，避开与 world-city 嵌套），加 BOOT_BUNDLES，走完 Build→Size Audit→Runtime→Regression。",
+    "可选：把 endless 的 241 KB 与死资产 BedroomChunk.prefab 作为独立小项处理。"
+  ],
+
+  "artifacts": {
+    "bootClosureTool": "scripts/audit_wechat_boot_closure.mjs",
+    "uuidOwnershipTool": "scripts/audit_wechat_uuid_owner.mjs",
+    "planOfRecord": "cocos/docs/release/WECHAT_SUBPACKAGE_PLAN.md (§12)"
+  }
+}
