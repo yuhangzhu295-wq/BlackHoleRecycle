@@ -287,7 +287,9 @@ export class GameManager extends Component {
     eventBus.on('MACHINE_EVOLVED', ({ level, machine: evolvedMachine }: { level: number; machine?: BlackHoleMachine }) => {
       if (evolvedMachine && evolvedMachine !== this.machine) return;
       platformAdapter.vibrate('heavy');
-      saveService.setMachineLevel(level);
+      if (this.gameState === 'PLAYING' && this.machine?.persistsProgression) {
+        saveService.setMachineLevel(level);
+      }
       this.updateHUD();
     });
 
@@ -460,6 +462,8 @@ export class GameManager extends Component {
 
   public startEndlessGame(): void {
     this.arenaMatchManager?.stopMatch();
+    this.compressionSystem?.resetSession();
+    this.restoreProgressionFromSave();
     this.clearNetworkArenaReplica();
     this.infiniteWorldManager?.setGameplayObjectsVisible(true);
     this.setV2HomeVisible(false);
@@ -495,6 +499,23 @@ export class GameManager extends Component {
     this.updateHUD();
   }
 
+  /**
+   * Re-enables save writes on the player machine and synchronises its
+   * in-memory mass/level from the live save record.  Called whenever an
+   * arena session (offline or network) ends so Endless and Home always
+   * reflect the account's real saved progression, not arena state.
+   */
+  private restoreProgressionFromSave(): void {
+    if (!this.machine) return;
+    this.machine.persistsProgression = false;
+    try {
+      this.machine.currentMass = Math.max(0, saveService.data.machineMass || 0);
+      this.machine.applyEvolutionLevel(Math.max(1, saveService.data.machineLevel || 1), false);
+    } finally {
+      this.machine.persistsProgression = true;
+    }
+  }
+
   /** Starts the actual offline arena roster: local player plus seven real bots. */
   public startArenaGame(): void {
     if (this.networkArenaProbeRequested && this.networkArenaClient.snapshot) {
@@ -505,6 +526,7 @@ export class GameManager extends Component {
       console.error('[GameManager] Arena cannot start without the Creator-saved machine, world and match manager.');
       return;
     }
+    this.compressionSystem?.resetSession();
     this.clearNetworkArenaReplica();
     this.infiniteWorldManager.setGameplayObjectsVisible(true);
     this.setV2HomeVisible(false);
@@ -521,6 +543,11 @@ export class GameManager extends Component {
     this.infiniteWorldManager.resetSession(Vec3.ZERO);
     this.setPlayerSimulationPaused(false);
     this.hud?.showScreen('Arena');
+    // Disable save-write for the player machine during the entire arena match.
+    // ArenaMatchManager.prepareMachine() sets currentMass=START_MASS and calls
+    // applyEvolutionLevel(), both of which route through persistProgression().
+    // Without this guard every arena start overwrites the saved endless mass/level.
+    this.machine.persistsProgression = false;
     this.arenaMatchManager.startMatch(this.machine, this.infiniteWorldManager, {
       onLocalObjectAbsorbed: (object) => this.onObjectAbsorbed(object),
       onLocalDefeated: (snapshot) => this.openArenaRevive(snapshot),
@@ -549,6 +576,7 @@ export class GameManager extends Component {
     }
 
     this.arenaMatchManager.stopMatch();
+    this.compressionSystem?.resetSession();
     this.clearNetworkArenaReplica();
     this.networkArenaMatchId = initialSnapshot.matchId;
     this.setV2HomeVisible(false);
@@ -564,6 +592,8 @@ export class GameManager extends Component {
     // The pooled Endless/offline arena objects exist only for those local
     // authorities. A connected screen shows replicated objects exclusively.
     this.infiniteWorldManager.setGameplayObjectsVisible(false);
+    // Mirror the offline arena guard: network arena must not persist the player's saved progression.
+    this.machine.persistsProgression = false;
     this.setPlayerSimulationPaused(false);
     this.networkArenaReplica = new NetworkArenaReplica(this.node, this.machine, artLibrary);
     this.networkArenaReplica.sync(initialSnapshot);
@@ -597,6 +627,8 @@ export class GameManager extends Component {
       void this.networkArenaClient.leave();
     }
     this.arenaMatchManager?.stopMatch();
+    this.compressionSystem?.resetSession();
+    this.restoreProgressionFromSave();
     this.networkSettlementShown = false;
     this.networkArenaMatchId = null;
     this.clearNetworkArenaReplica();
@@ -679,6 +711,8 @@ export class GameManager extends Component {
     if (this.playerController) this.playerController.isPaused = true;
     if (this.compressionSystem) this.compressionSystem.isPaused = true;
     if (this.machine) this.machine.isPaused = true;
+    this.compressionSystem?.resetSession();
+    this.restoreProgressionFromSave();
     this.arenaMatchManager?.setMatchPaused(true);
     // ArenaMatchManager produces this ledger once from the finished match.
     // SaveService keeps the account-side idempotency key if delivery repeats
@@ -698,6 +732,8 @@ export class GameManager extends Component {
     this.networkSettlementShown = true;
     this.session.enterSettlement('network-arena-settlement');
     this.setPlayerSimulationPaused(true);
+    this.compressionSystem?.resetSession();
+    this.restoreProgressionFromSave();
     const reward = snapshot.settlementReward;
     if (reward.coins > 0 && this.networkArenaMatchId) {
       saveService.claimArenaSettlement(this.networkArenaMatchId, reward.coins);

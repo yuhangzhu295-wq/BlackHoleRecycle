@@ -42,6 +42,22 @@ export class CompressionSystem extends Component {
   public machine: BlackHoleMachine | null = null;
   public isPaused: boolean = false;
 
+  /** Discard unfinished work when the gameplay authority changes. */
+  public resetSession(): void {
+    if (this.currentBlock) {
+      this.currentBlock.destroy();
+      this.currentBlock = null;
+    }
+    this.bufferMass = 0;
+    this.bufferValue = 0;
+    this.bufferCount = 0;
+    this.pendingMass = 0;
+    this.pendingValue = 0;
+    this.pendingCount = 0;
+    this.timer = 0;
+    this.setState('IDLE');
+  }
+
   private ejectNode: Node | null = null;
   private currentBlock: Node | null = null;
 
@@ -131,8 +147,9 @@ export class CompressionSystem extends Component {
       const earnedCoins = Math.max(1, Math.round(this.bufferValue * (this.machine?.currentConfig.compressionEfficiency || 1.0)));
       this.storedResources += earnedCoins;
       
-      // 金币在此刻真实到账
-      saveService.addCoins(earnedCoins);
+      // Arena collection grows the match-local machine. Account coins are
+      // awarded only by the match settlement ledger, once per match ID.
+      if (this.machine?.persistsProgression) saveService.addCoins(earnedCoins);
       
       // 销毁实体资源块
       if (this.currentBlock) {

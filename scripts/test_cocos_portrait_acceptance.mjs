@@ -1422,6 +1422,8 @@ async function verifySaveResume(cdp, page, canvasRect, homeSnapshot) {
   assert(Number.isFinite(baselineCoins),
     'FAIL_SAVE_RESUME_BASELINE_COINS: save.coins missing before match: ' + JSON.stringify(homeSnapshot.save));
   const baselineSkinId = homeSnapshot.save?.skinId ?? null;
+  const baselineMass = homeSnapshot.save?.machineMass ?? 0;
+  const baselineLevel = homeSnapshot.save?.machineLevel ?? 1;
 
   // Home -> Mode Select
   const start = pointForVisibleNode(canvasRect, homeSnapshot, homeSnapshot.ui?.start, 'SR_HOME_START');
@@ -1455,6 +1457,12 @@ async function verifySaveResume(cdp, page, canvasRect, homeSnapshot) {
     mass: arenaRunning.machine?.mass,
     level: arenaRunning.machine?.level,
   };
+  const persistedAtArenaEntry = await page.evaluate(() =>
+    JSON.parse(globalThis.localStorage.getItem('BLACK_HOLE_RECYCLE_SAVEDATA_COCOS_V1') || 'null'));
+  // A fresh account has no storage record until its first reward is saved.
+  assert(persistedAtArenaEntry === null || (persistedAtArenaEntry.machineMass === baselineMass
+    && persistedAtArenaEntry.machineLevel === baselineLevel),
+    'FAIL_ARENA_ENTRY_PROGRESS_SAVED: ' + JSON.stringify({ baselineMass, baselineLevel, persistedAtArenaEntry }));
 
   // Tap visible Pause button
   const pauseBtn = pointForVisibleNode(canvasRect, arenaRunning, arenaRunning.ui?.arenaHUD?.pauseButton, 'SR_PAUSE');
@@ -1528,6 +1536,9 @@ async function verifySaveResume(cdp, page, canvasRect, homeSnapshot) {
     }
   });
   const persistedBeforeReload = await readPersistedSave();
+  assert(persistedBeforeReload?.machineMass === baselineMass
+    && persistedBeforeReload?.machineLevel === baselineLevel,
+    'FAIL_ARENA_PROGRESS_SAVED: ' + JSON.stringify({ baselineMass, baselineLevel, persistedBeforeReload }));
 
   // Reload the browser
   await page.reload({ waitUntil: 'domcontentloaded' });
@@ -1543,8 +1554,8 @@ async function verifySaveResume(cdp, page, canvasRect, homeSnapshot) {
   assert(afterReload.save?.coins === preReloadCoins,
     'FAIL_SAVE_RESUME_COINS_MISMATCH: ' + JSON.stringify({ preReload: preReloadCoins, afterReload: afterReload.save?.coins }));
 
-  // Assert machine mass persisted
-  assert(afterReload.machine?.mass === preReloadMass,
+  // Arena mass is match-local; only the pre-arena account mass may survive reload.
+  assert(afterReload.machine?.mass === baselineMass,
     'FAIL_SAVE_RESUME_MASS_MISMATCH: ' + JSON.stringify({
       preReload: preReloadMass,
       afterReload: afterReload.machine?.mass,
@@ -1564,8 +1575,8 @@ async function verifySaveResume(cdp, page, canvasRect, homeSnapshot) {
       },
     }));
 
-  // Assert machine level persisted
-  assert(afterReload.machine?.level === preReloadLevel,
+  // The same isolation applies to account machine level.
+  assert(afterReload.machine?.level === baselineLevel,
     'FAIL_SAVE_RESUME_LEVEL_MISMATCH: ' + JSON.stringify({ preReload: preReloadLevel, afterReload: afterReload.machine?.level }));
 
   // Assert skin id persisted
