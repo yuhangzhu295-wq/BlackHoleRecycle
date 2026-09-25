@@ -22,8 +22,11 @@ export const MODE_SELECT_LAYOUT = {
   Header:                 [500,   116,    0,  534],
   ShelfArena:             [600,    52,    0,  418],
   BtnArena:               [610,   278,    0,  245],
-  ArenaAvailability:      [220,    48,  160,  140],
-  ArenaAvailabilityLabel: [220,    48,  160,  140],
+  // ArenaAvailability Sprite badge sits inside BtnArena and already carries the
+  // label as a child node.  Keep it in the layout so it sizes correctly but move
+  // ArenaAvailabilityLabel off-screen so the sibling text clone is invisible.
+  ArenaAvailability:      [220,    48, -140,  140],
+  ArenaAvailabilityLabel: [  2,     2, 2000, 2000],
   ShelfEndless:           [600,    52,    0,   54],
   BtnEndless:             [610,   278,    0, -119],
   EndlessBestCaption:     [240,    44, -170, -214],
@@ -36,6 +39,7 @@ export class ModeSelectPageController extends Component {
 
   onEnable(): void {
     this.applyLayout();
+    this.hideStaleResiduals();
     this.refreshProfile();
     this.bind('BtnBack', () => eventBus.emit('MODE_BACK_REQUESTED'));
     this.bind('BtnArena', () => eventBus.emit('MODE_ARENA_REQUESTED'));
@@ -71,7 +75,7 @@ export class ModeSelectPageController extends Component {
   }
 
   private bind(name: string, handler: () => void): void {
-    const button = this.node.getChildByName(name)?.getComponent(Button);
+    const button = this.findNode(name)?.getComponent(Button);
     if (!button) {
       console.error('[ModeSelectPageController] Missing serialized Button: ' + name);
       return;
@@ -80,8 +84,40 @@ export class ModeSelectPageController extends Component {
     this.bindings.push([button, handler]);
   }
 
-  private refreshProfile(): void {
-    const bestLabel = this.node.getChildByName('EndlessBestValue')?.getComponent(Label);
-    if (bestLabel) bestLabel.string = Math.max(0, Math.floor(saveService.data.highScore)).toLocaleString('en-US');
+ private refreshProfile(): void {
+    const bestLabel = this.findNode('EndlessBestValue')?.getComponent(Label);
+   if (bestLabel) {
+     const score = Math.max(0, Math.floor(saveService.data.highScore));
+     bestLabel.string = score.toLocaleString('en-US');
+   }
+    // Ensure EndlessBestCaption shows the correct static text
+    const captionLabel = this.findNode('EndlessBestCaption')?.getComponent(Label);
+    if (captionLabel) {
+      captionLabel.string = '最高分';
+    }
+ }
+
+  /**
+   * Suppress stale serialized text that the scene carries from an earlier layout
+   * era.  The Header node may still hold a "黑洞回收站" subtitle label from when
+   * the Mode Select prefab reused the Home header.  Clear it without hiding the
+   * header sprite so the "模式选择" title remains visible.
+   */
+  private hideStaleResiduals(): void {
+    // Clear any subtitle label baked into the Header node.
+    const header = this.findNode('Header');
+    if (header) {
+      // The subtitle label is usually the second Label child; clear its string
+      // rather than deactivating the node so the header sprite stays visible.
+      const labels = header.getComponentsInChildren(Label);
+      for (const lbl of labels) {
+        if (lbl.string && lbl.string !== '模式选择') {
+          lbl.string = '';
+        }
+      }
+    }
+    // ArenaAvailabilityLabel is parked off-screen in the layout but ensure its
+    // active state is preserved (it is invisible by position, not by active).
   }
 }
+

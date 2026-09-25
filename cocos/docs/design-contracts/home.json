@@ -10,14 +10,14 @@
   },
   "elements": [
     {
-      "id": "coin_panel",
-      "nodeName": "CoinPanel",
-      "role": "runtime_currency",
-      "referenceBounds": {
-        "x": 26,
-        "y": 44,
-        "width": 220,
-        "height": 64
+     "id": "coin_panel",
+     "nodeName": "CoinPanel",
+     "role": "runtime_currency",
+     "referenceBounds": {
+        "x": 42,
+       "y": 44,
+       "width": 220,
+       "height": 64
       },
       "expectedComponents": [
         "cc.Sprite"
@@ -31,14 +31,14 @@
       }
     },
     {
-      "id": "machine_panel",
-      "nodeName": "MachineStatus",
-      "role": "runtime_progress",
-      "referenceBounds": {
-        "x": 474,
-        "y": 44,
-        "width": 220,
-        "height": 64
+     "id": "machine_panel",
+     "nodeName": "MachineStatus",
+     "role": "runtime_progress",
+     "referenceBounds": {
+        "x": 458,
+       "y": 44,
+       "width": 220,
+       "height": 64
       },
       "expectedComponents": [
         "cc.Sprite"
