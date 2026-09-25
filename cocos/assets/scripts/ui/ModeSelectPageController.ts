@@ -85,15 +85,17 @@ export class ModeSelectPageController extends Component {
   }
 
  private refreshProfile(): void {
-    const bestLabel = this.findNode('EndlessBestValue')?.getComponent(Label);
+   const bestLabel = this.findNode('EndlessBestValue')?.getComponent(Label);
    if (bestLabel) {
      const score = Math.max(0, Math.floor(saveService.data.highScore));
      bestLabel.string = score.toLocaleString('en-US');
    }
-    // Ensure EndlessBestCaption shows the correct static text
+    // EndlessBestCaption: the BtnEndless card artwork already has "最高分" baked into the
+    // sprite pixels, so showing the label on top duplicates the text visually.
+    // Clear the runtime label so only the baked artwork + score value are visible.
     const captionLabel = this.findNode('EndlessBestCaption')?.getComponent(Label);
     if (captionLabel) {
-      captionLabel.string = '最高分';
+      captionLabel.string = '';
     }
  }
 
@@ -116,8 +118,12 @@ export class ModeSelectPageController extends Component {
         }
       }
     }
-    // ArenaAvailabilityLabel is parked off-screen in the layout but ensure its
-    // active state is preserved (it is invisible by position, not by active).
+    // ArenaAvailabilityLabel is parked off-screen by applyLayout() but its serialized
+    // _string must be cleared explicitly so it never flashes on enter.
+    const availLabel = this.findNode('ArenaAvailabilityLabel')?.getComponent(Label);
+    if (availLabel) {
+      availLabel.string = '';
+    }
   }
 }
 
