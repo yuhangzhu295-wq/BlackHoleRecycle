@@ -9,20 +9,25 @@ const { ccclass } = _decorator;
 type HomeLayoutEntry = readonly [width: number, height: number, x: number, y: number];
 
 // Keep runtime geometry aligned with home.json without serializing authoring data.
+// V4 reference (05-home.png) button order left-to-right: 模式 / 机器 / 皮肤
 const HOME_LAYOUT: Readonly<Record<string, HomeLayoutEntry>> = {
   Background: [720, 1280, 0, 0],
-  CoinPanel: [220, 64, -224, 564],
-  MachineStatus: [220, 64, 224, 564],
-  CoinIcon: [54, 54, -302, 560],
-  CoinValue: [140, 50, -190, 560],
-  MachineName: [200, 34, 216, 580],
-  MachineValue: [200, 34, 216, 544],
+  // Move panels 16 px inward from canvas edges to clear device safe-area insets.
+  // Design-space left edge of CoinPanel: 720/2 - (224-16) - 110 = 42 px (was 26 px).
+  CoinPanel: [220, 64, -208, 564],
+  MachineStatus: [220, 64, 208, 564],
+  CoinIcon: [54, 54, -286, 560],
+  CoinValue: [140, 50, -174, 560],
+  MachineName: [200, 34, 200, 580],
+  MachineValue: [200, 34, 200, 544],
   Logo: [600, 180, 0, 370],
   HeroBlackHole: [360, 360, 0, 30],
-  BtnStart: [360, 104, 0, -312],
+  // V4: BtnStart is wider (~490 px in reference); 480 keeps safe margins.
+  BtnStart: [480, 104, 0, -312],
+  // V4 order: 模式 (left) · 机器 (center) · 皮肤 (right)
   BtnMode: [160, 112, -208, -468],
-  BtnSkin: [160, 112, 0, -468],
-  BtnMachine: [160, 112, 208, -468],
+  BtnMachine: [160, 112, 0, -468],
+  BtnSkin: [160, 112, 208, -468],
   BtnSettings: [80, 80, 288, -540],
 };
 
