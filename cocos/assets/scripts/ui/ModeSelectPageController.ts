@@ -120,6 +120,10 @@ export class ModeSelectPageController extends Component {
       availLabel.string = '';
       availLabel.node.active = false;
     }
+    // ArenaAvailability badge sprite: hide it entirely — no availability schedule data
+    // exists to display, so the blue badge strip must not appear on the mode card.
+    const availBadge = this.findNode('ArenaAvailability');
+    if (availBadge) availBadge.active = false;
   }
 }
 

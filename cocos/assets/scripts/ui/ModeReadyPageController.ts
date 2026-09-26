@@ -78,11 +78,12 @@ export class ModeReadyPageController extends Component {
   private hideStaleHeaderTitle(): void {
     const header = this.findNode('Header');
     if (!header) return;
+    // Clear any stale label text, then hide the Header sprite/background entirely.
+    // The Ready page uses HeaderTitle for its per-mode title (无尽探索 / 竞技乱斗),
+    // so the old Header node (which carries baked 黑洞回收站 / 模式选择 artwork)
+    // must not be visible here at all.
     const label = header.getComponent(Label) ?? header.getComponentInChildren(Label);
-    if (label) {
-      label.string = '';
-      return;
-    }
+    if (label) label.string = '';
     header.active = false;
   }
 
