@@ -119,38 +119,17 @@
       }
     },
     {
-     "id": "arena_availability",
-     "nodeName": "ArenaAvailability",
-     "role": "status_badge",
-     "referenceBounds": {
+      "id": "arena_availability",
+      "nodeName": "ArenaAvailability",
+      "role": "status_badge",
+      "referenceBounds": {
         "x": 110,
-       "y": 476,
-       "width": 220,
-       "height": 48
+        "y": 476,
+        "width": 220,
+        "height": 48
       },
       "expectedComponents": [
         "cc.Sprite"
-      ],
-      "required": false,
-      "tolerance": {
-        "x": 10,
-        "y": 10,
-        "width": 12,
-        "height": 12
-      }
-    },
-    {
-     "id": "arena_availability_label",
-     "nodeName": "ArenaAvailabilityLabel",
-     "role": "status_label",
-     "referenceBounds": {
-        "x": 2359,
-        "y": -1361,
-        "width": 2,
-        "height": 2
-      },
-      "expectedComponents": [
-        "cc.Label"
       ],
       "required": false,
       "tolerance": {

@@ -22,11 +22,7 @@ export const MODE_SELECT_LAYOUT = {
   Header:                 [500,   116,    0,  534],
   ShelfArena:             [600,    52,    0,  418],
   BtnArena:               [610,   278,    0,  245],
-  // ArenaAvailability Sprite badge sits inside BtnArena and already carries the
-  // label as a child node.  Keep it in the layout so it sizes correctly but move
-  // ArenaAvailabilityLabel off-screen so the sibling text clone is invisible.
   ArenaAvailability:      [220,    48, -140,  140],
-  ArenaAvailabilityLabel: [  2,     2, 2000, 2000],
   ShelfEndless:           [600,    52,    0,   54],
   BtnEndless:             [610,   278,    0, -119],
   EndlessBestCaption:     [240,    44, -170, -214],
@@ -118,11 +114,11 @@ export class ModeSelectPageController extends Component {
         }
       }
     }
-    // ArenaAvailabilityLabel is parked off-screen by applyLayout() but its serialized
-    // _string must be cleared explicitly so it never flashes on enter.
+    // ArenaAvailabilityLabel: clear text and deactivate node so it is never visible.
     const availLabel = this.findNode('ArenaAvailabilityLabel')?.getComponent(Label);
     if (availLabel) {
       availLabel.string = '';
+      availLabel.node.active = false;
     }
   }
 }
