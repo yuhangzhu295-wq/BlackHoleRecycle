@@ -19,17 +19,10 @@
   "bundles": [
     {
       "name": "main",
-      "bytes": 8814316,
-      "KB": 8608,
+      "bytes": 13545535,
+      "KB": 13228,
       "builtIn": true,
-      "assetBytes": 8814316
-    },
-    {
-      "name": "world-construction",
-      "bytes": 4728318,
-      "KB": 4617,
-      "builtIn": false,
-      "assetBytes": 4728318
+      "assetBytes": 13545535
     },
     {
       "name": "shared-gameplay",
@@ -132,11 +125,11 @@
     }
   ],
   "totals": {
-    "proposedMainBytes": 8814316,
-    "proposedMainKB": 8608,
-    "proposedSubpackageBytes": 8276522,
-    "proposedSubpackageKB": 8083,
-    "proposedTotalKB": 16690
+    "proposedMainBytes": 13545535,
+    "proposedMainKB": 13228,
+    "proposedSubpackageBytes": 3548204,
+    "proposedSubpackageKB": 3465,
+    "proposedTotalKB": 16693
   },
   "verdict": {
     "mainUnderOfficialLimit": false,

@@ -2,7 +2,7 @@
   "schema": "bhr.wechat-package-audit/1",
   "generatedBy": "scripts/audit_wechat_package.mjs",
   "releaseDirectory": "cocos/build/wechatgame",
-  "fileCount": 201,
+  "fileCount": 203,
   "uuidIndexSources": [
     {
       "file": "cocos/library/.assets-info1.0.0.json",
@@ -17,81 +17,80 @@
   "subpackageDeclaration": {
     "declared": true,
     "roots": [
+      "subpackages/world-construction",
       "subpackages/world-city"
     ],
     "note": "game.json declares subpackages; the main package excludes those roots."
   },
   "totals": {
-    "totalReleaseBytes": 17090838,
-    "mainPackageBytes": 15614636,
+    "totalReleaseBytes": 17093739,
+    "mainPackageBytes": 10886036,
     "subpackageBytesByName": {
+      "subpackages/world-construction": 4731501,
       "subpackages/world-city": 1476202
     },
-    "allSubpackagesBytes": 1476202,
-    "totalReleaseKB": 16690,
-    "mainPackageKB": 15249,
-    "allSubpackagesKB": 1442
+    "allSubpackagesBytes": 6207703,
+    "totalReleaseKB": 16693,
+    "mainPackageKB": 10631,
+    "allSubpackagesKB": 6062
   },
   "assetResolution": {
-    "assetFileCount": 153,
-    "resolvedFileCount": 147,
-    "resolvedBytes": 10727552,
-    "unresolvedBytes": 329575,
-    "resolvedPercentOfAssetBytes": 97.02
+    "assetFileCount": 145,
+    "resolvedFileCount": 139,
+    "resolvedBytes": 5997943,
+    "unresolvedBytes": 330419,
+    "resolvedPercentOfAssetBytes": 94.78
   },
   "sizeByCategory": {
-    "Mesh": 7776167,
+    "Other": 5298516,
     "EngineJS": 4148465,
-    "Texture": 1899867,
-    "AssetDataJSON": 1088498,
-    "Other": 883608,
-    "ConfigJSON": 592757,
-    "BundleJS": 318581,
-    "ProjectJS": 242932,
-    "PlatformJS": 139963
+    "Mesh": 3355010,
+    "Texture": 1906116,
+    "ConfigJSON": 901463,
+    "AssetDataJSON": 780046,
+    "BundleJS": 320554,
+    "ProjectJS": 242974,
+    "PlatformJS": 140595
   },
   "sizeByBundle": {
-    "null": 6033711,
-    "main": 5709449,
-    "resources": 4731829,
-    "internal": 615849
+    "null": 10765377,
+    "main": 5711422,
+    "internal": 615849,
+    "resources": 1091
   },
   "sizeByOwner": {
-    "BOOT_REQUIRED": 6798640,
-    "WORLD_CONSTRUCTION": 4728318,
-    "SHARED_RUNTIME": 3821238,
-    "UNRESOLVED": 1476202,
+    "BOOT_REQUIRED": 6796385,
+    "UNRESOLVED": 6207703,
+    "SHARED_RUNTIME": 3823211,
     "ENDLESS_ONLY": 253722,
     "WORLD_OPENING": 12717
   },
   "mainPackageSizeByOwner": {
-    "BOOT_REQUIRED": 6798640,
-    "WORLD_CONSTRUCTION": 4728318,
-    "SHARED_RUNTIME": 3821238,
+    "BOOT_REQUIRED": 6796385,
+    "SHARED_RUNTIME": 3823211,
     "ENDLESS_ONLY": 253722,
     "WORLD_OPENING": 12717
   },
   "mainPackageSizeByCategory": {
-    "Mesh": 7776167,
     "EngineJS": 4148465,
+    "Mesh": 3355010,
     "Texture": 1888865,
-    "AssetDataJSON": 1088498,
-    "BundleJS": 318581,
-    "ProjectJS": 242932,
+    "AssetDataJSON": 780046,
+    "BundleJS": 320554,
+    "ProjectJS": 242974,
     "PlatformJS": 139355,
-    "ConfigJSON": 11773
+    "ConfigJSON": 10767
   },
   "mainPackageSizeBySourceGroup": {
-    "resources/art": 4421301,
     "cocos-js (engine)": 4148465,
     "art/machines": 1500206,
-    "(build) assets": 1413809,
+    "(build) assets": 1106345,
     "textures/home": 929265,
     "(engine internal asset)": 870844,
     "art/vehicles": 668268,
     "art/world": 666757,
     "art/recyclables": 365340,
-    "(build) src": 242932,
+    "(build) src": 242974,
     "art/machine-modules": 151433,
     "(build) web-adapter.js": 90040,
     "art/props": 67848,
@@ -102,17 +101,17 @@
     "(build) application.js": 8561,
     "(build) game.js": 2608,
     "scenes": 1935,
-    "(build) project.config.json": 465,
-    "(build) game.json": 314,
+    "(build) project.config.json": 471,
+    "(build) game.json": 431,
     "resources/material.mtl": 121
   },
   "proposedMainSizeBySourceGroup": {
+    "(build) subpackages": 6207703,
     "cocos-js (engine)": 4148465,
-    "(build) subpackages": 1476202,
-    "(build) assets": 978440,
+    "(build) assets": 977993,
     "textures/home": 929265,
     "(engine internal asset)": 870844,
-    "(build) src": 242932,
+    "(build) src": 242974,
     "(build) web-adapter.js": 90040,
     "(build) engine-adapter.js": 20270,
     "(build) first-screen.js": 17876,
@@ -121,26 +120,25 @@
     "(build) application.js": 8561,
     "(build) game.js": 2608,
     "scenes": 1935,
-    "(build) project.config.json": 465,
-    "(build) game.json": 314,
+    "(build) project.config.json": 471,
+    "(build) game.json": 431,
     "resources/material.mtl": 121
   },
   "proposedMainSizeByOwner": {
-    "BOOT_REQUIRED": 6785316,
-    "UNRESOLVED": 1476202,
-    "SHARED_RUNTIME": 551002,
-    "WORLD_CONSTRUCTION": 1285,
+    "BOOT_REQUIRED": 6784346,
+    "UNRESOLVED": 6207703,
+    "SHARED_RUNTIME": 552975,
     "ENDLESS_ONLY": 510
   },
   "proposedMainSizeByCategory": {
+    "Other": 5298516,
     "EngineJS": 4148465,
-    "Texture": 1835457,
-    "Other": 883608,
-    "AssetDataJSON": 652552.7031510639,
-    "ConfigJSON": 592757,
-    "BundleJS": 318581,
-    "ProjectJS": 242932,
-    "PlatformJS": 139963
+    "Texture": 1841706,
+    "ConfigJSON": 901463,
+    "AssetDataJSON": 651262.0538061396,
+    "BundleJS": 320554,
+    "ProjectJS": 242974,
+    "PlatformJS": 140595
   },
   "trimCandidates": [
     {
@@ -169,25 +167,24 @@
   "splitProjection": {
     "basis": "A bundle split only moves bytes out of main; it does not shrink the total release.",
     "proposedBundleBytes": {
-      "main": 8814316,
-      "world-construction": 4728318,
+      "main": 13545535,
       "shared-gameplay": 3281764,
       "endless": 253722,
       "world-opening": 12717
     },
-    "proposedMainBytes": 8814316,
-    "proposedMainKB": 8608,
-    "proposedMainWithLowRiskTrimKB": 7652,
+    "proposedMainBytes": 13545535,
+    "proposedMainKB": 13228,
+    "proposedMainWithLowRiskTrimKB": 12273,
     "lowRiskTrimBytes": 978201
   },
   "topLargestFiles": [
     {
-      "path": "assets/resources/native/41/41c6d840-10ea-4014-8347-113f26874377@8fac0.bin",
+      "path": "subpackages/world-construction/native/41/41c6d840-10ea-4014-8347-113f26874377@8fac0.bin",
       "bytes": 4376316,
-      "category": "Mesh",
-      "owner": "WORLD_CONSTRUCTION",
-      "ownerBasis": "exact",
-      "sourcePath": "cocos/assets/resources/art/construction/majadroid-construction-site.fbx"
+      "category": "Other",
+      "owner": "UNRESOLVED",
+      "ownerBasis": "unresolved",
+      "sourcePath": null
     },
     {
       "path": "cocos-js/_virtual_cc-bf7083ae.js",
@@ -247,18 +244,18 @@
     },
     {
       "path": "assets/main/index.js",
-      "bytes": 317374,
+      "bytes": 319347,
       "category": "BundleJS",
       "owner": "SHARED_RUNTIME",
       "ownerBasis": "unresolved",
       "sourcePath": null
     },
     {
-      "path": "assets/resources/import/0d/0db51cb80.json",
+      "path": "subpackages/world-construction/import/0d/0db51cb80.json",
       "bytes": 308177,
-      "category": "AssetDataJSON",
-      "owner": "WORLD_CONSTRUCTION(100%)+BOOT_REQUIRED(0%)",
-      "ownerBasis": "pack-shared-source-weighted",
+      "category": "ConfigJSON",
+      "owner": "UNRESOLVED",
+      "ownerBasis": "unresolved",
       "sourcePath": null
     },
     {
@@ -534,12 +531,12 @@
       "sourcePath": "../../../../../../programdata/cocos/editors/creator/3.8.3/resources/resources/3d/engine/editor/assets/default_skybox/default_skybox.png"
     },
     {
-      "path": "assets/resources/native/41/41c6d840-10ea-4014-8347-113f26874377@a5f8b.bin",
+      "path": "subpackages/world-construction/native/41/41c6d840-10ea-4014-8347-113f26874377@a5f8b.bin",
       "bytes": 38592,
-      "category": "Mesh",
-      "owner": "WORLD_CONSTRUCTION",
-      "ownerBasis": "exact",
-      "sourcePath": "cocos/assets/resources/art/construction/majadroid-construction-site.fbx"
+      "category": "Other",
+      "owner": "UNRESOLVED",
+      "ownerBasis": "unresolved",
+      "sourcePath": null
     },
     {
       "path": "assets/main/native/06/06c81dc8-5cb1-4b39-a30a-22077d5dcfa6@4e913.bin",
