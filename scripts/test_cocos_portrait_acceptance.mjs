@@ -1749,6 +1749,70 @@ function loadGoldenCityContract() {
 }
 
 /**
+ * Static-architecture occlusion measurement.
+ *
+ * `cameraComposition` bounds the player and the aspirational target from the
+ * camera alone, so it cannot see a building standing between the lens and the
+ * subject. `gameplay-composition-contract.md` §6 recorded that gap and
+ * deliberately left the instrument to a later round rather than invalidate the
+ * then-validated build; this is that instrument.
+ *
+ * Only static architecture can occlude here. GROUND is flat terrain the subject
+ * stands on, and VEHICLE / COMPETITOR are moving gameplay objects rather than
+ * architecture, so neither is an occluder. A solid is counted only when it is
+ * genuinely *in front of* the subject along the camera forward axis: screen-rect
+ * overlap on its own would flag everything the subject is standing in front of.
+ */
+function measureStaticOcclusion(composition) {
+  const OCCLUDER_CATEGORIES = new Set(['BUILDING', 'TREE', 'POI']);
+  const camera = composition?.camera;
+  const entries = Array.isArray(composition?.entries) ? composition.entries : [];
+  if (!camera?.position || !camera?.forward || entries.length === 0) return null;
+
+  const depthAlong = (point) => (point.x - camera.position.x) * camera.forward.x
+    + (point.y - camera.position.y) * camera.forward.y
+    + (point.z - camera.position.z) * camera.forward.z;
+  const centreOf = (bounds) => ({
+    x: (bounds.min.x + bounds.max.x) / 2,
+    y: (bounds.min.y + bounds.max.y) / 2,
+    z: (bounds.min.z + bounds.max.z) / 2,
+  });
+  const overlapArea = (a, b) => {
+    const width = Math.min(a.right, b.right) - Math.max(a.left, b.left);
+    const height = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+    return width > 0 && height > 0 ? width * height : 0;
+  };
+  const rectArea = (rect) => Math.max(0, rect.right - rect.left) * Math.max(0, rect.bottom - rect.top);
+  const occluders = entries.filter((entry) => OCCLUDER_CATEGORIES.has(entry.category)
+    && entry.visible === true && entry.screenBounds && entry.worldBounds);
+
+  const blockersOf = (subject) => {
+    if (!subject?.screenBounds || !subject?.worldBounds) return [];
+    const subjectDepth = depthAlong(centreOf(subject.worldBounds));
+    const subjectArea = rectArea(subject.screenBounds);
+    return occluders
+      .filter((occluder) => depthAlong(centreOf(occluder.worldBounds)) < subjectDepth)
+      .map((occluder) => ({ occluder, covered: overlapArea(subject.screenBounds, occluder.screenBounds) }))
+      .filter((candidate) => candidate.covered > 0)
+      .map((candidate) => ({
+        name: candidate.occluder.name,
+        category: candidate.occluder.category,
+        coveredPercent: subjectArea > 0 ? Math.round(10000 * candidate.covered / subjectArea) / 100 : null,
+      }));
+  };
+
+  return {
+    method: 'static architecture in front of the subject along the camera forward axis '
+      + '(BUILDING/TREE/POI only; GROUND and moving VEHICLE/COMPETITOR excluded)',
+    playerBlockers: blockersOf(composition.player),
+    collectibleBlockers: entries
+      .filter((entry) => entry.category === 'COLLECTIBLE' && entry.visible === true)
+      .map((entry) => ({ name: entry.name, blockers: blockersOf(entry) }))
+      .filter((entry) => entry.blockers.length > 0),
+  };
+}
+
+/**
  * Score the measured composition against the declared contract. Every check
  * reports its actual and required value, so a failure names the real deficit
  * instead of a generic gate failure.
@@ -1900,6 +1964,42 @@ function evaluateGoldenCityGate(contract, composition, devicePixelRatio) {
     pass: metrics.playerVisible,
     deficit: metrics.playerVisible ? null : 'player is not visible in the gameplay camera view',
   });
+  // Being inside the frustum is not the same as being readable: a building
+  // between the lens and the subject projects it onto the frame and hides it.
+  // `cameraComposition` cannot express that, so both the player and the
+  // collectibles are measured against the static architecture separately.
+  const occlusion = measureStaticOcclusion(composition);
+  const playerBlockers = occlusion?.playerBlockers ?? null;
+  checks.push({
+    id: 'PLAYER_NOT_OCCLUDED_BY_STATIC_SOLID',
+    label: 'no static architecture stands between the camera and the player',
+    relation: '=',
+    actual: playerBlockers === null ? null : playerBlockers.length,
+    required: 0,
+    pass: Array.isArray(playerBlockers) && playerBlockers.length === 0,
+    deficit: playerBlockers === null
+      ? 'occlusion measurement unavailable: composition carries no camera or entries'
+      : playerBlockers.length === 0
+        ? null
+        : `${playerBlockers.length} solid(s) in front of the player: `
+          + playerBlockers.map((blocker) => `${blocker.category} ${blocker.name} covers ${blocker.coveredPercent}%`).join(' | '),
+  });
+  const collectibleBlockers = occlusion?.collectibleBlockers ?? null;
+  checks.push({
+    id: 'COLLECTIBLE_NOT_OCCLUDED_BY_STATIC_SOLID',
+    label: 'no static architecture stands between the camera and a visible collectible',
+    relation: '=',
+    actual: collectibleBlockers === null ? null : collectibleBlockers.length,
+    required: 0,
+    pass: Array.isArray(collectibleBlockers) && collectibleBlockers.length === 0,
+    deficit: collectibleBlockers === null
+      ? 'occlusion measurement unavailable: composition carries no camera or entries'
+      : collectibleBlockers.length === 0
+        ? null
+        : `${collectibleBlockers.length} collectible(s) behind a solid: `
+          + collectibleBlockers.map((entry) => `${entry.name} <- `
+            + entry.blockers.map((blocker) => `${blocker.category} ${blocker.name}`).join(', ')).join(' | '),
+  });
   checks.push({
     id: 'TEST_DEVICE_PIXEL_RATIO',
     label: 'acceptance device pixel ratio is explicitly pinned',
@@ -1977,6 +2077,7 @@ function evaluateGoldenCityGate(contract, composition, devicePixelRatio) {
   const deficits = checks.filter((check) => !check.pass).map((check) => check.deficit);
   return {
     metrics,
+    occlusion,
     checks,
     deficits,
     passed: deficits.length === 0,

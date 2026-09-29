@@ -298,6 +298,24 @@ composition block is `NOT_A_GATE`, the RC gate list does not include it, and
 adding a field would invalidate the already-validated build. Recorded here so the
 next round can pick it up without re-deriving the analysis.
 
+**Picked up 2026-09-29 — now a gate.** `evaluateGoldenCityGate` in
+`scripts/test_cocos_portrait_acceptance.mjs` adds
+`PLAYER_NOT_OCCLUDED_BY_STATIC_SOLID` and
+`COLLECTIBLE_NOT_OCCLUDED_BY_STATIC_SOLID`, and the gate returns the full
+measurement as `occlusion`. It did not need `QABridge.describe()` after all: the
+composition entries already carry both `worldBounds` and `screenBounds`, so the
+instrument reuses them.
+
+Method: a solid occludes only when its screen rect overlaps the subject's **and**
+its centre is nearer the camera along `forward` — screen overlap alone would flag
+everything the subject stands in front of. Only static architecture counts
+(`BUILDING` / `TREE` / `POI`): `GROUND` is the terrain the subject stands on, and
+`VEHICLE` / `COMPETITOR` move, so neither can be an architecture occluder.
+
+Measured on the opening cell 2026-09-29: 30 static occluders considered, **0**
+player blockers, **0** collectible blockers. The earlier hand measurement agrees —
+the only in-front overlap on the player was a `GROUND` tile.
+
 ## 7. Tutorial Exception — Intentional, Do Not "Fix"
 
 `TutorialStarter` local spacing is ≈ 1.48 m for T1/T2.
