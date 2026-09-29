@@ -422,7 +422,19 @@ authored ring vehicles and renamed the road entries; the earlier check passed
 only because `ce30274` had two vehicles driving along the south arm against a
 single `FourWayRoad` entry whose bounds were that arm.
 
-### `playerWidthRatio` is not a stable measurement
+### `playerWidthRatio` is not a stable measurement — RESOLVED 2026-09-22
+
+> **Status 2026-09-29: closed.** The decision this section was waiting on was
+> taken on 2026-09-22. `BlackHoleMachine.ts` now excludes the frame-animated
+> decorative subtree from the gated silhouette and scales the `SINGULARITY`
+> core `1.85 → 1.92` (visual X/Z only). Re-verified on
+> `dev/product-finalization-20260929` with
+> `npm run acceptance:v2 -- --scope=golden-city`: **PASS**, `failures: []`,
+> `consoleErrors: []`, gated `playerWidthRatio: 0.22578` inside `[0.22, 0.30]`,
+> with the old decoration-merged value retained as diagnostic
+> `playerWidthRatioRaw: 0.31473`. The `[1.856592, 1.863226]` window below is
+> superseded — it was derived from the merged metric. Everything after this note
+> is the pre-fix diagnosis, kept for the reasoning.
 
 `PLAYER_WIDTH_RATIO_MIN` is the one golden-city check that cannot be trusted
 yet, and the cause is not the camera. **Four** runs of the same build produced

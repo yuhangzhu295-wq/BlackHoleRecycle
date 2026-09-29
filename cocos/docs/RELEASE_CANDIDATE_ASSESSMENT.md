@@ -29,18 +29,29 @@ start/end `censusDigest` and 187 files, so each describes the bundle it was run 
 
 ## 2. Gate 2 — `RELEASE_CANDIDATE` — **NOT DECLARABLE**
 
-### Blocker 1 — WeChat main package is 4.2× over the platform limit (hard)
+### Blocker 1 — WeChat main package is over the platform limit (hard)
 
-| Quantity | Value |
+> **Re-measured 2026-09-29** on `dev/product-finalization-20260929`. The
+> subpackage split landed after this assessment was written (`ba81a15`, `4df9607`),
+> so the table below no longer describes the build. Current state: `game.json`
+> **does** declare `subpackages` (`world-construction`, `world-city`); the main
+> package is **10.38 MB** and the total is **16.30 MB** (subpackages 4.51 MB +
+> 1.41 MB). Still over the 4 MB main-package limit, so the blocker stands, but it
+> is no longer 4.2× and the remaining bulk is the engine bundle
+> (`cocos-js/_virtual_cc-*.js` 3.01 MB), `assets/main` 5.45 MB of textures, and
+> `assets/internal` 0.59 MB — not `assets/resources`, which is now empty in the
+> main package.
+
+| Quantity | Value (2026-09-22, superseded) |
 | :--- | :--- |
 | `cocos/build/wechatgame/` total | **17,063 KB** |
 | WeChat main-package limit | 4,096 KB |
 | `game.json` keys | `deviceOrientation`, `networkTimeout` — **only** |
 | `subpackages` field present | **no** |
 
-With no `subpackages` declared, the whole 17,063 KB counts against the main package.
+With no `subpackages` declared, the whole 17,063 KB counted against the main package.
 Byte breakdown from the earlier audit: `assets/` 12,558 KB (main 6,760 + resources 5,193
-+ internal 605), `cocos-js/` 4,079 KB, `src/` 253 KB. `assets/resources` (5,193 KB) is the
++ internal 605), `cocos-js/` 4,079 KB, `src/` 253 KB. `assets/resources` (5,193 KB) was the
 natural subpackage candidate.
 
 This is **not** a code defect and cannot be fixed by editing source alone — it needs a

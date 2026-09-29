@@ -2,9 +2,13 @@
 
 ## V4 (current)
 
-Date: 2026-09-21 (V4 RC wrap-up)
-Push state: **not pushed.** `origin/main` is at `6b14ce6`; local `main` is ahead
-of it. Run `git log --oneline origin/main..main` to see exactly what is pending.
+Date: 2026-09-21 (V4 RC wrap-up). Header re-checked 2026-09-29 after the
+disaster-recovery baseline.
+Push state: `origin/main` is at `eda7ec0` and local `main` matches it. The
+2026-09-29 recovery fixes (undeclared `esbuild`, two hardcoded old-workspace
+paths, and the acceptance runner's missing `startScene`) sit on
+`dev/product-finalization-20260929` and are **not pushed**. Run
+`git log --oneline origin/main..dev/product-finalization-20260929` to see them.
 
 **This file deliberately names no local SHA.** Committing this file changes
 `HEAD`, so any SHA written here is stale the instant it is committed — that is
@@ -75,21 +79,30 @@ and measured `0.2337`, so the level is not the whole story either — the premis
 run measured `0.2192` on a level-1 machine. **A `golden-city` verdict currently
 depends on the animation phase and machine state at the sample instant.**
 
-The consequence is the part that matters: the level-independent body is
-`AbyssBase` at `4.07 m`, which reads **`0.2192`** — `0.0008` below the contract
-floor. The gate passes only when decoration inflates the number past it.
+**RESOLVED — do not re-open this.** The consequence above was real: the
+level-independent body is `AbyssBase` at `4.07 m`, which read **`0.2192`** —
+`0.0008` below the contract floor — so the gate passed only when decoration
+inflated the number past it.
 
-Two harness changes are committed: the player silhouette now merges only
-**drawn** renderers, and the composition and gate record `machineLevel` and
-`machineSuctionRadius` beside the ratio. **The remaining gap is a decision, not
-a defect** — either pin which node *is* the silhouette, so the check stops
-reading whichever decorative mesh happens to be widest, or move the band: a
-~0.4–0.7% nudge, i.e. **`coreScale` in `[1.856592, 1.863226]`** (`1.86` is the
-clean midpoint: LV1 `0.220404`, LV5 `0.299481`), clears the band at every level,
-and the alternative is to lower the floor to the documented 18–23% band. The
-window assumes the ratio scales linearly with `coreScale`, which holds for the
-two runs whose `player.contributors` are recorded; re-measure both ends before
-relying on it.
+The decision was taken on 2026-09-22 and implemented in
+`cocos/assets/scripts/machine/BlackHoleMachine.ts`: the gated silhouette now
+excludes the frame-animated decorative subtree, and `coreScale` moved `1.85 →
+1.92` (+3.8%) for the `SINGULARITY` presentation. That is a visual-only X/Z
+scale — Y is untouched, so `playerScreenYRatio` cannot move — and it changes no
+suction radius, mass or collision. The `[1.856592, 1.863226]` window quoted
+above was computed against the **decoration-merged** metric and is superseded;
+`1.92` was chosen against the deterministic body-only metric, which is the one
+that is now gated.
+
+Re-verified 2026-09-29 on `dev/product-finalization-20260929` by running
+`npm run acceptance:v2 -- --scope=golden-city` (PASS, `failures: []`,
+`consoleErrors: []`). The gated reading is **`playerWidthRatio: 0.22578`**
+inside the locked band `[0.22, 0.30]`, while `playerWidthRatioRaw` is `0.31473`
+— i.e. the old unstable number is still recorded, but it is diagnostic only and
+no longer decides the verdict. The report names the excluded nodes
+(`InnerSwirl`, `MidSwirl`, `OuterSwirl`, `ShimmerSwirl`, `HoleRing`) and the
+sampled machine state (`playerMachineLevel: 1`, `playerMachineSuctionRadius:
+2.4`), so a level-driven change can no longer be misread as a framing change.
 
 `arena-ai` and `arena-timer` previously read PASS and were **not**. Three lanes
 built concurrently; a Cocos build **deletes `cocos/build/web-mobile` wholesale and

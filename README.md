@@ -21,9 +21,10 @@
 
 ## 环境
 
-- 工程：`C:\Users\zyu33\Documents\Codex\2026-08-28\ji\cocos`
-- Cocos Creator：`C:\ProgramData\cocos\editors\Creator\3.8.3\CocosCreator.exe`
+- 工程：仓库根目录下的 `cocos/`（请勿写死绝对路径）
+- Cocos Creator：`C:\ProgramData\cocos\editors\Creator\3.8.3\CocosCreator.exe`（可用 `COCOS_CREATOR_EXE` 覆盖）
 - Node.js 与项目根依赖：工程根目录执行 `npm install`
+- 首次在全新环境打开：需先用 Creator 3.8.3 打开 `cocos/` 生成 `library/`、`temp/`、`local/`，否则 `npm run typecheck:cocos` 会因为缺少 `temp/declarations/cc.d.ts` 而报 `Cannot find module 'cc'`
 
 ## 验证命令
 
@@ -57,7 +58,8 @@ npm test
 
 ```powershell
 $creator = 'C:\ProgramData\cocos\editors\Creator\3.8.3\CocosCreator.exe'
-$project = 'C:\Users\zyu33\Documents\Codex\2026-08-28\ji\cocos'
+# 在仓库根目录执行；勿写死绝对路径
+$project = (Resolve-Path '.\cocos').Path
 
 & $creator --project $project --build 'platform=wechatgame;debug=false;orientation=portrait;'
 & $creator --project $project --build 'platform=bytedance-mini-game;debug=false;orientation=portrait;'
