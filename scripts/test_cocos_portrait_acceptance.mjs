@@ -1749,6 +1749,46 @@ function loadGoldenCityContract() {
 }
 
 /**
+ * Reduce the bridge's scene-wide visual diagnostics to a report-sized summary.
+ *
+ * `invalidMeshes` names every active renderer whose material has no effect or
+ * fails `validate()` — the engine's own "this cannot draw" signal, which is what
+ * a missing-material regression looks like *before* it turns into pink pixels on
+ * screen. `sprites` carries per-frame texture validity for the 2D pages. Both
+ * are already computed by `QABridge.snapshot()`; the runner used to discard them.
+ */
+function summariseSceneVisuals(sceneVisuals) {
+  if (!sceneVisuals || typeof sceneVisuals !== 'object') return null;
+  const invalidMeshes = Array.isArray(sceneVisuals.invalidMeshes) ? sceneVisuals.invalidMeshes : [];
+  const sprites = Array.isArray(sceneVisuals.sprites) ? sceneVisuals.sprites : [];
+  const invalidSprites = sprites.filter((sprite) => sprite.frameValid === false || sprite.textureValid === false);
+  return {
+    invalidMeshCount: invalidMeshes.length,
+    spriteCount: sprites.length,
+    invalidSpriteCount: invalidSprites.length,
+    invalidMeshSample: invalidMeshes.slice(0, 10),
+    invalidSpriteSample: invalidSprites.slice(0, 10),
+  };
+}
+
+/**
+ * The engine already knows when a renderer cannot draw: a material with no
+ * effect, or one that fails `validate()`, is the precondition for the pink
+ * placeholder the screenshot check only catches once it is big enough to see.
+ * Asserting the engine's own signal catches it earlier and names the node.
+ * Thresholds are 0 because the opening cell measures 0 at both sampled phases.
+ */
+function assertRenderDiagnostics(render, phase) {
+  assert(render, `FAIL_RENDER_DIAGNOSTICS_UNAVAILABLE: the ${phase} snapshot carried no sceneVisuals`);
+  assert(render.invalidMeshCount === 0,
+    `FAIL_RENDER_INVALID_MESH (${phase}): ${render.invalidMeshCount} renderer(s) with no drawable material: `
+    + JSON.stringify(render.invalidMeshSample));
+  assert(render.invalidSpriteCount === 0,
+    `FAIL_RENDER_INVALID_SPRITE (${phase}): ${render.invalidSpriteCount} sprite(s) with an invalid frame or texture: `
+    + JSON.stringify(render.invalidSpriteSample));
+}
+
+/**
  * Static-architecture occlusion measurement.
  *
  * `cameraComposition` bounds the player and the aspirational target from the
@@ -3786,10 +3826,13 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
     const snapshot = await readRuntimeSnapshot(page);
     validatePortraitSnapshot(viewport, canvasRect, snapshot);
     assert(runtimeErrors.length === 0, `Runtime console errors: ${runtimeErrors.join(' | ')}`);
+    const homeRender = summariseSceneVisuals(snapshot.sceneVisuals);
+    assertRenderDiagnostics(homeRender, 'home');
     report.runtimeObservations.push({
       viewport: viewport.id,
       phase: 'home',
       performance: snapshot.performance || null,
+      render: homeRender,
     });
 
     // Preserve the read-only initial layout snapshot with the evidence so
@@ -4203,10 +4246,13 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
         },
         evolved: null,
       };
+      const gameplayRender = summariseSceneVisuals(gameplaySnapshot.sceneVisuals);
+      assertRenderDiagnostics(gameplayRender, 'endless-opening');
       report.runtimeObservations.push({
         viewport: viewport.id,
         phase: 'endless-opening',
         performance: gameplaySnapshot.performance || null,
+        render: gameplayRender,
       });
 
       if (acceptanceScope === 'pages') {
