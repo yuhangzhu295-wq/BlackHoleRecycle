@@ -18,6 +18,15 @@ const repoRoot = path.resolve(path.dirname(thisFile), '..');
 const cocosProject = path.join(repoRoot, 'cocos');
 const creatorExe = process.env.COCOS_CREATOR_EXE || 'C:\\ProgramData\\cocos\\editors\\Creator\\3.8.3\\CocosCreator.exe';
 const buildDirectory = path.join(cocosProject, 'build', 'web-mobile');
+/**
+ * The scene the package must launch. A headless `--build` does not inherit the
+ * GUI's `common.startScene` profile value, so without an explicit value Creator
+ * falls back to the alphabetically first scene — the empty `Bootstrap.scene`.
+ * That package boots, renders nothing and never installs the `?qa=1` bridge, so
+ * every assertion below would time out against a scene that has no game in it.
+ * `scripts/verify_cocos_minigame_builds.mjs` already passes this explicitly.
+ */
+const REQUIRED_START_SCENE = 'scene-game-0001-8888-9999-aaaabbbbcccc';
 // Runtime evidence is intentionally local by default. Keep only deliberately
 // curated, final evidence in cocos/docs/evidence/final/; repeated regression
 // runs must not pollute source control with stale screenshots and reports.
@@ -156,7 +165,7 @@ function buildCocosWebMobile() {
 
     const child = spawn(creatorExe, [
       '--project', cocosProject,
-      '--build', 'platform=web-mobile;debug=false;orientation=portrait;'
+      '--build', `platform=web-mobile;debug=false;orientation=portrait;startScene=${REQUIRED_START_SCENE};`
     ], { cwd: cocosProject, windowsHide: true });
     let output = '';
     let settled = false;

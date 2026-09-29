@@ -4,7 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const script = path.join(path.dirname(fileURLToPath(import.meta.url)), 'author_golden_city.mjs');
-const project = 'C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos';
+const project = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'cocos');
 
 function discover(snapshot) {
   const result = spawnSync(process.execPath, [script], {

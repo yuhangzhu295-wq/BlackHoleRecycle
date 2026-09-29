@@ -2,10 +2,11 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import extension from '../cocos/extensions/black-hole-world-art-builder/main.js';
 
 const { authoringTargetDiagnostic, claimPendingAuthoringJob, shouldClaimAuthoringJob } = extension;
-const projectPath = String.raw`C:\Users\zyu33\Documents\Codex\2026-08-28\ji\cocos`;
+const projectPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'cocos');
 const createJob = (overrides = {}) => ({
   jobId: 'test-job',
   job: 'BUILD_GOLDEN_CITY',
