@@ -1,4 +1,5 @@
 import { Camera, math, Rect, ResolutionPolicy, Vec3, view } from 'cc';
+import { CAMERA_PROFILE } from '../core/RenderProfile';
 import type { GameSessionState } from '../gameplay/session/GameSessionCoordinator';
 
 export interface PortraitCameraPreset {
@@ -13,17 +14,17 @@ export interface PortraitCameraPreset {
  * a real configuration error in GameManager.
  */
 export class PortraitGameplayCameraController {
-  public static readonly DESIGN_WIDTH = 720;
-  public static readonly DESIGN_HEIGHT = 1280;
+  public static readonly DESIGN_WIDTH = CAMERA_PROFILE.designWidth;
+  public static readonly DESIGN_HEIGHT = CAMERA_PROFILE.designHeight;
 
   private readonly endlessPreset: PortraitCameraPreset = {
-    offset: new Vec3(0, 20.0, 18.5),
-    pitchDegrees: -42,
+    offset: CAMERA_PROFILE.endless.offset.clone(),
+    pitchDegrees: CAMERA_PROFILE.endless.pitchDegrees,
   };
 
   private readonly arenaPreset: PortraitCameraPreset = {
-    offset: new Vec3(0, 44.0, 27.0),
-    pitchDegrees: -55,
+    offset: CAMERA_PROFILE.arena.offset.clone(),
+    pitchDegrees: CAMERA_PROFILE.arena.pitchDegrees,
   };
 
   private readonly targetPosition = new Vec3();
@@ -49,9 +50,11 @@ export class PortraitGameplayCameraController {
     );
 
     // CameraFOVAxis.VERTICAL is value 0 in Cocos Creator 3.8.3. The project
-    // declarations expose fovAxis as a native numeric Camera property.
-    this.camera.fovAxis = 0;
-    this.camera.fov = 44;
+    // declarations expose fovAxis as a native numeric Camera property. Both
+    // values come from the shared V6 render profile so the saved scene and the
+    // runtime framing cannot drift apart unnoticed.
+    this.camera.fovAxis = CAMERA_PROFILE.fovAxis;
+    this.camera.fov = CAMERA_PROFILE.fov;
 
     const frame = view.getFrameSize();
     const targetRatio = PortraitGameplayCameraController.DESIGN_WIDTH / PortraitGameplayCameraController.DESIGN_HEIGHT;

@@ -6,6 +6,7 @@
  * substitutes primitive meshes for the structural machine art.
  */
 import { _decorator, Color, Component, instantiate, Material, MeshRenderer, Node, Prefab, Texture2D } from 'cc';
+import { MACHINE_ASSEMBLY_PALETTE, RENDER_DEFINES, RENDER_EFFECT } from '../core/RenderProfile';
 
 const { ccclass, property } = _decorator;
 
@@ -73,9 +74,9 @@ export class MachineVisualLibrary extends Component {
     // emitted independently for Web Mobile. Keep the true chassis geometry,
     // but use the deterministic recycler-green material until an editor-saved
     // standalone chassis texture is introduced.
-    if (chassis) this.applyMaterial(chassis, this.getMaterial('chassis', null, '#35A85E'));
+    if (chassis) this.applyMaterial(chassis, this.getMaterial('chassis', null, MACHINE_ASSEMBLY_PALETTE.chassis));
 
-    const turbineColor = level >= 5 ? '#E4D7FF' : '#B7E8FF';
+    const turbineColor = level >= 5 ? MACHINE_ASSEMBLY_PALETTE.turbineHigh : MACHINE_ASSEMBLY_PALETTE.turbineLow;
     for (const name of ['MagneticTurbineLeft', 'MagneticTurbineRight', 'MagneticPipeLeft', 'MagneticPipeRight']) {
       const part = root.getChildByName(name);
       if (part) this.applyMaterial(part, this.getMaterial(`magnetic-${level}`, this.factoryColorTexture, turbineColor));
@@ -83,12 +84,12 @@ export class MachineVisualLibrary extends Component {
 
     for (const name of ['CompressionChamber', 'CompressionHopper', 'SingularityFrame', 'SingularityHopperLeft', 'SingularityHopperRight']) {
       const part = root.getChildByName(name);
-      if (part) this.applyMaterial(part, this.getMaterial(`compression-${level}`, this.factoryColorTexture, '#FFB703'));
+      if (part) this.applyMaterial(part, this.getMaterial(`compression-${level}`, this.factoryColorTexture, MACHINE_ASSEMBLY_PALETTE.compression));
     }
 
     for (const name of ['GravityWingLeft', 'GravityWingRight', 'GravityPipeLeft', 'GravityPipeRight']) {
       const part = root.getChildByName(name);
-      if (part) this.applyMaterial(part, this.getMaterial(`gravity-${level}`, this.factoryColorTexture, '#BFA6FF'));
+      if (part) this.applyMaterial(part, this.getMaterial(`gravity-${level}`, this.factoryColorTexture, MACHINE_ASSEMBLY_PALETTE.gravity));
     }
   }
 
@@ -125,10 +126,10 @@ export class MachineVisualLibrary extends Component {
 
     const material = new Material();
     material.initialize({
-      effectName: 'builtin-unlit',
+      effectName: RENDER_EFFECT,
       // Semantic source colour is controlled by the audited texture/palette,
       // not by arbitrary imported vertex tint data.
-      defines: { USE_TEXTURE: Boolean(texture), USE_VERTEX_COLOR: false },
+      defines: { ...RENDER_DEFINES, USE_TEXTURE: Boolean(texture) },
     });
     if (texture) material.setProperty('mainTexture', texture);
     const color = new Color();

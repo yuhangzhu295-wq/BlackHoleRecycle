@@ -2,6 +2,7 @@
  * 黑洞吸尘机 3D 核心组件与 5 级结构进化系统 (BlackHoleMachine.ts)
  */
 import { _decorator, Color, Component, director, MeshRenderer, Node, Vec3, math } from 'cc';
+import { MACHINE_ASSEMBLY_PALETTE, MACHINE_PALETTE } from '../core/RenderProfile';
 import { IMachineEvolutionConfig, MACHINE_EVOLUTION_CONFIG, ObjectTier } from '../data/GameConfig';
 import { eventBus } from '../core/EventBus';
 import { MeshFactory } from '../core/MeshFactory';
@@ -73,7 +74,7 @@ export class BlackHoleMachine extends Component {
   private movementMagnitude: number = 0;
   private presentation: MachinePresentation = 'HYBRID';
   /** Hex tint for this competitor's real imported crawler model only. */
-  private arenaBotTint: string = '#35a85e';
+  private arenaBotTint: string = MACHINE_ASSEMBLY_PALETTE.chassis;
 
   onLoad(): void {
     this.buildVisibleGeometry();
@@ -141,14 +142,14 @@ export class BlackHoleMachine extends Component {
     const abyssBase = new Node('AbyssBase');
     abyssBase.setPosition(0, 0.01, 0);
     this.coreNode.addChild(abyssBase);
-    MeshFactory.attachMesh(abyssBase, MeshFactory.getCylinderMesh(1.10, 1.10, 0.055, 64), '#281660', 1.0, 0.0);
+    MeshFactory.attachMesh(abyssBase, MeshFactory.getCylinderMesh(1.10, 1.10, 0.055, 64), MACHINE_PALETTE.abyssBase, 1.0, 0.0);
 
     // Black centre (visual only; this is deliberately smaller than the rim
     // so the full object reads as a glossy vortex instead of a flat void).
     const holeInner = new Node('HoleInner');
     holeInner.setPosition(0, 0.06, 0);
     this.coreNode.addChild(holeInner);
-    MeshFactory.attachMesh(holeInner, MeshFactory.getCylinderMesh(0.56, 0.56, 0.075, 64), '#05040e', 1.0, 0.0);
+    MeshFactory.attachMesh(holeInner, MeshFactory.getCylinderMesh(0.56, 0.56, 0.075, 64), MACHINE_PALETTE.holeInner, 1.0, 0.0);
 
     // 多层紫色涡流环：它们是黑洞特效的实体表现，随时间反向转动以传达吞噬感。
     // Keep these as a visual-only native effect. They do not stand in for a
@@ -156,7 +157,7 @@ export class BlackHoleMachine extends Component {
     this.innerSwirl = new Node('InnerSwirl');
     this.innerSwirl.setPosition(0, 0.105, 0);
     this.coreNode.addChild(this.innerSwirl);
-    MeshFactory.attachMesh(this.innerSwirl, MeshFactory.getTorusMesh(0.38, 0.035), '#e0d5ff', 0.1, 0.5);
+    MeshFactory.attachMesh(this.innerSwirl, MeshFactory.getTorusMesh(0.38, 0.035), MACHINE_PALETTE.innerSwirl, 0.1, 0.5);
 
     // A narrow asymmetric-looking orbit between the core and exterior ring
     // makes the singularity read as a layered vortex at phone scale rather
@@ -166,13 +167,13 @@ export class BlackHoleMachine extends Component {
     this.midSwirl.setPosition(0, 0.110, 0);
     this.midSwirl.setRotationFromEuler(0, 0, -20);
     this.coreNode.addChild(this.midSwirl);
-    MeshFactory.attachMesh(this.midSwirl, MeshFactory.getTorusMesh(0.55, 0.026), '#bca5ff', 0.1, 0.5);
+    MeshFactory.attachMesh(this.midSwirl, MeshFactory.getTorusMesh(0.55, 0.026), MACHINE_PALETTE.midSwirl, 0.1, 0.5);
 
     this.outerSwirl = new Node('OuterSwirl');
     this.outerSwirl.setPosition(0, 0.115, 0);
     this.outerSwirl.setRotationFromEuler(0, 0, 16);
     this.coreNode.addChild(this.outerSwirl);
-    MeshFactory.attachMesh(this.outerSwirl, MeshFactory.getTorusMesh(0.72, 0.045), '#8b62f4', 0.1, 0.5);
+    MeshFactory.attachMesh(this.outerSwirl, MeshFactory.getTorusMesh(0.72, 0.045), MACHINE_PALETTE.outerSwirl, 0.1, 0.5);
 
     // The fine outer highlight is intentionally separated from HoleRing: it
     // gives the violet rim the moving white-violet glint used by the V2
@@ -182,13 +183,13 @@ export class BlackHoleMachine extends Component {
     this.shimmerSwirl.setPosition(0, 0.120, 0);
     this.shimmerSwirl.setRotationFromEuler(0, 0, 34);
     this.coreNode.addChild(this.shimmerSwirl);
-    MeshFactory.attachMesh(this.shimmerSwirl, MeshFactory.getTorusMesh(0.87, 0.018), '#f2ebff', 0.08, 0.55);
+    MeshFactory.attachMesh(this.shimmerSwirl, MeshFactory.getTorusMesh(0.87, 0.018), MACHINE_PALETTE.shimmerSwirl, 0.08, 0.55);
 
     // 发光外环是黑洞的视觉轮廓，不能被用作真实吸附半径的地图标尺。
     this.holeRim = new Node('HoleRing');
     this.holeRim.setPosition(0, 0.125, 0);
     this.coreNode.addChild(this.holeRim);
-    MeshFactory.attachMesh(this.holeRim, MeshFactory.getTorusMesh(1.03, 0.04), '#c8adff', 0.1, 0.5);
+    MeshFactory.attachMesh(this.holeRim, MeshFactory.getTorusMesh(1.03, 0.04), MACHINE_PALETTE.holeRing, 0.1, 0.5);
 
   }
 
@@ -462,11 +463,11 @@ export class BlackHoleMachine extends Component {
   public applyCoreSkin(bodyColor: string, rimColor: string): void {
     if (this.presentation === 'BOT') return;
     this.setCorePartMaterial('AbyssBase', bodyColor, 1.0, 0.0);
-    this.setCorePartMaterial('HoleInner', '#05040e', 1.0, 0.0);
+    this.setCorePartMaterial('HoleInner', MACHINE_PALETTE.holeInner, 1.0, 0.0);
     this.setCorePartMaterial('InnerSwirl', rimColor, 0.1, 0.5);
     this.setCorePartMaterial('MidSwirl', rimColor, 0.1, 0.5);
     this.setCorePartMaterial('OuterSwirl', bodyColor, 0.1, 0.5);
-    this.setCorePartMaterial('ShimmerSwirl', '#f2ebff', 0.08, 0.55);
+    this.setCorePartMaterial('ShimmerSwirl', MACHINE_PALETTE.shimmerSwirl, 0.08, 0.55);
     this.setCorePartMaterial('HoleRing', rimColor, 0.1, 0.5);
   }
 

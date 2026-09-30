@@ -11,6 +11,7 @@ import {
   Mesh,
   Color
 } from 'cc';
+import { RENDER_DEFINES, RENDER_EFFECT } from './RenderProfile';
 
 export class MeshFactory {
   private static meshCache: Map<string, Mesh> = new Map();
@@ -89,8 +90,8 @@ export class MeshFactory {
     // place lets some generated core meshes select an unresolved variant and
     // render as the engine's magenta fallback despite a valid `mainColor`.
     mat.initialize({
-      effectName: 'builtin-unlit',
-      defines: { USE_TEXTURE: false, USE_VERTEX_COLOR: false },
+      effectName: RENDER_EFFECT,
+      defines: { ...RENDER_DEFINES },
     });
     
     const color = new Color();

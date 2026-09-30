@@ -5,6 +5,7 @@
  * Game.scene。运行时只实例化这些真实模板，绝不为正式世界回退到基础几何体。
  */
 import { _decorator, Color, Component, instantiate, Material, MeshRenderer, Node, Texture2D, Vec3 } from 'cc';
+import { RENDER_DEFINES, RENDER_EFFECT, WORLD_PALETTE } from '../core/RenderProfile';
 
 const { ccclass, property } = _decorator;
 
@@ -66,68 +67,6 @@ export type WorldArtKind =
   | 'sofa'
   | 'shippingContainer';
 
-const WORLD_ART_COLORS: Record<WorldArtKind, string> = {
-  roadStraight: '#9ca8bc',
-  roadCrossroad: '#9ca8bc',
-  terrainTile: '#92db7f',
-  buildingB: '#ffd18d',
-  buildingC: '#9ed6ff',
-  treeSmall: '#69bf71',
-  treeLarge: '#54a962',
-  pathStones: '#f1d5a4',
-  fence: '#f2ae4d',
-  // Tiny Treats uses one authored CC0 colour atlas for the park set. White
-  // deliberately preserves its fountain water, hedge, flower, and wood hues.
-  parkFountain: '#ffffff',
-  parkBench: '#ffffff',
-  parkBush: '#ffffff',
-  parkHedgeLong: '#ffffff',
-  parkHedgeCorner: '#ffffff',
-  parkLantern: '#ffffff',
-  parkTrashcan: '#ffffff',
-  parkFlowerA: '#ffffff',
-  parkFlowerB: '#ffffff',
-  parkGrassTile: '#ffffff',
-  parkCobblePath: '#ffffff',
-  parkTree: '#ffffff',
-  parkTreeLarge: '#ffffff',
-  commercialBuildingA: '#f7b267',
-  commercialBuildingD: '#ff8f70',
-  commercialBuildingF: '#f3b76d',
-  commercialBuildingG: '#72b9e6',
-  commercialBuildingH: '#e99085',
-  commercialSkyscraperA: '#ffb86b',
-  commercialSkyscraperB: '#75b8ef',
-  streetLight: '#fef3c7',
-  constructionCone: '#ff7a00',
-  bulldozer: '#35a85e',
-  // The player carrier follows the green/yellow recycling-machine family in
-  // the approved V2 reference. Its geometry remains the audited truck mesh.
-  garbageTruck: '#35a85e',
-  sedan: '#ef476f',
-  deliveryVan: '#ffd166',
-  recyclingBox: '#c68b59',
-  tire: '#1f2937',
-  recyclingBolt: '#7dd3fc',
-  turbineWheel: '#38bdf8',
-  sodaCan: '#e53935',
-  waterBottle: '#29b6f6',
-  battery: '#fbc02d',
-  toyDuck: '#ffd54f',
-  apple: '#e53935',
-  paperScrap: '#f5f5f4',
-  bookStack: '#3b82f6',
-  cardboardBox: '#b7794d',
-  trashBag: '#374151',
-  paintBucket: '#00acc1',
-  chair: '#455a64',
-  coffeeTable: '#795548',
-  monitor: '#111827',
-  shelf: '#90a4ae',
-  crate: '#388e3c',
-  sofa: '#8d6e63',
-  shippingContainer: '#0288d1',
-};
 
 @ccclass('WorldArtLibrary')
 export class WorldArtLibrary extends Component {
@@ -541,14 +480,14 @@ export class WorldArtLibrary extends Component {
     // is later assigned. Initialize the native effect with the macro enabled
     // so the imported UVs sample the Creator-owned external colour map.
     //
-    // `builtin-standard` is intentionally not used here: assigning it to the
-    // copied glTF sub-meshes causes a Web Mobile local descriptor-set error in
-    // Creator 3.8.3. The unlit path is therefore the tested mobile-safe one.
+    // The effect and the two macros come from the shared V6 render profile.
+    // `builtin-standard` is excluded by measurement: swapping the world
+    // materials to it makes the entire 3D world disappear on this build, with
+    // the engine raising Error 3804 and roughly a thousand localSetLayout
+    // failures. The unlit path is the tested mobile-safe one.
     material.initialize({
-      effectName: 'builtin-unlit',
-      // Imported vertex colours are not the art contract; the audited
-      // texture/palette controls deterministic Web Mobile output.
-      defines: { USE_TEXTURE: Boolean(texture), USE_VERTEX_COLOR: false }
+      effectName: RENDER_EFFECT,
+      defines: { ...RENDER_DEFINES, USE_TEXTURE: Boolean(texture) },
     });
     if (texture) {
       // Preserve the authored Kenney UV colour map and use the audited art
@@ -556,14 +495,14 @@ export class WorldArtLibrary extends Component {
       // the atlas from flattening grass, buildings and vehicle silhouettes.
       material.setProperty('mainTexture', texture);
       const color = tintOverride || new Color();
-      if (!tintOverride) Color.fromHEX(color, WORLD_ART_COLORS[kind]);
+      if (!tintOverride) Color.fromHEX(color, WORLD_PALETTE[kind]);
       material.setProperty('mainColor', color);
     } else {
       // A deterministic colour is retained solely as a development-time
       // safeguard while assets are importing; production validation requires
       // all four external colour maps to be available.
       const color = tintOverride || new Color();
-      if (!tintOverride) Color.fromHEX(color, WORLD_ART_COLORS[kind]);
+      if (!tintOverride) Color.fromHEX(color, WORLD_PALETTE[kind]);
       material.setProperty('mainColor', color);
     }
     return material;
