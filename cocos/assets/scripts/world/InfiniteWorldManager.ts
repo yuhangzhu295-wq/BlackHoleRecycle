@@ -764,7 +764,16 @@ class InfiniteWorldCell {
     if (this.coord.x !== 0 || this.coord.z !== 0 || this.constructionLandmark || !this.node.isValid) return false;
     const landmark = instantiate(prefab);
     landmark.name = 'MajadroidConstructionLandmark';
-    landmark.setPosition(0, 0.02, -26.5);
+    // The landmark is a background skyline district, so it must stay behind the
+    // HUD band at the top of the portrait frame. Measured under both gameplay
+    // presets, z = -26.5 put it straight through that band: at the Arena preset
+    // it projected to screen y -0.104 .. 0.250 and at the Endless preset to
+    // -0.324 .. 0.058, so the match clock, the leaderboard and the region pill
+    // all read against a dark construction slab. z = -56 keeps the same authored
+    // scale and composition but projects to y -0.050 .. -0.296 (Arena) and
+    // -0.072 .. -0.375 (Endless), i.e. entirely below the HUD band while still
+    // spanning 68% / 86% of the frame width as a visible skyline.
+    landmark.setPosition(0, 0.02, -56);
     landmark.setRotationFromEuler(0, 180, 0);
     // The source site spans a whole construction block. Scale it as a
     // distant skyline district so it enriches the portrait city without
