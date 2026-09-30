@@ -385,7 +385,22 @@ export class WorldArtLibrary extends Component {
    * instantiated cell's authored visual groups before it becomes visible.
    */
   public hydrateAuthoredOpeningMaterials(cell: Node): void {
-    const groups: ReadonlyArray<readonly [string, WorldArtKind]> = [
+    // One material per *group node* was the previous contract, and it painted
+    // every descendant with that single group kind. Because applyMaterial
+    // recurses the whole subtree, the opening park fountain received the
+    // vehicle colour atlas as its mainTexture; its UVs sample a near-black
+    // region of that atlas, so the fountain rendered as a large black mass at
+    // the bottom centre of the frame. Measured: hiding
+    // Props/POI_ParkFountain removed 8812 of 8812 near-black pixels from the
+    // lower-centre band, and recolouring its mainColor left the black region
+    // byte-identical, which proves the black is sampled from the texture.
+    //
+    // Bind by *renderer name* instead. Names are the stable, audited identity
+    // of each imported mesh (the same names ObjectArtRegistry already binds
+    // by), so a mixed subtree such as Props resolves each prop to its own
+    // authored atlas and palette entry. Unknown renderers fall back to their
+    // nearest group kind so a future authored mesh is never left unbound.
+    const groupFallbacks: ReadonlyArray<readonly [string, WorldArtKind]> = [
       ['Ground', 'terrainTile'],
       ['Roads', 'roadStraight'],
       ['Buildings', 'commercialBuildingA'],
@@ -393,9 +408,9 @@ export class WorldArtLibrary extends Component {
       ['Props', 'recyclingBox'],
       ['TrafficRoutes', 'sedan'],
     ];
-    for (const [name, kind] of groups) {
+    for (const [name, kind] of groupFallbacks) {
       const group = cell.getChildByName(name);
-      if (group) this.applyRuntimeMaterial(kind, group);
+      if (group) this.applyRuntimeMaterialByRendererName(group, kind);
     }
   }
 
@@ -406,10 +421,89 @@ export class WorldArtLibrary extends Component {
    * Web Mobile unless each renderer receives a runtime-safe material instance.
    */
   public hydrateConstructionLandmarkMaterials(landmark: Node): void {
+    // Same renderer-name rule as the opening cell. The landmark's own groups
+    // keep their explicit kinds.
     const road = landmark.getChildByName('Roads');
-    if (road) this.applyRuntimeMaterial('roadStraight', road);
+    if (road) this.applyRuntimeMaterialByRendererName(road, 'roadStraight');
     const site = landmark.getChildByName('HouseConstructionSite');
-    if (site) this.applyRuntimeMaterial('commercialBuildingA', site);
+    if (site) this.applyRuntimeMaterialByRendererName(site, 'commercialBuildingA');
+  }
+
+  /**
+   * Imported mesh names are the audited identity of an authored prop. This
+   * table maps a renderer node name to the WorldArtKind whose palette entry and
+   * colour atlas that mesh was authored against, so a mixed group such as
+   * Props no longer receives one shared material.
+   *
+   * Only names that are unambiguous across the whole authored kit are listed.
+   * Anything else keeps its group fallback, so adding a new authored mesh can
+   * never leave a renderer unbound.
+   */
+  private static readonly RENDERER_NAME_KINDS: Readonly<Record<string, WorldArtKind>> = {
+    'tile-low': 'terrainTile',
+    'road-straight': 'roadStraight',
+    'road-crossroad-path': 'roadCrossroad',
+    'building-type-b': 'buildingB',
+    'building-type-c': 'buildingC',
+    'building-a': 'commercialBuildingA',
+    'building-d': 'commercialBuildingD',
+    'building-f': 'commercialBuildingF',
+    'building-g': 'commercialBuildingG',
+    'building-h': 'commercialBuildingH',
+    'building-skyscraper-a': 'commercialSkyscraperA',
+    'building-skyscraper-b': 'commercialSkyscraperB',
+    'tree-small': 'treeSmall',
+    'tree-large': 'treeLarge',
+    'tree': 'parkTree',
+    'tree_large': 'parkTreeLarge',
+    'bush_large': 'parkBush',
+    'flower_A': 'parkFlowerA',
+    'flower_B': 'parkFlowerB',
+    'hedge_straight_long': 'parkHedgeLong',
+    'hedge_corner': 'parkHedgeCorner',
+    'floor_grass_sliced_base': 'parkGrassTile',
+    'cobble_stones_large': 'parkCobblePath',
+    'fountain': 'parkFountain',
+    'bench': 'parkBench',
+    'trashcan': 'parkTrashcan',
+    'street_lantern': 'parkLantern',
+    'light-square': 'streetLight',
+    'construction-cone': 'constructionCone',
+    'path-stones-long': 'pathStones',
+    'fence': 'fence',
+    'box': 'recyclingBox',
+    'arm': 'garbageTruck',
+    'body': 'sedan',
+    'door': 'deliveryVan',
+  };
+
+  /**
+   * Assign a runtime-safe material to every renderer in a subtree, choosing the
+   * kind from the renderer's own node name and falling back to the group kind.
+   * The material cache is reused, so renderers that share a kind still share a
+   * single material instance.
+   */
+  private applyRuntimeMaterialByRendererName(root: Node, fallbackKind: WorldArtKind): void {
+    const visit = (node: Node): void => {
+      const renderer = node.getComponent(MeshRenderer);
+      if (renderer) {
+        const kind = WorldArtLibrary.RENDERER_NAME_KINDS[node.name] || fallbackKind;
+        this.applyMaterialToRenderer(renderer, this.getRuntimeMaterial(kind));
+      }
+      node.children.forEach(visit);
+    };
+    visit(root);
+  }
+
+  /**
+   * Bind one material across every real sub-mesh slot. Imported GLB meshes can
+   * expose several primitives while their shared material array is still empty,
+   * and the primitive count is the actual material-slot contract.
+   */
+  private applyMaterialToRenderer(renderer: MeshRenderer, material: Material): void {
+    const primitiveCount = renderer.mesh?.struct.primitives.length || 0;
+    const slotCount = Math.max(1, renderer.sharedMaterials.length, primitiveCount);
+    for (let slot = 0; slot < slotCount; slot++) renderer.setMaterial(material, slot);
   }
 
   private applyMaterial(kind: WorldArtKind, visual: Node, material: Material): void {
