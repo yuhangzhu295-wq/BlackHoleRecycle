@@ -143,6 +143,110 @@ function assertNoLargeHotMagentaSurface(pngPath) {
 }
 
 /**
+ * Near-black surface area in the lower-centre band of the gameplay frame.
+ *
+ * The V6 round-1 audit found the opening park fountain rendering as a large
+ * black mass that filled the bottom centre of the frame. It was invisible to
+ * every existing gate: the renderers were valid, the materials were valid, the
+ * mesh was present, no magenta was produced, and the player was not occluded.
+ * The defect existed only as pixels, so only a pixel instrument can catch its
+ * return.
+ *
+ * The band is the lower centre third, where the player's forward play area sits
+ * and where a solid black mass is never legitimate: the authored ground is
+ * light green and every gameplay prop is a saturated colour. Measured on this
+ * build, the same frame before and after the fountain fix reads 0.2840 and
+ * 0.0000, and the settled opening cell reads 0.0016, so 0.06 separates the
+ * defect from a clean frame with a wide margin. Decoded with the same PNG
+ * reader as the magenta gate; no new dependency.
+ */
+function inspectDarkSurface(pngPath) {
+  const png = readFileSync(pngPath);
+  assert(png.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])),
+    'FAIL_SCREENSHOT_PNG_SIGNATURE: ' + pngPath);
+  let cursor = 8;
+  let width = 0;
+  let height = 0;
+  let colorType = -1;
+  const idat = [];
+  while (cursor < png.length) {
+    const length = png.readUInt32BE(cursor);
+    const type = png.toString('ascii', cursor + 4, cursor + 8);
+    const dataStart = cursor + 8;
+    const dataEnd = dataStart + length;
+    if (type === 'IHDR') {
+      width = png.readUInt32BE(dataStart);
+      height = png.readUInt32BE(dataStart + 4);
+      colorType = png[dataStart + 9];
+    } else if (type === 'IDAT') {
+      idat.push(png.subarray(dataStart, dataEnd));
+    } else if (type === 'IEND') {
+      break;
+    }
+    cursor = dataEnd + 4;
+  }
+  assert(width > 0 && height > 0 && (colorType === 2 || colorType === 6),
+    'FAIL_SCREENSHOT_PNG_HEADER: ' + pngPath);
+  const bytesPerPixel = colorType === 6 ? 4 : 3;
+  const stride = width * bytesPerPixel;
+  const raw = inflateSync(Buffer.concat(idat));
+  const previous = Buffer.alloc(stride);
+  const current = Buffer.alloc(stride);
+  const bandLeft = Math.floor(width * 0.25);
+  const bandRight = Math.floor(width * 0.75);
+  const bandTop = Math.floor(height * 0.70);
+  const bandBottom = Math.floor(height * 0.98);
+  let rawOffset = 0;
+  let darkPixels = 0;
+  let sampledPixels = 0;
+  for (let row = 0; row < height; row += 1) {
+    const filter = raw[rawOffset++];
+    for (let column = 0; column < stride; column += 1) {
+      const value = raw[rawOffset++];
+      const leftValue = column >= bytesPerPixel ? current[column - bytesPerPixel] : 0;
+      const upValue = previous[column];
+      const upLeftValue = column >= bytesPerPixel ? previous[column - bytesPerPixel] : 0;
+      if (filter === 0) current[column] = value;
+      else if (filter === 1) current[column] = (value + leftValue) & 0xff;
+      else if (filter === 2) current[column] = (value + upValue) & 0xff;
+      else if (filter === 3) current[column] = (value + Math.floor((leftValue + upValue) / 2)) & 0xff;
+      else if (filter === 4) {
+        const p = leftValue + upValue - upLeftValue;
+        const pa = Math.abs(p - leftValue);
+        const pb = Math.abs(p - upValue);
+        const pc = Math.abs(p - upLeftValue);
+        current[column] = (value + (pa <= pb && pa <= pc ? leftValue : pb <= pc ? upValue : upLeftValue)) & 0xff;
+      } else {
+        throw new Error('FAIL_SCREENSHOT_PNG_FILTER: ' + filter);
+      }
+    }
+    if (row >= bandTop && row < bandBottom) {
+      for (let pixel = bandLeft; pixel < bandRight; pixel += 1) {
+        const offset = pixel * bytesPerPixel;
+        if (current[offset] < 60 && current[offset + 1] < 60 && current[offset + 2] < 60) darkPixels += 1;
+        sampledPixels += 1;
+      }
+    }
+    current.copy(previous);
+  }
+  return {
+    width,
+    height,
+    band: { left: bandLeft, right: bandRight, top: bandTop, bottom: bandBottom },
+    darkPixels,
+    sampledPixels,
+    darkRatio: sampledPixels > 0 ? darkPixels / sampledPixels : 0,
+  };
+}
+
+function assertNoLargeDarkSurface(pngPath, phase) {
+  const inspection = inspectDarkSurface(pngPath);
+  assert(inspection.darkRatio < 0.06,
+    'FAIL_LARGE_DARK_SURFACE (' + phase + '): ' + JSON.stringify({ pngPath, ...inspection }));
+  return inspection;
+}
+
+/**
  * A build that never returns must fail, not hang. Observed 09-21: the editor
  * started, logged two network errors, ran the build task to three lines, and
  * then stopped writing anything at all — no builder-log growth, no `temp`
@@ -4146,6 +4250,10 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
       const endlessInitialScreenshot = path.join(evidenceDirectory, 'portrait-390x844-endless-initial.png');
       await page.screenshot({ path: endlessInitialScreenshot });
       report.openingScreenshotPixels = assertNoLargeHotMagentaSurface(endlessInitialScreenshot);
+      // The fountain defect of round 1 was a valid-material, valid-mesh, non-
+      // magenta, non-occluding black surface, so it is asserted on pixels as
+      // well. Same frame, same instant as the magenta check.
+      report.openingScreenshotDark = assertNoLargeDarkSurface(endlessInitialScreenshot, 'endless-opening');
       assert(gameplaySnapshot.ui.runtimeHUD?.joystick?.active,
         `FAIL_VISIBLE_JOYSTICK: ${JSON.stringify(gameplaySnapshot.ui.runtimeHUD)}`);
       const visualMaterials = gameplaySnapshot.machine?.visualMaterials || [];
