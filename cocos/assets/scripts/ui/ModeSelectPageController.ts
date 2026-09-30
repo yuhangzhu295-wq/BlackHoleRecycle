@@ -124,6 +124,18 @@ export class ModeSelectPageController extends Component {
     // exists to display, so the blue badge strip must not appear on the mode card.
     const availBadge = this.findNode('ArenaAvailability');
     if (availBadge) availBadge.active = false;
+    // ShelfArena / ShelfEndless carry mode_card_shelf.png, which is an empty
+    // white capsule bar with no content of its own. In the portrait frame they
+    // read as two blank white sprite bars floating between the title and the
+    // mode cards, which the V6 brief forbids by name ("empty sprite bar",
+    // "placeholder rectangle"). The mode cards already frame themselves, so the
+    // decorative shelves are pure residue. They stay in MODE_SELECT_LAYOUT so
+    // the layout contract keeps asserting their authored geometry; only their
+    // visibility is suppressed here.
+    for (const emptyShelf of ['ShelfArena', 'ShelfEndless']) {
+      const shelf = this.findNode(emptyShelf);
+      if (shelf) shelf.active = false;
+    }
   }
 }
 
