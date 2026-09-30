@@ -8,6 +8,7 @@
 import { Camera, Color, MeshRenderer, Node, Vec3, view } from 'cc';
 import type { CompositionCompetitor } from '../../gameplay/ArenaMatchManager';
 import { CompressibleObject } from '../../gameplay/CompressibleObject';
+import { MACHINE_EVOLUTION_CONFIG } from '../../data/GameConfig';
 import {
   InfiniteWorldManager,
   WorldCellAuthoredCollectibleSlot,
@@ -100,6 +101,31 @@ export interface PlayableOpenAreaDiagnostics {
 }
 
 export interface GoldenCityCompositionDiagnostics {
+  /**
+   * Tier legibility instrument (V6 brief section 32). `gameplayComposition`
+   * answers a cell-level crowding question and cannot answer this one: it
+   * counts every registered object regardless of where it projects, so it can
+   * never say whether the player can actually see a T1, whether an edible
+   * target is on screen, or whether a tier-locked target is being shown. This
+   * block is a screen-space census, so it changes with the camera and with what
+   * the player has already absorbed, which is exactly what a legibility check
+   * needs.
+   */
+  readonly tierLegibility: Readonly<{
+    method: 'live object screen projection through the gameplay camera';
+    visibleT1: number;
+    visibleT2: number;
+    visibleT3: number;
+    visibleT4: number;
+    visibleT5: number;
+    /** Visible objects whose tier is at or below the machine's max tier. */
+    visibleEdible: number;
+    /** Visible objects whose tier is above the machine's max tier. */
+    visibleLocked: number;
+    /** Visible environment, competitor and vehicle nodes (not collectibles). */
+    visibleEnvironment: number;
+    machineMaxTier: number | null;
+  }>;
   readonly status: 'MEASURED' | 'UNAVAILABLE';
   readonly targetCell: Readonly<{ key: string; nodeName: string }>;
   readonly viewport: Readonly<{ x: number; y: number; width: number; height: number }>;
@@ -270,6 +296,7 @@ export class WorldCompositionProbe {
       },
       emptyGround: this.emptyGround(),
       playableOpenArea: this.emptyPlayableOpenArea(),
+      tierLegibility: this.emptyTierLegibility(),
       authoredCollectibleSlots: this.emptyAuthoredCollectibleSlots(),
       authoredResourceClusters: this.emptyAuthoredResourceClusters(),
     });
@@ -289,6 +316,7 @@ export class WorldCompositionProbe {
     for (const entry of entries) {
       if (entry.visible) counts[entry.category] += entry.logicalUnits;
     }
+    const tierLegibility = this.measureTierLegibility(collectibles, entries, playerMachine?.level ?? null);
 
     // The player's silhouette is the geometry that is actually drawn, minus the
     // layers that animate every frame. `MeshRenderer.model.worldBounds` is the
@@ -337,6 +365,7 @@ export class WorldCompositionProbe {
       camera: this.serializeCamera(camera),
       entries,
       counts,
+      tierLegibility,
       player,
       emptyGround: this.estimateEmptyGround(entries, viewport),
       playableOpenArea: this.estimatePlayableOpenArea(entries),
@@ -716,7 +745,7 @@ export class WorldCompositionProbe {
     return null;
   }
 
-  private static emptyAuthoredCollectibleSlots(): GoldenCityCompositionDiagnostics['authoredCollectibleSlots'] {
+ private static emptyAuthoredCollectibleSlots(): GoldenCityCompositionDiagnostics['authoredCollectibleSlots'] {
     return {
       method: 'authored slot positions projected through the gameplay camera',
       nominalHalfExtentMeters: AUTHORED_SLOT_HALF_EXTENT,
@@ -724,6 +753,72 @@ export class WorldCompositionProbe {
       visible: 0,
       liveCountable: 0,
     };
+  }
+
+  private static emptyTierLegibility(): GoldenCityCompositionDiagnostics['tierLegibility'] {
+    return {
+      method: 'live object screen projection through the gameplay camera',
+      visibleT1: 0,
+      visibleT2: 0,
+      visibleT3: 0,
+      visibleT4: 0,
+      visibleT5: 0,
+      visibleEdible: 0,
+      visibleLocked: 0,
+      visibleEnvironment: 0,
+      machineMaxTier: null,
+    };
+  }
+
+  /**
+   * Screen-space tier legibility, required by the V6 brief section 32.
+   *
+   * The cell counts already prove how many objects exist, but they cannot
+   * answer the legibility questions the brief asks: is a T1 visible, is an
+   * edible target visible, is a tier-locked target being shown, and how much
+   * visible content is pure environment rather than something to swallow.
+   * Those are screen-space facts, so this counts only objects the gameplay
+   * camera actually projects into the frame and splits them by the machine max
+   * tier, so a locked target is never confused with an edible one.
+   */
+  private static measureTierLegibility(
+    collectibles: readonly CompressibleObject[],
+    entries: readonly GoldenCityEntry[],
+    machineLevel: number | null,
+  ): GoldenCityCompositionDiagnostics['tierLegibility'] {
+    // The machine level maps to a max tier through the same table gameplay
+    // uses, so a level-1 machine reads the T1 ring as edible and the T2/T4/T5
+    // targets as locked, which is what the opening actually presents.
+    const machineMaxTier = machineLevel === null
+      ? null
+      : (MACHINE_EVOLUTION_CONFIG[Math.min(MACHINE_EVOLUTION_CONFIG.length - 1, Math.max(0, machineLevel - 1))].maxTier as number);
+    const visibleIds = new Set<string>();
+    for (const entry of entries) {
+      if (entry.visible && entry.category === 'COLLECTIBLE') visibleIds.add(entry.name);
+    }
+    const result = { ...this.emptyTierLegibility(), machineMaxTier };
+    for (const object of collectibles) {
+      if (!visibleIds.has(object.runtimeId)) continue;
+      const tier = object.template.tier as number;
+      if (tier === 1) result.visibleT1 += 1;
+      else if (tier === 2) result.visibleT2 += 1;
+      else if (tier === 3) result.visibleT3 += 1;
+      else if (tier === 4) result.visibleT4 += 1;
+      else if (tier === 5) result.visibleT5 += 1;
+    }
+    for (const entry of entries) {
+      if (!entry.visible) continue;
+      if (entry.category !== 'COLLECTIBLE') {
+        result.visibleEnvironment += entry.logicalUnits;
+        continue;
+      }
+      if (machineMaxTier === null) continue;
+      const object = collectibles.find((candidate) => candidate.runtimeId === entry.name);
+      if (!object) continue;
+      if ((object.template.tier as number) <= machineMaxTier) result.visibleEdible += 1;
+      else result.visibleLocked += 1;
+    }
+    return result;
   }
 
   private static emptyAuthoredResourceClusters(): GoldenCityCompositionDiagnostics['authoredResourceClusters'] {
