@@ -77,6 +77,17 @@ export class BlackHoleMachine extends Component {
   private presentation: MachinePresentation = 'HYBRID';
   /** Hex tint for this competitor's real imported crawler model only. */
   private arenaBotTint: string = MACHINE_ASSEMBLY_PALETTE.chassis;
+  /**
+   * Live suction feedback level, 0..1, driven by how many targets are actually
+   * being pulled in this frame. The V6 brief section 4 asks the singularity to
+   * react in ATTRACTED and SUCKING; without this the machine looks identical
+   * whether it is idle or eating, which was the weakest part of the opening
+   * read. Purely visual: no suction radius, mass, tier or collision is touched.
+   */
+  private suctionFeedback: number = 0;
+  /** Seconds remaining on the level-up flourish, and its total duration. */
+  private levelUpFlourish: number = 0;
+  private static readonly LEVEL_UP_FLOURISH_SECONDS = 0.9;
 
   onLoad(): void {
     this.buildVisibleGeometry();
@@ -264,6 +275,59 @@ export class BlackHoleMachine extends Component {
       .filter((node): node is Node => !!node && node.isValid);
   }
 
+  /**
+   * How much suction is happening this frame, 0..1. The world sets it from the
+   * real count of targets in ATTRACTED/SUCKING, so the feedback is driven by
+   * gameplay state rather than by a timer.
+   */
+  public setSuctionFeedback(level: number): void {
+    this.suctionFeedback = math.clamp01(level);
+  }
+
+  /**
+   * Visual response to the live suction level plus the level-up flourish.
+   *
+   * Three layers move together so the singularity reads as working:
+   *   - the swirls spin faster as targets are pulled in, so the vortex speeds
+   *     up exactly when the player is eating;
+   *   - the rim brightens and swells slightly, which is the readable cue at
+   *     phone scale because the rim is the silhouette;
+   *   - a level-up burst briefly expands and brightens the rim far more, so the
+   *     growth moment is unmistakable.
+   *
+   * Everything here is scale and rotation on existing decoration nodes. It does
+   * not move the structural body, so `playerWidthRatio` (measured from
+   * AbyssBase and HoleInner only) cannot drift, and it touches no gameplay value.
+   */
+  private updateSuctionFeedback(dt: number): void {
+    const active = this.suctionFeedback;
+    if (this.levelUpFlourish > 0) this.levelUpFlourish = Math.max(0, this.levelUpFlourish - dt);
+    const flourish = this.levelUpFlourish / BlackHoleMachine.LEVEL_UP_FLOURISH_SECONDS;
+    // Faster spin under load: the vortex accelerates while it is eating.
+    const spinBoost = 1 + active * 1.35;
+    if (this.innerSwirl) this.innerSwirl.setRotationFromEuler(0, this.visualElapsed * 90 * spinBoost, 10);
+    if (this.midSwirl) this.midSwirl.setRotationFromEuler(0, -this.visualElapsed * 72 * spinBoost, -20);
+    if (this.outerSwirl) this.outerSwirl.setRotationFromEuler(0, -this.visualElapsed * 55 * spinBoost, 16);
+    // Rim: idle breathing, then a swell under load, then the level-up burst.
+    if (this.holeRim) {
+      const base = this.holeRimBaseScale;
+      const breathing = Math.sin(this.visualElapsed * 1.8) * 0.015;
+      const load = active * 0.10;
+      const burst = flourish > 0 ? flourish * 0.34 : 0;
+      const scale = base * (1 + breathing + load + burst);
+      this.holeRim.setScale(scale, 1, scale);
+    }
+    if (this.shimmerSwirl) {
+      const glitter = 1 + Math.sin(this.visualElapsed * (2.4 + active * 6)) * (0.035 + active * 0.05);
+      this.shimmerSwirl.setScale(glitter * (1 + flourish * 0.18), 1, glitter * (1 + flourish * 0.18));
+    }
+  }
+
+  /** The rim's level-derived scale, kept separate so feedback multiplies it. */
+  private get holeRimBaseScale(): number {
+    return 1.0 + Math.min(0.38, Math.max(0, this.currentConfig.suctionRadius - 2.4) * 0.075);
+  }
+
   /** Receives camera-relative, normalized intent. It contains no arena/world boundary logic. */
   public setMovementDirection(direction: Readonly<Vec3>, magnitude: number): void {
     this.movementDirection.set(direction.x, 0, direction.z);
@@ -306,6 +370,7 @@ export class BlackHoleMachine extends Component {
       this.shimmerSwirl.setScale(pulse, 1, pulse);
     }
     if (this.holeRim) this.holeRim.setRotationFromEuler(0, this.visualElapsed * 18, 0);
+    this.updateSuctionFeedback(dt);
     // 1. Continuous velocity integration. Boundaries belong to arena/world systems,
     // never to this reusable machine component.
     const curPos = this.node.getPosition();
@@ -377,7 +442,9 @@ export class BlackHoleMachine extends Component {
     // 玩法吸附半径可快速增长；视觉外环仅作受控的等级提示，避免高等级
     // 出现覆盖街区、看起来像碰撞范围的浅色大圆。
     if (this.holeRim) {
-      const ringScale = 1.0 + Math.min(0.38, Math.max(0, this.currentConfig.suctionRadius - 2.4) * 0.075);
+      // The per-frame feedback multiplies this base, so the level-derived rim
+      // size is set here once and the animation layer only adds load and burst.
+      const ringScale = this.holeRimBaseScale;
       this.holeRim.setScale(new Vec3(ringScale, 1.0, ringScale));
     }
     if (this.coreNode) {
@@ -426,6 +493,12 @@ export class BlackHoleMachine extends Component {
         // profile listener must distinguish the local player from arena bots.
         machine: this,
       });
+    }
+    // Level up is the growth moment the brief asks to be unmistakable, so the
+    // rim gets a short burst. Skipped on the silent load path (`triggerEvent`
+    // false) because restoring a save is not a player-visible event.
+    if (triggerEvent && this.presentation !== 'BOT') {
+      this.levelUpFlourish = BlackHoleMachine.LEVEL_UP_FLOURISH_SECONDS;
     }
   }
 

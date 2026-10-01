@@ -1225,6 +1225,12 @@ export class InfiniteWorldManager extends Component {
   public static readonly MAX_ACTIVE_VEHICLES = 24;
   public static readonly TRAFFIC_RESPAWN_DELAY_SECONDS = 4;
   public static readonly REBASE_THRESHOLD = 192;
+  /**
+   * Targets being pulled in that count as a full suction load. Six is where the
+   * vortex visibly spins up in the opening without the rim swelling so far that
+   * it reads as a bigger suction range than the machine actually has.
+   */
+  public static readonly SUCTION_FEEDBACK_FULL_COUNT = 6;
 
   @property(Prefab)
   public goldenCityCellPrefab: Prefab | null = null;
@@ -1237,6 +1243,12 @@ export class InfiniteWorldManager extends Component {
   public readonly logicalOrigin: Vec3 = new Vec3();
   public readonly currentCell: Vec3 = new Vec3();
   public rebaseCount: number = 0;
+  /**
+   * Live suction load, 0..1, refreshed every `updateObjects` call. The machine
+   * reads it for its vortex and rim feedback. Read-only for consumers: nothing
+   * in the world reads it back, so it cannot affect gameplay.
+   */
+  public suctionLoad: number = 0;
 
   private objectPool: ObjectPool<CompressibleObject> | null = null;
   private objectRoot: Node | null = null;
@@ -1399,9 +1411,15 @@ export class InfiniteWorldManager extends Component {
     });
     let activeCollectibleCount = this.getAllObjects()
       .filter((object) => isCollectibleObject(object) && object.getState() !== 'ABSORBED' && object.getState() !== 'RECYCLED').length;
+    // Count what is actually being pulled in this frame. The machine reads this
+    // to speed up its vortex and swell its rim, so the suction feedback is
+    // driven by real gameplay state instead of a timer. Purely a visual signal:
+    // no radius, mass, tier or collision is affected.
+    let engagedTargetCount = 0;
     for (const cell of this.activeCells.values()) {
       for (const object of [...cell.objects]) {
         const state = object.getState();
+        if (state === 'ATTRACTED' || state === 'SUCKING') engagedTargetCount += 1;
         if (state !== 'ABSORBED' && state !== 'RECYCLED'
           && object.updateMotion(
             dt,
@@ -1431,6 +1449,10 @@ export class InfiniteWorldManager extends Component {
         InfiniteWorldManager.MAX_ACTIVE_COLLECTIBLES,
       );
     }
+    // Publish the live suction load so the machine can speed its vortex and
+    // swell its rim. Read-only signal: it changes no radius, mass, tier or
+    // collision, and it is cleared when nothing is being pulled.
+    this.suctionLoad = Math.min(1, engagedTargetCount / InfiniteWorldManager.SUCTION_FEEDBACK_FULL_COUNT);
     let activeVehicleCount = Array.from(this.activeCells.values())
       .reduce((count, cell) => count + cell.dynamicVehicles.length, 0);
     for (const cell of this.activeCells.values()) {

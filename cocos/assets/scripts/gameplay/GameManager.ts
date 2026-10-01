@@ -1049,6 +1049,10 @@ export class GameManager extends Component {
             this.machine.getSuctionPullMultiplier(),
             (obj) => this.onObjectAbsorbed(obj)
           );
+          // Drive the singularity's suction feedback from the load the world
+          // just measured. Visual only: the machine reads it for its vortex
+          // speed and rim swell, and nothing reads it back into gameplay.
+          this.machine.setSuctionFeedback(this.infiniteWorldManager.suctionLoad);
         } else if (this.gameState === 'NETWORK_ARENA') {
           // Unlike the local fallback, this branch never invokes the Cocos
           // arena simulation. The server snapshot is the only source of
