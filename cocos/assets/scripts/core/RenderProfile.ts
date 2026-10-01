@@ -192,9 +192,19 @@ export const MACHINE_ASSEMBLY_PALETTE = {
  * hues.
  */
 export const WORLD_PALETTE: Readonly<Record<WorldArtKind, string>> = {
-  roadStraight: '#9ca8bc',
-  roadCrossroad: '#9ca8bc',
-  terrainTile: '#92db7f',
+  // Road and ground were the largest distance from the bright reference: the
+  // road rendered around rgb(62,74,112) against a palette of #9ca8bc, i.e. a
+  // dark blue-grey that dominated the frame. The road atlas itself is a mid
+  // blue-grey that the tint multiplies down, so the tint has to be near-white
+  // to land on the intended light blue-grey. Measured on the opening frame:
+  // #9ca8bc gives asphalt rgb(62,74,112), #d5dbe6 gives rgb(98,108,141) and
+  // #e8edf5 gives rgb(109,119,151). Pure white only reaches rgb(123,130,157),
+  // which is the atlas ceiling, so #e8edf5 is the practical maximum.
+  roadStraight: '#e8edf5',
+  roadCrossroad: '#e8edf5',
+  // Grass is lifted alongside the road so the two stay distinguishable instead
+  // of both reading as mid-tone grey.
+  terrainTile: '#a6e894',
   buildingB: '#ffd18d',
   buildingC: '#9ed6ff',
   treeSmall: '#69bf71',
