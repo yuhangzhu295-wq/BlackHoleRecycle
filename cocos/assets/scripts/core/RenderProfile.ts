@@ -151,12 +151,19 @@ export const OPENING_CELL_COMPOSITION = {
     'ParkPathStonesEast',
   ],
   /**
-   * Nodes rescaled so they deliver their named semantic at phone scale. The
-   * streetlight is authored 0.2 m across, which projects to a 12 px vertical
-   * stripe indistinguishable from a kerb edge.
+  * Nodes moved inside the cell.
+   *
+   * The streetlight is the case that forced this list to exist. It is authored
+   * at the centre of the south arm, i.e. standing in the middle of a road, and
+   * 0.2 m across, so at the gameplay camera it projected to a 12 px stripe that
+   * delivered no 'streetlight' semantic at all. The first attempt at fixing it
+   * scaled the node 3.4x in place, which produced the opposite failure: an 8.2 m
+   * tall white slab taller than the 2.3 m buildings, still standing on the road.
+   * A 1.6x scale on the kerb beside the junction gives a readable post at a
+   * believable height without competing with the architecture.
    */
-  rescale: [
-    { name: 'POI_CentralSquare', scale: 3.4 },
+  relocate: [
+    { name: 'POI_CentralSquare', x: -9, z: -9, scale: 1.6 },
   ],
 } as const;
 

@@ -398,10 +398,17 @@ class InfiniteWorldCell {
       if (node) node.active = false;
       else console.warn('[InfiniteWorldManager] Opening composition entry not found: ' + name);
     }
-    for (const entry of OPENING_CELL_COMPOSITION.rescale) {
+    for (const entry of OPENING_CELL_COMPOSITION.relocate) {
       const node = byName(entry.name);
-      if (node) node.setScale(entry.scale, entry.scale, entry.scale);
-      else console.warn('[InfiniteWorldManager] Opening composition entry not found: ' + entry.name);
+      if (!node) {
+        console.warn('[InfiniteWorldManager] Opening composition entry not found: ' + entry.name);
+        continue;
+      }
+      // The cell is instantiated at the cell origin, so a local position is the
+      // authored coordinate minus the cell centre. Only x/z move: the authored
+      // height is left alone so nothing ends up buried or floating.
+      node.setPosition(entry.x - this.coord.x * this.cellSize, node.position.y, entry.z - this.coord.z * this.cellSize);
+      if (entry.scale) node.setScale(entry.scale, entry.scale, entry.scale);
     }
   }
 
