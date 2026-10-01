@@ -5,5 +5,10 @@
   "uuid": "4675de17-34d6-4854-b14a-b207bbdea674",
   "files": [],
   "subMetas": {},
-  "userData": {}
+  "userData": {
+    "isBundle": true,
+    "bundleConfigID": "default",
+    "bundleName": "game-art",
+    "priority": 9
+  }
 }
