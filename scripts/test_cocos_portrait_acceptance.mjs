@@ -4266,6 +4266,10 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
       assert(activeVisualMaterials.every((renderer) => renderer.slots?.every((slot) => slot.valid && slot.effect)),
         `FAIL_MACHINE_VISUAL_MATERIALS: ${JSON.stringify(activeVisualMaterials)}`);
       report.machineMaterialDiagnostics = activeVisualMaterials;
+      // V7 migration evidence. Recorded separately from the material rows so a
+      // reader can tell whether the authored singularity asset was adopted, or
+      // whether the machine silently stayed on its runtime fallback geometry.
+      report.machineUsesAuthoredSingularity = gameplaySnapshot.machine?.usesAuthoredSingularity ?? null;
       report.infiniteWorld.initial = validateInfiniteWorldSnapshot(gameplaySnapshot);
       const constructionLandmark = gameplaySnapshot.world?.streaming?.constructionLandmark;
       assert(constructionLandmark?.loadState === 'READY' && constructionLandmark.visible === true,
@@ -4933,6 +4937,7 @@ const report = {
   infiniteWorld: { initial: null, cardinal500m: [] },
   dynamicVehicles: null,
   machineMaterialDiagnostics: null,
+  machineUsesAuthoredSingularity: null,
   constructionLandmark: null,
   openingWorldVisuals: null,
   verticalSlice: null,

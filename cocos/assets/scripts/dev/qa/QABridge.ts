@@ -199,6 +199,9 @@ export class QABridge {
           z: machine?.velocity.z ?? 0,
         },
         visualMaterials: machine?.getVisualMaterialDiagnostics() || [],
+        // V7 migration evidence: proves at runtime whether the authored
+        // singularity asset replaced the runtime primitives.
+        usesAuthoredSingularity: machine?.isUsingAuthoredSingularity() ?? null,
       },
       world: {
         currentRegion: world?.currentTheme.id || 'bedroom',

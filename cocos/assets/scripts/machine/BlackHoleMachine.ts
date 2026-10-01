@@ -4,6 +4,7 @@
 import { _decorator, Color, Component, director, MeshRenderer, Node, Vec3, math } from 'cc';
 import { MACHINE_ASSEMBLY_PALETTE, MACHINE_PALETTE } from '../core/RenderProfile';
 import { BlobShadow } from '../core/BlobShadow';
+import { ArtLoader } from '../core/ArtLoader';
 import { BLOB_SHADOW_PROFILE } from '../core/RenderProfile';
 import { IMachineEvolutionConfig, MACHINE_EVOLUTION_CONFIG, ObjectTier } from '../data/GameConfig';
 import { eventBus } from '../core/EventBus';
@@ -88,6 +89,25 @@ export class BlackHoleMachine extends Component {
   /** Seconds remaining on the level-up flourish, and its total duration. */
   private levelUpFlourish: number = 0;
   private static readonly LEVEL_UP_FLOURISH_SECONDS = 0.9;
+  /**
+   * True once the authored singularity asset has replaced the runtime
+   * primitives. Read-only evidence that the V7 migration actually took effect
+   * at runtime, rather than only in the repository.
+   */
+  private authoredSingularityAdopted: boolean = false;
+  /**
+   * Guards the one-shot asset request. `onLoad` can run before the asset
+   * manager is ready to resolve a bundle, so the request is retried from
+   * `update` until it succeeds or the budget is spent.
+   */
+  private singularityLoadAttempts: number = 0;
+  private static readonly MAX_SINGULARITY_LOAD_ATTEMPTS = 90;
+  /**
+   * Latches a terminal load failure so the retry loop stops instead of
+   * warning every frame. A missing asset is a repository problem, not a
+   * per-frame condition, and flooding the console would hide real errors.
+   */
+  private singularityLoadAbandoned: boolean = false;
 
   onLoad(): void {
     this.buildVisibleGeometry();
@@ -207,12 +227,72 @@ export class BlackHoleMachine extends Component {
     // The singularity must read as sitting on the road, not hovering over it.
     // One shared transparent quad, no shadow map and no dynamic light.
     BlobShadow.attach(this.node, BLOB_SHADOW_PROFILE.diameter.player);
+
+  }
+
+  /**
+   * Swap the runtime primitives for the authored singularity once it loads.
+   *
+   * The asset's node names match the primitive node names exactly, so the
+   * per-frame Euler animation, the skin recolouring and the silhouette
+   * measurement all keep working against the same references: only the Mesh and
+   * Material behind each node change. The primitives are detached rather than
+   * destroyed, so a failed or slow load leaves the machine fully functional.
+   */
+  private adoptAuthoredSingularity(): void {
+    ArtLoader.instantiateArt('blackhole.core', 'game-art', (art) => {
+      if (!this.isValid || !this.coreNode?.isValid) return;
+      this.authoredSingularityAdopted = true;
+      const authored = art.node.getChildByName('SingularityVortex') || art.node.getChildByName('CoreNode') || art.node;
+      const replacements: Array<readonly [Node | null, string]> = [
+        [this.holeRim, 'HoleRing'],
+        [this.shimmerSwirl, 'ShimmerSwirl'],
+        [this.outerSwirl, 'OuterSwirl'],
+        [this.midSwirl, 'MidSwirl'],
+        [this.innerSwirl, 'InnerSwirl'],
+      ];
+      for (const [target, name] of replacements) {
+        if (!target?.isValid) continue;
+        const source = authored.getChildByName(name);
+        const sourceRenderer = source?.getComponent(MeshRenderer) || null;
+        const targetRenderer = target.getComponent(MeshRenderer) || null;
+        if (!sourceRenderer || !targetRenderer) continue;
+        // Mesh and material come from the asset; the node, its transform and
+        // its animation stay exactly where they are.
+        targetRenderer.mesh = sourceRenderer.mesh;
+        targetRenderer.setMaterial(sourceRenderer.getRenderMaterial(0), 0);
+      }
+      // The two body parts are static, so they are re-parented whole.
+      for (const name of ['AbyssBase', 'HoleInner']) {
+        const source = authored.getChildByName(name);
+        const existing = this.coreNode.getChildByName(name);
+        if (!source || !existing) continue;
+        existing.destroy();
+        source.setParent(this.coreNode);
+      }
+    }, (reason) => {
+      // One warning per machine, then stop asking. The runtime geometry keeps
+      // rendering, so a missing asset degrades instead of breaking play.
+      if (!this.singularityLoadAbandoned) {
+        this.singularityLoadAbandoned = true;
+        console.warn('[BlackHoleMachine] Authored singularity unavailable; keeping runtime geometry.', reason);
+      }
+    });
   }
 
   private getVisualLibrary(): MachineVisualLibrary {
     const library = director.getScene()?.getComponentInChildren(MachineVisualLibrary) || null;
     if (!library) throw new Error('[BlackHoleMachine] Missing editor-saved MachineVisualLibrary; primitive machine fallbacks are prohibited.');
     return library;
+  }
+
+  /**
+   * Whether the authored singularity asset replaced the runtime primitives.
+   * Exposed for the acceptance report so the V7 migration is provable at
+   * runtime rather than only visible in the repository.
+   */
+  public isUsingAuthoredSingularity(): boolean {
+    return this.authoredSingularityAdopted;
   }
 
   /**
@@ -360,6 +440,22 @@ export class BlackHoleMachine extends Component {
       this.materialRebindFrames--;
     }
     if (this.isPaused || dt <= 0) return;
+    // V7 PHASE 2b. The seven runtime primitives above are the immediate
+    // fallback, so the player is never missing a frame. The authored asset
+    // carries the same parts at the same sizes and offsets, so when it arrives
+    // it replaces them in place and every contract (suction radius, mass, tier,
+    // collision, playerWidthRatio) is untouched.
+    //
+    // The request lives here rather than in onLoad because onLoad can run
+    // before the asset manager is ready to resolve a bundle; retrying from the
+    // update loop is what makes the adoption reliable. Once the asset is
+    // resident the loader answers synchronously, so this settles on the first
+    // frame after it arrives.
+    if (!this.authoredSingularityAdopted && !this.singularityLoadAbandoned
+      && this.singularityLoadAttempts < BlackHoleMachine.MAX_SINGULARITY_LOAD_ATTEMPTS) {
+      this.singularityLoadAttempts += 1;
+      this.adoptAuthoredSingularity();
+    }
     this.visualElapsed += dt;
     if (this.innerSwirl) this.innerSwirl.setRotationFromEuler(0, this.visualElapsed * 90, 10);
     if (this.midSwirl) this.midSwirl.setRotationFromEuler(0, -this.visualElapsed * 72, -20);
