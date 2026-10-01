@@ -7,6 +7,7 @@ import { _decorator, Component, director, instantiate, Node, Prefab, Vec3 } from
 import { IObjectTemplate, IRegionThemeConfig, OBJECT_TEMPLATES, ObjectTier, REGION_THEMES } from '../data/GameConfig';
 import { ObjectPool } from '../core/ObjectPool';
 import { eventBus } from '../core/EventBus';
+import { OPENING_CELL_COMPOSITION } from '../core/RenderProfile';
 import { CompressibleObject } from '../gameplay/CompressibleObject';
 import { CellItemGenerator, IChunkSpawnItem } from './ChunkConfig';
 import { DistrictKind, DistrictTemplate, getDistrictTemplateForRegion } from './DistrictTemplates';
@@ -359,9 +360,47 @@ class InfiniteWorldCell {
     this.district = district;
     if (isAuthored) {
       this.art.hydrateAuthoredOpeningMaterials(this.node);
+      this.applyOpeningCellComposition();
       this.authoredMaterialRebindFrames = 2;
     } else {
       this.buildEnvironment();
+    }
+  }
+
+  /**
+   * Apply the declared opening-cell composition to the instantiated cell.
+   *
+   * The cell's geometry is authored in the Creator prefab, so this only
+   * deactivates, rescales or nudges named nodes; it never creates, deletes or
+   * re-parents anything, and the prefab stays the single source of truth. The
+   * list and the reasoning behind each entry live in RenderProfile so the
+   * composition is reviewable in one place instead of scattered through the
+   * cell constructor.
+   */
+  private applyOpeningCellComposition(): void {
+    const byName = (name: string): Node | null => {
+      const search = (root: Node): Node | null => {
+        if (root.name === name) return root;
+        for (const child of root.children) {
+          const found = search(child);
+          if (found) return found;
+        }
+        return null;
+      };
+      return search(this.node);
+    };
+    for (const name of OPENING_CELL_COMPOSITION.suppress) {
+      const node = byName(name);
+      // A missing entry is a real authoring change, so it is worth knowing
+      // about, but it must not break the cell: the rest of the list still
+      // applies and the composition gate reports the real counts.
+      if (node) node.active = false;
+      else console.warn('[InfiniteWorldManager] Opening composition entry not found: ' + name);
+    }
+    for (const entry of OPENING_CELL_COMPOSITION.rescale) {
+      const node = byName(entry.name);
+      if (node) node.setScale(entry.scale, entry.scale, entry.scale);
+      else console.warn('[InfiniteWorldManager] Opening composition entry not found: ' + entry.name);
     }
   }
 

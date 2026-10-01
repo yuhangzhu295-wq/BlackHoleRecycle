@@ -112,6 +112,54 @@ export const BLOB_SHADOW_PROFILE = {
   },
 } as const;
 
+/**
+ * Opening-cell composition, as a declared list rather than ad-hoc hiding.
+ *
+ * The V6 world audit classified the 50 visible environment objects of the
+ * authored opening cell and found 4 that are pure noise inside the player's
+ * 3 m corridor, 2 that are illegible at the gameplay camera distance, and 1
+ * that renders as a 0.2 m stripe instead of the streetlight the composition
+ * contract requires.
+ *
+ * These are applied at runtime by node name against the instantiated cell, not
+ * by editing the prefab: the project's authoring rule forbids hand-editing
+ * prefab or meta JSON, and the authored prefab stays the single source of the
+ * cell's geometry. Every entry is reversible by deleting one line.
+ *
+ * Contract constraints that shaped this list:
+ *   - treesMin is 10 and the cell authors 12, so at most two trees may go.
+ *     The first attempt removed three and the gate caught it exactly:
+ *     "visible trees is 9, needs >= 10". ParkTreeSmall_3 was restored for that
+ *     reason; at 2.5 m from the player it is the least harmful of the three
+ *     crowded trees.
+ *   - requiredSemantics includes streetlights, so the streetlight is rescaled
+ *     to read at phone scale rather than removed.
+ *   - requiredSemantics includes trees and flowerbeds, so one flowerbed stays.
+ */
+export const OPENING_CELL_COMPOSITION = {
+  /** Nodes deactivated in the instantiated cell. */
+  suppress: [
+    // 22x31 px, 1.7 m from the player, overlapping the cluster ring's top edge.
+    'ParkTreeSmall_1',
+    // Sits between the player and the fountain and its foliage reaches the
+    // player's north edge; the single worst readability offender in the audit.
+    'ParkTreeLarge_3',
+    // 24x45 px about 2 m from the player, and its z overlaps ParkTreeLarge_2.
+    'FlowerbedWest',
+    // About 3x12 px at this camera distance: not a readable path.
+    'ParkPathStonesWest',
+    'ParkPathStonesEast',
+  ],
+  /**
+   * Nodes rescaled so they deliver their named semantic at phone scale. The
+   * streetlight is authored 0.2 m across, which projects to a 12 px vertical
+   * stripe indistinguishable from a kerb edge.
+   */
+  rescale: [
+    { name: 'POI_CentralSquare', scale: 3.4 },
+  ],
+} as const;
+
 /** Gameplay camera framing. Owned by PortraitGameplayCameraController. */
 export const CAMERA_PROFILE = {
   designWidth: 720,
