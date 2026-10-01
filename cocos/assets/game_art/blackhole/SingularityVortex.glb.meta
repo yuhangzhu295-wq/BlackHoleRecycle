@@ -1,0 +1,309 @@
+{
+  "ver": "2.3.13",
+  "importer": "gltf",
+  "imported": true,
+  "uuid": "a125c6e0-40cc-442f-943e-3e5109943a99",
+  "files": [],
+  "subMetas": {
+    "59262": {
+      "importer": "gltf-scene",
+      "uuid": "a125c6e0-40cc-442f-943e-3e5109943a99@59262",
+      "displayName": "",
+      "id": "59262",
+      "name": "SingularityVortex.prefab",
+      "userData": {
+        "gltfIndex": 0
+      },
+      "ver": "1.0.14",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "681e7": {
+      "importer": "gltf-mesh",
+      "uuid": "a125c6e0-40cc-442f-943e-3e5109943a99@681e7",
+      "displayName": "",
+      "id": "681e7",
+      "name": "AbyssBase.mesh",
+      "userData": {
+        "gltfIndex": 0,
+        "triangleCount": 192
+      },
+      "ver": "1.1.1",
+      "imported": true,
+      "files": [
+        ".bin",
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "046f0": {
+      "importer": "gltf-mesh",
+      "uuid": "a125c6e0-40cc-442f-943e-3e5109943a99@046f0",
+      "displayName": "",
+      "id": "046f0",
+      "name": "HoleInner.mesh",
+      "userData": {
+        "gltfIndex": 1,
+        "triangleCount": 192
+      },
+      "ver": "1.1.1",
+      "imported": true,
+      "files": [
+        ".bin",
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "ecc5d": {
+      "importer": "gltf-mesh",
+      "uuid": "a125c6e0-40cc-442f-943e-3e5109943a99@ecc5d",
+      "displayName": "",
+      "id": "ecc5d",
+      "name": "InnerSwirl.mesh",
+      "userData": {
+        "gltfIndex": 2,
+        "triangleCount": 1536
+      },
+      "ver": "1.1.1",
+      "imported": true,
+      "files": [
+        ".bin",
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "6e6b3": {
+      "importer": "gltf-mesh",
+      "uuid": "a125c6e0-40cc-442f-943e-3e5109943a99@6e6b3",
+      "displayName": "",
+      "id": "6e6b3",
+      "name": "MidSwirl.mesh",
+      "userData": {
+        "gltfIndex": 3,
+        "triangleCount": 1536
+      },
+      "ver": "1.1.1",
+      "imported": true,
+      "files": [
+        ".bin",
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "f8395": {
+      "importer": "gltf-mesh",
+      "uuid": "a125c6e0-40cc-442f-943e-3e5109943a99@f8395",
+      "displayName": "",
+      "id": "f8395",
+      "name": "OuterSwirl.mesh",
+      "userData": {
+        "gltfIndex": 4,
+        "triangleCount": 1536
+      },
+      "ver": "1.1.1",
+      "imported": true,
+      "files": [
+        ".bin",
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "2f2a9": {
+      "importer": "gltf-mesh",
+      "uuid": "a125c6e0-40cc-442f-943e-3e5109943a99@2f2a9",
+      "displayName": "",
+      "id": "2f2a9",
+      "name": "ShimmerSwirl.mesh",
+      "userData": {
+        "gltfIndex": 5,
+        "triangleCount": 1536
+      },
+      "ver": "1.1.1",
+      "imported": true,
+      "files": [
+        ".bin",
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "2af31": {
+      "importer": "gltf-mesh",
+      "uuid": "a125c6e0-40cc-442f-943e-3e5109943a99@2af31",
+      "displayName": "",
+      "id": "2af31",
+      "name": "HoleRing.mesh",
+      "userData": {
+        "gltfIndex": 6,
+        "triangleCount": 1536
+      },
+      "ver": "1.1.1",
+      "imported": true,
+      "files": [
+        ".bin",
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "fd87b": {
+      "importer": "gltf-material",
+      "uuid": "a125c6e0-40cc-442f-943e-3e5109943a99@fd87b",
+      "displayName": "",
+      "id": "fd87b",
+      "name": "MAT_BLACKHOLE_AbyssBase.material",
+      "userData": {
+        "gltfIndex": 0
+      },
+      "ver": "1.0.14",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "f0d65": {
+      "importer": "gltf-material",
+      "uuid": "a125c6e0-40cc-442f-943e-3e5109943a99@f0d65",
+      "displayName": "",
+      "id": "f0d65",
+      "name": "MAT_BLACKHOLE_HoleInner.material",
+      "userData": {
+        "gltfIndex": 1
+      },
+      "ver": "1.0.14",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "e48be": {
+      "importer": "gltf-material",
+      "uuid": "a125c6e0-40cc-442f-943e-3e5109943a99@e48be",
+      "displayName": "",
+      "id": "e48be",
+      "name": "MAT_BLACKHOLE_InnerSwirl.material",
+      "userData": {
+        "gltfIndex": 2
+      },
+      "ver": "1.0.14",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "ebb7b": {
+      "importer": "gltf-material",
+      "uuid": "a125c6e0-40cc-442f-943e-3e5109943a99@ebb7b",
+      "displayName": "",
+      "id": "ebb7b",
+      "name": "MAT_BLACKHOLE_MidSwirl.material",
+      "userData": {
+        "gltfIndex": 3
+      },
+      "ver": "1.0.14",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "7f694": {
+      "importer": "gltf-material",
+      "uuid": "a125c6e0-40cc-442f-943e-3e5109943a99@7f694",
+      "displayName": "",
+      "id": "7f694",
+      "name": "MAT_BLACKHOLE_OuterSwirl.material",
+      "userData": {
+        "gltfIndex": 4
+      },
+      "ver": "1.0.14",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "e2bf2": {
+      "importer": "gltf-material",
+      "uuid": "a125c6e0-40cc-442f-943e-3e5109943a99@e2bf2",
+      "displayName": "",
+      "id": "e2bf2",
+      "name": "MAT_BLACKHOLE_ShimmerSwirl.material",
+      "userData": {
+        "gltfIndex": 5
+      },
+      "ver": "1.0.14",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "db148": {
+      "importer": "gltf-material",
+      "uuid": "a125c6e0-40cc-442f-943e-3e5109943a99@db148",
+      "displayName": "",
+      "id": "db148",
+      "name": "MAT_BLACKHOLE_HoleRing.material",
+      "userData": {
+        "gltfIndex": 6
+      },
+      "ver": "1.0.14",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    }
+  },
+  "userData": {
+    "imageMetas": [],
+    "lods": {
+      "enable": false,
+      "hasBuiltinLOD": false,
+      "options": [
+        {
+          "screenRatio": 0.25,
+          "faceCount": 1
+        },
+        {
+          "screenRatio": 0.125,
+          "faceCount": 0.25
+        },
+        {
+          "screenRatio": 0.01,
+          "faceCount": 0.1
+        }
+      ]
+    },
+    "assetFinder": {
+      "meshes": [
+        "a125c6e0-40cc-442f-943e-3e5109943a99@681e7",
+        "a125c6e0-40cc-442f-943e-3e5109943a99@046f0",
+        "a125c6e0-40cc-442f-943e-3e5109943a99@ecc5d",
+        "a125c6e0-40cc-442f-943e-3e5109943a99@6e6b3",
+        "a125c6e0-40cc-442f-943e-3e5109943a99@f8395",
+        "a125c6e0-40cc-442f-943e-3e5109943a99@2f2a9",
+        "a125c6e0-40cc-442f-943e-3e5109943a99@2af31"
+      ],
+      "skeletons": [],
+      "textures": [],
+      "materials": [
+        "a125c6e0-40cc-442f-943e-3e5109943a99@fd87b",
+        "a125c6e0-40cc-442f-943e-3e5109943a99@f0d65",
+        "a125c6e0-40cc-442f-943e-3e5109943a99@e48be",
+        "a125c6e0-40cc-442f-943e-3e5109943a99@ebb7b",
+        "a125c6e0-40cc-442f-943e-3e5109943a99@7f694",
+        "a125c6e0-40cc-442f-943e-3e5109943a99@e2bf2",
+        "a125c6e0-40cc-442f-943e-3e5109943a99@db148"
+      ],
+      "scenes": [
+        "a125c6e0-40cc-442f-943e-3e5109943a99@59262"
+      ]
+    }
+  }
+}
