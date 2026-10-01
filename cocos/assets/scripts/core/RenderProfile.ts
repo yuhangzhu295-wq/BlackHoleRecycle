@@ -160,6 +160,57 @@ export const OPENING_CELL_COMPOSITION = {
   ],
 } as const;
 
+/**
+ * Opening edible spread: where the first absorbable targets go.
+ *
+ * The authored opening rings are centred on the player's spawn, so the
+ * singularity begins attracting them on frame one and the measured opening
+ * frame showed only 1-2 visible edible targets against an owner target of
+ * 8-12. This spread places targets on the diagonals, which is the one bearing
+ * family that satisfies every constraint at once:
+ *
+ *   - clear of the roads. The cross occupies |x| <= 6 and |z| <= 6, and the
+ *     four arms run out along the axes, so a diagonal at 9-15 m lands on grass
+ *     in a corner quadrant rather than on the junction or an arm.
+ *   - outside the authored tutorial ring (radius <= 6 m), so the adjudicated
+ *     INTENTIONAL_TUTORIAL_EXCEPTION spacing stays untouched.
+ *   - inside the portrait frame at the gameplay camera, which sees roughly
+ *     z +20 .. -30 and |x| <= 12 at the player's depth.
+ *   - beyond the level-1 suction radius (2.4 m), so they are visible rather
+ *     than consumed on spawn.
+ *
+ * Positions are declared, not random, so the composition is reviewable and
+ * reproducible, and every entry is one reversible line.
+ */
+export const OPENING_EDIBLE_SPREAD = [
+  // Positions were chosen by an offline projection search (not by trial and
+  // error against the gate): the gameplay camera's projection is derived from a
+  // recorded composition, then every candidate on a 0.5 m grid is tested for
+  // grass, distance from the tutorial ring, frame bounds and occlusion by any
+  // visible BUILDING/TREE/POI. That leaves 483 safe positions; these are the
+  // nearest ones per bearing, which keeps the opening readable and the spread
+  // legible without crowding the spawn.
+  //
+  // Tier 1, inner ring: what a level-1 singularity can actually swallow.
+  { tier: 1, x: -6.5, z: -8.5 },   // r=10.7 screen=(74,345)
+  { tier: 1, x: 9.0, z: -6.5 },    // r=11.1 screen=(366,375)
+  { tier: 1, x: -9.0, z: -6.5 },   // r=11.1 screen=(24,375)
+  { tier: 1, x: -6.5, z: 11.0 },   // r=12.8 screen=(43,698)
+  { tier: 1, x: 7.5, z: 11.0 },    // r=13.3 screen=(370,698)
+  { tier: 1, x: -6.5, z: -11.5 },  // r=13.2 screen=(77,303)
+  // Tier 2, middle ring: locked at level 1, so they read as the next step up
+  // without competing with the edible targets.
+  { tier: 2, x: 6.5, z: -10.5 },   // r=12.3 screen=(314,317)
+  { tier: 2, x: -7.0, z: 14.0 },   // r=15.7 screen=(25,769)
+  { tier: 2, x: 7.0, z: 14.0 },    // r=15.7 screen=(365,769)
+  { tier: 2, x: 8.5, z: -13.0 },   // r=15.5 screen=(347,283)
+  // Tier 3, outer ring: the mid-game goal, visible from the opening.
+  { tier: 3, x: 6.5, z: -15.5 },   // r=16.8 screen=(308,250)
+  { tier: 3, x: -7.0, z: -14.5 },  // r=16.1 screen=(72,263)
+  { tier: 3, x: -10.0, z: -14.5 }, // r=17.6 screen=(19,263)
+  { tier: 3, x: 10.0, z: -16.0 },  // r=18.9 screen=(368,244)
+] as const;
+
 /** Gameplay camera framing. Owned by PortraitGameplayCameraController. */
 export const CAMERA_PROFILE = {
   designWidth: 720,

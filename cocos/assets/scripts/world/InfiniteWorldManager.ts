@@ -8,6 +8,7 @@ import { IObjectTemplate, IRegionThemeConfig, OBJECT_TEMPLATES, ObjectTier, REGI
 import { ObjectPool } from '../core/ObjectPool';
 import { eventBus } from '../core/EventBus';
 import { OPENING_CELL_COMPOSITION } from '../core/RenderProfile';
+import { OPENING_EDIBLE_SPREAD } from '../core/RenderProfile';
 import { CompressibleObject } from '../gameplay/CompressibleObject';
 import { CellItemGenerator, IChunkSpawnItem } from './ChunkConfig';
 import { DistrictKind, DistrictTemplate, getDistrictTemplateForRegion } from './DistrictTemplates';
@@ -521,6 +522,44 @@ class InfiniteWorldCell {
     // collectible at all and "a low-level player must still SEE T4/T5 and be
     // unable to swallow them" cannot be satisfied.
     this.populateAuthoredAspirational(objectPool, logicalOrigin);
+    this.populateOpeningEdibleSpread(objectPool, logicalOrigin);
+  }
+
+  /**
+   * Place the declared opening edible spread (see OPENING_EDIBLE_SPREAD).
+   *
+   * The authored rings are centred on the spawn, so they are consumed almost
+   * immediately and the measured opening frame showed only 1-2 visible edible
+   * targets. This adds a deterministic, reviewable set on the diagonals, which
+   * is the bearing family that stays off the roads, outside the tutorial ring
+   * and inside the portrait frame at the gameplay camera.
+   *
+   * Slots are registered exactly like authored ones, so the respawn system
+   * replenishes them and the tier-legibility instrument counts them.
+   */
+  private populateOpeningEdibleSpread(
+    objectPool: ObjectPool<CompressibleObject>,
+    logicalOrigin: Readonly<Vec3>,
+  ): void {
+    OPENING_EDIBLE_SPREAD.forEach((entry, index) => {
+      const pool = OBJECT_TEMPLATES.filter((template) => template.tier === entry.tier);
+      const template = pool[index % pool.length];
+      if (!template) return;
+      const worldX = this.coord.x * this.cellSize + entry.x;
+      const worldZ = this.coord.z * this.cellSize + entry.z;
+      const customId = `opening_edible_${index}`;
+      const object = objectPool.get();
+      object.spawn(template, worldX - logicalOrigin.x, worldZ - logicalOrigin.z, 0.35, customId);
+      this.objects.push(object);
+      this.collectibleSlots.push({
+        template,
+        x: worldX,
+        z: worldZ,
+        customId,
+        availableAt: 0,
+        active: true,
+      });
+    });
   }
 
   /**
