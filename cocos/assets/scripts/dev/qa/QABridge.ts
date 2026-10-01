@@ -35,6 +35,7 @@ import { HUDView } from '../../ui/HUDView';
 import { MapPreviewGraphic } from '../../ui/MapPreviewGraphic';
 import { RuntimePageInputRouter } from '../../ui/RuntimePageInputRouter';
 import { InfiniteWorldManager } from '../../world/InfiniteWorldManager';
+import { BlobShadow } from '../../core/BlobShadow';
 import { WorldCompositionProbe } from './WorldCompositionProbe';
 
 export interface QABridgeReadModel {
@@ -221,6 +222,7 @@ export class QABridge {
         replica: networkReplica?.getDiagnostics() || null,
       },
       sceneVisuals: this.getActiveVisualDiagnostics(),
+      contactShadows: BlobShadow.getLoadState(),
       objects: sampledObjects,
       compression: {
         state: compressionSystem?.state || 'IDLE',

@@ -16,6 +16,7 @@ import { AuthoritativeArenaSnapshot, ColyseusArenaClient } from '../network/Coly
 import { NetworkArenaReplica } from '../network/NetworkArenaReplica';
 import { WorldArtLibrary } from '../world/WorldArtLibrary';
 import { eventBus } from '../core/EventBus';
+import { BlobShadow } from '../core/BlobShadow';
 import { saveService } from '../data/SaveService';
 import { analyticsService } from '../analytics/AnalyticsService';
 import { platformAdapter } from '../platform/EditorPlatformAdapter';
@@ -147,6 +148,12 @@ export class GameManager extends Component {
         this.machine = machineNode.addComponent(BlackHoleMachine);
       }
     }
+
+    // The contact-shadow map is a real imported texture, so it loads
+    // asynchronously. Start it here, before any object asks for a shadow, so
+    // the very first pooled targets already get one instead of the load racing
+    // the opening spawn. Warm-up is idempotent.
+    BlobShadow.warmup();
 
     // 2. 自动挂载或查找 PlayerController
     if (!this.playerController && this.machine) {

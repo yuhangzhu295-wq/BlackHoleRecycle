@@ -6,6 +6,8 @@ import { _decorator, Color, Component, director, Label, Node, Vec3 } from 'cc';
 import { IObjectTemplate, ObjectTier, OBJECT_TEMPLATES } from '../data/GameConfig';
 import { getSuctionTierProfile, SuctionMotionCalculator } from './SuctionMotion';
 import { FSM } from '../core/FSM';
+import { BlobShadow } from '../core/BlobShadow';
+import { BLOB_SHADOW_PROFILE } from '../core/RenderProfile';
 import { getObjectArtBinding } from '../world/ObjectArtRegistry';
 import { WorldArtLibrary } from '../world/WorldArtLibrary';
 
@@ -199,9 +201,29 @@ export class CompressibleObject extends Component {
 
     this.buildVisibleNode();
     this.applyTemplateArt();
+    this.applyContactShadow();
     this.transitionTo('IDLE');
   }
 
+  /**
+   * Ground the few objects that read as floating without a lit pipeline.
+   * Only the large tiers get a contact shadow: the brief forbids a shadow per
+   * small target, and the small tiers are the majority of the pool. The shadow
+   * is a child of the object node, so it follows position and pooling for free.
+   */
+  private applyContactShadow(): void {
+    const tier = this.template.tier as number;
+    const diameter = tier >= 5
+      ? BLOB_SHADOW_PROFILE.diameter.tier5
+      : tier >= 4
+        ? BLOB_SHADOW_PROFILE.diameter.tier4
+        : null;
+    if (diameter === null) {
+      BlobShadow.detach(this.node);
+      return;
+    }
+    BlobShadow.attach(this.node, diameter);
+  }
   private applyTemplateArt(): void {
     if (!this.visualNode) return;
     this.visualNode.removeAllChildren();

@@ -41,6 +41,77 @@ export const RENDER_DEFINES = {
   USE_VERTEX_COLOR: false,
 } as const;
 
+/**
+ * Cheap contact shadows. The project is unlit (see LIGHTING_PROFILE), so no
+ * shadow is cast by the pipeline and every object would read as floating.
+ * Instead one shared transparent quad material is drawn flat on the ground
+ * under the few objects that need grounding: the player, dynamic vehicles and
+ * large targets. Small T1/T2 props deliberately get none.
+ */
+export const BLOB_SHADOW_PROFILE = {
+  /** Name of the child node a shadow is attached under. */
+  nodeName: 'BlobShadow',
+  /** Cache key; one material for the whole scene. */
+  materialKey: 'v6-blob-shadow',
+  /**
+   * The shared soft-edge map, under `assets/resources` so it ships in the
+   * resources bundle and can be loaded once at runtime. It is a real imported
+   * texture because every runtime-generated alternative failed: a flat quad is
+   * a hard rectangle, the world pass ignores vertex colour, and an ImageAsset
+   * built in code did not bind.
+   */
+  texturePath: 'v6/blob-shadow',
+  /**
+   * A PNG is imported as an ImageAsset with a Texture2D sub-asset, and the
+   * bundle registers them at different paths: the ImageAsset at the bare path
+   * and the Texture2D at `<path>/texture`. Loading the bare path as a Texture2D
+   * fails with "Bundle resources doesn't contain v6/blob-shadow", so the
+   * Texture2D sub-path is tried first.
+   */
+  textureSubPath: 'v6/blob-shadow/texture',
+  color: '#0b1220',
+  /**
+   * Alpha is applied twice: once by this colour, and again by the texture's own
+   * radial falloff. Measured on the opening frame, 110 with a hard quad read as
+   * a dark panel (dark-surface ratio 0.177 against a 0.06 budget). With the
+   * soft-edge map the mark is concentrated in the centre, so a lower alpha
+   * still reads while staying well inside the budget.
+   */
+  // Measured on the opening frame: at 70 the mark sat on top of the road's own
+  // dark asphalt and read as nothing. The road surface renders around
+  // rgb(62,74,112), so the shadow needs real weight to separate from it.
+  alpha: 120,
+  /**
+  * Technique index into `builtin-unlit`. The effect declares opaque(0) /
+  * transparent(1) / add(2) / alpha-blend(3); the default is 0, which ignores
+  * the texture alpha and draws a hard rectangle.
+  */
+  technique: 1,
+  /** Triangles in the soft-edged disc. 24 is smooth at phone scale. */
+  segments: 24,
+  /**
+   * Metres above the object's own origin. The terrain tile centre sits at
+   * y 0.02 and the road surface at y 0.06, so a shadow placed at the ground
+   * height is buried under the road and never draws. Measured: at 0.02 the
+   * shadow was coplanar with the tile and invisible; it has to clear the road
+   * surface (0.06 plus its own half-thickness) to read.
+   */
+  groundOffset: 0.10,
+  /** Depth-to-width ratio of the ellipse, so the shadow reads as a footprint. */
+  ellipse: 0.8,
+  /** Footprint in metres per shadow, by the kind of host it grounds. */
+  diameter: {
+    // Measured against the player's own silhouette: the level-1 singularity
+    // disc spans about 2.9 m (AbyssBase radius 1.10 x coreNode scale 1.32), so a
+    // 3.0 m shadow sat entirely underneath the black hole and never showed. The
+    // footprint has to be clearly wider than the object it grounds.
+    player: 4.4,
+    vehicle: 5.0,
+    tier4: 3.8,
+    tier5: 4.8,
+  },
+} as const;
+
 /** Gameplay camera framing. Owned by PortraitGameplayCameraController. */
 export const CAMERA_PROFILE = {
   designWidth: 720,
@@ -178,4 +249,3 @@ export const WORLD_PALETTE: Readonly<Record<WorldArtKind, string>> = {
   sofa: '#8d6e63',
   shippingContainer: '#0288d1',
 };
-

@@ -3,6 +3,8 @@
  */
 import { _decorator, Color, Component, director, MeshRenderer, Node, Vec3, math } from 'cc';
 import { MACHINE_ASSEMBLY_PALETTE, MACHINE_PALETTE } from '../core/RenderProfile';
+import { BlobShadow } from '../core/BlobShadow';
+import { BLOB_SHADOW_PROFILE } from '../core/RenderProfile';
 import { IMachineEvolutionConfig, MACHINE_EVOLUTION_CONFIG, ObjectTier } from '../data/GameConfig';
 import { eventBus } from '../core/EventBus';
 import { MeshFactory } from '../core/MeshFactory';
@@ -191,6 +193,9 @@ export class BlackHoleMachine extends Component {
     this.coreNode.addChild(this.holeRim);
     MeshFactory.attachMesh(this.holeRim, MeshFactory.getTorusMesh(1.03, 0.04), MACHINE_PALETTE.holeRing, 0.1, 0.5);
 
+    // The singularity must read as sitting on the road, not hovering over it.
+    // One shared transparent quad, no shadow map and no dynamic light.
+    BlobShadow.attach(this.node, BLOB_SHADOW_PROFILE.diameter.player);
   }
 
   private getVisualLibrary(): MachineVisualLibrary {
