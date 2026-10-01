@@ -7,6 +7,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { transformSync } from 'esbuild';
+import { evaluateRenderProfileLiteral } from './lib/render_profile_literals.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), 'utf8');
@@ -32,6 +33,15 @@ const cellCode = transformSync(managerSource.slice(helperStart, classEnd) + '\ng
 }).code;
 globalThis.OBJECT_TEMPLATES = OBJECT_TEMPLATES;
 globalThis.ObjectTier = ObjectTier;
+// Engine boundary: the compiled cell slice has no imports, so the opening-cell
+// composition it applies in its constructor must be published as a global. The
+// suppress/relocate list is the REAL production literal (extracted, not
+// hand-copied). The V7 opening edible spread is a separate runtime composition
+// feature outside this authored-census contract, so it is stubbed as a no-op
+// list, in the same style as the art-library no-op below.
+const renderProfileSource = read('cocos/assets/scripts/core/RenderProfile.ts');
+globalThis.OPENING_CELL_COMPOSITION = evaluateRenderProfileLiteral(renderProfileSource, 'OPENING_CELL_COMPOSITION');
+globalThis.OPENING_EDIBLE_SPREAD = [];
 new Function(cellCode)();
 const InfiniteWorldCell = globalThis.__S4_CELL;
 

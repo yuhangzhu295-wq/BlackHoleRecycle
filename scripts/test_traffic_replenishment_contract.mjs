@@ -10,6 +10,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { transformSync } from 'esbuild';
+import { evaluateRenderProfileLiteral } from './lib/render_profile_literals.mjs';
 
 const rootDirectory = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const dvPath = path.join(rootDirectory, 'cocos/assets/scripts/world/DynamicVehicle.ts');
@@ -45,6 +46,15 @@ globalThis.OBJECT_TEMPLATES = [
   { type: 'delivery_van', tier: 5, mass: 2000, value: 80, radius: 1.5 },
   { type: 'garbage_truck', tier: 5, mass: 5000, value: 150, radius: 2.0 },
 ];
+
+// Engine boundary: the cell constructor applies the imported opening-cell
+// composition to the instantiated node. The harness compiles only the class
+// slice, so the import is absent; extract the REAL production literal (not a
+// hand-copied duplicate) and publish it before evaluation.
+const renderProfileSource = fs.readFileSync(
+  path.join(rootDirectory, 'cocos/assets/scripts/core/RenderProfile.ts'), 'utf8',
+);
+globalThis.OPENING_CELL_COMPOSITION = evaluateRenderProfileLiteral(renderProfileSource, 'OPENING_CELL_COMPOSITION');
 
 new Function(compiled)();
 const InfiniteWorldCell = globalThis.__InfiniteWorldCell;

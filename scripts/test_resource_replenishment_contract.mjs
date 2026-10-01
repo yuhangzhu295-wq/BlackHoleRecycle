@@ -11,6 +11,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { transformSync } from 'esbuild';
+import { evaluateRenderProfileLiteral } from './lib/render_profile_literals.mjs';
 
 const rootDirectory = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const managerPath = path.join(rootDirectory, 'cocos/assets/scripts/world/InfiniteWorldManager.ts');
@@ -42,6 +43,19 @@ globalThis.OBJECT_TEMPLATES = [
   { type: 'test-sofa', tier: 4, mass: 160, value: 16, radius: 1.2 },
   { type: 'test-car', tier: 5, mass: 400, value: 40, radius: 2.0 },
 ];
+// Engine boundary: InfiniteWorldManager imports its opening-cell composition
+// data from RenderProfile. The harness compiles only the class slice, so the
+// imports are absent and must be published as globals before evaluation. The
+// suppress/relocate list is the REAL production literal, extracted rather than
+// hand-copied so it cannot drift. The V7 opening edible spread is a separate
+// runtime composition feature that this authored-census fixture does not
+// include, so it is stubbed as a no-op list, in the same style as the
+// art-library no-op above.
+const renderProfileSource = fs.readFileSync(
+  path.join(rootDirectory, 'cocos/assets/scripts/core/RenderProfile.ts'), 'utf8',
+);
+globalThis.OPENING_CELL_COMPOSITION = evaluateRenderProfileLiteral(renderProfileSource, 'OPENING_CELL_COMPOSITION');
+globalThis.OPENING_EDIBLE_SPREAD = [];
 new Function(compiled)();
 const InfiniteWorldCell = globalThis.__InfiniteWorldCell;
 

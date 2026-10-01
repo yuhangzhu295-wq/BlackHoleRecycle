@@ -14,6 +14,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { transformSync } from 'esbuild';
+import { evaluateRenderProfileLiteral } from './lib/render_profile_literals.mjs';
 
 const rootDirectory = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const readScript = (relative) => fs.readFileSync(path.join(rootDirectory, relative), 'utf8');
@@ -97,6 +98,16 @@ globalThis.WorldArtLibrary = class WorldArtLibrary {};
 globalThis.getObjectArtBinding = (type) => ({ kind: `art_${type}`, yOffset: 0, scale: new Vec3(1, 1, 1), yaw: 0 });
 globalThis.OBJECT_TEMPLATES = [];
 globalThis.ObjectTier = { T1: 1, T2: 2, T3: 3, T4: 4, T5: 5 };
+// Engine boundary: CompressibleObject imports its contact-shadow footprint from
+// RenderProfile and the shadow implementation from BlobShadow. The compiled
+// slice has no imports, so both are published as globals. The footprint is the
+// REAL production literal (extracted, not hand-copied); BlobShadow is a no-op
+// boundary stub for the static attach/detach calls, matching the faked Node /
+// Label / Color / director seams above. No assertion in this contract depends on
+// shadow behaviour, so the stub hides nothing.
+const renderProfileSource = readScript('cocos/assets/scripts/core/RenderProfile.ts');
+globalThis.BLOB_SHADOW_PROFILE = evaluateRenderProfileLiteral(renderProfileSource, 'BLOB_SHADOW_PROFILE');
+globalThis.BlobShadow = { attach: () => {}, detach: () => {} };
 
 new Function(compiled)();
 const CompressibleObject = globalThis.__CompressibleObject;
