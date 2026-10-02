@@ -587,19 +587,26 @@ function materialFor(kind) {
 
 /** Ground + road network shared by every district. */
 function buildCommonGroups() {
+  // Ground and crossroad are FLAT tiles: their local mesh is a thin slab
+  // (~0.02 m tall), so the X/Z footprint scale must never be applied to Y.
+  // A scalar `32` is expanded by `scaleVec` to (32, 32, 32), which turns the
+  // 0.02 m tile into a 0.64 m slab that swallows the player (body y 0.13-0.19),
+  // the contact shadows (y 0.10), every collectible and every low prop. The
+  // authored opening cell already uses (32, 1, 32) for exactly this reason; the
+  // district maps must match it. Same for the 16x crossroad: (16, 1, 16).
   const ground = nodeSpec({
     name: GROUP_NAMES.ground,
     children: [
-      placeTemplate(sceneTemplates.terrainTile, 'terrainTile', 'GroundTile_1', -16, -16, 32, 0, 0.01),
-      placeTemplate(sceneTemplates.terrainTile, 'terrainTile', 'GroundTile_2', 16, -16, 32, 0, 0.01),
-      placeTemplate(sceneTemplates.terrainTile, 'terrainTile', 'GroundTile_3', -16, 16, 32, 0, 0.01),
-      placeTemplate(sceneTemplates.terrainTile, 'terrainTile', 'GroundTile_4', 16, 16, 32, 0, 0.01),
+      placeTemplate(sceneTemplates.terrainTile, 'terrainTile', 'GroundTile_1', -16, -16, [32, 1, 32], 0, 0.01),
+      placeTemplate(sceneTemplates.terrainTile, 'terrainTile', 'GroundTile_2', 16, -16, [32, 1, 32], 0, 0.01),
+      placeTemplate(sceneTemplates.terrainTile, 'terrainTile', 'GroundTile_3', -16, 16, [32, 1, 32], 0, 0.01),
+      placeTemplate(sceneTemplates.terrainTile, 'terrainTile', 'GroundTile_4', 16, 16, [32, 1, 32], 0, 0.01),
     ],
   });
   const roads = nodeSpec({
     name: GROUP_NAMES.roads,
     children: [
-      placeTemplate(sceneTemplates.roadCrossroad, 'roadCrossroad', 'MainCrossroad', 0, 0, 16, 0, 0.05),
+      placeTemplate(sceneTemplates.roadCrossroad, 'roadCrossroad', 'MainCrossroad', 0, 0, [16, 1, 16], 0, 0.05),
       ...ROAD_ARMS.map((arm) => placeTemplate(sceneTemplates.roadStraight, 'roadStraight', arm.name, arm.x, arm.z, [12, 1, 16], arm.yaw, 0.05)),
     ],
   });

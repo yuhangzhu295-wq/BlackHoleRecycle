@@ -423,6 +423,16 @@ export class BlackHoleMachine extends Component {
    * layer that could silently drift.
    */
   public getAnimatedDecorationNodes(): readonly Node[] {
+    // The contact-shadow quad is a ground decoration, not part of the machine's
+    // drawn silhouette. It is deliberately WIDER than the body (4.4 m vs the
+    // level-1 disc's 2.9 m, see BLOB_SHADOW_PROFILE.diameter) so it reads as a
+    // footprint, and merging it into the gated silhouette therefore reported the
+    // shadow's width as the player's: the gated `playerWidthRatio` came out at
+    // 0.235 (arena) / 0.459 (endless) when the body alone is 0.2255 / 0.30. The
+    // metric is documented as the structural body, so the shadow is excluded
+    // here alongside the frame-animated layers. It is looked up by name because
+    // `BlobShadow.attach` creates it lazily after the first frame.
+    const contactShadow = this.node.getChildByName(BLOB_SHADOW_PROFILE.nodeName);
     const nodes: Node[] = [
       this.innerSwirl, this.midSwirl, this.outerSwirl, this.shimmerSwirl, this.holeRim,
       // PHASE 4's authored rim-energy ring spins and pulses every frame, so it
@@ -430,6 +440,7 @@ export class BlackHoleMachine extends Component {
       // from the gated silhouette for the same reason. It is null until the
       // asset adopts, which is why the list is built per call.
       this.effects?.getRimEnergyNode() || null,
+      contactShadow,
     ].filter((node): node is Node => !!node && node.isValid);
     return nodes;
   }
