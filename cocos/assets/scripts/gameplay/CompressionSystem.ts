@@ -10,6 +10,13 @@ import { saveService } from '../data/SaveService';
 import { platformAdapter } from '../platform/EditorPlatformAdapter';
 import { BlackHoleMachine } from '../machine/BlackHoleMachine';
 import { eventBus } from '../core/EventBus';
+import {
+  RESOURCE_DROP,
+  resourceDropForward,
+  resourceDropHeight,
+  resourceDropScale,
+  resourceDropYaw,
+} from './CompressionVisualProfile';
 
 const { ccclass, property } = _decorator;
 
@@ -132,14 +139,24 @@ export class CompressionSystem extends Component {
     } else if (this.state === 'EJECTING') {
       this.timer += dt;
       if (this.currentBlock) {
-        const p = this.currentBlock.getPosition();
-        // 资源块向上弹射并滑入后仓
-        const ejectSpeed = this.machine?.currentConfig.compressionEjectSpeed || 1.4;
-        this.currentBlock.setPosition(p.x, p.y + dt * ejectSpeed, p.z + dt * ejectSpeed * 0.8);
-        this.currentBlock.setScale(Vec3.ONE.clone().multiplyScalar(Math.min(1.0, this.timer * 3.0)));
+        // V7 PHASE 5 authored eject/drop arc. The block pops out of the eject
+        // port, travels forward, spins and settles with a springy overshoot,
+        // instead of the previous straight-line slide. Purely presentational:
+        // the 0.45 s window, the reward and the state chain are unchanged, and
+        // the live level still scales the travel through compressionEjectSpeed.
+        const ejectSpeed = this.machine?.currentConfig.compressionEjectSpeed || RESOURCE_DROP.referenceEjectSpeed;
+        const progress = Math.min(1, this.timer / RESOURCE_DROP.durationSeconds);
+        this.currentBlock.setPosition(
+          0,
+          resourceDropHeight(progress, ejectSpeed),
+          resourceDropForward(progress, ejectSpeed),
+        );
+        const scale = resourceDropScale(progress);
+        this.currentBlock.setScale(scale, scale, scale);
+        this.currentBlock.setRotationFromEuler(0, resourceDropYaw(progress), 0);
       }
-      
-      if (this.timer >= 0.45) {
+
+      if (this.timer >= RESOURCE_DROP.durationSeconds) {
         this.setState('COLLECTING');
       }
     } else if (this.state === 'COLLECTING') {
@@ -191,7 +208,10 @@ export class CompressionSystem extends Component {
   private spawnResourceBlock() {
     this.currentBlock = new Node('ResourceBlock');
     this.currentBlock.setPosition(0, 0, 0);
-    this.currentBlock.setScale(new Vec3(0.1, 0.1, 0.1));
+    // Start at the authored eject profile's floor scale so the block grows out
+    // of the port instead of popping in at full size.
+    const startScale = RESOURCE_DROP.startScale;
+    this.currentBlock.setScale(new Vec3(startScale, startScale, startScale));
     this.ejectNode?.addChild(this.currentBlock);
     
     const art = director.getScene()?.getComponentInChildren(WorldArtLibrary) || null;

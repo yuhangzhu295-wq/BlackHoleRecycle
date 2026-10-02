@@ -209,6 +209,17 @@ const CATEGORY_PREFAB_ENTRIES: readonly ArtEntry[] = [
     prefab: 'game_art/prefabs/blackhole/SuctionParticles.prefab',
     gameplayTypes: [],
   },
+  /**
+   * V7 PHASE 5 absorb feedback. The one-shot vanish burst emitted at the real
+   * absorption point by `AbsorbFeedbackPool`. An additive id: the singularity
+   * keeps rendering through `blackhole.core` and the other two effects.
+   */
+  {
+    artId: 'blackhole.absorbBurst',
+    category: 'blackhole',
+    prefab: 'game_art/prefabs/blackhole/AbsorbBurst.prefab',
+    gameplayTypes: [],
+  },
 ];
 
 const ALL_ENTRIES: readonly ArtEntry[] = [...MIGRATED_ENTRIES, ...CATEGORY_PREFAB_ENTRIES, ...UNMIGRATED_ENTRIES];

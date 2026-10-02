@@ -55,6 +55,8 @@ export interface QABridgeReadModel {
   readonly getCameraOffset: (state: GameSessionState) => Readonly<Vec3>;
   readonly getSessionSnapshot: () => Readonly<Record<string, unknown>>;
   readonly getSaveSnapshot: () => Readonly<Record<string, unknown>>;
+  /** V7 PHASE 5: pooled absorb-burst evidence, or null when no runtime host exists. */
+  readonly getAbsorbFeedbackDiagnostics: () => Readonly<Record<string, unknown>> | null;
 }
 
 interface InstalledQABridge {
@@ -247,6 +249,10 @@ export class QABridge {
       },
       sceneVisuals: this.getActiveVisualDiagnostics(),
       contactShadows: BlobShadow.getLoadState(),
+      // V7 PHASE 5 evidence: the pooled absorb burst. `liveNodes` is a constant
+      // pool size no matter how many absorptions happened, and `emittedCount`
+      // proves the burst fired from the real absorb event.
+      absorbFeedback: this.read.getAbsorbFeedbackDiagnostics(),
       objects: sampledObjects,
       compression: {
         state: compressionSystem?.state || 'IDLE',

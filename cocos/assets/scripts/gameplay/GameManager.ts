@@ -10,6 +10,7 @@ import { GameSessionCoordinator, GameSessionState } from './session/GameSessionC
 import { QABridge } from '../dev/qa/QABridge';
 import { HUDView } from '../ui/HUDView';
 import { CompressionSystem } from './CompressionSystem';
+import { AbsorbFeedbackPool } from './AbsorbFeedbackPool';
 import { PlayerController } from './PlayerController';
 import { ArenaMatchManager, ArenaMatchSnapshot } from './ArenaMatchManager';
 import { AuthoritativeArenaSnapshot, ColyseusArenaClient } from '../network/ColyseusArenaClient';
@@ -45,6 +46,11 @@ export class GameManager extends Component {
 
   public playerController: PlayerController | null = null;
   public compressionSystem: CompressionSystem | null = null;
+  /**
+   * V7 PHASE 5: the pooled authored vanish burst emitted at each real
+   * absorption. Visual only; it reads a world position and owns its own nodes.
+   */
+  private absorbFeedback: AbsorbFeedbackPool | null = null;
 
   public score: number = 0;
   public totalAbsorbedCount: number = 0;
@@ -111,6 +117,7 @@ export class GameManager extends Component {
     this.initLighting();
     this.bindEvents();
     this.initWorld();
+    this.initAbsorbFeedback();
     this.installQABridgeIfRequested();
     this.startNetworkProbeIfRequested();
   }
@@ -274,6 +281,18 @@ export class GameManager extends Component {
 
     analyticsService.track('game_launch');
     console.log('🎮 [GameManager] Cocos 3D World Initialized successfully!');
+  }
+
+  /**
+   * V7 PHASE 5: stand up the pooled absorb burst host and start its non-blocking
+   * asset load. The pool owns a fixed number of nodes; a missing asset leaves it
+   * absent without affecting play.
+   */
+  private initAbsorbFeedback(): void {
+    const host = new Node('AbsorbFeedbackRoot');
+    this.node.addChild(host);
+    this.absorbFeedback = new AbsorbFeedbackPool(host);
+    this.absorbFeedback.ensureRequested();
   }
 
   private initLighting(): void {
@@ -758,6 +777,10 @@ export class GameManager extends Component {
     // particle emission and writes it nowhere. Driven by the event rather than
     // by a timer, so it cannot fire while nothing is being eaten.
     this.machine.triggerDevourPulse();
+    // V7 PHASE 5: one real absorption raises one authored vanish burst at the
+    // absorption point. Driven by this event, never a timer, so it cannot fire
+    // while nothing is being absorbed. The pool is fixed-size and reuses slots.
+    this.absorbFeedback?.emit(obj.getPosition());
     this.totalAbsorbedCount++;
     this.absorbedTierCounts[t.tier] = (this.absorbedTierCounts[t.tier] || 0) + 1;
     this.score += t.value * 10;
@@ -902,6 +925,7 @@ export class GameManager extends Component {
       getMachine: () => this.machine,
       getPlayerController: () => this.playerController,
       getCompressionSystem: () => this.compressionSystem,
+      getAbsorbFeedbackDiagnostics: () => this.absorbFeedback?.getDiagnostics() || null,
       getWorld: () => this.infiniteWorldManager,
       getMainCamera: () => this.mainCamera,
       getArenaMatchManager: () => this.arenaMatchManager,
@@ -1017,6 +1041,10 @@ export class GameManager extends Component {
   update(dt: number): void {
     this.syncRegistrationBranding();
     this.forwardNetworkArenaInput(dt);
+    // V7 PHASE 5: advance the absorb bursts before the pause short-circuit, so a
+    // burst started just before a pause still collapses instead of freezing at
+    // full scale. Visual only; it never reads or writes gameplay state.
+    this.absorbFeedback?.update(dt);
     // 1. 暂停短路保护
     if (this.isPaused) return;
     if (!this.machine || !this.mainCamera) return;
