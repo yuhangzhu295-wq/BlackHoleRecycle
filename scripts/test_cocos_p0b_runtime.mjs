@@ -223,7 +223,7 @@ async function run() {
           currentCellSource: curSource,
           player: snap.player,
         };
-        if (curSource === 'PROCEDURAL_FALLBACK') {
+        if (curSource === 'AUTHORED_DISTRICT_MAP') {
           break;
         }
       }
@@ -231,10 +231,14 @@ async function run() {
     await releaseTouchJoystick(cdp);
     await page.waitForTimeout(400);
 
+    // V7 PHASE 3 retired the procedural path for district cells: every cell
+    // outside the opening now instantiates its district's authored map prefab.
+    // The expectation is updated to the new, stronger one rather than dropped:
+    // the adjacent cell must prove it ran from an authored district map.
     report.assertions.adjacentCellTransit = {
       adjacentReached,
       data: adjacentCellData,
-      pass: adjacentReached && adjacentCellData?.currentCellSource === 'PROCEDURAL_FALLBACK',
+      pass: adjacentReached && adjacentCellData?.currentCellSource === 'AUTHORED_DISTRICT_MAP',
     };
 
     // Step 4: Return to Opening (0,0) and check no duplicate dynamic objects

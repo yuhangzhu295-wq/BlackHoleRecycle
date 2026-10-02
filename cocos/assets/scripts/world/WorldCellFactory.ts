@@ -47,4 +47,16 @@ export class WorldCellFactory {
     this.options.parent.addChild(node);
     return node;
   }
+
+  /**
+   * V7 PHASE 3: place an authored district map. This is deliberately the same
+   * placement maths as `instantiateAuthoredCell` — a district map is an authored
+   * cell like Golden City, just selected by district rather than by coordinate —
+   * so cell size, coordinate maths and the streaming lifecycle stay identical.
+   * A missing prefab returns `null` so the caller keeps the procedural fallback.
+   */
+  public instantiateAuthoredDistrictMap(coord: WorldCellCoord, district: string, prefab: Prefab | null): Node | null {
+    if (!prefab) return null;
+    return this.instantiateAuthoredCell(coord, district, prefab, `WorldCell_${coord.x}_${coord.z}`);
+  }
 }

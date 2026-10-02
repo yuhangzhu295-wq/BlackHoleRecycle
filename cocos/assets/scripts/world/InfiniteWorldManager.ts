@@ -16,6 +16,7 @@ import { DynamicVehicle, RoadRoutePoint, VehicleSuctionInfluence } from './Dynam
 import { WorldArtKind, WorldArtLibrary } from './WorldArtLibrary';
 import { WorldStreamer } from './WorldStreamer';
 import { WorldCellFactory } from './WorldCellFactory';
+import { DistrictMapLibrary } from './DistrictMapLibrary';
 import { RegionBundleService } from './RegionBundleService';
 import type { WorldCellCoord as SharedWorldCellCoord, WorldRebase as SharedWorldRebase } from './WorldTypes';
 
@@ -54,6 +55,18 @@ const CONSTRUCTION_LANDMARK_BUNDLE = 'world-construction';
 const CONSTRUCTION_LANDMARK_ASSET = 'majadroid-construction-site/majadroid-construction-site';
 
 export type WorldCellCoord = SharedWorldCellCoord;
+
+/**
+ * Which authored or generated source produced a live cell. It is published
+ * read-only so acceptance can prove which path actually ran per cell, rather
+ * than inferring it from the fact that the opening cell is authored.
+ *
+ *  - `AUTHORED_GOLDEN_CITY`  the one-off opening cell (`GoldenCityCell.prefab`)
+ *  - `AUTHORED_DISTRICT_MAP` an authored per-district cell prefab (V7 PHASE 3)
+ *  - `PROCEDURAL_FALLBACK`   `CellItemGenerator`, used only while an authored
+ *                            map is still loading or is terminally unavailable
+ */
+export type WorldCellSource = 'PROCEDURAL_FALLBACK' | 'AUTHORED_GOLDEN_CITY' | 'AUTHORED_DISTRICT_MAP';
 
 /**
  * Narrow read-only view of a live streamed cell. It is intentionally useful
@@ -341,6 +354,8 @@ class InfiniteWorldCell {
   private readonly trafficSlots: TrafficRespawnSlot[] = [];
   private respawnClock = 0;
   public readonly district: DistrictTemplate;
+  /** Which source produced this cell. Read-only evidence for acceptance. */
+  public readonly source: WorldCellSource;
   /** One Creator-imported CC0 landmark; never a gameplay or collision node. */
   private constructionLandmark: Node | null = null;
   // Imported glTF renderers can finish their Web Mobile sub-model setup after
@@ -357,11 +372,18 @@ class InfiniteWorldCell {
     private readonly art: WorldArtLibrary,
     private readonly cellSize: number,
     public readonly isAuthored: boolean = false,
+    authoredSource: 'GOLDEN_CITY' | 'DISTRICT_MAP' = 'GOLDEN_CITY',
   ) {
     this.district = district;
+    this.source = isAuthored
+      ? (authoredSource === 'DISTRICT_MAP' ? 'AUTHORED_DISTRICT_MAP' : 'AUTHORED_GOLDEN_CITY')
+      : 'PROCEDURAL_FALLBACK';
     if (isAuthored) {
       this.art.hydrateAuthoredOpeningMaterials(this.node);
-      this.applyOpeningCellComposition();
+      // The opening composition is authored for Golden City specifically. A
+      // district map has none of those nodes, so applying it would only emit a
+      // warning per entry per cell.
+      if (authoredSource === 'GOLDEN_CITY') this.applyOpeningCellComposition();
       this.authoredMaterialRebindFrames = 2;
     } else {
       this.buildEnvironment();
@@ -689,13 +711,90 @@ class InfiniteWorldCell {
       const x = worldPos.x - logicalOrigin.x;
       const z = worldPos.z - logicalOrigin.z;
       const object = objectPool.get();
-      const id = 'traffic_0_0_authored_' + anchor.name;
+      // The coordinate belongs in the id. Authored traffic used to be the
+      // opening cell's alone, so `traffic_0_0_authored_` was correct by
+      // accident; now every district map instantiates its own anchors, and a
+      // hardcoded coordinate would make nine cells share one vehicle id (which
+      // the cell-lifecycle uniqueness contract correctly rejects). For cell
+      // (0,0) this is byte-identical to the previous id.
+      const id = `traffic_${this.coord.x}_${this.coord.z}_authored_` + anchor.name;
       object.spawn(template, x, z, 0.35, id);
       this.objects.push(object);
       const vehicleKind = kind === 'car' ? 'sedan' : kind;
       const speed = kind === 'car' ? 4.0 : kind === 'delivery_van' ? 3.2 : 2.6;
       this.dynamicVehicles.push(new DynamicVehicle(id, vehicleKind, object, roadRoute, speed));
       this.trafficSlots.push({ template, route: roadRoute.map((point) => ({ ...point })), spawnX: x, spawnZ: z, id, kind: vehicleKind, speed, availableAt: 0, active: true });
+    }
+  }
+
+  /**
+   * V7 PHASE 3: register the authored collectible spawn points of a district
+   * map.
+   *
+   * Creator owns WHERE (each `CollectibleSpawnPoints/<clusterId>` group and its
+   * `SpawnPoint_*` children), while `DistrictTemplates.ts` owns WHAT: the group
+   * is matched to the district's real `resourceCluster` by id, and its
+   * `preferredTypes` are resolved against the templates this region's theme
+   * allows, exactly as `CellItemGenerator` used to do. That keeps the authored
+   * map's gameplay semantics identical to the procedural one it replaces.
+   *
+   * Slot ids follow the production convention
+   * `cluster_<clusterId>_<DISTRICT>_<cellX>_<cellZ>_<n>`, so they stay unique
+   * across the nine simultaneously streamed cells (the same prefab is
+   * instantiated in several cells at once) and remain matchable by district.
+   *
+   * Deliberately does not run the opening-only edible spread or the
+   * opening-cell aspirational pass: both place fixed, cell-independent ids that
+   * would collide across cells.
+   */
+  public populateAuthoredDistrictContent(
+    objectPool: ObjectPool<CompressibleObject>,
+    logicalOrigin: Readonly<Vec3>,
+  ): void {
+    const findNodeByName = (root: Node, targetName: string): Node | null => {
+      if (root.name === targetName) return root;
+      for (const child of root.children) {
+        const found = findNodeByName(child, targetName);
+        if (found) return found;
+      }
+      return null;
+    };
+
+    const spawnPointsRoot = findNodeByName(this.node, 'CollectibleSpawnPoints');
+    if (!spawnPointsRoot) return;
+
+    const available = OBJECT_TEMPLATES.filter((template) => this.theme.availableTiers.includes(template.tier));
+    if (available.length === 0) return;
+
+    for (const group of spawnPointsRoot.children) {
+      const cluster = this.district.resourceClusters.find((candidate) => candidate.id === group.name);
+      const semantic: IObjectTemplate[] = cluster
+        ? cluster.preferredTypes
+          .map((type) => available.find((template) => template.type === type))
+          .filter((template): template is IObjectTemplate => Boolean(template))
+        : [];
+      // A group that names a declared cluster uses that cluster's preferred
+      // types; an unrecognised group keeps a region-legal T1..Tn rotation so a
+      // future authored group can never leave the cell empty.
+      const pool = semantic.length > 0 ? semantic : available;
+      const spawnPoints = group.children.filter((child) => child.name.startsWith('SpawnPoint_'));
+      spawnPoints.forEach((spawnPoint, index) => {
+        const template = pool[index % pool.length];
+        if (!template) return;
+        const worldPos = spawnPoint.worldPosition;
+        const customId = `cluster_${group.name}_${this.district.kind}_${this.coord.x}_${this.coord.z}_${index}`;
+        const object = objectPool.get();
+        object.spawn(template, worldPos.x - logicalOrigin.x, worldPos.z - logicalOrigin.z, 0.35, customId);
+        this.objects.push(object);
+        this.collectibleSlots.push({
+          template,
+          x: worldPos.x,
+          z: worldPos.z,
+          customId,
+          availableAt: 0,
+          active: true,
+        });
+      });
     }
   }
 
@@ -1242,7 +1341,7 @@ export class InfiniteWorldManager extends Component {
   @property(Prefab)
   public goldenCityCellPrefab: Prefab | null = null;
 
-  public currentCellSource: 'AUTHORED_GOLDEN_CITY' | 'PROCEDURAL_FALLBACK' = 'PROCEDURAL_FALLBACK';
+  public currentCellSource: WorldCellSource = 'PROCEDURAL_FALLBACK';
 
   public currentTheme: IRegionThemeConfig = REGION_THEMES[0];
   public currentRegionIndex: number = 0;
@@ -1309,6 +1408,11 @@ export class InfiniteWorldManager extends Component {
       cellSize: InfiniteWorldManager.CELL_SIZE,
       parent: this.node,
     });
+    // V7 PHASE 3: start loading the authored district maps. Deliberately
+    // non-blocking and non-fatal: a cell created before the batch lands waits a
+    // frame (see createCell), and a terminal failure degrades to the procedural
+    // path instead of leaving the world empty.
+    DistrictMapLibrary.ensure();
     this.initialized = true;
     this.updateCells(Vec3.ZERO);
     this.loadConstructionLandmark();
@@ -1379,9 +1483,7 @@ export class InfiniteWorldManager extends Component {
     this.logicalOrigin.set(this.streamer.logicalOrigin);
     this.currentCell.set(this.streamer.currentCell);
     const currentCell = this.activeCells.get(cellKey({ x: this.currentCell.x, z: this.currentCell.z }));
-    this.currentCellSource = currentCell?.isAuthored
-      ? 'AUTHORED_GOLDEN_CITY'
-      : 'PROCEDURAL_FALLBACK';
+    this.currentCellSource = currentCell?.source || 'PROCEDURAL_FALLBACK';
     this.updateCurrentTheme({ x: this.currentCell.x, z: this.currentCell.z });
     return this.streamer.rebaseIfNeeded(renderPlayerPosition, (rebase) => {
       this.logicalOrigin.set(this.streamer.logicalOrigin);
@@ -1595,11 +1697,25 @@ export class InfiniteWorldManager extends Component {
         x: cell.coord.x,
         z: cell.coord.z,
         district: cell.district.kind,
+        // V7 PHASE 3 evidence: which source produced this specific cell, so the
+        // report can prove authored district maps ran away from (0,0).
+        source: cell.source,
         collectibleRuntimeIds: cell.objects
           .filter((object) => !isVehicleObject(object))
           .map((object) => object.runtimeId),
         vehicleRuntimeIds: cell.dynamicVehicles.map((vehicle) => vehicle.id),
       })),
+      // V7 PHASE 3 read-only evidence: whether the authored district map
+      // library is resident, which districts it bound, and how many live cells
+      // actually came from an authored district map. No setters, no gameplay.
+      districtMapLibrary: {
+        ready: DistrictMapLibrary.isReady(),
+        pending: DistrictMapLibrary.isPending(),
+        boundDistricts: DistrictMapLibrary.boundDistricts().slice(),
+        lastError: DistrictMapLibrary.getLastError(),
+      },
+      authoredDistrictCellCount: Array.from(this.activeCells.values())
+        .filter((cell) => cell.source === 'AUTHORED_DISTRICT_MAP').length,
       cellLifecycle: this.cellLifecycle.map((event) => ({ ...event })),
       dynamicVehicles: Array.from(this.activeCells.values(), (cell) => cell.dynamicVehicles.map((vehicle) => vehicle.getSnapshot())).flat(),
       constructionLandmark: {
@@ -1698,19 +1814,33 @@ export class InfiniteWorldManager extends Component {
     if (!this.ensureRegionArt(coord)) return;
 
     let cellNode: Node | null = null;
-    let isAuthored = false;
+    let authoredSource: 'GOLDEN_CITY' | 'DISTRICT_MAP' | null = null;
+    const isOpeningCell = coord.x === 0 && coord.z === 0;
 
-    if (coord.x === 0 && coord.z === 0) {
+    if (isOpeningCell) {
+      // The opening cell keeps its one-off authored prefab. A district map is
+      // never substituted here: Golden City is the authored tutorial layout the
+      // golden-city composition gate and the tutorial spawn groups depend on.
       if (this.goldenCityCellPrefab && this.worldCellFactory) {
         cellNode = this.worldCellFactory.instantiateAuthoredCell(coord, district.kind, this.goldenCityCellPrefab);
+        if (cellNode) authoredSource = 'GOLDEN_CITY';
       }
-      if (cellNode) {
-        isAuthored = true;
-        this.currentCellSource = 'AUTHORED_GOLDEN_CITY';
-      } else {
-        this.currentCellSource = 'PROCEDURAL_FALLBACK';
+    } else if (this.worldCellFactory) {
+      // V7 PHASE 3: every other cell is authored per district. While the map
+      // batch is still in flight the coordinate waits a frame instead of
+      // committing to the procedural path, so the authored map is the normal
+      // path and the fallback only runs once the library is terminally
+      // unavailable. `updateCells()` re-derives the required set every frame.
+      const districtMap = DistrictMapLibrary.get(district.kind);
+      if (districtMap) {
+        cellNode = this.worldCellFactory.instantiateAuthoredDistrictMap(coord, district.kind, districtMap);
+        if (cellNode) authoredSource = 'DISTRICT_MAP';
+      } else if (DistrictMapLibrary.isPending()) {
+        return;
       }
     }
+
+    const isAuthored = authoredSource !== null;
 
     if (!cellNode) {
       const logicalCenterX = coord.x * InfiniteWorldManager.CELL_SIZE;
@@ -1724,7 +1854,16 @@ export class InfiniteWorldManager extends Component {
     );
     }
 
-    const cell = new InfiniteWorldCell(coord, cellNode, theme, district, this.artLibrary, InfiniteWorldManager.CELL_SIZE, isAuthored);
+    const cell = new InfiniteWorldCell(
+      coord,
+      cellNode,
+      theme,
+      district,
+      this.artLibrary,
+      InfiniteWorldManager.CELL_SIZE,
+      isAuthored,
+      authoredSource === 'DISTRICT_MAP' ? 'DISTRICT_MAP' : 'GOLDEN_CITY',
+    );
     // Authored Opening Cells own their environment and spawn-point authoring.
     // Do not append the legacy procedural Opening objects/traffic on top of them.
     // Cells without an authored prefab retain the strangler fallback path.
@@ -1735,13 +1874,16 @@ export class InfiniteWorldManager extends Component {
         this.objectPool,
         this.logicalOrigin,
       );
+    } else if (authoredSource === 'DISTRICT_MAP') {
+      cell.populateAuthoredDistrictContent(this.objectPool, this.logicalOrigin);
+      cell.populateAuthoredTraffic(this.objectPool, this.logicalOrigin);
     } else {
       cell.populateAuthoredContent(this.objectPool, this.logicalOrigin);
       cell.populateAuthoredTraffic(this.objectPool, this.logicalOrigin);
     }
     this.activeCells.set(cellKey(coord), cell);
     this.recordCellLifecycle('LOAD', cell);
-    if (coord.x === 0 && coord.z === 0) this.installConstructionLandmarkInOpeningCell();
+    if (isOpeningCell) this.installConstructionLandmarkInOpeningCell();
   }
 
   /**

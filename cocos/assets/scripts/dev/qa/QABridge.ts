@@ -35,6 +35,7 @@ import { HUDView } from '../../ui/HUDView';
 import { MapPreviewGraphic } from '../../ui/MapPreviewGraphic';
 import { RuntimePageInputRouter } from '../../ui/RuntimePageInputRouter';
 import { InfiniteWorldManager } from '../../world/InfiniteWorldManager';
+import { DistrictMapLibrary } from '../../world/DistrictMapLibrary';
 import { BlobShadow } from '../../core/BlobShadow';
 import { MaterialLibrary } from '../../core/MaterialLibrary';
 import { WorldCompositionProbe } from './WorldCompositionProbe';
@@ -214,6 +215,14 @@ export class QABridge {
         ready: MaterialLibrary.isReady(),
         boundCategories: [...MaterialLibrary.boundCategories()],
         lastError: MaterialLibrary.getLastError(),
+      },
+      // V7 PHASE 3 evidence: the authored district map library state. Read-only
+      // projection of the loader; it exposes no setter and no gameplay state.
+      districtMaps: {
+        ready: DistrictMapLibrary.isReady(),
+        pending: DistrictMapLibrary.isPending(),
+        boundDistricts: DistrictMapLibrary.boundDistricts().slice(),
+        lastError: DistrictMapLibrary.getLastError(),
       },
       world: {
         currentRegion: world?.currentTheme.id || 'bedroom',
