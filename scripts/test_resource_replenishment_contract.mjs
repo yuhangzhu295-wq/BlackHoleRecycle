@@ -45,17 +45,18 @@ globalThis.OBJECT_TEMPLATES = [
 ];
 // Engine boundary: InfiniteWorldManager imports its opening-cell composition
 // data from RenderProfile. The harness compiles only the class slice, so the
-// imports are absent and must be published as globals before evaluation. The
-// suppress/relocate list is the REAL production literal, extracted rather than
-// hand-copied so it cannot drift. The V7 opening edible spread is a separate
-// runtime composition feature that this authored-census fixture does not
-// include, so it is stubbed as a no-op list, in the same style as the
-// art-library no-op above.
+// imports are absent and must be published as globals before evaluation. Both
+// literals are the REAL production values, extracted rather than hand-copied so
+// they cannot drift. `OPENING_EDIBLE_SPREAD` used to be stubbed `[]` because
+// the real 14-entry spread broke census fixtures written before it existed;
+// that meant the spread was completely untested here. The fixtures below now
+// account for the real spread instead of excluding it, so the census covers
+// production behaviour rather than a spread-free world that never ships.
 const renderProfileSource = fs.readFileSync(
   path.join(rootDirectory, 'cocos/assets/scripts/core/RenderProfile.ts'), 'utf8',
 );
 globalThis.OPENING_CELL_COMPOSITION = evaluateRenderProfileLiteral(renderProfileSource, 'OPENING_CELL_COMPOSITION');
-globalThis.OPENING_EDIBLE_SPREAD = [];
+globalThis.OPENING_EDIBLE_SPREAD = evaluateRenderProfileLiteral(renderProfileSource, 'OPENING_EDIBLE_SPREAD');
 new Function(compiled)();
 const InfiniteWorldCell = globalThis.__InfiniteWorldCell;
 
@@ -198,8 +199,33 @@ authored.populateAuthoredContent(authoredPool, origin);
 const authoredObject = authored.objects.find((object) => object.runtimeId === 'cluster_TutorialStarter_0');
 const authoredT2Object = authored.objects.find((object) => object.runtimeId === 'tutorial_t2_target');
 record('TUTORIAL_STARTER_REGISTERED_AS_T1_SLOT', authoredObject?.template.tier === 1 && authoredObject.position.x === 12 && authoredObject.position.z === 13, 'TutorialStarter spawn point became a T1 respawn slot at its authored position');
-record('CLUSTER_GROUPS_REGISTERED_AS_T1_SLOTS', authored.objects.filter((object) => object.template.tier === 1).length === 3, 'Cluster_Park and Cluster_CitySquare use T1 templates');
+// Count the authored cluster groups specifically. The real opening edible
+// spread also registers T1 slots, so a bare `tier === 1` count is no longer a
+// statement about the cluster groups; the predicate below is.
+record('CLUSTER_GROUPS_REGISTERED_AS_T1_SLOTS', authored.objects.filter((object) => String(object.runtimeId).startsWith('cluster_') && object.template.tier === 1).length === 3, 'Cluster_Park and Cluster_CitySquare use T1 templates');
 record('TUTORIAL_T2_TARGET_USES_AUTHORED_POINT', authoredT2Object?.template.tier === 2 && authoredT2Object.position.x === 18 && authoredT2Object.position.z === 19, 'TutorialT2Target uses its authored spawn point with a T2 template');
+// The real opening edible spread is now exercised rather than stubbed away.
+// Assert it exactly: one registered object per declared entry, each at its
+// authored tier and position, so the spread's tier mix is covered by a gate.
+const spreadObjectsById = new Map(authored.objects
+  .filter((object) => String(object.runtimeId).startsWith('opening_edible_'))
+  .map((object) => [object.runtimeId, object]));
+const spreadTierCounts = globalThis.OPENING_EDIBLE_SPREAD.reduce((counts, entry) => {
+  counts[entry.tier] = (counts[entry.tier] || 0) + 1;
+  return counts;
+}, {});
+record('OPENING_EDIBLE_SPREAD_REGISTERED',
+  spreadObjectsById.size === globalThis.OPENING_EDIBLE_SPREAD.length
+  && globalThis.OPENING_EDIBLE_SPREAD.every((entry, index) => {
+    const object = spreadObjectsById.get('opening_edible_' + index);
+    return object
+      && object.template.tier === entry.tier
+      && Math.abs(object.position.x - entry.x) < 1e-9
+      && Math.abs(object.position.z - entry.z) < 1e-9;
+  })
+  && [1, 2, 3].every((tier) => authored.objects
+    .filter((object) => String(object.runtimeId).startsWith('opening_edible_') && object.template.tier === tier).length === (spreadTierCounts[tier] || 0)),
+  'every one of the ' + globalThis.OPENING_EDIBLE_SPREAD.length + ' declared opening edible entries is registered at its authored tier and position, tier mix ' + JSON.stringify(spreadTierCounts));
 authored.removeAbsorbedCollectible(authoredObject, authoredPool, 4);
 authored.removeAbsorbedCollectible(authoredT2Object, authoredPool, 4);
 authored.advanceRespawnClock(4);
@@ -224,7 +250,23 @@ record('AUTHORED_CELL_EXPOSES_T4_T5_ASPIRATIONAL',
 record('AUTHORED_ASPIRATIONAL_STAYS_OUTSIDE_TUTORIAL_RING',
   authoredAspirational.every((object) => Math.hypot(object.position.x, object.position.z) >= 12),
   'aspirational targets sit on the outer band, clear of the authored tutorial ring (radius <= 6m)');
-record('RELOAD_DOES_NOT_DUPLICATE', authored.objects.length === 6 && authoredPool.getActiveCount() === 6, 'reload recreates each authored slot once (4 authored + 2 aspirational)');
+// The reload total now includes the real spread. Assert the breakdown as well
+// as the total, plus id uniqueness, so "each slot exactly once" is proven for
+// every source rather than only the two that predate the spread.
+const reloadedIds = authored.objects.map((object) => object.runtimeId);
+const reloadedAuthoredCount = authored.objects.filter((object) => String(object.runtimeId).startsWith('cluster_') || object.runtimeId === 'tutorial_t2_target').length;
+const reloadedAspirationalCount = authored.objects.filter((object) => String(object.runtimeId).startsWith('aspirational_authored_')).length;
+const reloadedSpreadCount = authored.objects.filter((object) => String(object.runtimeId).startsWith('opening_edible_')).length;
+const expectedReloadedTotal = 4 + 2 + globalThis.OPENING_EDIBLE_SPREAD.length;
+record('RELOAD_DOES_NOT_DUPLICATE',
+  authored.objects.length === expectedReloadedTotal
+  && authoredPool.getActiveCount() === expectedReloadedTotal
+  && reloadedAuthoredCount === 4
+  && reloadedAspirationalCount === 2
+  && reloadedSpreadCount === globalThis.OPENING_EDIBLE_SPREAD.length
+  && new Set(reloadedIds).size === reloadedIds.length,
+  'reload recreates each slot once and re-registers the real spread (4 authored + 2 aspirational + '
+  + globalThis.OPENING_EDIBLE_SPREAD.length + ' spread = ' + expectedReloadedTotal + '), ids unique');
 
 const fallbackAnchor = new FakeNode('ClusterAnchor_RecyclingSquare', [], { x: 22, y: 0, z: 23 });
 const deferredAuthored = makeCell(true, new FakeNode('Cell', [

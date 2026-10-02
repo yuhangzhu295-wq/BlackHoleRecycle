@@ -34,14 +34,15 @@ const cellCode = transformSync(managerSource.slice(helperStart, classEnd) + '\ng
 globalThis.OBJECT_TEMPLATES = OBJECT_TEMPLATES;
 globalThis.ObjectTier = ObjectTier;
 // Engine boundary: the compiled cell slice has no imports, so the opening-cell
-// composition it applies in its constructor must be published as a global. The
-// suppress/relocate list is the REAL production literal (extracted, not
-// hand-copied). The V7 opening edible spread is a separate runtime composition
-// feature outside this authored-census contract, so it is stubbed as a no-op
-// list, in the same style as the art-library no-op below.
+// composition it applies in its constructor must be published as a global. Both
+// lists are the REAL production literals, extracted rather than hand-copied so
+// they cannot drift. `OPENING_EDIBLE_SPREAD` used to be stubbed `[]` because the
+// real 14-entry spread broke census fixtures written before it existed; the
+// fixtures below now account for it, so the spread is exercised by this gate
+// instead of being excluded from it.
 const renderProfileSource = read('cocos/assets/scripts/core/RenderProfile.ts');
 globalThis.OPENING_CELL_COMPOSITION = evaluateRenderProfileLiteral(renderProfileSource, 'OPENING_CELL_COMPOSITION');
-globalThis.OPENING_EDIBLE_SPREAD = [];
+globalThis.OPENING_EDIBLE_SPREAD = evaluateRenderProfileLiteral(renderProfileSource, 'OPENING_EDIBLE_SPREAD');
 new Function(cellCode)();
 const InfiniteWorldCell = globalThis.__S4_CELL;
 
@@ -119,26 +120,67 @@ const node = new FakeNode('Cell', [new FakeNode('CollectibleSpawnPoints', [
   ))),
 ])]);
 const art = { spawn() {}, hydrateAuthoredOpeningMaterials() {}, hydrateConstructionLandmarkMaterials() {} };
+/**
+ * Pinned production composition of `OPENING_EDIBLE_SPREAD`.
+ *
+ * The spread itself is extracted from RenderProfile, so it cannot drift
+ * silently. These expected values pin the declared composition so the census
+ * fails if the spread is emptied or its tier mix changes — that is what makes
+ * this a real gate rather than the vacuous "every entry of an empty list is
+ * fine" check that stubbing it `[]` used to produce. Update these alongside a
+ * deliberate change to the spread.
+ */
+const EXPECTED_OPENING_EDIBLE_SPREAD = { total: 14, tierCounts: { 1: 6, 2: 4, 3: 4 } };
+
 const cell = new InfiniteWorldCell({ x: 0, z: 0 }, node, theme, district, art, 64, true);
 const pool = new FakePool();
 cell.populateAuthoredContent(pool, origin);
-record('AUTHORED_SPAWN_USES_POOL_AND_REAL_OBJECTS', cell.objects.length === 5
-  && pool.getActiveCount() === 5
-  && cell.objects.every((object) => object.template && object.template.tier === ObjectTier.T1),
-  'authored points allocate pooled CompressibleObject instances.');
+// `theme.availableTiers` is 1..5, so there is no aspirational target here: the
+// cell is the 5 authored Cluster_Park T1 slots plus the real opening spread.
+const authoredClusterObjects = cell.objects.filter((object) => String(object.runtimeId).startsWith('cluster_'));
+const spreadObjectsById = new Map(cell.objects
+  .filter((object) => String(object.runtimeId).startsWith('opening_edible_'))
+  .map((object) => [object.runtimeId, object]));
+const spreadTierCounts = globalThis.OPENING_EDIBLE_SPREAD.reduce((counts, entry) => {
+  counts[entry.tier] = (counts[entry.tier] || 0) + 1;
+  return counts;
+}, {});
+const expectedCellTotal = 5 + EXPECTED_OPENING_EDIBLE_SPREAD.total;
+record('AUTHORED_SPAWN_USES_POOL_AND_REAL_OBJECTS', authoredClusterObjects.length === 5
+  && cell.objects.length === expectedCellTotal
+  && pool.getActiveCount() === expectedCellTotal
+  && authoredClusterObjects.every((object) => object.template && object.template.tier === ObjectTier.T1),
+  'authored points allocate pooled CompressibleObject instances; the real spread adds '
+  + EXPECTED_OPENING_EDIBLE_SPREAD.total + ' (total ' + expectedCellTotal + ').');
+// The real spread is now covered by this gate: the declared total and tier mix,
+// and one registered object per entry at its authored tier and position.
+record('OPENING_EDIBLE_SPREAD_REGISTERED',
+  globalThis.OPENING_EDIBLE_SPREAD.length === EXPECTED_OPENING_EDIBLE_SPREAD.total
+  && [1, 2, 3].every((tier) => (spreadTierCounts[tier] || 0) === EXPECTED_OPENING_EDIBLE_SPREAD.tierCounts[tier])
+  && spreadObjectsById.size === EXPECTED_OPENING_EDIBLE_SPREAD.total
+  && globalThis.OPENING_EDIBLE_SPREAD.every((entry, index) => {
+    const object = spreadObjectsById.get('opening_edible_' + index);
+    return object
+      && object.template.tier === entry.tier
+      && Math.abs(object.position.x - entry.x) < 1e-9
+      && Math.abs(object.position.z - entry.z) < 1e-9;
+  })
+  && [1, 2, 3].every((tier) => cell.objects
+    .filter((object) => String(object.runtimeId).startsWith('opening_edible_') && object.template.tier === tier).length === (spreadTierCounts[tier] || 0)),
+  'the real ' + EXPECTED_OPENING_EDIBLE_SPREAD.total + '-entry opening edible spread is registered at its authored tiers and positions, tier mix ' + JSON.stringify(spreadTierCounts));
 
 const first = cell.objects[0];
 const firstId = first.runtimeId;
 record('ABSORB_REMOVES_AND_RETURNS_TO_SAME_POOL', cell.removeAbsorbedCollectible(first, pool, 4)
-  && cell.objects.length === 4 && pool.getActiveCount() === 4,
+  && cell.objects.length === expectedCellTotal - 1 && pool.getActiveCount() === expectedCellTotal - 1,
   'absorption removes the object from the cell and releases it to the same pool.');
 cell.advanceRespawnClock(3.99);
-const blockedCollectibleRespawn = cell.updateCollectibleRespawn(pool, origin, 4, 240) === 0;
+const blockedCollectibleRespawn = cell.updateCollectibleRespawn(pool, origin, cell.objects.length, 240) === 0;
 cell.advanceRespawnClock(0.01);
 record('RESPAWN_REUSES_SLOT_AND_POOL', blockedCollectibleRespawn
-  && cell.updateCollectibleRespawn(pool, origin, 4, 240) === 1
+  && cell.updateCollectibleRespawn(pool, origin, cell.objects.length, 240) === 1
   && cell.objects.some((object) => object.runtimeId === firstId)
-  && pool.getActiveCount() === 5,
+  && pool.getActiveCount() === expectedCellTotal,
   'cooldown respawn takes the same slot and restores the pool active count.');
 record('TEMPLATE_MASS_STAYS_AUTHORED', templateTypes.every((type) => {
   const template = tierByType.get(type);

@@ -420,22 +420,31 @@ async function runBenchmark() {
 
     const movingScenario = report.scenarios.find((scenario) => scenario.id === 'endless_gameplay_moving');
     const homeObjectCount = report.scenarios[0].observedObjectCounts.activeObjectCount;
+    const homeStreaming = Number.isFinite(homeObjectCount) ? homeObjectCount > 0 : null;
+    const movingCellCount = movingScenario?.activeCellCount ?? null;
+    const travelCellCount = sustainedScenario.activeCellCount;
+    const cellCountChange = Number.isFinite(movingCellCount) && Number.isFinite(travelCellCount)
+      ? travelCellCount - movingCellCount
+      : null;
     report.worldStreamingObservation = {
       verdict: 'OBSERVED_NOT_GATED',
-      worldStreamingWhileOnHome: Number.isFinite(homeObjectCount) ? homeObjectCount > 0 : null,
+      worldStreamingWhileOnHome: homeStreaming,
       activeObjectCountOnHome: homeObjectCount,
-      detail: 'The infinite world is already streaming while the Home page is displayed, so no scenario in this run measures an isolated UI-only scene.',
+      detail: homeStreaming === null
+        ? 'Home object count was unavailable; this run cannot determine whether the world streamed on Home.'
+        : homeStreaming
+          ? `Home had ${homeObjectCount} active world objects; the Home scenario is not an isolated UI-only measurement.`
+          : 'Home had zero active world objects; the Home scenario did not include streamed object load.',
     };
     report.cellObservation = {
       verdict: 'OBSERVED_NOT_GATED',
       activeCellCountAtHome: report.scenarios[0].activeCellCount,
-      activeCellCountWhileMoving: movingScenario ? movingScenario.activeCellCount : null,
-      activeCellCountAfterTravel: sustainedScenario.activeCellCount,
-      observedCellCountChange: (movingScenario && Number.isFinite(movingScenario.activeCellCount)
-        && Number.isFinite(sustainedScenario.activeCellCount))
-        ? sustainedScenario.activeCellCount - movingScenario.activeCellCount
-        : null,
-      detail: 'Recorded only, never gated. activeCellCount held steady across all three scenarios, which is consistent with a bounded neighbourhood count rather than a boundary-crossing counter, so this run proves nothing about cell load, unload, or rebase cost. That needs a dedicated cell-lifecycle soak.',
+      activeCellCountWhileMoving: movingCellCount,
+      activeCellCountAfterTravel: travelCellCount,
+      observedCellCountChange: cellCountChange,
+      detail: cellCountChange === null
+        ? 'Cell counts were unavailable for a moving/travel comparison; cell load, unload and rebase costs need a dedicated lifecycle soak.'
+        : `Moving and sustained-travel cell counts were ${movingCellCount} and ${travelCellCount} (change ${cellCountChange}); a count alone does not prove load, unload or rebase cost. That needs a dedicated cell-lifecycle soak.`,
     };
 
     await releaseTouch(cdp);
