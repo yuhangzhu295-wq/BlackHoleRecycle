@@ -398,7 +398,7 @@
       "name": "BtnPause",
       "role": "pause_button",
       "lpos": {
-        "x": 294,
+        "x": 230,
         "y": 500,
         "z": 0
       },

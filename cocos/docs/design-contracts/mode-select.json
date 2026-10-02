@@ -58,7 +58,7 @@
       "role": "title",
       "referenceBounds": {
         "x": 110,
-        "y": 48,
+        "y": 108,
         "width": 500,
         "height": 116
       },
@@ -79,7 +79,7 @@
       "role": "section_label",
       "referenceBounds": {
         "x": 60,
-        "y": 196,
+        "y": 256,
         "width": 600,
         "height": 52
       },
@@ -102,7 +102,7 @@
       "modeId": "arena",
       "referenceBounds": {
         "x": 55,
-        "y": 256,
+        "y": 316,
         "width": 610,
         "height": 278
       },
@@ -124,7 +124,7 @@
       "role": "status_badge",
       "referenceBounds": {
         "x": 110,
-        "y": 476,
+        "y": 536,
         "width": 220,
         "height": 48
       },
@@ -145,7 +145,7 @@
       "role": "section_label",
       "referenceBounds": {
         "x": 60,
-        "y": 560,
+        "y": 620,
         "width": 600,
         "height": 52
       },
@@ -168,7 +168,7 @@
       "modeId": "endless",
       "referenceBounds": {
         "x": 55,
-        "y": 620,
+        "y": 680,
         "width": 610,
         "height": 278
       },
@@ -190,7 +190,7 @@
       "role": "best_score_label",
       "referenceBounds": {
         "x": 70,
-        "y": 832,
+        "y": 892,
         "width": 240,
         "height": 44
       },
@@ -211,7 +211,7 @@
       "role": "best_score_value",
       "referenceBounds": {
         "x": 370,
-        "y": 832,
+        "y": 892,
         "width": 280,
         "height": 44
       },

@@ -2,6 +2,7 @@
 import { _decorator, Button, Component, Label } from 'cc';
 import { eventBus } from '../core/EventBus';
 import { ArenaMatchSnapshot, ArenaSettlementReward } from '../gameplay/ArenaMatchManager';
+import { GameSessionMode, MODE_TITLES } from '../gameplay/session/GameSessionCoordinator';
 
 const { ccclass } = _decorator;
 
@@ -10,6 +11,7 @@ export class SettlementPageController extends Component {
   private bindings: Array<[Button, () => void]> = [];
 
   onEnable(): void {
+    this.refreshSubtitle();
     this.bind('BtnRestart', () => eventBus.emit('GAME_RESTART_CURRENT'));
     this.bind('BtnHome', () => eventBus.emit('GAME_RETURN_HOME'));
   }
@@ -24,7 +26,7 @@ export class SettlementPageController extends Component {
   public updateStats(absorbed: number, coins: number, level: number, regions: number, mass: number): void {
     this.setArenaLeaderboardVisible(false);
     this.setLabel('Title', '本局结算');
-    this.setLabel('Subtitle', '无尽吞噬 · 本局数据');
+    this.setLabel('Subtitle', `${MODE_TITLES.ENDLESS} · 本局数据`);
     this.setLabel('AbsorbedCaption', '吞噬物品');
     this.setLabel('CoinCaption', '获得金币');
     this.setLabel('LevelCaption', '最终等级');
@@ -40,7 +42,7 @@ export class SettlementPageController extends Component {
   public updateArenaStats(snapshot: ArenaMatchSnapshot, reward: ArenaSettlementReward): void {
     this.setArenaLeaderboardVisible(true);
     this.setLabel('Title', '竞技结算');
-    this.setLabel('Subtitle', snapshot.reason === 'FORFEIT' ? '黑洞乱斗 · 已退出' : '黑洞乱斗 · 时间结束');
+    this.setLabel('Subtitle', snapshot.reason === 'FORFEIT' ? `${MODE_TITLES.ARENA} · 已退出` : `${MODE_TITLES.ARENA} · 时间结束`);
     this.setLabel('ArenaResult', `第 ${snapshot.localRank || '-'} / ${snapshot.competitorCount} 名 · ${Math.round(snapshot.localMass)} kg`);
     this.setLabel('ArenaStatMassValue', `${Math.round(snapshot.localMass)} kg`);
     this.setLabel('ArenaStatKillsValue', `${snapshot.localKills} 次`);
@@ -127,6 +129,17 @@ export class SettlementPageController extends Component {
       'ArenaStatTimeCaption', 'ArenaStatTimeValue', 'ArenaRewardCaption', 'ArenaRewardValue', 'ArenaRewardBreakdown',
     ]) {
       this.setNodeActive(name, visible);
+    }
+  }
+
+  private refreshSubtitle(): void {
+    const subtitle = this.node.getChildByName('Subtitle')?.getComponent(Label);
+    if (!subtitle) return;
+    if (subtitle.string.includes('无尽吞噬')) {
+      subtitle.string = subtitle.string.replace('无尽吞噬', MODE_TITLES.ENDLESS);
+    }
+    if (subtitle.string.includes('黑洞乱斗')) {
+      subtitle.string = subtitle.string.replace('黑洞乱斗', MODE_TITLES.ARENA);
     }
   }
 

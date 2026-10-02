@@ -19,14 +19,14 @@ const { ccclass } = _decorator;
 export const MODE_SELECT_LAYOUT = {
   Background:             [720,  1280,    0,    0],
   BtnBack:                [ 80,    80, -300,  568],
-  Header:                 [500,   116,    0,  534],
-  ShelfArena:             [600,    52,    0,  418],
-  BtnArena:               [610,   278,    0,  245],
-  ArenaAvailability:      [220,    48, -140,  140],
-  ShelfEndless:           [600,    52,    0,   54],
-  BtnEndless:             [610,   278,    0, -119],
-  EndlessBestCaption:     [240,    44, -170, -214],
-  EndlessBestValue:       [280,    44,  150, -214],
+  Header:                 [500,   116,    0,  474],
+  ShelfArena:             [600,    52,    0,  358],
+  BtnArena:               [610,   278,    0,  185],
+  ArenaAvailability:      [220,    48, -140,   80],
+  ShelfEndless:           [600,    52,    0,   -6],
+  BtnEndless:             [610,   278,    0, -179],
+  EndlessBestCaption:     [240,    44, -170, -274],
+  EndlessBestValue:       [280,    44,  150, -274],
 } as const;
 
 @ccclass('ModeSelectPageController')

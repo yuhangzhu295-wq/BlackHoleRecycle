@@ -24,6 +24,11 @@ export type GameSessionState =
 export type GameplaySessionState = 'PLAYING' | 'ARENA' | 'NETWORK_ARENA';
 export type GameSessionMode = 'ENDLESS' | 'ARENA';
 
+export const MODE_TITLES: Readonly<Record<GameSessionMode, string>> = {
+  ENDLESS: '无尽探索',
+  ARENA: '竞技乱斗',
+} as const;
+
 export interface GameSessionTransition {
   readonly previous: GameSessionState;
   readonly current: GameSessionState;

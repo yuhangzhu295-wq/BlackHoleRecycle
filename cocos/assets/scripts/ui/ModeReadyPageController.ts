@@ -35,7 +35,7 @@ export enum ModeReadyKind {
 // using the same center-origin conversion as MODE_SELECT_LAYOUT.
 export const MODE_READY_LAYOUT = {
   Background:     [720, 1280,    0,    0],
-  BtnBack:        [ 80,   80, -300,  568],
+  BtnBack:        [ 80,   80, -245,  568],
   Header:         [430,  100,    0,  534],
   HeaderTitle:    [500,   64,    0,  534],
   // V7: the preview keeps the 560x260 authored-art aspect and leaves room for
