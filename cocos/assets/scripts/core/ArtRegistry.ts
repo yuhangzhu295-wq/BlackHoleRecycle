@@ -148,7 +148,52 @@ const MIGRATED_ENTRIES: readonly ArtEntry[] = [
 const UNMIGRATED_ENTRIES: readonly ArtEntry[] = [
 ];
 
-const ALL_ENTRIES: readonly ArtEntry[] = [...MIGRATED_ENTRIES, ...UNMIGRATED_ENTRIES];
+/**
+ * The V7 PHASE 2C `game_art/prefabs/` tree: one real, loadable prefab per
+ * category, each wrapping a representative authored asset. They are additive
+ * ids rather than replacements, because the world renders per-kind art through
+ * `WorldArtLibrary`'s live bindings, not through a single category prefab.
+ * Registering them here is what keeps the prefab tree addressable by identity
+ * and stops it becoming orphaned art.
+ *
+ * The generated `game_art/prefabs/manifest.json` maps every entry above (and
+ * every `WorldArtKind`) to the authored asset that renders it, so this tree and
+ * the per-kind art cannot drift apart.
+ */
+const CATEGORY_PREFAB_ENTRIES: readonly ArtEntry[] = [
+  {
+    artId: 'prefab.blackhole.singularity',
+    category: 'blackhole',
+    prefab: 'game_art/prefabs/blackhole/SingularityVortex.prefab',
+    gameplayTypes: [],
+  },
+  {
+    artId: 'prefab.vehicles.sedan',
+    category: 'vehicles',
+    prefab: 'game_art/prefabs/vehicles/Sedan.prefab',
+    gameplayTypes: [],
+  },
+  {
+    artId: 'prefab.buildings.house',
+    category: 'buildings',
+    prefab: 'game_art/prefabs/buildings/BuildingTypeB.prefab',
+    gameplayTypes: [],
+  },
+  {
+    artId: 'prefab.props.bench',
+    category: 'props',
+    prefab: 'game_art/prefabs/props/Bench.prefab',
+    gameplayTypes: [],
+  },
+  {
+    artId: 'prefab.collectibles.can',
+    category: 'collectibles',
+    prefab: 'game_art/prefabs/collectibles/SodaCan.prefab',
+    gameplayTypes: [],
+  },
+];
+
+const ALL_ENTRIES: readonly ArtEntry[] = [...MIGRATED_ENTRIES, ...CATEGORY_PREFAB_ENTRIES, ...UNMIGRATED_ENTRIES];
 
 /** Every declared art entry, migrated and not. */
 export function getArtEntries(): readonly ArtEntry[] {
@@ -180,7 +225,7 @@ export function getMigrationStatus(): Readonly<{
 }> {
   return {
     total: ALL_ENTRIES.length,
-    migrated: MIGRATED_ENTRIES.length,
+    migrated: MIGRATED_ENTRIES.length + CATEGORY_PREFAB_ENTRIES.length,
     unmigrated: UNMIGRATED_ENTRIES.length,
     unmigratedIds: UNMIGRATED_ENTRIES.map((entry) => entry.artId),
   };

@@ -164,8 +164,28 @@ These are the ones that matter, because removing them renders nothing:
 | `world/WorldChunkManager.ts` (entire) | uuid absent from every scene/prefab; `GameManager.ts:32` comments it is unused |
 | `world/ChunkConfig.ts` → `ChunkItemGenerator` | only imported by the dead manager (`CellItemGenerator` is live — keep it) |
 | `ui/RoundedPanelGraphic.ts` (entire) | uuid `60455b29-…` absent from all scenes/prefabs; no code ref |
-| `CompressibleObject.ts:134-143` runtime lock Label | executes but never batched/drawn; superseded by `TierLockPresenter` |
-| `prefabs/machine/BlackHoleMachine.prefab`, `prefabs/objects/TrashObject.prefab`, `prefabs/chunks/BedroomChunk.prefab`, `PolyGoogleBulldozerChassis*.prefab` | no scene/prefab/code reference |
+| `CompressibleObject.ts:134-143` runtime lock Label | executes but never batched/drawn; superseded by `TierLockPresenter` — **but see the correction below; it is load-bearing for tests and was NOT deleted** |
+
+**Corrections (both found during PHASE 2; the §5 list above was wrong on these):**
+
+1. An earlier draft also named `prefabs/machine/BlackHoleMachine.prefab`,
+   `prefabs/objects/TrashObject.prefab` and `prefabs/chunks/BedroomChunk.prefab`
+   as deletable. They have no *runtime* reference, but
+   `scripts/test_cocos_vertical_slice.js:47-49` (`CHECK_SCENE_AND_PREFABS`)
+   asserts all three **exist**. Deleting them would break the gate. Kept.
+2. `prefabs/machine/PolyGoogleBulldozerChassis.prefab` and
+   `PolyGoogleBulldozerChassis-001.prefab` were listed as unreferenced. Wrong:
+   `assets/scenes/Game.scene` references each one as a `cc.PrefabInfo.asset`
+   uuid. Deleting them would break the scene. Kept.
+3. The `CompressibleObject` runtime lock Label is **not** safe to delete:
+   `test_vehicle_art_contract.mjs:185-191` reads
+   `TierLockWarning.active` and `TierLockLabel.components[0].string`, and
+   `test_cocos_vertical_slice.js:83-89` requires `/TierLockWarning/` in the
+   source. The visual is dead at runtime but the nodes are a tested contract.
+   Kept.
+
+Lesson recorded: "no reference" must be checked against **scenes, prefabs and
+test harnesses**, not only against runtime code.
 | `GameManager.ts:205-208` (`RuntimeHUD`), `:282-290` (`MainLight`) | guarded dead branches — scene already supplies both |
 
 ---

@@ -1530,8 +1530,15 @@ exports.methods = {
         missingNodes,
       };
     });
-    const LegacyRoundedPanelGraphic = getComponentClass('RoundedPanelGraphic');
-    const legacyPanelCount = canvas ? canvas.getComponentsInChildren(LegacyRoundedPanelGraphic).length : -1;
+    // V7 PHASE 2A deleted the dead `ui/RoundedPanelGraphic.ts` component (its
+    // uuid appeared in no scene or prefab). The legacy-panel assertion is kept,
+    // but the lookup must not throw when the class is gone: a missing class now
+    // means there can be no legacy panel to find, which is the same verdict.
+    const { js } = require('cc');
+    const LegacyRoundedPanelGraphic = js.getClassByName('RoundedPanelGraphic');
+    const legacyPanelCount = LegacyRoundedPanelGraphic && canvas
+      ? canvas.getComponentsInChildren(LegacyRoundedPanelGraphic).length
+      : 0;
     return {
       ok: report.every((entry) => entry.exists && entry.controller && entry.missingButtons.length === 0 && entry.missingNodes.length === 0) && legacyPanelCount === 0,
       report,

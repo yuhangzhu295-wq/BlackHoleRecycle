@@ -81,15 +81,15 @@ export class ArtLoader {
     if (ArtLoader.inFlight.has(artId)) return;
     ArtLoader.inFlight.add(artId);
 
-    // Bundle resource paths are relative to the bundle root and, for a glTF
-    // scene, include the directory and the basename twice: a file at
-    // `game_art/blackhole/SingularityVortex.glb` inside bundle `game-art`
-    // registers its Prefab at `blackhole/SingularityVortex/SingularityVortex`.
-    // Loading the bare basename fails with "bundle does not contain", which is
-    // what silently kept the machine on its runtime fallback until this was
-    // found. The candidates are tried in order so an importer change cannot
+    // Bundle resource paths are relative to the bundle root and omit the file
+    // extension. A glTF scene registers its Prefab at
+    // `blackhole/SingularityVortex/SingularityVortex` (directory + basename
+    // twice); a plain `.prefab` asset registers at its own path. Loading a path
+    // that still carries `.glb`/`.prefab` fails with "bundle does not contain",
+    // which is what silently kept the machine on its runtime fallback until this
+    // was found. The candidates are tried in order so an importer change cannot
     // disable the asset without a diagnostic.
-    const relative = entry.prefab.replace(/^game_art\//, '').replace(/\.(glb|gltf|fbx)$/i, '');
+    const relative = entry.prefab.replace(/^game_art\//, '').replace(/\.(glb|gltf|fbx|prefab)$/i, '');
     const basename = relative.split('/').pop()!;
     const candidates = [relative + '/' + basename, relative, basename];
 

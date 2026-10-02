@@ -9,6 +9,6 @@
     "isBundle": true,
     "bundleConfigID": "default",
     "bundleName": "game-art",
-    "priority": 9
+    "priority": 1
   }
 }

@@ -1,0 +1,857 @@
+{
+  "schemaVersion": 1,
+  "generatedBy": "scripts/v7_phase2_prefabs.mjs",
+  "note": "Generated from ArtRegistry.ts, WorldArtLibrary.ts and the live Game.scene WorldArtLibrary binding. Do not hand-edit; re-run the generator instead.",
+  "categories": {
+    "blackhole": {
+      "prefab": "game_art/prefabs/blackhole/SingularityVortex.prefab",
+      "sourceAssets": [
+        "game_art/blackhole/SingularityVortex.glb"
+      ],
+      "material": "MAT_BLACKHOLE"
+    },
+    "vehicles": {
+      "prefab": "game_art/prefabs/vehicles/Sedan.prefab",
+      "sourceAssets": [
+        "art/vehicles/sedan.glb"
+      ],
+      "material": "MAT_VEHICLE"
+    },
+    "buildings": {
+      "prefab": "game_art/prefabs/buildings/BuildingTypeB.prefab",
+      "sourceAssets": [
+        "art/world/residential/building-type-b.glb"
+      ],
+      "material": "MAT_BUILDING"
+    },
+    "props": {
+      "prefab": "game_art/prefabs/props/Bench.prefab",
+      "sourceAssets": [
+        "art/world/pretty-park/bench.gltf"
+      ],
+      "material": "MAT_PROP"
+    },
+    "collectibles": {
+      "prefab": "game_art/prefabs/collectibles/SodaCan.prefab",
+      "sourceAssets": [
+        "art/recyclables/food/soda-can.glb"
+      ],
+      "material": "MAT_PROP"
+    }
+  },
+  "artIds": {
+    "vehicle.car": {
+      "category": "vehicles",
+      "authoredAsset": "art/vehicles/sedan.glb",
+      "categoryPrefab": "game_art/prefabs/vehicles/Sedan.prefab",
+      "gameplayTypes": [
+        "car"
+      ]
+    },
+    "vehicle.van": {
+      "category": "vehicles",
+      "authoredAsset": "art/vehicles/delivery-van.glb",
+      "categoryPrefab": null,
+      "gameplayTypes": [
+        "delivery_van"
+      ]
+    },
+    "vehicle.truck": {
+      "category": "vehicles",
+      "authoredAsset": "art/vehicles/garbage-truck.glb",
+      "categoryPrefab": null,
+      "gameplayTypes": [
+        "garbage_truck"
+      ]
+    },
+    "collectible.can": {
+      "category": "collectibles",
+      "authoredAsset": "art/recyclables/food/soda-can.glb",
+      "categoryPrefab": "game_art/prefabs/collectibles/SodaCan.prefab",
+      "gameplayTypes": [
+        "soda_can"
+      ]
+    },
+    "collectible.bottle": {
+      "category": "collectibles",
+      "authoredAsset": "art/recyclables/food/soda-bottle.glb",
+      "categoryPrefab": null,
+      "gameplayTypes": [
+        "water_bottle"
+      ]
+    },
+    "collectible.battery": {
+      "category": "collectibles",
+      "authoredAsset": "art/recyclables/props/battery.glb",
+      "categoryPrefab": null,
+      "gameplayTypes": [
+        "battery"
+      ]
+    },
+    "collectible.toy": {
+      "category": "collectibles",
+      "authoredAsset": "art/recyclables/props/toy-duck.glb",
+      "categoryPrefab": null,
+      "gameplayTypes": [
+        "toy"
+      ]
+    },
+    "collectible.apple": {
+      "category": "collectibles",
+      "authoredAsset": "art/recyclables/food/apple.glb",
+      "categoryPrefab": null,
+      "gameplayTypes": [
+        "apple"
+      ]
+    },
+    "collectible.paper": {
+      "category": "collectibles",
+      "authoredAsset": "art/recyclables/props/paper-scrap.glb",
+      "categoryPrefab": null,
+      "gameplayTypes": [
+        "paper_ball"
+      ]
+    },
+    "collectible.books": {
+      "category": "collectibles",
+      "authoredAsset": "art/recyclables/furniture/book-stack.glb",
+      "categoryPrefab": null,
+      "gameplayTypes": [
+        "book_stack"
+      ]
+    },
+    "collectible.cardboard": {
+      "category": "collectibles",
+      "authoredAsset": "art/recyclables/furniture/cardboard-box.glb",
+      "categoryPrefab": null,
+      "gameplayTypes": [
+        "cardboard_box"
+      ]
+    },
+    "collectible.cone": {
+      "category": "collectibles",
+      "authoredAsset": "art/world/roads/construction-cone.glb",
+      "categoryPrefab": null,
+      "gameplayTypes": [
+        "cone"
+      ]
+    },
+    "collectible.trashbag": {
+      "category": "collectibles",
+      "authoredAsset": "art/recyclables/props/trash-bag.glb",
+      "categoryPrefab": null,
+      "gameplayTypes": [
+        "trash_bag"
+      ]
+    },
+    "collectible.paint": {
+      "category": "collectibles",
+      "authoredAsset": "art/recyclables/props/paint-bucket.glb",
+      "categoryPrefab": null,
+      "gameplayTypes": [
+        "paint_bucket"
+      ]
+    },
+    "collectible.chair": {
+      "category": "collectibles",
+      "authoredAsset": "art/recyclables/furniture/chair.glb",
+      "categoryPrefab": null,
+      "gameplayTypes": [
+        "chair"
+      ]
+    },
+    "collectible.table": {
+      "category": "collectibles",
+      "authoredAsset": "art/recyclables/furniture/coffee-table.glb",
+      "categoryPrefab": null,
+      "gameplayTypes": [
+        "small_table"
+      ]
+    },
+    "collectible.monitor": {
+      "category": "collectibles",
+      "authoredAsset": "art/recyclables/furniture/monitor.glb",
+      "categoryPrefab": null,
+      "gameplayTypes": [
+        "monitor"
+      ]
+    },
+    "collectible.tire": {
+      "category": "collectibles",
+      "authoredAsset": "art/props/tire.glb",
+      "categoryPrefab": null,
+      "gameplayTypes": [
+        "tire"
+      ]
+    },
+    "collectible.shelf": {
+      "category": "collectibles",
+      "authoredAsset": "art/recyclables/furniture/shelf.glb",
+      "categoryPrefab": null,
+      "gameplayTypes": [
+        "shelf"
+      ]
+    },
+    "collectible.crate": {
+      "category": "collectibles",
+      "authoredAsset": "art/recyclables/industrial/crate.glb",
+      "categoryPrefab": null,
+      "gameplayTypes": [
+        "crate"
+      ]
+    },
+    "collectible.sofa": {
+      "category": "collectibles",
+      "authoredAsset": "art/recyclables/furniture/sofa.glb",
+      "categoryPrefab": null,
+      "gameplayTypes": [
+        "sofa"
+      ]
+    },
+    "collectible.container": {
+      "category": "collectibles",
+      "authoredAsset": "art/recyclables/industrial/shipping-container.glb",
+      "categoryPrefab": null,
+      "gameplayTypes": [
+        "container"
+      ]
+    },
+    "collectible.massfragment": {
+      "category": "collectibles",
+      "authoredAsset": "art/props/recycling-box.glb",
+      "categoryPrefab": null,
+      "gameplayTypes": [
+        "arena_mass_fragment"
+      ]
+    },
+    "environment.road.straight": {
+      "category": "environment",
+      "authoredAsset": "art/world/roads/road-straight.glb",
+      "categoryPrefab": null,
+      "gameplayTypes": []
+    },
+    "environment.road.crossroad": {
+      "category": "environment",
+      "authoredAsset": "art/world/roads/road-crossroad-path.glb",
+      "categoryPrefab": null,
+      "gameplayTypes": []
+    },
+    "environment.ground.tile": {
+      "category": "environment",
+      "authoredAsset": "art/world/environment/tile-low.glb",
+      "categoryPrefab": null,
+      "gameplayTypes": []
+    },
+    "environment.tree.small": {
+      "category": "environment",
+      "authoredAsset": "art/world/environment/tree-small.glb",
+      "categoryPrefab": null,
+      "gameplayTypes": []
+    },
+    "environment.tree.large": {
+      "category": "environment",
+      "authoredAsset": "art/world/environment/tree-large.glb",
+      "categoryPrefab": null,
+      "gameplayTypes": []
+    },
+    "environment.path.stones": {
+      "category": "environment",
+      "authoredAsset": "art/world/environment/path-stones-long.glb",
+      "categoryPrefab": null,
+      "gameplayTypes": []
+    },
+    "environment.fence": {
+      "category": "environment",
+      "authoredAsset": "art/world/environment/fence.glb",
+      "categoryPrefab": null,
+      "gameplayTypes": []
+    },
+    "environment.lamp": {
+      "category": "environment",
+      "authoredAsset": "art/world/roads/street-light.glb",
+      "categoryPrefab": null,
+      "gameplayTypes": []
+    },
+    "building.house": {
+      "category": "buildings",
+      "authoredAsset": "art/world/residential/building-type-b.glb",
+      "categoryPrefab": "game_art/prefabs/buildings/BuildingTypeB.prefab",
+      "gameplayTypes": []
+    },
+    "building.house.alt": {
+      "category": "buildings",
+      "authoredAsset": "art/world/residential/building-type-c.glb",
+      "categoryPrefab": null,
+      "gameplayTypes": []
+    },
+    "building.shop": {
+      "category": "buildings",
+      "authoredAsset": "art/world/city/commercial-building-a.glb",
+      "categoryPrefab": null,
+      "gameplayTypes": []
+    },
+    "building.market": {
+      "category": "buildings",
+      "authoredAsset": "art/world/city/commercial-building-f.glb",
+      "categoryPrefab": null,
+      "gameplayTypes": []
+    },
+    "building.clinic": {
+      "category": "buildings",
+      "authoredAsset": "art/world/city/commercial-building-d.glb",
+      "categoryPrefab": null,
+      "gameplayTypes": []
+    },
+    "building.tower": {
+      "category": "buildings",
+      "authoredAsset": "art/world/city/commercial-skyscraper-a.glb",
+      "categoryPrefab": null,
+      "gameplayTypes": []
+    },
+    "building.tower.alt": {
+      "category": "buildings",
+      "authoredAsset": "art/world/city/commercial-skyscraper-b.glb",
+      "categoryPrefab": null,
+      "gameplayTypes": []
+    },
+    "prop.bench": {
+      "category": "props",
+      "authoredAsset": "art/world/pretty-park/bench.gltf",
+      "categoryPrefab": "game_art/prefabs/props/Bench.prefab",
+      "gameplayTypes": []
+    },
+    "prop.bin": {
+      "category": "props",
+      "authoredAsset": "art/world/pretty-park/trashcan.gltf",
+      "categoryPrefab": null,
+      "gameplayTypes": []
+    },
+    "prop.flowerbed": {
+      "category": "props",
+      "authoredAsset": "art/world/pretty-park/flower_A.gltf",
+      "categoryPrefab": null,
+      "gameplayTypes": []
+    },
+    "prop.hedge": {
+      "category": "props",
+      "authoredAsset": "art/world/pretty-park/hedge_straight_long.gltf",
+      "categoryPrefab": null,
+      "gameplayTypes": []
+    },
+    "prop.fountain": {
+      "category": "props",
+      "authoredAsset": "art/world/pretty-park/fountain.gltf",
+      "categoryPrefab": null,
+      "gameplayTypes": []
+    },
+    "prop.recyclinghub": {
+      "category": "props",
+      "authoredAsset": "art/props/recycling-box.glb",
+      "categoryPrefab": null,
+      "gameplayTypes": []
+    },
+    "blackhole.core": {
+      "category": "blackhole",
+      "authoredAsset": "game_art/blackhole/SingularityVortex.glb",
+      "categoryPrefab": "game_art/prefabs/blackhole/SingularityVortex.prefab",
+      "gameplayTypes": []
+    },
+    "prefab.blackhole.singularity": {
+      "category": "blackhole",
+      "authoredAsset": "game_art/prefabs/blackhole/SingularityVortex.prefab",
+      "categoryPrefab": null,
+      "gameplayTypes": []
+    },
+    "prefab.vehicles.sedan": {
+      "category": "vehicles",
+      "authoredAsset": "game_art/prefabs/vehicles/Sedan.prefab",
+      "categoryPrefab": null,
+      "gameplayTypes": []
+    },
+    "prefab.buildings.house": {
+      "category": "buildings",
+      "authoredAsset": "game_art/prefabs/buildings/BuildingTypeB.prefab",
+      "categoryPrefab": null,
+      "gameplayTypes": []
+    },
+    "prefab.props.bench": {
+      "category": "props",
+      "authoredAsset": "game_art/prefabs/props/Bench.prefab",
+      "categoryPrefab": null,
+      "gameplayTypes": []
+    },
+    "prefab.collectibles.can": {
+      "category": "collectibles",
+      "authoredAsset": "game_art/prefabs/collectibles/SodaCan.prefab",
+      "categoryPrefab": null,
+      "gameplayTypes": []
+    }
+  },
+  "worldArtKinds": {
+    "roadStraight": {
+      "authoredAssets": [
+        "art/world/roads/road-straight.glb"
+      ],
+      "meshUuids": [
+        "5c44593a-9fb6-43a1-ad9a-f29bbb354f73@51275"
+      ]
+    },
+    "roadCrossroad": {
+      "authoredAssets": [
+        "art/world/roads/road-crossroad-path.glb"
+      ],
+      "meshUuids": [
+        "0c38d099-6cd3-474d-9cf1-4d6e61222896@4562e"
+      ]
+    },
+    "terrainTile": {
+      "authoredAssets": [
+        "art/world/environment/tile-low.glb"
+      ],
+      "meshUuids": [
+        "e38cabad-0d75-47e7-b6ed-7417fa258ea0@8399d"
+      ]
+    },
+    "buildingB": {
+      "authoredAssets": [
+        "art/world/residential/building-type-b.glb"
+      ],
+      "meshUuids": [
+        "36562b4b-70f1-433f-bd15-4554d9a9b2e8@788fe"
+      ]
+    },
+    "buildingC": {
+      "authoredAssets": [
+        "art/world/residential/building-type-c.glb"
+      ],
+      "meshUuids": [
+        "2a5b1e57-0808-4c15-963e-a80564a75a68@679bd"
+      ]
+    },
+    "treeSmall": {
+      "authoredAssets": [
+        "art/world/environment/tree-small.glb"
+      ],
+      "meshUuids": [
+        "1302cba5-79dd-4ef5-87a0-200fe38bde8d@eb06f"
+      ]
+    },
+    "treeLarge": {
+      "authoredAssets": [
+        "art/world/environment/tree-large.glb"
+      ],
+      "meshUuids": [
+        "625fe482-b1b9-4410-9de9-f93733254ee5@e221b"
+      ]
+    },
+    "pathStones": {
+      "authoredAssets": [
+        "art/world/environment/path-stones-long.glb"
+      ],
+      "meshUuids": [
+        "7b1c3a93-fbd6-495f-845d-5ca06b3eef79@89279"
+      ]
+    },
+    "fence": {
+      "authoredAssets": [
+        "art/world/environment/fence.glb"
+      ],
+      "meshUuids": [
+        "9d3996d1-c2e1-4f88-a4af-0991bbd67c0a@841c1"
+      ]
+    },
+    "parkFountain": {
+      "authoredAssets": [
+        "art/world/pretty-park/fountain.gltf"
+      ],
+      "meshUuids": [
+        "b15be442-019a-41a4-a6a2-e9fe114c2820@e3f35",
+        "b15be442-019a-41a4-a6a2-e9fe114c2820@53670",
+        "b15be442-019a-41a4-a6a2-e9fe114c2820@cd3f4"
+      ]
+    },
+    "parkBench": {
+      "authoredAssets": [
+        "art/world/pretty-park/bench.gltf"
+      ],
+      "meshUuids": [
+        "fe490e09-2910-4329-866a-0920b83a7b42@afd92"
+      ]
+    },
+    "parkBush": {
+      "authoredAssets": [
+        "art/world/pretty-park/bush_large.gltf"
+      ],
+      "meshUuids": [
+        "a0a0b92d-fa05-4902-9141-beff1fe23ab1@09beb"
+      ]
+    },
+    "parkHedgeLong": {
+      "authoredAssets": [
+        "art/world/pretty-park/hedge_straight_long.gltf"
+      ],
+      "meshUuids": [
+        "bbebe097-6a5f-4f7f-aa8c-ed999e037686@209a7"
+      ]
+    },
+    "parkHedgeCorner": {
+      "authoredAssets": [
+        "art/world/pretty-park/hedge_corner.gltf"
+      ],
+      "meshUuids": [
+        "6c4c2e4e-7168-46b8-8dc0-03f3ca2d4732@a2b90"
+      ]
+    },
+    "parkLantern": {
+      "authoredAssets": [
+        "art/world/pretty-park/street_lantern.gltf"
+      ],
+      "meshUuids": [
+        "a6496db0-fab6-45d3-a7d4-8f4a98c76b6f@72d80"
+      ]
+    },
+    "parkTrashcan": {
+      "authoredAssets": [
+        "art/world/pretty-park/trashcan.gltf"
+      ],
+      "meshUuids": [
+        "d2ff041b-7ccd-4322-b0ba-2a281c50cfaa@3fe6d"
+      ]
+    },
+    "parkFlowerA": {
+      "authoredAssets": [
+        "art/world/pretty-park/flower_A.gltf"
+      ],
+      "meshUuids": [
+        "94088ec4-9753-484b-931b-2325ba1a356f@246a1"
+      ]
+    },
+    "parkFlowerB": {
+      "authoredAssets": [
+        "art/world/pretty-park/flower_B.gltf"
+      ],
+      "meshUuids": [
+        "843a9e82-d2b5-4953-8481-b57e29676617@9a434"
+      ]
+    },
+    "parkGrassTile": {
+      "authoredAssets": [
+        "art/world/pretty-park/floor_grass_sliced_base.gltf"
+      ],
+      "meshUuids": [
+        "9048f656-cd03-4f48-aea0-69f1977de173@6f131"
+      ]
+    },
+    "parkCobblePath": {
+      "authoredAssets": [
+        "art/world/pretty-park/cobble_stones_large.gltf"
+      ],
+      "meshUuids": [
+        "96aa37ba-33e7-40f7-826b-b881cd976416@a9ca4"
+      ]
+    },
+    "parkTree": {
+      "authoredAssets": [
+        "art/world/pretty-park/tree.gltf"
+      ],
+      "meshUuids": [
+        "566c63bd-dac5-4754-b830-8141de76356e@bbae8"
+      ]
+    },
+    "parkTreeLarge": {
+      "authoredAssets": [
+        "art/world/pretty-park/tree_large.gltf"
+      ],
+      "meshUuids": [
+        "c98d36c8-8959-4ce2-b413-2b62b2e2d21d@0b0dd"
+      ]
+    },
+    "commercialBuildingA": {
+      "authoredAssets": [
+        "art/world/city/commercial-building-a.glb"
+      ],
+      "meshUuids": [
+        "5cef1a38-6af5-4c76-86b0-a08995b23be7@359ab"
+      ]
+    },
+    "commercialBuildingD": {
+      "authoredAssets": [
+        "art/world/city/commercial-building-d.glb"
+      ],
+      "meshUuids": [
+        "6d726725-5eb7-462c-99b8-6e1cf831bbb5@9d802"
+      ]
+    },
+    "commercialBuildingF": {
+      "authoredAssets": [
+        "art/world/city/commercial-building-f.glb"
+      ],
+      "meshUuids": [
+        "16ed6d87-4476-47b9-b40b-e67b149357a9@9638c"
+      ]
+    },
+    "commercialBuildingG": {
+      "authoredAssets": [
+        "art/world/city/commercial-building-g.glb"
+      ],
+      "meshUuids": [
+        "66fcf59d-9d72-41e5-8a0b-a98576a6b5c3@ecd75"
+      ]
+    },
+    "commercialBuildingH": {
+      "authoredAssets": [
+        "art/world/city/commercial-building-h.glb"
+      ],
+      "meshUuids": [
+        "dab10dbb-e8a5-4fc0-ae7f-74adb3863dd9@dd72a"
+      ]
+    },
+    "commercialSkyscraperA": {
+      "authoredAssets": [
+        "art/world/city/commercial-skyscraper-a.glb"
+      ],
+      "meshUuids": [
+        "684f4ad6-0c3c-4a32-b8fb-a215d09cc6a3@57a6c"
+      ]
+    },
+    "commercialSkyscraperB": {
+      "authoredAssets": [
+        "art/world/city/commercial-skyscraper-b.glb"
+      ],
+      "meshUuids": [
+        "2cbe6492-d5a7-4351-a7ff-34d4ae9c03af@24146"
+      ]
+    },
+    "streetLight": {
+      "authoredAssets": [
+        "art/world/roads/street-light.glb"
+      ],
+      "meshUuids": [
+        "08641c06-adde-4f49-85f4-58e528ac4986@6109a"
+      ]
+    },
+    "constructionCone": {
+      "authoredAssets": [
+        "art/world/roads/construction-cone.glb"
+      ],
+      "meshUuids": [
+        "b2dcdcb9-5d74-4dad-89ac-c4090bd13dcc@85832"
+      ]
+    },
+    "bulldozer": {
+      "authoredAssets": [
+        "art/machines/poly-google-bulldozer.glb"
+      ],
+      "meshUuids": [
+        "9b34ec81-60b6-4407-8b7a-b6b2c821d44a@17fd0"
+      ]
+    },
+    "garbageTruck": {
+      "authoredAssets": [
+        "art/vehicles/garbage-truck.glb"
+      ],
+      "meshUuids": [
+        "a8a5e581-a02c-4853-a8ce-7a30f1f4919d@549fe",
+        "a8a5e581-a02c-4853-a8ce-7a30f1f4919d@d1299",
+        "a8a5e581-a02c-4853-a8ce-7a30f1f4919d@4651a",
+        "a8a5e581-a02c-4853-a8ce-7a30f1f4919d@2b01b",
+        "a8a5e581-a02c-4853-a8ce-7a30f1f4919d@8eae8",
+        "a8a5e581-a02c-4853-a8ce-7a30f1f4919d@5e001",
+        "a8a5e581-a02c-4853-a8ce-7a30f1f4919d@0c822"
+      ]
+    },
+    "sedan": {
+      "authoredAssets": [
+        "art/vehicles/sedan.glb"
+      ],
+      "meshUuids": [
+        "de3d2cfd-35ab-447f-bc16-27947df4293d@4651a",
+        "de3d2cfd-35ab-447f-bc16-27947df4293d@5e001",
+        "de3d2cfd-35ab-447f-bc16-27947df4293d@8eae8",
+        "de3d2cfd-35ab-447f-bc16-27947df4293d@2b01b",
+        "de3d2cfd-35ab-447f-bc16-27947df4293d@d1299"
+      ]
+    },
+    "deliveryVan": {
+      "authoredAssets": [
+        "art/vehicles/delivery-van.glb"
+      ],
+      "meshUuids": [
+        "6be84dff-3e4d-4803-8a87-9b37e723c805@0af3d",
+        "6be84dff-3e4d-4803-8a87-9b37e723c805@4651a",
+        "6be84dff-3e4d-4803-8a87-9b37e723c805@d1299",
+        "6be84dff-3e4d-4803-8a87-9b37e723c805@2b01b",
+        "6be84dff-3e4d-4803-8a87-9b37e723c805@8eae8",
+        "6be84dff-3e4d-4803-8a87-9b37e723c805@5e001"
+      ]
+    },
+    "recyclingBox": {
+      "authoredAssets": [
+        "art/props/recycling-box.glb"
+      ],
+      "meshUuids": [
+        "427a537f-8369-435f-ae70-d26aef355649@a804a"
+      ]
+    },
+    "tire": {
+      "authoredAssets": [
+        "art/props/tire.glb"
+      ],
+      "meshUuids": [
+        "2a1bcdad-2386-4407-83da-ee45684e4629@1b446"
+      ]
+    },
+    "recyclingBolt": {
+      "authoredAssets": [
+        "art/props/recycling-bolt.glb"
+      ],
+      "meshUuids": [
+        "4d0b5a25-f16d-42e8-8a30-9e7c5e50e033@e3fe6"
+      ]
+    },
+    "turbineWheel": {
+      "authoredAssets": [
+        "art/props/turbine-wheel.glb"
+      ],
+      "meshUuids": [
+        "f5a83d2d-6537-4c4e-83b1-970dcf5805b2@951e3"
+      ]
+    },
+    "sodaCan": {
+      "authoredAssets": [
+        "art/recyclables/food/soda-can.glb"
+      ],
+      "meshUuids": [
+        "72fbc019-7db3-4afa-8b4e-2fa10579ad82@972be"
+      ]
+    },
+    "waterBottle": {
+      "authoredAssets": [
+        "art/recyclables/food/soda-bottle.glb"
+      ],
+      "meshUuids": [
+        "341a4692-cec7-46a3-a02a-dff462103401@eaa90"
+      ]
+    },
+    "battery": {
+      "authoredAssets": [
+        "art/recyclables/props/battery.glb"
+      ],
+      "meshUuids": [
+        "d9751ad3-d334-441a-8d7f-089cb6cc53bd@41a1c"
+      ]
+    },
+    "toyDuck": {
+      "authoredAssets": [
+        "art/recyclables/props/toy-duck.glb"
+      ],
+      "meshUuids": [
+        "8431c71e-95cc-41a8-9513-20dcbabd1b48@1ff32"
+      ]
+    },
+    "apple": {
+      "authoredAssets": [
+        "art/recyclables/food/apple.glb"
+      ],
+      "meshUuids": [
+        "06d81d3e-c8c9-4ddf-9315-be287f76c263@21616"
+      ]
+    },
+    "paperScrap": {
+      "authoredAssets": [
+        "art/recyclables/props/paper-scrap.glb"
+      ],
+      "meshUuids": [
+        "9a14c552-213f-4683-8ad0-f5c30c13beee@c9532"
+      ]
+    },
+    "bookStack": {
+      "authoredAssets": [
+        "art/recyclables/furniture/book-stack.glb"
+      ],
+      "meshUuids": [
+        "c3dae83c-5258-48f3-8956-b81a37c08c59@a95eb"
+      ]
+    },
+    "cardboardBox": {
+      "authoredAssets": [
+        "art/recyclables/furniture/cardboard-box.glb"
+      ],
+      "meshUuids": [
+        "2aaf208a-3765-4d40-93e7-633501426d09@fc586"
+      ]
+    },
+    "trashBag": {
+      "authoredAssets": [
+        "art/recyclables/props/trash-bag.glb"
+      ],
+      "meshUuids": [
+        "fcac3127-ec2d-4566-b563-1432d3a3873b@77b7e"
+      ]
+    },
+    "paintBucket": {
+      "authoredAssets": [
+        "art/recyclables/props/paint-bucket.glb"
+      ],
+      "meshUuids": [
+        "06c81dc8-5cb1-4b39-a30a-22077d5dcfa6@4e913"
+      ]
+    },
+    "chair": {
+      "authoredAssets": [
+        "art/recyclables/furniture/chair.glb"
+      ],
+      "meshUuids": [
+        "af97e150-bcd2-4d69-8699-3e3459bc6961@6536e"
+      ]
+    },
+    "coffeeTable": {
+      "authoredAssets": [
+        "art/recyclables/furniture/coffee-table.glb"
+      ],
+      "meshUuids": [
+        "6b24ba63-6bdc-4204-a4fe-b548c77ab999@48d99"
+      ]
+    },
+    "monitor": {
+      "authoredAssets": [
+        "art/recyclables/furniture/monitor.glb"
+      ],
+      "meshUuids": [
+        "91bc1a70-9c09-41fe-9692-09965ca238a0@ebf4a"
+      ]
+    },
+    "shelf": {
+      "authoredAssets": [
+        "art/recyclables/furniture/shelf.glb"
+      ],
+      "meshUuids": [
+        "10ca0214-94ba-427b-8100-c65b8dc97b51@12d68"
+      ]
+    },
+    "crate": {
+      "authoredAssets": [
+        "art/recyclables/industrial/crate.glb"
+      ],
+      "meshUuids": [
+        "af66df16-d124-4159-bc8f-d441666c5f2d@64ff5"
+      ]
+    },
+    "sofa": {
+      "authoredAssets": [
+        "art/recyclables/furniture/sofa.glb"
+      ],
+      "meshUuids": [
+        "69effd1e-fe2f-4dd5-9de9-a37317685429@77d05"
+      ]
+    },
+    "shippingContainer": {
+      "authoredAssets": [
+        "art/recyclables/industrial/shipping-container.glb"
+      ],
+      "meshUuids": [
+        "3fda4dd6-bad1-49a6-9a25-e3439b4498b7@e2112"
+      ]
+    }
+  }
+}

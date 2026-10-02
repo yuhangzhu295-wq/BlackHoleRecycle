@@ -1,6 +1,14 @@
 /**
  * 3D 几何体与材质快速构建工厂(MeshFactory.ts)
- * 基于 Cocos Creator 3.8.x 原生 primitives 和 builtin-standard 材质
+ *
+ * V7 PHASE 2B: this is now the DEGRADED FALLBACK path only. The production
+ * singularity is the authored `game_art/blackhole/SingularityVortex.glb`; the
+ * cylinder/torus primitives below are built only when that asset cannot be
+ * loaded, so a missing asset degrades instead of leaving the player invisible.
+ * Nothing in the normal startup path calls into this factory.
+ *
+ * The material effect comes from the shared `RENDER_EFFECT` (builtin-unlit), not
+ * builtin-standard: the unlit path is the tested mobile-safe one.
  */
 import {
   Node,
@@ -20,15 +28,6 @@ export class MeshFactory {
   /**
    * 获取或创建基础几何体网格
    */
-  public static getBoxMesh(width: number = 1, height: number = 1, length: number = 1): Mesh {
-    const key = `box_${width}_${height}_${length}`;
-    if (!this.meshCache.has(key)) {
-      const mesh = utils.createMesh(primitives.box({ width, height, length }));
-      this.meshCache.set(key, mesh);
-    }
-    return this.meshCache.get(key)!;
-  }
-
   public static getCylinderMesh(radiusTop: number = 0.5, radiusBottom: number = 0.5, height: number = 1, segments: number = 24): Mesh {
     const key = `cyl_${radiusTop}_${radiusBottom}_${height}_${segments}`;
     if (!this.meshCache.has(key)) {
@@ -38,37 +37,10 @@ export class MeshFactory {
     return this.meshCache.get(key)!;
   }
 
-  public static getSphereMesh(radius: number = 0.5, segments: number = 20): Mesh {
-    const key = `sphere_${radius}_${segments}`;
-    if (!this.meshCache.has(key)) {
-      const mesh = utils.createMesh(primitives.sphere(radius, { segments }));
-      this.meshCache.set(key, mesh);
-    }
-    return this.meshCache.get(key)!;
-  }
-
-  public static getPlaneMesh(width: number = 20, length: number = 40): Mesh {
-    const key = `plane_${width}_${length}`;
-    if (!this.meshCache.has(key)) {
-      const mesh = utils.createMesh(primitives.plane({ width, length, widthSegments: 2, lengthSegments: 2 }));
-      this.meshCache.set(key, mesh);
-    }
-    return this.meshCache.get(key)!;
-  }
-
   public static getTorusMesh(radius: number = 1, tube: number = 0.15, radialSegments: number = 64): Mesh {
     const key = `torus_${radius}_${tube}_${radialSegments}`;
     if (!this.meshCache.has(key)) {
       const mesh = utils.createMesh(primitives.torus(radius, tube, { radialSegments, tubularSegments: 16 }));
-      this.meshCache.set(key, mesh);
-    }
-    return this.meshCache.get(key)!;
-  }
-
-  public static getConeMesh(radius: number = 0.5, height: number = 1): Mesh {
-    const key = `cone_${radius}_${height}`;
-    if (!this.meshCache.has(key)) {
-      const mesh = utils.createMesh(primitives.cone(radius, height, { radialSegments: 20 }));
       this.meshCache.set(key, mesh);
     }
     return this.meshCache.get(key)!;

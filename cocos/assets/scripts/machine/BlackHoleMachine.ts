@@ -1,7 +1,7 @@
 /**
  * 黑洞吸尘机 3D 核心组件与 5 级结构进化系统 (BlackHoleMachine.ts)
  */
-import { _decorator, Color, Component, director, MeshRenderer, Node, Vec3, math } from 'cc';
+import { _decorator, Color, Component, director, Mesh, MeshRenderer, Node, Vec3, math } from 'cc';
 import { MACHINE_ASSEMBLY_PALETTE, MACHINE_PALETTE } from '../core/RenderProfile';
 import { BlobShadow } from '../core/BlobShadow';
 import { ArtLoader } from '../core/ArtLoader';
@@ -103,6 +103,22 @@ export class BlackHoleMachine extends Component {
   private singularityLoadAttempts: number = 0;
   private static readonly MAX_SINGULARITY_LOAD_ATTEMPTS = 90;
   /**
+   * The seven core part names, shared by the structure builder, the authored
+   * bind and the degraded fallback so the three cannot drift. The per-frame
+   * animation, `applyCoreSkin` and the silhouette measurement all bind to these
+   * names, so they are a contract, not a convenience.
+   */
+  private static readonly CORE_PART_NAMES: readonly string[] = [
+    'AbyssBase', 'HoleInner', 'InnerSwirl', 'MidSwirl', 'OuterSwirl', 'ShimmerSwirl', 'HoleRing',
+  ];
+  /**
+   * The requested skin colours. Recorded rather than applied immediately,
+   * because the core nodes own no mesh until the authored asset binds (or the
+   * degraded fallback runs). Re-applied at that moment so a skin chosen before
+   * the asset arrives is never lost.
+   */
+  private coreSkin: { readonly bodyColor: string; readonly rimColor: string } | null = null;
+  /**
    * Latches a terminal load failure so the retry loop stops instead of
    * warning every frame. A missing asset is a repository problem, not a
    * per-frame condition, and flooding the console would hide real errors.
@@ -137,8 +153,8 @@ export class BlackHoleMachine extends Component {
 
   /**
    * 玩家本体必须首先读作“黑洞”，而不是一辆贴了黑洞图标的汽车。
-   * 黑洞圆盘和涡流是特效本体，故使用原生网格；五个等级的车体结构
-   * 始终实例化由 Creator 保存的真实低模预制体。
+   * 黑洞圆盘和涡流的网格与材质来自已授权的 SingularityVortex 资产；
+   * 五个等级的车体结构始终实例化由 Creator 保存的真实低模预制体。
    */
   private buildVisibleGeometry(): void {
     if (this.visualRoot) return;
@@ -162,6 +178,14 @@ export class BlackHoleMachine extends Component {
     this.singularityHaloNode = this.levelVisuals[4] || null;
 
     // 2. 黑洞核心：低矮、宽阔的深渊圆盘，在竖屏俯视镜头下保持为清楚的圆形。
+    //
+    // V7 PHASE 2B: the authored singularity is the ONLY construction path. This
+    // block builds the *structure* the animation, the skin and the silhouette
+    // measurement bind to — the seven named nodes and their transforms — and
+    // nothing else. The meshes and materials come from
+    // `game_art/blackhole/SingularityVortex.glb` in `adoptAuthoredSingularity`.
+    // No primitive is created here, so nothing is built that would then have to
+    // be thrown away when the asset arrives.
     this.coreNode = new Node('CoreNode');
     this.coreNode.setPosition(0, 0.16, 0);
     // The singularity is the game's primary interactive affordance. Scale its
@@ -171,58 +195,36 @@ export class BlackHoleMachine extends Component {
     this.visualRoot.addChild(this.coreNode);
 
     // A deep-violet body keeps the singularity readable against the green
-    // district before the animated black core and luminous rings are added.
-    const abyssBase = new Node('AbyssBase');
-    abyssBase.setPosition(0, 0.01, 0);
-    this.coreNode.addChild(abyssBase);
-    MeshFactory.attachMesh(abyssBase, MeshFactory.getCylinderMesh(1.10, 1.10, 0.055, 64), MACHINE_PALETTE.abyssBase, 1.0, 0.0);
-
+    // district once the authored asset binds its material.
+    this.createCorePart('AbyssBase', 0.01);
     // Black centre (visual only; this is deliberately smaller than the rim
     // so the full object reads as a glossy vortex instead of a flat void).
-    const holeInner = new Node('HoleInner');
-    holeInner.setPosition(0, 0.06, 0);
-    this.coreNode.addChild(holeInner);
-    MeshFactory.attachMesh(holeInner, MeshFactory.getCylinderMesh(0.56, 0.56, 0.075, 64), MACHINE_PALETTE.holeInner, 1.0, 0.0);
+    this.createCorePart('HoleInner', 0.06);
 
     // 多层紫色涡流环：它们是黑洞特效的实体表现，随时间反向转动以传达吞噬感。
-    // Keep these as a visual-only native effect. They do not stand in for a
-    // game object and never define the real suction radius or collision area.
-    this.innerSwirl = new Node('InnerSwirl');
-    this.innerSwirl.setPosition(0, 0.105, 0);
-    this.coreNode.addChild(this.innerSwirl);
-    MeshFactory.attachMesh(this.innerSwirl, MeshFactory.getTorusMesh(0.38, 0.035), MACHINE_PALETTE.innerSwirl, 0.1, 0.5);
+    // Keep these as a visual-only effect. They do not stand in for a game object
+    // and never define the real suction radius or collision area.
+    this.innerSwirl = this.createCorePart('InnerSwirl', 0.105);
 
     // A narrow asymmetric-looking orbit between the core and exterior ring
     // makes the singularity read as a layered vortex at phone scale rather
     // than as one flat purple disc. The animation phase below prevents this
     // visible layer from coinciding with the inner track.
-    this.midSwirl = new Node('MidSwirl');
-    this.midSwirl.setPosition(0, 0.110, 0);
+    this.midSwirl = this.createCorePart('MidSwirl', 0.110);
     this.midSwirl.setRotationFromEuler(0, 0, -20);
-    this.coreNode.addChild(this.midSwirl);
-    MeshFactory.attachMesh(this.midSwirl, MeshFactory.getTorusMesh(0.55, 0.026), MACHINE_PALETTE.midSwirl, 0.1, 0.5);
 
-    this.outerSwirl = new Node('OuterSwirl');
-    this.outerSwirl.setPosition(0, 0.115, 0);
+    this.outerSwirl = this.createCorePart('OuterSwirl', 0.115);
     this.outerSwirl.setRotationFromEuler(0, 0, 16);
-    this.coreNode.addChild(this.outerSwirl);
-    MeshFactory.attachMesh(this.outerSwirl, MeshFactory.getTorusMesh(0.72, 0.045), MACHINE_PALETTE.outerSwirl, 0.1, 0.5);
 
     // The fine outer highlight is intentionally separated from HoleRing: it
     // gives the violet rim the moving white-violet glint used by the V2
     // portrait references without turning the perimeter into a gameplay
     // range indicator.
-    this.shimmerSwirl = new Node('ShimmerSwirl');
-    this.shimmerSwirl.setPosition(0, 0.120, 0);
+    this.shimmerSwirl = this.createCorePart('ShimmerSwirl', 0.120);
     this.shimmerSwirl.setRotationFromEuler(0, 0, 34);
-    this.coreNode.addChild(this.shimmerSwirl);
-    MeshFactory.attachMesh(this.shimmerSwirl, MeshFactory.getTorusMesh(0.87, 0.018), MACHINE_PALETTE.shimmerSwirl, 0.08, 0.55);
 
     // 发光外环是黑洞的视觉轮廓，不能被用作真实吸附半径的地图标尺。
-    this.holeRim = new Node('HoleRing');
-    this.holeRim.setPosition(0, 0.125, 0);
-    this.coreNode.addChild(this.holeRim);
-    MeshFactory.attachMesh(this.holeRim, MeshFactory.getTorusMesh(1.03, 0.04), MACHINE_PALETTE.holeRing, 0.1, 0.5);
+    this.holeRim = this.createCorePart('HoleRing', 0.125);
 
     // The singularity must read as sitting on the road, not hovering over it.
     // One shared transparent quad, no shadow map and no dynamic light.
@@ -231,53 +233,85 @@ export class BlackHoleMachine extends Component {
   }
 
   /**
-   * Swap the runtime primitives for the authored singularity once it loads.
+   * One named core node. It owns no MeshRenderer until the authored asset binds
+   * (or the degraded fallback runs), which is what keeps the normal path free of
+   * runtime-created geometry.
+   */
+  private createCorePart(name: string, y: number): Node {
+    const node = new Node(name);
+    node.setPosition(0, y, 0);
+    this.coreNode!.addChild(node);
+    return node;
+  }
+
+  /**
+   * Bind the authored singularity onto the structure built above.
    *
-   * The asset's node names match the primitive node names exactly, so the
-   * per-frame Euler animation, the skin recolouring and the silhouette
-   * measurement all keep working against the same references: only the Mesh and
-   * Material behind each node change. The primitives are detached rather than
-   * destroyed, so a failed or slow load leaves the machine fully functional.
+   * The asset's node names match the structure's names exactly, so the per-frame
+   * Euler animation, the skin recolouring and the silhouette measurement all keep
+   * working against the same nodes: only the Mesh and Material behind each node
+   * are added. A terminal load failure falls back to the documented primitive
+   * core so a missing asset degrades instead of leaving the player invisible.
    */
   private adoptAuthoredSingularity(): void {
     ArtLoader.instantiateArt('blackhole.core', 'game-art', (art) => {
       if (!this.isValid || !this.coreNode?.isValid) return;
-      this.authoredSingularityAdopted = true;
       const authored = art.node.getChildByName('SingularityVortex') || art.node.getChildByName('CoreNode') || art.node;
-      const replacements: Array<readonly [Node | null, string]> = [
-        [this.holeRim, 'HoleRing'],
-        [this.shimmerSwirl, 'ShimmerSwirl'],
-        [this.outerSwirl, 'OuterSwirl'],
-        [this.midSwirl, 'MidSwirl'],
-        [this.innerSwirl, 'InnerSwirl'],
-      ];
-      for (const [target, name] of replacements) {
-        if (!target?.isValid) continue;
-        const source = authored.getChildByName(name);
-        const sourceRenderer = source?.getComponent(MeshRenderer) || null;
-        const targetRenderer = target.getComponent(MeshRenderer) || null;
-        if (!sourceRenderer || !targetRenderer) continue;
+      let bound = 0;
+      for (const name of BlackHoleMachine.CORE_PART_NAMES) {
+        const target = this.coreNode.getChildByName(name);
+        const sourceRenderer = authored.getChildByName(name)?.getComponent(MeshRenderer) || null;
+        if (!target || !sourceRenderer?.mesh) continue;
+        const renderer = target.getComponent(MeshRenderer) || target.addComponent(MeshRenderer);
         // Mesh and material come from the asset; the node, its transform and
         // its animation stay exactly where they are.
-        targetRenderer.mesh = sourceRenderer.mesh;
-        targetRenderer.setMaterial(sourceRenderer.getRenderMaterial(0), 0);
+        renderer.mesh = sourceRenderer.mesh;
+        const slotCount = Math.max(1, sourceRenderer.sharedMaterials.length, sourceRenderer.mesh.struct.primitives.length);
+        for (let slot = 0; slot < slotCount; slot += 1) {
+          const material = sourceRenderer.getRenderMaterial(slot) || sourceRenderer.getRenderMaterial(0);
+          if (material) renderer.setMaterial(material, slot);
+        }
+        bound += 1;
       }
-      // The two body parts are static, so they are re-parented whole.
-      for (const name of ['AbyssBase', 'HoleInner']) {
-        const source = authored.getChildByName(name);
-        const existing = this.coreNode.getChildByName(name);
-        if (!source || !existing) continue;
-        existing.destroy();
-        source.setParent(this.coreNode);
+      if (bound === 0) {
+        // The asset loaded but carries none of the named parts. Treat that as a
+        // broken asset rather than leaving the player with an invisible core.
+        this.activatePrimitiveCoreFallback('[BlackHoleMachine] Authored singularity carries no bindable core parts.');
+        return;
       }
+      this.authoredSingularityAdopted = true;
+      this.applyCoreSkinToCore();
     }, (reason) => {
-      // One warning per machine, then stop asking. The runtime geometry keeps
-      // rendering, so a missing asset degrades instead of breaking play.
-      if (!this.singularityLoadAbandoned) {
-        this.singularityLoadAbandoned = true;
-        console.warn('[BlackHoleMachine] Authored singularity unavailable; keeping runtime geometry.', reason);
-      }
+      this.activatePrimitiveCoreFallback(reason);
     });
+  }
+
+  /**
+   * Degraded fallback ONLY. The authored asset is the production path; this
+   * exists so a missing or malformed asset cannot leave the player invisible.
+   * It rebuilds exactly the seven primitives the authored asset replaced, at the
+   * same sizes, so the silhouette and every gameplay contract stay identical.
+   */
+  private activatePrimitiveCoreFallback(reason: unknown): void {
+    if (this.singularityLoadAbandoned) return;
+    this.singularityLoadAbandoned = true;
+    // One warning per machine, then stop asking. The fallback keeps rendering,
+    // so a missing asset degrades instead of breaking play.
+    console.warn('[BlackHoleMachine] Authored singularity unavailable; using the degraded primitive core.', reason);
+    if (!this.coreNode?.isValid) return;
+    this.attachPrimitiveCorePart('AbyssBase', MeshFactory.getCylinderMesh(1.10, 1.10, 0.055, 64), MACHINE_PALETTE.abyssBase, 1.0, 0.0);
+    this.attachPrimitiveCorePart('HoleInner', MeshFactory.getCylinderMesh(0.56, 0.56, 0.075, 64), MACHINE_PALETTE.holeInner, 1.0, 0.0);
+    this.attachPrimitiveCorePart('InnerSwirl', MeshFactory.getTorusMesh(0.38, 0.035), MACHINE_PALETTE.innerSwirl, 0.1, 0.5);
+    this.attachPrimitiveCorePart('MidSwirl', MeshFactory.getTorusMesh(0.55, 0.026), MACHINE_PALETTE.midSwirl, 0.1, 0.5);
+    this.attachPrimitiveCorePart('OuterSwirl', MeshFactory.getTorusMesh(0.72, 0.045), MACHINE_PALETTE.outerSwirl, 0.1, 0.5);
+    this.attachPrimitiveCorePart('ShimmerSwirl', MeshFactory.getTorusMesh(0.87, 0.018), MACHINE_PALETTE.shimmerSwirl, 0.08, 0.55);
+    this.attachPrimitiveCorePart('HoleRing', MeshFactory.getTorusMesh(1.03, 0.04), MACHINE_PALETTE.holeRing, 0.1, 0.5);
+    this.applyCoreSkinToCore();
+  }
+
+  private attachPrimitiveCorePart(name: string, mesh: Mesh, hex: string, roughness: number, metallic: number): void {
+    const node = this.coreNode?.getChildByName(name) || null;
+    if (node) MeshFactory.attachMesh(node, mesh, hex, roughness, metallic);
   }
 
   private getVisualLibrary(): MachineVisualLibrary {
@@ -287,9 +321,9 @@ export class BlackHoleMachine extends Component {
   }
 
   /**
-   * Whether the authored singularity asset replaced the runtime primitives.
-   * Exposed for the acceptance report so the V7 migration is provable at
-   * runtime rather than only visible in the repository.
+   * Whether the authored singularity asset is the source of the core's meshes
+   * and materials. Exposed for the acceptance report so the V7 migration is
+   * provable at runtime rather than only visible in the repository.
    */
   public isUsingAuthoredSingularity(): boolean {
     return this.authoredSingularityAdopted;
@@ -440,17 +474,16 @@ export class BlackHoleMachine extends Component {
       this.materialRebindFrames--;
     }
     if (this.isPaused || dt <= 0) return;
-    // V7 PHASE 2b. The seven runtime primitives above are the immediate
-    // fallback, so the player is never missing a frame. The authored asset
-    // carries the same parts at the same sizes and offsets, so when it arrives
-    // it replaces them in place and every contract (suction radius, mass, tier,
-    // collision, playerWidthRatio) is untouched.
+    // V7 PHASE 2B. The core structure is built with no meshes; this request is
+    // what turns it into the authored singularity. If the asset never arrives,
+    // `activatePrimitiveCoreFallback` supplies the documented degraded core so
+    // the player is never left invisible.
     //
     // The request lives here rather than in onLoad because onLoad can run
     // before the asset manager is ready to resolve a bundle; retrying from the
-    // update loop is what makes the adoption reliable. Once the asset is
-    // resident the loader answers synchronously, so this settles on the first
-    // frame after it arrives.
+    // update loop is what makes the bind reliable. Once the asset is resident
+    // the loader answers synchronously, so this settles on the first frame
+    // after it arrives.
     if (!this.authoredSingularityAdopted && !this.singularityLoadAbandoned
       && this.singularityLoadAttempts < BlackHoleMachine.MAX_SINGULARITY_LOAD_ATTEMPTS) {
       this.singularityLoadAttempts += 1;
@@ -633,21 +666,44 @@ export class BlackHoleMachine extends Component {
    * Applies the selected player skin to the actual native MeshRenderers that
    * make up the singularity. This has no bearing on suction radius, mass,
    * collisions or bot materials.
+   *
+   * V7 PHASE 2B: the skin tints the authored material instance instead of
+   * replacing it, so the authored asset stays the definition of the material
+   * (effect, technique, blend/depth state) and only the per-part colour varies.
+   * When the core has not bound yet the request is recorded and re-applied at
+   * bind time, so a skin chosen before the asset arrives is never lost.
    */
   public applyCoreSkin(bodyColor: string, rimColor: string): void {
     if (this.presentation === 'BOT') return;
-    this.setCorePartMaterial('AbyssBase', bodyColor, 1.0, 0.0);
-    this.setCorePartMaterial('HoleInner', MACHINE_PALETTE.holeInner, 1.0, 0.0);
-    this.setCorePartMaterial('InnerSwirl', rimColor, 0.1, 0.5);
-    this.setCorePartMaterial('MidSwirl', rimColor, 0.1, 0.5);
-    this.setCorePartMaterial('OuterSwirl', bodyColor, 0.1, 0.5);
-    this.setCorePartMaterial('ShimmerSwirl', MACHINE_PALETTE.shimmerSwirl, 0.08, 0.55);
-    this.setCorePartMaterial('HoleRing', rimColor, 0.1, 0.5);
+    this.coreSkin = { bodyColor, rimColor };
+    this.applyCoreSkinToCore();
   }
 
-  private setCorePartMaterial(name: string, hex: string, roughness: number, metallic: number): void {
+  private applyCoreSkinToCore(): void {
+    if (!this.coreSkin) return;
+    const { bodyColor, rimColor } = this.coreSkin;
+    this.tintCorePart('AbyssBase', bodyColor);
+    this.tintCorePart('HoleInner', MACHINE_PALETTE.holeInner);
+    this.tintCorePart('InnerSwirl', rimColor);
+    this.tintCorePart('MidSwirl', rimColor);
+    this.tintCorePart('OuterSwirl', bodyColor);
+    this.tintCorePart('ShimmerSwirl', MACHINE_PALETTE.shimmerSwirl);
+    this.tintCorePart('HoleRing', rimColor);
+  }
+
+  /**
+   * Tint one core part through its renderer-local material instance. Writing to
+   * the instance (not the shared material) is what keeps a skin from leaking
+   * into the authored asset or into another machine.
+   */
+  private tintCorePart(name: string, hex: string): void {
     const renderer = this.coreNode?.getChildByName(name)?.getComponent(MeshRenderer) || null;
-    renderer?.setMaterial(MeshFactory.getMaterial(hex, roughness, metallic), 0);
+    if (!renderer) return;
+    const material = renderer.getMaterialInstance(0);
+    if (!material) return;
+    const color = new Color();
+    Color.fromHEX(color, hex);
+    material.setProperty('mainColor', color);
   }
 
   /**
