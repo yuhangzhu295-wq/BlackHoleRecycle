@@ -10,6 +10,17 @@ import { IMachineEvolutionConfig, MACHINE_EVOLUTION_CONFIG, ObjectTier } from '.
 import { eventBus } from '../core/EventBus';
 import { MeshFactory } from '../core/MeshFactory';
 import { MachineVisualLibrary } from './MachineVisualLibrary';
+import { SingularityEffects } from './SingularityEffects';
+import {
+  SingularityLevelVisuals,
+  VORTEX_LAYERS,
+  decayDevourPulse,
+  getSingularityLevelVisuals,
+  singularityDevourScale,
+  vortexLayerAngularStep,
+  vortexLayerEuler,
+  vortexLayerHeight,
+} from './SingularityVisualProfile';
 import { WorldArtLibrary } from '../world/WorldArtLibrary';
 import { saveService } from '../data/SaveService';
 
@@ -66,6 +77,28 @@ export class BlackHoleMachine extends Component {
   private shimmerSwirl: Node | null = null;
   private readonly levelVisuals: Node[] = [];
   private visualElapsed: number = 0;
+  /**
+   * PHASE 4: the authored rim-energy and suction-particle assets, plus the
+   * profile state that drives them. Purely presentational; nothing here is read
+   * back into suction, mass, tier, collision or the FSM.
+   */
+  private effects: SingularityEffects | null = null;
+  /**
+   * The five decorative layers in `VORTEX_LAYERS` order, cached so the
+   * per-frame vortex animation does no name lookup. `holeRim` is the last one.
+   */
+  private readonly vortexLayerNodes: Array<Node | null> = [];
+  /** Accumulated spin per layer, in degrees. See `vortexLayerAngularStep`. */
+  private readonly layerSpinAngles: number[] = [];
+  /** The level's resolved look. Always defined after `applyEvolutionLevel`. */
+  private levelAppearance: SingularityLevelVisuals = getSingularityLevelVisuals({
+    level: 1, baseColor: '#2b7fff', rimColor: '#00e5ff',
+  });
+  /**
+   * Decaying 0..1 response raised once per real absorption by
+   * `triggerDevourPulse`. Visual only.
+   */
+  private devourPulse: number = 0;
   /**
    * Imported glTF renderers may finish their first Web Mobile sub-model setup
    * one frame after a machine is activated. Rebind the approved material on
@@ -204,27 +237,32 @@ export class BlackHoleMachine extends Component {
     // 多层紫色涡流环：它们是黑洞特效的实体表现，随时间反向转动以传达吞噬感。
     // Keep these as a visual-only effect. They do not stand in for a game object
     // and never define the real suction radius or collision area.
-    this.innerSwirl = this.createCorePart('InnerSwirl', 0.105);
-
-    // A narrow asymmetric-looking orbit between the core and exterior ring
-    // makes the singularity read as a layered vortex at phone scale rather
-    // than as one flat purple disc. The animation phase below prevents this
-    // visible layer from coinciding with the inner track.
-    this.midSwirl = this.createCorePart('MidSwirl', 0.110);
-    this.midSwirl.setRotationFromEuler(0, 0, -20);
-
-    this.outerSwirl = this.createCorePart('OuterSwirl', 0.115);
-    this.outerSwirl.setRotationFromEuler(0, 0, 16);
-
-    // The fine outer highlight is intentionally separated from HoleRing: it
-    // gives the violet rim the moving white-violet glint used by the V2
-    // portrait references without turning the perimeter into a gameplay
-    // range indicator.
-    this.shimmerSwirl = this.createCorePart('ShimmerSwirl', 0.120);
-    this.shimmerSwirl.setRotationFromEuler(0, 0, 34);
-
+    //
+    // V7 PHASE 4: the layer heights and tilts now come from
+    // `SingularityVisualProfile.VORTEX_LAYERS`. The authored structure was
+    // nearly coplanar (y 0.105-0.125), and every layer was spun about the Y axis
+    // of a torus that is rotationally symmetric about that axis — so the
+    // "rotation animation" changed Euler angles and nothing on screen. The
+    // profile tilts each layer off its own axis (making the spin visible),
+    // counter-rotates neighbours and spreads them into a funnel.
+    this.vortexLayerNodes.length = 0;
+    this.layerSpinAngles.length = 0;
+    for (const layer of VORTEX_LAYERS) {
+      this.vortexLayerNodes.push(this.createCorePart(layer.name, layer.y));
+      this.layerSpinAngles.push(0);
+    }
+    this.innerSwirl = this.vortexLayerNodes[0] || null;
+    this.midSwirl = this.vortexLayerNodes[1] || null;
+    this.outerSwirl = this.vortexLayerNodes[2] || null;
+    this.shimmerSwirl = this.vortexLayerNodes[3] || null;
     // 发光外环是黑洞的视觉轮廓，不能被用作真实吸附半径的地图标尺。
-    this.holeRim = this.createCorePart('HoleRing', 0.125);
+    this.holeRim = this.vortexLayerNodes[4] || null;
+
+    // PHASE 4 authored effects. Both requests are non-blocking and both degrade
+    // to "absent" rather than breaking, so this cannot stop the singularity from
+    // rendering.
+    this.effects = new SingularityEffects(this.coreNode);
+    this.effects.ensureRequested();
 
     // The singularity must read as sitting on the road, not hovering over it.
     // One shared transparent quad, no shadow map and no dynamic light.
@@ -280,7 +318,7 @@ export class BlackHoleMachine extends Component {
         return;
       }
       this.authoredSingularityAdopted = true;
-      this.applyCoreSkinToCore();
+      this.applyLevelAppearance();
     }, (reason) => {
       this.activatePrimitiveCoreFallback(reason);
     });
@@ -306,7 +344,7 @@ export class BlackHoleMachine extends Component {
     this.attachPrimitiveCorePart('OuterSwirl', MeshFactory.getTorusMesh(0.72, 0.045), MACHINE_PALETTE.outerSwirl, 0.1, 0.5);
     this.attachPrimitiveCorePart('ShimmerSwirl', MeshFactory.getTorusMesh(0.87, 0.018), MACHINE_PALETTE.shimmerSwirl, 0.08, 0.55);
     this.attachPrimitiveCorePart('HoleRing', MeshFactory.getTorusMesh(1.03, 0.04), MACHINE_PALETTE.holeRing, 0.1, 0.5);
-    this.applyCoreSkinToCore();
+    this.applyLevelAppearance();
   }
 
   private attachPrimitiveCorePart(name: string, mesh: Mesh, hex: string, roughness: number, metallic: number): void {
@@ -385,8 +423,33 @@ export class BlackHoleMachine extends Component {
    * layer that could silently drift.
    */
   public getAnimatedDecorationNodes(): readonly Node[] {
-    return [this.innerSwirl, this.midSwirl, this.outerSwirl, this.shimmerSwirl, this.holeRim]
-      .filter((node): node is Node => !!node && node.isValid);
+    const nodes: Node[] = [
+      this.innerSwirl, this.midSwirl, this.outerSwirl, this.shimmerSwirl, this.holeRim,
+      // PHASE 4's authored rim-energy ring spins and pulses every frame, so it
+      // is a frame-animated decoration by the same definition and is excluded
+      // from the gated silhouette for the same reason. It is null until the
+      // asset adopts, which is why the list is built per call.
+      this.effects?.getRimEnergyNode() || null,
+    ].filter((node): node is Node => !!node && node.isValid);
+    return nodes;
+  }
+
+  /**
+   * Read-only evidence that the PHASE 4 authored effects actually adopted at
+   * runtime, plus the emission rate the real suction load produced. Exposed for
+   * the acceptance bridge only; there is no setter.
+   */
+  public getSingularityVisualDiagnostics(): Readonly<Record<string, unknown>> {
+    return {
+      level: this.levelAppearance.level,
+      rimColor: this.levelAppearance.rimColor,
+      spinMultiplier: this.levelAppearance.spinMultiplier,
+      funnelSpread: this.levelAppearance.funnelSpread,
+      suctionFeedback: this.suctionFeedback,
+      devourPulse: Number(this.devourPulse.toFixed(3)),
+      paused: this.isPaused,
+      effects: this.effects?.getDiagnostics() || null,
+    };
   }
 
   /**
@@ -399,42 +462,72 @@ export class BlackHoleMachine extends Component {
   }
 
   /**
-   * Visual response to the live suction level plus the level-up flourish.
+   * Visual response to the live suction level, the devour pulse and the
+   * level-up flourish.
    *
-   * Three layers move together so the singularity reads as working:
-   *   - the swirls spin faster as targets are pulled in, so the vortex speeds
-   *     up exactly when the player is eating;
-   *   - the rim brightens and swells slightly, which is the readable cue at
-   *     phone scale because the rim is the silhouette;
-   *   - a level-up burst briefly expands and brightens the rim far more, so the
-   *     growth moment is unmistakable.
+   * PHASE 4 consolidated what used to be two overlapping blocks (one in
+   * `update`, one in the former `updateSuctionFeedback`) into this single pass,
+   * because the two disagreed: `update` set the base rotation and the feedback
+   * pass immediately overwrote three of the five layers with a different
+   * formula. One source of truth is also what lets the layer table live in
+   * `SingularityVisualProfile` instead of being spread across both.
    *
-   * Everything here is scale and rotation on existing decoration nodes. It does
-   * not move the structural body, so `playerWidthRatio` (measured from
-   * AbyssBase and HoleInner only) cannot drift, and it touches no gameplay value.
+   * Every transform here is applied to the *decorative* layers, which
+   * `getAnimatedDecorationNodes` excludes from the gated silhouette. The
+   * structural body (`AbyssBase`, `HoleInner`) is never scaled, so the
+   * `playerWidthRatio` gate cannot move with a gameplay event. No gameplay
+   * value is read or written.
    */
-  private updateSuctionFeedback(dt: number): void {
-    const active = this.suctionFeedback;
+  private applySingularityAnimation(dt: number): void {
     if (this.levelUpFlourish > 0) this.levelUpFlourish = Math.max(0, this.levelUpFlourish - dt);
     const flourish = this.levelUpFlourish / BlackHoleMachine.LEVEL_UP_FLOURISH_SECONDS;
-    // Faster spin under load: the vortex accelerates while it is eating.
-    const spinBoost = 1 + active * 1.35;
-    if (this.innerSwirl) this.innerSwirl.setRotationFromEuler(0, this.visualElapsed * 90 * spinBoost, 10);
-    if (this.midSwirl) this.midSwirl.setRotationFromEuler(0, -this.visualElapsed * 72 * spinBoost, -20);
-    if (this.outerSwirl) this.outerSwirl.setRotationFromEuler(0, -this.visualElapsed * 55 * spinBoost, 16);
-    // Rim: idle breathing, then a swell under load, then the level-up burst.
+    this.devourPulse = decayDevourPulse(this.devourPulse, dt);
+    const load = this.suctionFeedback;
+    const appearance = this.levelAppearance;
+    const devourScale = singularityDevourScale(load, this.devourPulse);
+
+    // The vortex: each layer advances its own accumulated angle, so a
+    // `spinMultiplier` change at level-up is a speed change and not a snap to a
+    // new absolute angle. The tilt makes that spin visible at all (see
+    // `SingularityVisualProfile`), and the spread turns the stack into a funnel.
+    for (let index = 0; index < VORTEX_LAYERS.length; index += 1) {
+      const layer = VORTEX_LAYERS[index];
+      const node = this.vortexLayerNodes[index] || null;
+      if (!node) continue;
+      this.layerSpinAngles[index] += vortexLayerAngularStep(layer, appearance.spinMultiplier, load, dt);
+      const euler = vortexLayerEuler(layer, this.layerSpinAngles[index]);
+      node.setRotationFromEuler(euler.x, euler.y, euler.z);
+      node.setPosition(0, vortexLayerHeight(layer, appearance.funnelSpread), 0);
+    }
+
+    // Rim: idle breathing, then a swell under load, then the level-up burst,
+    // all multiplied by the devour response so absorbing reads as growth.
     if (this.holeRim) {
-      const base = this.holeRimBaseScale;
       const breathing = Math.sin(this.visualElapsed * 1.8) * 0.015;
-      const load = active * 0.10;
       const burst = flourish > 0 ? flourish * 0.34 : 0;
-      const scale = base * (1 + breathing + load + burst);
+      const scale = this.holeRimBaseScale * (1 + breathing + load * 0.10 + burst) * devourScale;
       this.holeRim.setScale(scale, 1, scale);
     }
     if (this.shimmerSwirl) {
-      const glitter = 1 + Math.sin(this.visualElapsed * (2.4 + active * 6)) * (0.035 + active * 0.05);
-      this.shimmerSwirl.setScale(glitter * (1 + flourish * 0.18), 1, glitter * (1 + flourish * 0.18));
+      const glitter = 1 + Math.sin(this.visualElapsed * (2.4 + load * 6)) * (0.035 + load * 0.05);
+      const scale = glitter * devourScale * (1 + flourish * 0.18);
+      this.shimmerSwirl.setScale(scale, 1, scale);
     }
+
+    // The authored effects read the same real state: the world's suction load
+    // and the per-absorption pulse. Nothing else drives them.
+    this.effects?.update(dt, load, this.devourPulse, this.visualElapsed);
+  }
+
+  /**
+   * Raise the devour response once per real absorption.
+   *
+   * Called by the gameplay layer from its absorb callback, so the response is
+   * driven by an actual event rather than by a timer. Visual only: it is read
+   * by decoration scale and particle emission and written nowhere.
+   */
+  public triggerDevourPulse(): void {
+    this.devourPulse = 1;
   }
 
   /** The rim's level-derived scale, kept separate so feedback multiplies it. */
@@ -490,16 +583,8 @@ export class BlackHoleMachine extends Component {
       this.adoptAuthoredSingularity();
     }
     this.visualElapsed += dt;
-    if (this.innerSwirl) this.innerSwirl.setRotationFromEuler(0, this.visualElapsed * 90, 10);
-    if (this.midSwirl) this.midSwirl.setRotationFromEuler(0, -this.visualElapsed * 72, -20);
-    if (this.outerSwirl) this.outerSwirl.setRotationFromEuler(0, -this.visualElapsed * 55, 16);
-    if (this.shimmerSwirl) {
-      this.shimmerSwirl.setRotationFromEuler(0, this.visualElapsed * 38, 34);
-      const pulse = 1 + Math.sin(this.visualElapsed * 2.4) * 0.035;
-      this.shimmerSwirl.setScale(pulse, 1, pulse);
-    }
-    if (this.holeRim) this.holeRim.setRotationFromEuler(0, this.visualElapsed * 18, 0);
-    this.updateSuctionFeedback(dt);
+    // One pass owns every decorative transform (vortex layers, rim, effects).
+    this.applySingularityAnimation(dt);
     // 1. Continuous velocity integration. Boundaries belong to arena/world systems,
     // never to this reusable machine component.
     const curPos = this.node.getPosition();
@@ -576,6 +661,19 @@ export class BlackHoleMachine extends Component {
       const ringScale = this.holeRimBaseScale;
       this.holeRim.setScale(new Vec3(ringScale, 1.0, ringScale));
     }
+
+    // V7 PHASE 4: the singularity's own appearance follows the level.
+    // `MACHINE_EVOLUTION_CONFIG` already declares a `baseColor`/`rimColor` per
+    // level, but until now nothing read them for the core — so LV1..LV5 differed
+    // only by which upgrade assembly was active. The level now drives the rim
+    // hue, the additive rim-energy colour, the particle colour, the vortex speed
+    // and the funnel depth. A player skin is re-applied last and still wins.
+    this.levelAppearance = getSingularityLevelVisuals({
+      level,
+      baseColor: this.currentConfig.baseColor,
+      rimColor: this.currentConfig.rimColor,
+    });
+    this.applyLevelAppearance();
     if (this.coreNode) {
       this.coreNode.active = this.presentation !== 'MACHINE' && this.presentation !== 'BOT';
       // Arena's local player is intentionally a singularity rather than a
@@ -660,6 +758,21 @@ export class BlackHoleMachine extends Component {
   public setArenaBotTint(hex: string): void {
     this.arenaBotTint = hex;
     this.applyArenaBotTint();
+  }
+
+  /**
+   * Apply the resolved level look to the core and to the authored effects.
+   *
+   * Called on every level change, and again at bind time (the level can be
+   * applied before the authored asset has bound, in which case there is no
+   * renderer to tint yet). The skin is applied last so a chosen skin always
+   * wins over the level palette.
+   */
+  private applyLevelAppearance(): void {
+    this.tintCorePart('HoleRing', this.levelAppearance.rimColor);
+    this.tintCorePart('ShimmerSwirl', this.levelAppearance.rimColor);
+    this.effects?.applyLevel(this.levelAppearance);
+    this.applyCoreSkinToCore();
   }
 
   /**

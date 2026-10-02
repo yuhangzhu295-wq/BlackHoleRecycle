@@ -753,6 +753,11 @@ export class GameManager extends Component {
   public onObjectAbsorbed(obj: CompressibleObject): void {
     if (!this.machine) return;
     const t = obj.template;
+    // V7 PHASE 4: one real absorption raises one devour response on the
+    // singularity. Visual only — the machine reads it for decoration scale and
+    // particle emission and writes it nowhere. Driven by the event rather than
+    // by a timer, so it cannot fire while nothing is being eaten.
+    this.machine.triggerDevourPulse();
     this.totalAbsorbedCount++;
     this.absorbedTierCounts[t.tier] = (this.absorbedTierCounts[t.tier] || 0) + 1;
     this.score += t.value * 10;

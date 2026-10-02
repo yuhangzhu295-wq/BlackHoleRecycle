@@ -191,6 +191,24 @@ const CATEGORY_PREFAB_ENTRIES: readonly ArtEntry[] = [
     prefab: 'game_art/prefabs/collectibles/SodaCan.prefab',
     gameplayTypes: [],
   },
+  /**
+   * V7 PHASE 4 singularity effects. Additive ids, because the core keeps
+   * rendering through `blackhole.core` and these are layered on top of it.
+   * `BlackHoleMachine` asks for them by id through `ArtLoader`, so no gameplay
+   * or rendering code names a bundle path.
+   */
+  {
+    artId: 'blackhole.rimEnergy',
+    category: 'blackhole',
+    prefab: 'game_art/prefabs/blackhole/RimEnergy.prefab',
+    gameplayTypes: [],
+  },
+  {
+    artId: 'blackhole.suctionParticles',
+    category: 'blackhole',
+    prefab: 'game_art/prefabs/blackhole/SuctionParticles.prefab',
+    gameplayTypes: [],
+  },
 ];
 
 const ALL_ENTRIES: readonly ArtEntry[] = [...MIGRATED_ENTRIES, ...CATEGORY_PREFAB_ENTRIES, ...UNMIGRATED_ENTRIES];

@@ -203,6 +203,10 @@ export class QABridge {
         // V7 migration evidence: proves at runtime whether the authored
         // singularity asset replaced the runtime primitives.
         usesAuthoredSingularity: machine?.isUsingAuthoredSingularity() ?? null,
+        // V7 PHASE 4 evidence: whether the authored rim-energy ring and suction
+        // particle emitter actually adopted, the effect each resolved to, and
+        // the emission rate the world's real suction load produced. Read-only.
+        singularityEffects: machine?.getSingularityVisualDiagnostics() ?? null,
       },
       // V7 PHASE 1 evidence: proves at runtime that the authored category
       // materials are resident, not merely present in the bundle on disk.
