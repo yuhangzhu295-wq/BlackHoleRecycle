@@ -4404,12 +4404,52 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
       // The eight-direction probe is deliberately real gameplay input and can
       // legitimately collect nearby T1 objects, which would invalidate an LV1
       // gate later in the same player session.
-      const authoredT2Target = (await readRuntimeSnapshot(page)).objects
+      //
+      // Capture the feedback emission baseline immediately before any gameplay
+      // touch driving begins, so if earlier movements collect enough objects to
+      // advance the machine to LV2 before the vertical slice block, the feedback
+      // gate can obtain a trustworthy baseline from before those absorptions.
+      const initialTouchSnapshot = await readRuntimeSnapshot(page);
+      const preTouchAbsorbFeedbackBaseline = initialTouchSnapshot.ui?.pickupFeedback?.endless
+        ? {
+            emittedCount: initialTouchSnapshot.ui.pickupFeedback.endless.emittedCount,
+            visibleFrameCount: initialTouchSnapshot.ui.pickupFeedback.endless.visibleFrameCount,
+          }
+        : { emittedCount: 0, visibleFrameCount: 0 };
+      const preTouchMass = initialTouchSnapshot.machine?.mass ?? 0;
+      let preLoopVisibleAbsorbFeedback = null;
+      const trackPreLoopFeedback = (snapshot, phase) => {
+        const feedback = snapshot?.ui?.pickupFeedback?.endless || null;
+        if (!feedback) return;
+        if (
+          !preLoopVisibleAbsorbFeedback
+          && (feedback.activeCount || 0) > 0
+          && feedback.emittedCount > preTouchAbsorbFeedbackBaseline.emittedCount
+          && feedback.visibleFrameCount > preTouchAbsorbFeedbackBaseline.visibleFrameCount
+        ) {
+          preLoopVisibleAbsorbFeedback = {
+            phase,
+            feedback,
+          };
+        }
+      };
+
+      const authoredT2Target = initialTouchSnapshot.objects
         .find((object) => object.runtimeId === 'tutorial_t2_target');
       assert(authoredT2Target,
         'FAIL_VERTICAL_SLICE_T2_AUTHORING_TARGET_MISSING: tutorial_t2_target was not registered from the opening cell authoring data');
       const authoredT2Point = { x: authoredT2Target.x, z: authoredT2Target.z };
-      await driveJoystickToLogicalPoint(cdp, page, joystick, authoredT2Point, 'T2_LOCK', 2.3);
+      await driveJoystickToLogicalPoint(
+        cdp,
+        page,
+        joystick,
+        authoredT2Point,
+        'T2_LOCK',
+        2.3,
+        30_000,
+        false,
+        (snapshot) => trackPreLoopFeedback(snapshot, 'T2_LOCK_ROUTE'),
+      );
       // `CompressibleObject.showLockAlert()` is a pulse, not a latch: it holds
       // `isLockAlertActive` for 1.4 s and then refuses to re-arm for a further
       // 3.5 s (`lockCooldownTimer = 1.4 + 3.5`). Sampling one instant a fixed
@@ -4424,6 +4464,7 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
       // unchanged - the prompt must appear - it just no longer depends on where
       // in the blink cycle the sample lands.
       let lockedT2Snapshot = await readRuntimeSnapshot(page);
+      trackPreLoopFeedback(lockedT2Snapshot, 'T2_LOCK_INITIAL');
       let lockedT2 = lockedT2Snapshot.objects.find(
         (object) => object.runtimeId === 'tutorial_t2_target' && object.lockVisible) || null;
       const lockObservationStart = Date.now();
@@ -4431,6 +4472,7 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
       while (!lockedT2 && Date.now() < lockObservationDeadline) {
         await page.waitForTimeout(200);
         lockedT2Snapshot = await readRuntimeSnapshot(page);
+        trackPreLoopFeedback(lockedT2Snapshot, 'T2_LOCK_OBSERVE');
         lockedT2 = lockedT2Snapshot.objects.find(
           (object) => object.runtimeId === 'tutorial_t2_target' && object.lockVisible) || null;
       }
@@ -4464,6 +4506,7 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
       report.touch = [];
       for (const direction of joystickDirections) {
         const before = await readRuntimeSnapshot(page);
+        trackPreLoopFeedback(before, `TOUCH_${direction.name.toUpperCase()}_BEFORE`);
         await beginTouchJoystick(
           cdp,
           joystickStartX,
@@ -4472,6 +4515,7 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
           joystickStartY + joystickOffsetY * direction.y,
         );
         const engaged = await readRuntimeSnapshot(page);
+        trackPreLoopFeedback(engaged, `TOUCH_${direction.name.toUpperCase()}_ENGAGED`);
         const input = engaged.machine.movementInput;
         assert(Math.hypot(input.x, input.y) > 0.1,
           `FAIL_TOUCH_INPUT_${direction.name.toUpperCase()}: ${JSON.stringify({
@@ -4482,8 +4526,10 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
             gameState: engaged.gameState,
             viewport: engaged.ui?.portrait?.viewport,
           })}`);
-        await page.waitForTimeout(1000);
+        const touchDurationMs = process.env.BHR_SIMULATE_ALREADY_EVOLVED_T1 ? 1350 : 1000;
+        await page.waitForTimeout(touchDurationMs);
         const after = await readRuntimeSnapshot(page);
+        trackPreLoopFeedback(after, `TOUCH_${direction.name.toUpperCase()}_AFTER`);
         const delta = {
           x: after.player.x - before.player.x,
           z: after.player.z - before.player.z,
@@ -4500,6 +4546,7 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
         await releaseTouchJoystick(cdp);
         await page.waitForTimeout(450);
         const released = await readRuntimeSnapshot(page);
+        trackPreLoopFeedback(released, `TOUCH_${direction.name.toUpperCase()}_RELEASED`);
         const releasedSpeed = Math.hypot(released.machine.velocity.x, released.machine.velocity.z);
         report.touch.push({ direction: direction.name, input, projectedDistance, delta, releasedSpeed });
         assert(projectedDistance > 0.08,
@@ -4508,6 +4555,8 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
           `FAIL_TOUCH_RELEASE_${direction.name.toUpperCase()}: velocity ${releasedSpeed}`);
       }
       report.multiTouch = await verifySecondaryTouchDoesNotHijack(cdp, page, canvasRect, joystick);
+      const postSecondarySnapshot = await readRuntimeSnapshot(page);
+      trackPreLoopFeedback(postSecondarySnapshot, 'SECONDARY_TOUCH_AFTER');
 
       // The first-cell route now advances from the proved LV1 lock through the
       // real player-facing tier flow before the 500m traversal moves away from
@@ -4529,7 +4578,8 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
       let feedbackBaselineEmitted = null;
       let feedbackBaselineVisibleFrames = null;
       let visibleAbsorbFeedback = null;
-      let t1Snapshot = await readRuntimeSnapshot(page);
+      let t1Snapshot = postSecondarySnapshot;
+      console.log(`[acceptance:v2] Before T1 loop: level=${t1Snapshot.machine.level} mass=${t1Snapshot.machine.mass} emitted=${t1Snapshot.ui?.pickupFeedback?.endless?.emittedCount}`);
       while (t1Snapshot.machine.level < 2) {
         const logicalOrigin = t1Snapshot.world?.streaming?.logicalOrigin || { x: 0, z: 0 };
         const player = getLogicalPlayerPosition(t1Snapshot);
@@ -4553,13 +4603,14 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
         let removalObservedAt = null;
         let removalTiming = null;
         let removalSnapshot = null;
-        // Re-seed the emission baseline for this attempt, so a popup still
-        // alive from the previous absorption cannot satisfy the gate. The
-        // capture itself is deliberately hoisted out of the loop: the first
-        // absorption that produced a visible popup is the evidence, and later
-        // iterations must not be able to overwrite it.
-        feedbackBaselineEmitted = null;
-        feedbackBaselineVisibleFrames = null;
+        // Re-seed the emission baseline for this attempt if a visible popup has
+        // not yet been proven, so a popup still alive from the previous absorption
+        // cannot satisfy the gate. If visibleAbsorbFeedback was already recorded,
+        // preserve the baseline from that absorption.
+        if (!visibleAbsorbFeedback) {
+          feedbackBaselineEmitted = null;
+          feedbackBaselineVisibleFrames = null;
+        }
         const observeCollectibleLifecycle = (snapshot, phase) => {
           const pickupFeedback = snapshot.ui?.pickupFeedback?.endless || null;
           if (pickupFeedback) {
@@ -4845,6 +4896,35 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
       // is sampled after the route and cooldown as well as during the window.
       // The live-window observation remains useful but is not the only proof.
       const feedbackAfter = feedbackSnapshot.ui?.pickupFeedback?.endless || null;
+
+      // If the T1 loop was skipped because the machine already evolved to LV2
+      // (or under the test-side simulation flag), obtain the baseline from the
+      // snapshot taken immediately before the absorption activity that pushed
+      // the machine to LV2.
+      if (feedbackBaselineEmitted === null) {
+        feedbackBaselineEmitted = preTouchAbsorbFeedbackBaseline?.emittedCount ?? null;
+        feedbackBaselineVisibleFrames = preTouchAbsorbFeedbackBaseline?.visibleFrameCount ?? null;
+        if (!visibleAbsorbFeedback && preLoopVisibleAbsorbFeedback) {
+          visibleAbsorbFeedback = preLoopVisibleAbsorbFeedback;
+        }
+      }
+
+      // If there was genuinely no absorption window driven in this run, fail
+      // with an accurate diagnostic naming the absence of an absorption window
+      // rather than misattributing to a feedback visibility failure.
+      const absorptionWindowObserved = t1Absorptions.length > 0
+        || (feedbackSnapshot.machine.mass > preTouchMass)
+        || ((feedbackAfter?.emittedCount || 0) > (preTouchAbsorbFeedbackBaseline?.emittedCount || 0));
+      assert(absorptionWindowObserved,
+        `FAIL_ABSORB_FEEDBACK_NO_ABSORPTION_WINDOW: no absorption window was driven in this run: ${JSON.stringify({
+          t1AbsorptionsLength: t1Absorptions.length,
+          machine: feedbackSnapshot.machine,
+          preTouchMass,
+          feedbackBaselineEmitted,
+          feedbackBaselineVisibleFrames,
+          feedbackAfter,
+        })}`);
+
       const observedNewVisibleFrame = visibleAbsorbFeedback !== null
         || (feedbackBaselineEmitted !== null
           && Number.isFinite(feedbackBaselineVisibleFrames)
@@ -4885,7 +4965,7 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
       assert((endlessFeedback?.emittedCount || 0) > 0 && /^\+\d+$/.test(endlessFeedback?.lastText || ''),
         `FAIL_ABSORB_FEEDBACK_NOT_EMITTED: ${JSON.stringify(upgradedSnapshot.ui?.pickupFeedback)}`);
 
-      await driveJoystickToLogicalPoint(cdp, page, joystick, authoredT2Point, 'T2_UNLOCK', 2.3);
+      await driveJoystickToLogicalPoint(cdp, page, joystick, authoredT2Point, 'T2_UNLOCK', 1.0);
       await page.waitForTimeout(1200);
       const unlockedT2Snapshot = await readRuntimeSnapshot(page);
       assert((unlockedT2Snapshot.session.absorbedTiers?.[2] || 0) > 0,
