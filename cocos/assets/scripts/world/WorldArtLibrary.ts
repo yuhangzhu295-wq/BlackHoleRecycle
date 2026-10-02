@@ -6,6 +6,8 @@
  */
 import { _decorator, Color, Component, instantiate, Material, MeshRenderer, Node, Texture2D, Vec3 } from 'cc';
 import { RENDER_DEFINES, RENDER_EFFECT, WORLD_PALETTE } from '../core/RenderProfile';
+import { MaterialLibrary } from '../core/MaterialLibrary';
+import type { MaterialCategory } from '../core/ArtMaterialReference';
 
 const { ccclass, property } = _decorator;
 
@@ -67,6 +69,84 @@ export type WorldArtKind =
   | 'sofa'
   | 'shippingContainer';
 
+
+/**
+ * Which authored category material each art kind is built from.
+ *
+ * The world has 56 palette entries sharing five colour atlases, told apart by a
+ * per-kind tint. Collapsing them onto the eight category materials without the
+ * tint would flatten the art, so this table only selects the BASE material: the
+ * effect, technique and blend/depth state come from the asset, and
+ * `createRuntimeMaterial` still applies the per-kind atlas and `WORLD_PALETTE`
+ * tint through a `MaterialInstance`.
+ *
+ * The grouping mirrors `getColorTexture`, which is the existing audited record
+ * of which atlas each kind was authored against.
+ */
+const WORLD_ART_MATERIAL_CATEGORY: Readonly<Partial<Record<WorldArtKind, MaterialCategory>>> = {
+  roadStraight: 'road',
+  roadCrossroad: 'road',
+  streetLight: 'road',
+  constructionCone: 'road',
+  bulldozer: 'vehicle',
+
+  buildingB: 'building',
+  buildingC: 'building',
+  treeSmall: 'vegetation',
+  treeLarge: 'vegetation',
+  pathStones: 'prop',
+  fence: 'prop',
+
+  parkFountain: 'prop',
+  parkBench: 'prop',
+  parkBush: 'vegetation',
+  parkHedgeLong: 'vegetation',
+  parkHedgeCorner: 'vegetation',
+  parkLantern: 'prop',
+  parkTrashcan: 'prop',
+  parkFlowerA: 'vegetation',
+  parkFlowerB: 'vegetation',
+  parkGrassTile: 'grass',
+  parkCobblePath: 'prop',
+  parkTree: 'vegetation',
+  parkTreeLarge: 'vegetation',
+
+  commercialBuildingA: 'building',
+  commercialBuildingD: 'building',
+  commercialBuildingF: 'building',
+  commercialBuildingG: 'building',
+  commercialBuildingH: 'building',
+  commercialSkyscraperA: 'building',
+  commercialSkyscraperB: 'building',
+
+  terrainTile: 'grass',
+
+  garbageTruck: 'vehicle',
+  sedan: 'vehicle',
+  deliveryVan: 'vehicle',
+  recyclingBox: 'prop',
+  tire: 'prop',
+  recyclingBolt: 'metal',
+  turbineWheel: 'metal',
+
+  sodaCan: 'prop',
+  waterBottle: 'prop',
+  battery: 'prop',
+  toyDuck: 'prop',
+  apple: 'prop',
+  paperScrap: 'prop',
+  bookStack: 'prop',
+  cardboardBox: 'prop',
+  trashBag: 'prop',
+  paintBucket: 'prop',
+  chair: 'prop',
+  coffeeTable: 'prop',
+  monitor: 'prop',
+  shelf: 'prop',
+  crate: 'prop',
+  sofa: 'prop',
+  shippingContainer: 'prop',
+};
 
 @ccclass('WorldArtLibrary')
 export class WorldArtLibrary extends Component {
@@ -474,6 +554,31 @@ export class WorldArtLibrary extends Component {
   }
 
   private createRuntimeMaterial(kind: WorldArtKind, tintOverride: Color | null = null): Material {
+    // V7: prefer the authored category material from the MaterialLibrary. The
+    // asset owns the effect, technique, blend/depth state and base colour; this
+    // method keeps supplying the per-kind tint and atlas on top, so the 56
+    // palette entries stay distinct.
+    //
+    // `createInstance` is the engine's own per-renderer variant mechanism, so
+    // writing mainColor/mainTexture here cannot leak into the shared asset or
+    // into another kind that happens to share the same base material.
+    const category = WORLD_ART_MATERIAL_CATEGORY[kind];
+    const authored = category ? MaterialLibrary.get(category) : null;
+    if (authored) {
+      // `copy` with no overrides clones the authored asset's effect, technique
+      // and pipeline states into a fresh, independently mutable Material. That
+      // is what keeps the per-kind tint below from leaking into the shared
+      // asset or into another kind built from the same category.
+      const material = new Material();
+      material.copy(authored);
+      const texture = this.getColorTexture(kind);
+      if (texture) material.setProperty('mainTexture', texture);
+      const color = tintOverride || new Color();
+      if (!tintOverride) Color.fromHEX(color, WORLD_PALETTE[kind]);
+      material.setProperty('mainColor', color);
+      return material;
+    }
+
     const material = new Material();
     const texture = this.getColorTexture(kind);
     // `builtin-unlit` defaults USE_TEXTURE to false even if a texture property
@@ -559,6 +664,17 @@ export class WorldArtLibrary extends Component {
         // sampling an unrelated city/vehicle atlas.
         return null;
     }
+  }
+
+  /**
+   * Ask the authored MaterialLibrary to load. Deliberately non-blocking and
+   * non-fatal: materials created before it resolves use the previous
+   * runtime-built path, and once it resolves later spawns use the authored
+   * assets. `MaterialLibrary.get` returns null until then, which is the signal
+   * `createRuntimeMaterial` already treats as "keep the current behaviour".
+   */
+  public onLoad(): void {
+    MaterialLibrary.ensure();
   }
 
   public validateTemplates(): void {

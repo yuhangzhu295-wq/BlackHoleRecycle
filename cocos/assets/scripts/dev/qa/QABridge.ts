@@ -36,6 +36,7 @@ import { MapPreviewGraphic } from '../../ui/MapPreviewGraphic';
 import { RuntimePageInputRouter } from '../../ui/RuntimePageInputRouter';
 import { InfiniteWorldManager } from '../../world/InfiniteWorldManager';
 import { BlobShadow } from '../../core/BlobShadow';
+import { MaterialLibrary } from '../../core/MaterialLibrary';
 import { WorldCompositionProbe } from './WorldCompositionProbe';
 
 export interface QABridgeReadModel {
@@ -202,6 +203,13 @@ export class QABridge {
         // V7 migration evidence: proves at runtime whether the authored
         // singularity asset replaced the runtime primitives.
         usesAuthoredSingularity: machine?.isUsingAuthoredSingularity() ?? null,
+      },
+      // V7 PHASE 1 evidence: proves at runtime that the authored category
+      // materials are resident, not merely present in the bundle on disk.
+      materialLibrary: {
+        ready: MaterialLibrary.isReady(),
+        boundCategories: [...MaterialLibrary.boundCategories()],
+        lastError: MaterialLibrary.getLastError(),
       },
       world: {
         currentRegion: world?.currentTheme.id || 'bedroom',

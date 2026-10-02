@@ -4270,6 +4270,11 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
       // reader can tell whether the authored singularity asset was adopted, or
       // whether the machine silently stayed on its runtime fallback geometry.
       report.machineUsesAuthoredSingularity = gameplaySnapshot.machine?.usesAuthoredSingularity ?? null;
+      // V7 PHASE 1 evidence. Recorded, not asserted: MaterialLibrary loads
+      // asynchronously and must degrade rather than break play, so a false
+      // value here is a regression signal the report must show. It becomes
+      // assertable once every world kind is migrated off the runtime path.
+      report.materialLibrary = gameplaySnapshot.materialLibrary ?? null;
       report.infiniteWorld.initial = validateInfiniteWorldSnapshot(gameplaySnapshot);
       const constructionLandmark = gameplaySnapshot.world?.streaming?.constructionLandmark;
       assert(constructionLandmark?.loadState === 'READY' && constructionLandmark.visible === true,

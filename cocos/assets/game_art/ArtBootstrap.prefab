@@ -1,0 +1,860 @@
+[
+  {
+    "__type__": "cc.Prefab",
+    "_name": "ArtBootstrap",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "_native": "",
+    "data": {
+      "__id__": 1
+    },
+    "optimizationPolicy": 0,
+    "persistent": false
+  },
+  {
+    "__type__": "cc.Node",
+    "_name": "ArtBootstrap",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "_parent": null,
+    "_children": [
+      {
+        "__id__": 2
+      },
+      {
+        "__id__": 6
+      },
+      {
+        "__id__": 10
+      },
+      {
+        "__id__": 14
+      },
+      {
+        "__id__": 18
+      },
+      {
+        "__id__": 22
+      },
+      {
+        "__id__": 26
+      },
+      {
+        "__id__": 30
+      }
+    ],
+    "_active": true,
+    "_components": [],
+    "_prefab": {
+      "__id__": 34
+    },
+    "_lpos": {
+      "__type__": "cc.Vec3",
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "_lrot": {
+      "__type__": "cc.Quat",
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "w": 1
+    },
+    "_lscale": {
+      "__type__": "cc.Vec3",
+      "x": 1,
+      "y": 1,
+      "z": 1
+    },
+    "_mobility": 0,
+    "_layer": 1073741824,
+    "_euler": {
+      "__type__": "cc.Vec3",
+      "x": 0,
+      "y": 0,
+      "z": 0
+    }
+  },
+  {
+    "__type__": "cc.Node",
+    "_name": "GrassReference",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "_parent": {
+      "__id__": 1
+    },
+    "_children": [],
+    "_active": true,
+    "_components": [
+      {
+        "__id__": 5
+      }
+    ],
+    "_prefab": {
+      "__id__": 3
+    },
+    "_lpos": {
+      "__type__": "cc.Vec3",
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "_lrot": {
+      "__type__": "cc.Quat",
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "w": 1
+    },
+    "_lscale": {
+      "__type__": "cc.Vec3",
+      "x": 1,
+      "y": 1,
+      "z": 1
+    },
+    "_mobility": 0,
+    "_layer": 1073741824,
+    "_euler": {
+      "__type__": "cc.Vec3",
+      "x": 0,
+      "y": 0,
+      "z": 0
+    }
+  },
+  {
+    "__type__": "cc.PrefabInfo",
+    "asset": {
+      "__id__": 0
+    },
+    "fileId": "",
+    "instance": null,
+    "target": {
+      "__id__": 2
+    },
+    "rootPrefabInfo": {
+      "__id__": 34
+    },
+    "nestedPrefabInstanceRoots": []
+  },
+  {
+    "__type__": "cc.CompPrefabInfo",
+    "fileId": "",
+    "instance": null,
+    "target": {
+      "__id__": 5
+    },
+    "inlined": false,
+    "nestedPrefabInstanceRoots": []
+  },
+  {
+    "__type__": "ddd62uXFTVPYbPgX8DMKphh",
+    "_name": "",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "__prefab": {
+      "__id__": 4
+    },
+    "node": {
+      "__id__": 2
+    },
+    "_enabled": true,
+    "grass": {
+      "__uuid__": "5031a894-15e2-4d32-bb7f-737e1344a520",
+      "__expectedType__": "cc.Material"
+    },
+    "road": null,
+    "building": null,
+    "vegetation": null,
+    "vehicle": null,
+    "metal": null,
+    "blackhole": null,
+    "prop": null,
+    "_id": ""
+  },
+  {
+    "__type__": "cc.Node",
+    "_name": "RoadReference",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "_parent": {
+      "__id__": 1
+    },
+    "_children": [],
+    "_active": true,
+    "_components": [
+      {
+        "__id__": 9
+      }
+    ],
+    "_prefab": {
+      "__id__": 7
+    },
+    "_lpos": {
+      "__type__": "cc.Vec3",
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "_lrot": {
+      "__type__": "cc.Quat",
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "w": 1
+    },
+    "_lscale": {
+      "__type__": "cc.Vec3",
+      "x": 1,
+      "y": 1,
+      "z": 1
+    },
+    "_mobility": 0,
+    "_layer": 1073741824,
+    "_euler": {
+      "__type__": "cc.Vec3",
+      "x": 0,
+      "y": 0,
+      "z": 0
+    }
+  },
+  {
+    "__type__": "cc.PrefabInfo",
+    "asset": {
+      "__id__": 0
+    },
+    "fileId": "",
+    "instance": null,
+    "target": {
+      "__id__": 6
+    },
+    "rootPrefabInfo": {
+      "__id__": 34
+    },
+    "nestedPrefabInstanceRoots": []
+  },
+  {
+    "__type__": "cc.CompPrefabInfo",
+    "fileId": "",
+    "instance": null,
+    "target": {
+      "__id__": 9
+    },
+    "inlined": false,
+    "nestedPrefabInstanceRoots": []
+  },
+  {
+    "__type__": "ddd62uXFTVPYbPgX8DMKphh",
+    "_name": "",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "__prefab": {
+      "__id__": 8
+    },
+    "node": {
+      "__id__": 6
+    },
+    "_enabled": true,
+    "grass": null,
+    "road": {
+      "__uuid__": "75891bac-a451-4356-a29a-a42637ab51bd",
+      "__expectedType__": "cc.Material"
+    },
+    "building": null,
+    "vegetation": null,
+    "vehicle": null,
+    "metal": null,
+    "blackhole": null,
+    "prop": null,
+    "_id": ""
+  },
+  {
+    "__type__": "cc.Node",
+    "_name": "BuildingReference",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "_parent": {
+      "__id__": 1
+    },
+    "_children": [],
+    "_active": true,
+    "_components": [
+      {
+        "__id__": 13
+      }
+    ],
+    "_prefab": {
+      "__id__": 11
+    },
+    "_lpos": {
+      "__type__": "cc.Vec3",
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "_lrot": {
+      "__type__": "cc.Quat",
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "w": 1
+    },
+    "_lscale": {
+      "__type__": "cc.Vec3",
+      "x": 1,
+      "y": 1,
+      "z": 1
+    },
+    "_mobility": 0,
+    "_layer": 1073741824,
+    "_euler": {
+      "__type__": "cc.Vec3",
+      "x": 0,
+      "y": 0,
+      "z": 0
+    }
+  },
+  {
+    "__type__": "cc.PrefabInfo",
+    "asset": {
+      "__id__": 0
+    },
+    "fileId": "",
+    "instance": null,
+    "target": {
+      "__id__": 10
+    },
+    "rootPrefabInfo": {
+      "__id__": 34
+    },
+    "nestedPrefabInstanceRoots": []
+  },
+  {
+    "__type__": "cc.CompPrefabInfo",
+    "fileId": "",
+    "instance": null,
+    "target": {
+      "__id__": 13
+    },
+    "inlined": false,
+    "nestedPrefabInstanceRoots": []
+  },
+  {
+    "__type__": "ddd62uXFTVPYbPgX8DMKphh",
+    "_name": "",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "__prefab": {
+      "__id__": 12
+    },
+    "node": {
+      "__id__": 10
+    },
+    "_enabled": true,
+    "grass": null,
+    "road": null,
+    "building": {
+      "__uuid__": "71f7d10e-9030-441f-bfd8-6e857aba199c",
+      "__expectedType__": "cc.Material"
+    },
+    "vegetation": null,
+    "vehicle": null,
+    "metal": null,
+    "blackhole": null,
+    "prop": null,
+    "_id": ""
+  },
+  {
+    "__type__": "cc.Node",
+    "_name": "VegetationReference",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "_parent": {
+      "__id__": 1
+    },
+    "_children": [],
+    "_active": true,
+    "_components": [
+      {
+        "__id__": 17
+      }
+    ],
+    "_prefab": {
+      "__id__": 15
+    },
+    "_lpos": {
+      "__type__": "cc.Vec3",
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "_lrot": {
+      "__type__": "cc.Quat",
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "w": 1
+    },
+    "_lscale": {
+      "__type__": "cc.Vec3",
+      "x": 1,
+      "y": 1,
+      "z": 1
+    },
+    "_mobility": 0,
+    "_layer": 1073741824,
+    "_euler": {
+      "__type__": "cc.Vec3",
+      "x": 0,
+      "y": 0,
+      "z": 0
+    }
+  },
+  {
+    "__type__": "cc.PrefabInfo",
+    "asset": {
+      "__id__": 0
+    },
+    "fileId": "",
+    "instance": null,
+    "target": {
+      "__id__": 14
+    },
+    "rootPrefabInfo": {
+      "__id__": 34
+    },
+    "nestedPrefabInstanceRoots": []
+  },
+  {
+    "__type__": "cc.CompPrefabInfo",
+    "fileId": "",
+    "instance": null,
+    "target": {
+      "__id__": 17
+    },
+    "inlined": false,
+    "nestedPrefabInstanceRoots": []
+  },
+  {
+    "__type__": "ddd62uXFTVPYbPgX8DMKphh",
+    "_name": "",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "__prefab": {
+      "__id__": 16
+    },
+    "node": {
+      "__id__": 14
+    },
+    "_enabled": true,
+    "grass": null,
+    "road": null,
+    "building": null,
+    "vegetation": {
+      "__uuid__": "3741ee22-3944-4661-a5d4-99addfb7d4c3",
+      "__expectedType__": "cc.Material"
+    },
+    "vehicle": null,
+    "metal": null,
+    "blackhole": null,
+    "prop": null,
+    "_id": ""
+  },
+  {
+    "__type__": "cc.Node",
+    "_name": "VehicleReference",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "_parent": {
+      "__id__": 1
+    },
+    "_children": [],
+    "_active": true,
+    "_components": [
+      {
+        "__id__": 21
+      }
+    ],
+    "_prefab": {
+      "__id__": 19
+    },
+    "_lpos": {
+      "__type__": "cc.Vec3",
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "_lrot": {
+      "__type__": "cc.Quat",
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "w": 1
+    },
+    "_lscale": {
+      "__type__": "cc.Vec3",
+      "x": 1,
+      "y": 1,
+      "z": 1
+    },
+    "_mobility": 0,
+    "_layer": 1073741824,
+    "_euler": {
+      "__type__": "cc.Vec3",
+      "x": 0,
+      "y": 0,
+      "z": 0
+    }
+  },
+  {
+    "__type__": "cc.PrefabInfo",
+    "asset": {
+      "__id__": 0
+    },
+    "fileId": "",
+    "instance": null,
+    "target": {
+      "__id__": 18
+    },
+    "rootPrefabInfo": {
+      "__id__": 34
+    },
+    "nestedPrefabInstanceRoots": []
+  },
+  {
+    "__type__": "cc.CompPrefabInfo",
+    "fileId": "",
+    "instance": null,
+    "target": {
+      "__id__": 21
+    },
+    "inlined": false,
+    "nestedPrefabInstanceRoots": []
+  },
+  {
+    "__type__": "ddd62uXFTVPYbPgX8DMKphh",
+    "_name": "",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "__prefab": {
+      "__id__": 20
+    },
+    "node": {
+      "__id__": 18
+    },
+    "_enabled": true,
+    "grass": null,
+    "road": null,
+    "building": null,
+    "vegetation": null,
+    "vehicle": {
+      "__uuid__": "ffc92b80-454c-4bf9-9711-53cfed317c2b",
+      "__expectedType__": "cc.Material"
+    },
+    "metal": null,
+    "blackhole": null,
+    "prop": null,
+    "_id": ""
+  },
+  {
+    "__type__": "cc.Node",
+    "_name": "MetalReference",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "_parent": {
+      "__id__": 1
+    },
+    "_children": [],
+    "_active": true,
+    "_components": [
+      {
+        "__id__": 25
+      }
+    ],
+    "_prefab": {
+      "__id__": 23
+    },
+    "_lpos": {
+      "__type__": "cc.Vec3",
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "_lrot": {
+      "__type__": "cc.Quat",
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "w": 1
+    },
+    "_lscale": {
+      "__type__": "cc.Vec3",
+      "x": 1,
+      "y": 1,
+      "z": 1
+    },
+    "_mobility": 0,
+    "_layer": 1073741824,
+    "_euler": {
+      "__type__": "cc.Vec3",
+      "x": 0,
+      "y": 0,
+      "z": 0
+    }
+  },
+  {
+    "__type__": "cc.PrefabInfo",
+    "asset": {
+      "__id__": 0
+    },
+    "fileId": "",
+    "instance": null,
+    "target": {
+      "__id__": 22
+    },
+    "rootPrefabInfo": {
+      "__id__": 34
+    },
+    "nestedPrefabInstanceRoots": []
+  },
+  {
+    "__type__": "cc.CompPrefabInfo",
+    "fileId": "",
+    "instance": null,
+    "target": {
+      "__id__": 25
+    },
+    "inlined": false,
+    "nestedPrefabInstanceRoots": []
+  },
+  {
+    "__type__": "ddd62uXFTVPYbPgX8DMKphh",
+    "_name": "",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "__prefab": {
+      "__id__": 24
+    },
+    "node": {
+      "__id__": 22
+    },
+    "_enabled": true,
+    "grass": null,
+    "road": null,
+    "building": null,
+    "vegetation": null,
+    "vehicle": null,
+    "metal": {
+      "__uuid__": "85f9fabb-e3d9-46ef-8b04-e7f49bdfa8c3",
+      "__expectedType__": "cc.Material"
+    },
+    "blackhole": null,
+    "prop": null,
+    "_id": ""
+  },
+  {
+    "__type__": "cc.Node",
+    "_name": "BlackholeReference",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "_parent": {
+      "__id__": 1
+    },
+    "_children": [],
+    "_active": true,
+    "_components": [
+      {
+        "__id__": 29
+      }
+    ],
+    "_prefab": {
+      "__id__": 27
+    },
+    "_lpos": {
+      "__type__": "cc.Vec3",
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "_lrot": {
+      "__type__": "cc.Quat",
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "w": 1
+    },
+    "_lscale": {
+      "__type__": "cc.Vec3",
+      "x": 1,
+      "y": 1,
+      "z": 1
+    },
+    "_mobility": 0,
+    "_layer": 1073741824,
+    "_euler": {
+      "__type__": "cc.Vec3",
+      "x": 0,
+      "y": 0,
+      "z": 0
+    }
+  },
+  {
+    "__type__": "cc.PrefabInfo",
+    "asset": {
+      "__id__": 0
+    },
+    "fileId": "",
+    "instance": null,
+    "target": {
+      "__id__": 26
+    },
+    "rootPrefabInfo": {
+      "__id__": 34
+    },
+    "nestedPrefabInstanceRoots": []
+  },
+  {
+    "__type__": "cc.CompPrefabInfo",
+    "fileId": "",
+    "instance": null,
+    "target": {
+      "__id__": 29
+    },
+    "inlined": false,
+    "nestedPrefabInstanceRoots": []
+  },
+  {
+    "__type__": "ddd62uXFTVPYbPgX8DMKphh",
+    "_name": "",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "__prefab": {
+      "__id__": 28
+    },
+    "node": {
+      "__id__": 26
+    },
+    "_enabled": true,
+    "grass": null,
+    "road": null,
+    "building": null,
+    "vegetation": null,
+    "vehicle": null,
+    "metal": null,
+    "blackhole": {
+      "__uuid__": "751fb99c-7c47-428c-aa68-52bf1e314589",
+      "__expectedType__": "cc.Material"
+    },
+    "prop": null,
+    "_id": ""
+  },
+  {
+    "__type__": "cc.Node",
+    "_name": "PropReference",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "_parent": {
+      "__id__": 1
+    },
+    "_children": [],
+    "_active": true,
+    "_components": [
+      {
+        "__id__": 33
+      }
+    ],
+    "_prefab": {
+      "__id__": 31
+    },
+    "_lpos": {
+      "__type__": "cc.Vec3",
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "_lrot": {
+      "__type__": "cc.Quat",
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "w": 1
+    },
+    "_lscale": {
+      "__type__": "cc.Vec3",
+      "x": 1,
+      "y": 1,
+      "z": 1
+    },
+    "_mobility": 0,
+    "_layer": 1073741824,
+    "_euler": {
+      "__type__": "cc.Vec3",
+      "x": 0,
+      "y": 0,
+      "z": 0
+    }
+  },
+  {
+    "__type__": "cc.PrefabInfo",
+    "asset": {
+      "__id__": 0
+    },
+    "fileId": "",
+    "instance": null,
+    "target": {
+      "__id__": 30
+    },
+    "rootPrefabInfo": {
+      "__id__": 34
+    },
+    "nestedPrefabInstanceRoots": []
+  },
+  {
+    "__type__": "cc.CompPrefabInfo",
+    "fileId": "",
+    "instance": null,
+    "target": {
+      "__id__": 33
+    },
+    "inlined": false,
+    "nestedPrefabInstanceRoots": []
+  },
+  {
+    "__type__": "ddd62uXFTVPYbPgX8DMKphh",
+    "_name": "",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "__prefab": {
+      "__id__": 32
+    },
+    "node": {
+      "__id__": 30
+    },
+    "_enabled": true,
+    "grass": null,
+    "road": null,
+    "building": null,
+    "vegetation": null,
+    "vehicle": null,
+    "metal": null,
+    "blackhole": null,
+    "prop": {
+      "__uuid__": "dd4e65bf-02a6-49df-acb7-5ad0e8849115",
+      "__expectedType__": "cc.Material"
+    },
+    "_id": ""
+  },
+  {
+    "__type__": "cc.PrefabInfo",
+    "asset": {
+      "__id__": 0
+    },
+    "fileId": "",
+    "instance": null,
+    "target": {
+      "__id__": 1
+    },
+    "rootPrefabInfo": null,
+    "nestedPrefabInstanceRoots": []
+  }
+]
