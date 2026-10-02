@@ -4527,6 +4527,7 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
       // only ever observe an expired popup, which is what failed here. These
       // live outside the loop because the gate that consumes them sits after it.
       let feedbackBaselineEmitted = null;
+      let feedbackBaselineVisibleFrames = null;
       let visibleAbsorbFeedback = null;
       let t1Snapshot = await readRuntimeSnapshot(page);
       while (t1Snapshot.machine.level < 2) {
@@ -4558,6 +4559,7 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
         // absorption that produced a visible popup is the evidence, and later
         // iterations must not be able to overwrite it.
         feedbackBaselineEmitted = null;
+        feedbackBaselineVisibleFrames = null;
         const observeCollectibleLifecycle = (snapshot, phase) => {
           const pickupFeedback = snapshot.ui?.pickupFeedback?.endless || null;
           if (pickupFeedback) {
@@ -4565,9 +4567,11 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
             // count is the baseline the absorption has to advance.
             if (feedbackBaselineEmitted === null) {
               feedbackBaselineEmitted = pickupFeedback.emittedCount;
+              feedbackBaselineVisibleFrames = pickupFeedback.visibleFrameCount;
             } else if (!visibleAbsorbFeedback
               && (pickupFeedback.activeCount || 0) > 0
-              && pickupFeedback.emittedCount > feedbackBaselineEmitted) {
+              && pickupFeedback.emittedCount > feedbackBaselineEmitted
+              && pickupFeedback.visibleFrameCount > feedbackBaselineVisibleFrames) {
               visibleAbsorbFeedback = { phase, elapsedMs: Date.now() - lifecycleStartedAt, feedback: pickupFeedback };
             }
           }
@@ -4835,17 +4839,24 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
       // `observeCollectibleLifecycle`); this read exists only to carry the
       // post-cooldown state into the failure payload.
       const feedbackSnapshot = await readRuntimeSnapshot(page);
-      // The popup is emitted in the same frame as the absorption, so the
-      // observation recorded during the absorption window is the honest one.
-      // The instantaneous read is taken after the cooldown/escape drive has run
-      // and is kept only as a diagnostic: by then the 1.8s popup has
-      // legitimately expired, so it must not gate.
-      assert(visibleAbsorbFeedback !== null
-          && /^\+\d+$/.test(visibleAbsorbFeedback.feedback.lastText || ''),
+      // A full composition snapshot can take longer than the popup's visible
+      // lifetime. The presenter records whether each NEW emission survived at
+      // least one active, nontransparent update frame; this monotonic evidence
+      // is sampled after the route and cooldown as well as during the window.
+      // The live-window observation remains useful but is not the only proof.
+      const feedbackAfter = feedbackSnapshot.ui?.pickupFeedback?.endless || null;
+      const observedNewVisibleFrame = visibleAbsorbFeedback !== null
+        || (feedbackBaselineEmitted !== null
+          && Number.isFinite(feedbackBaselineVisibleFrames)
+          && (feedbackAfter?.emittedCount || 0) > feedbackBaselineEmitted
+          && (feedbackAfter?.visibleFrameCount || 0) > feedbackBaselineVisibleFrames);
+      assert(observedNewVisibleFrame && /^\+\d+$/.test(feedbackAfter?.lastText || ''),
         `FAIL_ABSORB_FEEDBACK_NOT_VISIBLE: ${JSON.stringify({
           visibleAbsorbFeedback,
           feedbackBaselineEmitted,
-          emittedAfterAbsorption: feedbackSnapshot.ui?.pickupFeedback?.endless?.emittedCount ?? null,
+          feedbackBaselineVisibleFrames,
+          emittedAfterAbsorption: feedbackAfter?.emittedCount ?? null,
+          visibleFramesAfterAbsorption: feedbackAfter?.visibleFrameCount ?? null,
           afterCooldown: feedbackSnapshot.ui?.pickupFeedback,
         })}`);
       report.verticalSlice.pickupFeedback = feedbackSnapshot.ui?.pickupFeedback || null;

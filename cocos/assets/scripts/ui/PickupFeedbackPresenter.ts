@@ -12,6 +12,7 @@ interface ActiveFeedback {
   readonly node: Node;
   readonly label: Label;
   elapsed: number;
+  observedVisibleFrame: boolean;
 }
 
 const FEEDBACK_DURATION_SECONDS = 1.8;
@@ -19,6 +20,7 @@ const FEEDBACK_FADE_START = 0.88;
 
 export interface PickupFeedbackDiagnostics {
   readonly emittedCount: number;
+  readonly visibleFrameCount: number;
   readonly activeCount: number;
   readonly lastText: string;
   readonly lastPosition: Readonly<{ x: number; y: number }>;
@@ -29,6 +31,7 @@ export class PickupFeedbackPresenter {
   private readonly projectedPosition = new Vec3();
   private readonly active: ActiveFeedback[] = [];
   private emittedCount = 0;
+  private visibleFrameCount = 0;
   private lastText = '';
   private readonly lastPosition = { x: 0, y: 0 };
   private lastOpacity = 0;
@@ -83,7 +86,7 @@ export class PickupFeedbackPresenter {
     const feedbackY = (normalizedY - 0.5) * hostTransform.height + 30;
     node.setPosition(feedbackX, feedbackY, 0);
     node.setScale(1.15, 1.15, 1);
-    this.active.push({ node, label, elapsed: 0 });
+    this.active.push({ node, label, elapsed: 0, observedVisibleFrame: false });
     this.emittedCount++;
     this.lastText = text;
     this.lastPosition.x = feedbackX;
@@ -117,6 +120,10 @@ export class PickupFeedbackPresenter {
       const current = feedback.label.color;
       const opacity = Math.round((1 - fadeProgress) * 255);
       feedback.label.color = new Color(current.r, current.g, current.b, opacity);
+      if (!feedback.observedVisibleFrame && feedback.node.activeInHierarchy && opacity > 0) {
+        feedback.observedVisibleFrame = true;
+        this.visibleFrameCount++;
+      }
       this.lastOpacity = opacity;
       if (progress >= 1) {
         feedback.node.destroy();
@@ -133,6 +140,7 @@ export class PickupFeedbackPresenter {
   public getDiagnostics(): PickupFeedbackDiagnostics {
     return {
       emittedCount: this.emittedCount,
+      visibleFrameCount: this.visibleFrameCount,
       activeCount: this.active.filter((feedback) => feedback.node.isValid && feedback.node.activeInHierarchy).length,
       lastText: this.lastText,
       lastPosition: { ...this.lastPosition },
