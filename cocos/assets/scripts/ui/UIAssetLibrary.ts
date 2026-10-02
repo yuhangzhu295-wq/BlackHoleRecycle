@@ -1,0 +1,222 @@
+/**
+ * V7 PHASE 6/7: the runtime side of the authored UI prefab library.
+ *
+ * Gameplay code never names a bundle path. It asks this module for a named
+ * sprite frame or a named reusable prefab and gets back the real imported
+ * `cc.SpriteFrame` / `cc.Prefab` that Creator wrote into `assets/game_art/ui/`.
+ *
+ * Same contract as `MaterialLibrary` and `DistrictMapLibrary`:
+ *
+ *   1. **It never blocks.** A caller asks and keeps rendering whatever it
+ *      already has. `getFrame`/`getPrefab` return `null` until the library is
+ *      resident, which is the signal to keep the existing vector fallback.
+ *   2. **It reuses the project's bundle service**, which already owns retries,
+ *      de-duplication and terminal failure reporting.
+ *   3. **A missing asset degrades.** Every caller has a documented fallback, so
+ *      a failed download never leaves a blank screen or breaks play.
+ */
+import { Prefab, SpriteFrame, type AssetManager } from 'cc';
+
+import { RegionBundleService } from '../world/RegionBundleService';
+
+const BUNDLE = 'game-art';
+
+/**
+ * Bundle resource paths, relative to the bundle root. A PNG is imported as an
+ * ImageAsset with a Texture2D and a SpriteFrame sub-asset, and the bundle
+ * registers them at different paths (`<path>/spriteFrame`, `<path>/texture`,
+ * bare `<path>`), so the SpriteFrame is looked up at `<path>/spriteFrame`
+ * first and the bare path second — the same multi-attempt rule `BlobShadow`
+ * documents, so an importer change cannot silently blank the UI.
+ */
+export const UI_FRAME_PATHS = {
+  mapPreviewCity: 'ui/textures/map_preview_city',
+  mapPreviewArena: 'ui/textures/map_preview_arena',
+  joystickBase: 'ui/textures/joystick_base',
+  joystickKnob: 'ui/textures/joystick_knob',
+  panel: 'ui/textures/ui_panel_9slice',
+  card: 'ui/textures/ui_card_9slice',
+  button: 'ui/textures/ui_button_9slice',
+  popup: 'ui/textures/ui_popup_9slice',
+  hudBar: 'ui/textures/ui_hud_bar_9slice',
+} as const;
+
+export const UI_PREFAB_PATHS = {
+  panel: 'ui/prefabs/UIPanel',
+  card: 'ui/prefabs/UICard',
+  hudBar: 'ui/prefabs/UIHudBar',
+  popup: 'ui/prefabs/UIPopup',
+  button: 'ui/prefabs/UIButton',
+} as const;
+
+export type UIFrameKey = keyof typeof UI_FRAME_PATHS;
+export type UIPrefabKey = keyof typeof UI_PREFAB_PATHS;
+
+const FRAME_KEYS = Object.keys(UI_FRAME_PATHS) as UIFrameKey[];
+const PREFAB_KEYS = Object.keys(UI_PREFAB_PATHS) as UIPrefabKey[];
+
+export class UIAssetLibrary {
+  private static readonly bundles = new RegionBundleService({ maxAttempts: 3, retryDelayMs: 200 });
+  private static readonly frames = new Map<UIFrameKey, SpriteFrame>();
+  private static readonly prefabs = new Map<UIPrefabKey, Prefab>();
+  private static waiters: Array<() => void> = [];
+  private static pending = false;
+  private static requested = false;
+  private static lastError: string | null = null;
+
+  /**
+   * Begin loading once. Repeated calls are free, and a caller that arrives while
+   * this is in flight registers with `whenReady` instead of guessing.
+   */
+  public static ensure(): void {
+    if (UIAssetLibrary.requested) return;
+    UIAssetLibrary.requested = true;
+    UIAssetLibrary.pending = true;
+
+    UIAssetLibrary.bundles.ensureLoaded(BUNDLE).then(() => {
+      const bundle = UIAssetLibrary.bundles.getBundle(BUNDLE);
+      if (!bundle) {
+        UIAssetLibrary.fail('bundle reported resident but is not in memory: ' + BUNDLE);
+        return;
+      }
+      const missing: string[] = [];
+      let remaining = FRAME_KEYS.length;
+      const frameDone = (): void => {
+        remaining -= 1;
+        if (remaining > 0) return;
+        UIAssetLibrary.loadPrefabs(bundle, missing);
+      };
+      for (const key of FRAME_KEYS) {
+        UIAssetLibrary.loadFrame(bundle, key, (found) => {
+          if (!found) missing.push(UI_FRAME_PATHS[key]);
+          frameDone();
+        });
+      }
+    }).catch((error: unknown) => {
+      UIAssetLibrary.fail('bundle error: ' + (error instanceof Error ? error.message : String(error)));
+    });
+  }
+
+  private static loadFrame(
+    bundle: AssetManager.Bundle,
+    key: UIFrameKey,
+    done: (found: boolean) => void,
+  ): void {
+    const base = UI_FRAME_PATHS[key];
+    const attempts = [base + '/spriteFrame', base];
+    const tryNext = (index: number): void => {
+      if (index >= attempts.length) {
+        done(false);
+        return;
+      }
+      bundle.load(attempts[index], SpriteFrame, (error: Error | null, frame: SpriteFrame) => {
+        if (!error && frame) {
+          UIAssetLibrary.frames.set(key, frame);
+          done(true);
+          return;
+        }
+        tryNext(index + 1);
+      });
+    };
+    tryNext(0);
+  }
+
+  private static loadPrefabs(
+    bundle: AssetManager.Bundle,
+    frameMissing: string[],
+  ): void {
+    const paths = PREFAB_KEYS.map((key) => UI_PREFAB_PATHS[key]);
+    bundle.load(paths, Prefab, (error: Error | null, assets: Prefab[]) => {
+      const missingPrefabs: string[] = [];
+      if (error || !assets) {
+        for (const key of PREFAB_KEYS) missingPrefabs.push(UI_PREFAB_PATHS[key]);
+      } else {
+        assets.forEach((asset, index) => {
+          const key = PREFAB_KEYS[index];
+          if (asset && key) UIAssetLibrary.prefabs.set(key, asset);
+          else if (key) missingPrefabs.push(UI_PREFAB_PATHS[key]);
+        });
+      }
+      const missing = frameMissing.concat(missingPrefabs);
+      UIAssetLibrary.lastError = missing.length ? 'missing UI assets: ' + missing.join(', ') : null;
+      UIAssetLibrary.pending = false;
+      const queued = UIAssetLibrary.waiters;
+      UIAssetLibrary.waiters = [];
+      for (const waiter of queued) {
+        try {
+          waiter();
+        } catch (waiterError) {
+          console.warn('[UIAssetLibrary] whenReady callback threw', waiterError);
+        }
+      }
+    });
+  }
+
+  private static fail(message: string): void {
+    UIAssetLibrary.lastError = message;
+    UIAssetLibrary.pending = false;
+    // A failed load is terminal for this session; `requested` stays true so a
+    // per-frame `ensure()` cannot turn a broken download into a request storm.
+    UIAssetLibrary.waiters = [];
+  }
+
+  /**
+   * Run `callback` once the library is resident. If it is already resident the
+   * callback runs immediately, so a caller can use this unconditionally.
+   */
+  public static whenReady(callback: () => void): void {
+    if (UIAssetLibrary.frames.size > 0 || UIAssetLibrary.prefabs.size > 0) {
+      callback();
+      return;
+    }
+    if (!UIAssetLibrary.pending) return;
+    UIAssetLibrary.waiters.push(callback);
+  }
+
+  /** The authored frame, or null while it is unavailable. */
+  public static getFrame(key: UIFrameKey): SpriteFrame | null {
+    return UIAssetLibrary.frames.get(key) || null;
+  }
+
+  /** The authored prefab, or null while it is unavailable. */
+  public static getPrefab(key: UIPrefabKey): Prefab | null {
+    return UIAssetLibrary.prefabs.get(key) || null;
+  }
+
+  /** True while an authored asset may still arrive. */
+  public static isPending(): boolean {
+    return UIAssetLibrary.pending;
+  }
+
+  public static isReady(): boolean {
+    return UIAssetLibrary.frames.size > 0 || UIAssetLibrary.prefabs.size > 0;
+  }
+
+  /** Resident frame keys, for diagnostics and acceptance evidence. */
+  public static boundFrames(): readonly string[] {
+    const bound: string[] = [];
+    UIAssetLibrary.frames.forEach((_frame, key) => { bound.push(key); });
+    return bound;
+  }
+
+  /** Resident prefab keys, for diagnostics and acceptance evidence. */
+  public static boundPrefabs(): readonly string[] {
+    const bound: string[] = [];
+    UIAssetLibrary.prefabs.forEach((_prefab, key) => { bound.push(key); });
+    return bound;
+  }
+
+  public static getLastError(): string | null {
+    return UIAssetLibrary.lastError;
+  }
+
+  /** Test hook. */
+  public static reset(): void {
+    UIAssetLibrary.frames.clear();
+    UIAssetLibrary.prefabs.clear();
+    UIAssetLibrary.waiters = [];
+    UIAssetLibrary.pending = false;
+    UIAssetLibrary.requested = false;
+    UIAssetLibrary.lastError = null;
+  }
+}

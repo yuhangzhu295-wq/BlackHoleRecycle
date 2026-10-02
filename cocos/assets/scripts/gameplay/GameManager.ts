@@ -9,6 +9,7 @@ import { PortraitGameplayCameraController } from '../camera/PortraitGameplayCame
 import { GameSessionCoordinator, GameSessionState } from './session/GameSessionCoordinator';
 import { QABridge } from '../dev/qa/QABridge';
 import { HUDView } from '../ui/HUDView';
+import { UIAssetLibrary } from '../ui/UIAssetLibrary';
 import { CompressionSystem } from './CompressionSystem';
 import { AbsorbFeedbackPool } from './AbsorbFeedbackPool';
 import { PlayerController } from './PlayerController';
@@ -161,6 +162,13 @@ export class GameManager extends Component {
     // the very first pooled targets already get one instead of the load racing
     // the opening spawn. Warm-up is idempotent.
     BlobShadow.warmup();
+
+    // V7 PHASE 7: the reusable UI prefab library (mode-ready preview card, stat
+    // bars, arena rules panel, CTA and the tier-upgrade banner) lives in the
+    // `game-art` bundle. Warm it here, next to the contact-shadow map, so the
+    // authored UI is normally resident before the first page that needs it.
+    // Non-blocking and non-fatal: every consumer has a documented fallback.
+    UIAssetLibrary.ensure();
 
     // 2. 自动挂载或查找 PlayerController
     if (!this.playerController && this.machine) {

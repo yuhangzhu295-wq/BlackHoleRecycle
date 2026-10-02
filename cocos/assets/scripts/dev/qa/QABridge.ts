@@ -32,8 +32,10 @@ import { NetworkArenaReplica } from '../../network/NetworkArenaReplica';
 import { ArenaHUDController } from '../../ui/ArenaHUDController';
 import { getHudSafeAreaPass } from '../../ui/HudSafeAreaInset';
 import { HUDView } from '../../ui/HUDView';
+import { JoystickVisual } from '../../ui/JoystickVisual';
 import { MapPreviewGraphic } from '../../ui/MapPreviewGraphic';
 import { RuntimePageInputRouter } from '../../ui/RuntimePageInputRouter';
+import { UIAssetLibrary } from '../../ui/UIAssetLibrary';
 import { InfiniteWorldManager } from '../../world/InfiniteWorldManager';
 import { DistrictMapLibrary } from '../../world/DistrictMapLibrary';
 import { BlobShadow } from '../../core/BlobShadow';
@@ -226,6 +228,16 @@ export class QABridge {
         boundDistricts: DistrictMapLibrary.boundDistricts().slice(),
         lastError: DistrictMapLibrary.getLastError(),
       },
+      // V7 PHASE 6/7 evidence: the authored UI prefab library state. This is the
+      // read-only proof that the reusable prefabs and the thumbnails they draw
+      // are resident at runtime, not merely present in the bundle on disk.
+      uiAssets: {
+        ready: UIAssetLibrary.isReady(),
+        pending: UIAssetLibrary.isPending(),
+        boundFrames: UIAssetLibrary.boundFrames().slice(),
+        boundPrefabs: UIAssetLibrary.boundPrefabs().slice(),
+        lastError: UIAssetLibrary.getLastError(),
+      },
       world: {
         currentRegion: world?.currentTheme.id || 'bedroom',
         regionIndex: world?.getRegionIndex() || 0,
@@ -392,6 +404,8 @@ export class QABridge {
         joystick: describe(joystick),
         joystickBase: describe(joystick?.getChildByName('JoystickBase') || null),
         joystickKnob: describe(joystick?.getChildByName('JoystickKnob') || null),
+        // V7 PHASE 7 evidence: authored joystick sprites vs the vector fallback.
+        joystickArt: joystick?.getComponent(JoystickVisual)?.getDiagnostics() || null,
         /**
          * Why the clamp did or did not move anything. The clamp can be a silent
          * no-op from the frame's point of view — a wrong frame size, an early

@@ -5,12 +5,24 @@
  * 正式流程：HOME → MODE SELECT → MODE READY → START → GAMEPLAY。
  * 模式卡只负责进入本页，绝不直接开局；只有 BtnStart 才发出开局事件。
  * 导出 MODE_READY_LAYOUT 供契约测试在无 Cocos 运行时的情况下解析验证。
+ *
+ * V7 PHASE 6/7：本页此前只有浮空文字——预览图没有卡片框，统计行没有底板，
+ * 竞技规则没有面板，CTA 文字比参考稿小。参考稿
+ * （design-reference/ui-v4-expanded/06-endless-ready.png、07-arena-ready.png）
+ * 明确画出：带深色边框的预览卡 + 说明文字、两条深色统计底板、竞技规则面板、
+ * 以及大号金色 CTA。这里改为从 `game-art` 的 `ui/prefabs` 复用预制件：
+ *   UICard   → 预览卡（边框 + 预览图 + “地图预览 / 竞技场预览”说明）
+ *   UIHudBar → 两条统计底板（说明左、数值右）
+ *   UIPanel  → 竞技规则面板（仅竞技模式显示）
+ *   UIButton → CTA 视觉（金色 9-slice + 大字标签）
+ * 全部资源缺失时自动退回本页原来的样子，不影响开局流程。
  */
-import { _decorator, Button, Component, Enum, Label, Node, Sprite, SpriteFrame, UITransform } from 'cc';
+import { _decorator, Button, Component, Enum, instantiate, Label, Node, Sprite, SpriteFrame, UITransform } from 'cc';
 import { eventBus } from '../core/EventBus';
 import { MACHINE_EVOLUTION_CONFIG } from '../data/GameConfig';
 import { saveService } from '../data/SaveService';
 import { MapPreviewGraphic, MapPreviewKind } from './MapPreviewGraphic';
+import { UIAssetLibrary } from './UIAssetLibrary';
 
 const { ccclass, property } = _decorator;
 
@@ -26,17 +38,30 @@ export const MODE_READY_LAYOUT = {
   BtnBack:        [ 80,   80, -300,  568],
   Header:         [430,  100,    0,  534],
   HeaderTitle:    [500,   64,    0,  534],
-  MapPreview:     [560,  280,    0,  310],
-  StatCaption:    [240,   44, -150,  118],
-  StatValue:      [280,   44,  140,  118],
-  MachineCaption: [240,   44, -150,   58],
-  MachineValue:   [280,   44,  140,   58],
-  // Tall enough for the Arena five-line rule list required by the V4 lock
-  // (design-lock.md §07) while still clearing the CTA below it.
-  IntroText:      [600,  220,    0, -105],
+  // V7: the preview keeps the 560x260 authored-art aspect and leaves room for
+  // the UICard's own caption strip directly under it.
+  MapPreview:     [560,  260,    0,  340],
+  // V7: two UIHudBar rows, caption flush left / value flush right, matching the
+  // reference's stat panels (06) and "当前机器 | LV.3 重力黑洞" row (07).
+  StatPanelTop:   [580,   76,    0,  126],
+  StatPanelBottom:[580,   76,    0,   42],
+  StatCaption:    [260,   40, -125,  126],
+  StatValue:      [260,   40,  125,  126],
+  MachineCaption: [260,   40, -125,   42],
+  MachineValue:   [260,   40,  125,   42],
+  // V7: the arena rule list sits on a UIPanel (reference 07); Endless keeps the
+  // bare two-line copy from reference 06.
+  IntroPanel:     [620,  196,    0, -116],
+  IntroText:      [600,  190,    0, -116],
   BtnStart:       [480,  150,    0, -290],
   BtnStartLabel:  [440,   60,    0, -290],
 } as const;
+
+/** Child node names this controller mounts from the authored prefab library. */
+const STAT_PANEL_TOP = 'StatPanelTop';
+const STAT_PANEL_BOTTOM = 'StatPanelBottom';
+const INTRO_PANEL = 'IntroPanel';
+const START_ART = 'BtnStartArt';
 
 @ccclass('ModeReadyPageController')
 export class ModeReadyPageController extends Component {
@@ -44,12 +69,14 @@ export class ModeReadyPageController extends Component {
   public mode: ModeReadyKind = ModeReadyKind.ENDLESS;
 
   private bindings: Array<[Button, () => void]> = [];
+  private waitingForPanels = false;
 
   onEnable(): void {
+    this.mountAuthoredPanels();
     this.applyLayout();
     this.hideStaleHeaderTitle();
     this.applyMapPreview();
-    this.applyCleanStartButtonArt();
+    this.applyStartButton();
     this.refreshProfile();
     this.bind('BtnBack', () => eventBus.emit('READY_BACK_REQUESTED'));
     this.bind('BtnStart', () => eventBus.emit('READY_START_REQUESTED'));
@@ -67,6 +94,84 @@ export class ModeReadyPageController extends Component {
     for (const [name, [width, height, x, y]] of Object.entries(MODE_READY_LAYOUT)) {
       this.resizeAndPlace(name, width, height, x, y);
     }
+    // `BtnStartArt` is a child of BtnStart, not a page-level node, so it is not
+    // in the table. BtnStart's serialized size is 610x202; without this sync the
+    // CTA art would keep that size instead of the locked 480x150.
+    const button = this.findNode('BtnStart');
+    const art = button?.getChildByName(START_ART);
+    const buttonTransform = button?.getComponent(UITransform);
+    if (art && buttonTransform) {
+      art.getComponent(UITransform)?.setContentSize(buttonTransform.width, buttonTransform.height);
+    }
+  }
+
+  /**
+   * V7 PHASE 6/7. Mount the authored UI prefabs the reference page needs. Every
+   * mount is idempotent (an existing child is reused) and returns null when the
+   * library is not resident yet, in which case the page keeps its original
+   * floating-label look and re-tries once the assets arrive.
+   */
+  private mountAuthoredPanels(): void {
+    UIAssetLibrary.ensure();
+    const top = this.mountPanelBehind(STAT_PANEL_TOP, 'hudBar', 'StatCaption');
+    const bottom = this.mountPanelBehind(STAT_PANEL_BOTTOM, 'hudBar', 'MachineCaption');
+    this.mountPanelBehind(INTRO_PANEL, 'panel', 'IntroText');
+    this.mountStartArt();
+    this.applyIntroPanelVisibility();
+
+    if (top && bottom) return;
+    if (this.waitingForPanels) return;
+    this.waitingForPanels = true;
+    UIAssetLibrary.whenReady(() => {
+      this.waitingForPanels = false;
+      if (!this.node?.isValid || !this.node.activeInHierarchy) return;
+      this.mountAuthoredPanels();
+      this.applyLayout();
+      this.applyStartButton();
+      this.refreshProfile();
+    });
+  }
+
+  /**
+   * Instantiate `prefabKey` and insert it directly behind `referenceName`, so
+   * the page's existing labels keep rendering on top of the new panel.
+   */
+  private mountPanelBehind(name: string, prefabKey: 'panel' | 'hudBar', referenceName: string): Node | null {
+    const existing = this.node.getChildByName(name);
+    if (existing) return existing;
+    const prefab = UIAssetLibrary.getPrefab(prefabKey);
+    if (!prefab) return null;
+    const panel = instantiate(prefab);
+    panel.name = name;
+    panel.layer = this.node.layer;
+    this.node.addChild(panel);
+    const reference = this.findNode(referenceName);
+    if (reference) panel.setSiblingIndex(reference.getSiblingIndex());
+    return panel;
+  }
+
+  /** V7: the CTA visual is the authored UIButton; its label carries the copy. */
+  private mountStartArt(): void {
+    const button = this.findNode('BtnStart');
+    if (!button?.isValid) return;
+    if (button.getChildByName(START_ART)) return;
+    const prefab = UIAssetLibrary.getPrefab('button');
+    if (!prefab) return;
+    const art = instantiate(prefab);
+    art.name = START_ART;
+    art.layer = button.layer;
+    button.addChild(art);
+    art.setPosition(0, 0, 0);
+    const buttonTransform = button.getComponent(UITransform);
+    art.getComponent(UITransform)?.setContentSize(
+      buttonTransform?.width || 480,
+      buttonTransform?.height || 150,
+    );
+  }
+
+  private applyIntroPanelVisibility(): void {
+    const introPanel = this.node.getChildByName(INTRO_PANEL);
+    if (introPanel) introPanel.active = this.mode === ModeReadyKind.ARENA;
   }
 
   /**
@@ -88,10 +193,10 @@ export class ModeReadyPageController extends Component {
   }
 
   /**
-   * V4 reference 06 / 07. Give `MapPreview` a real low-poly preview instead of
-   * the mode-card artwork, whose title and description are baked into pixels.
-   * `MapPreviewGraphic` draws with the native Graphics API, so no asset import,
-   * sprite writeback, prefab edit or meta/UUID change is involved.
+   * V4 reference 06 / 07. Give `MapPreview` a real map preview instead of the
+   * mode-card artwork, whose title and description are baked into pixels.
+   * `MapPreviewGraphic` adopts the authored thumbnail SpriteFrame from the
+   * `game-art` UI library, so the page no longer draws the preview in code.
    */
   private applyMapPreview(): void {
     const preview = this.findNode('MapPreview');
@@ -102,17 +207,22 @@ export class ModeReadyPageController extends Component {
   }
 
   /**
-   * The serialized Ready pages reuse the *mode card* artwork for `BtnStart`.
-   * That art has the mode title/description baked into its pixels, so the CTA
-   * label ("开始探索" / "开始乱斗") was drawn on top of baked copy and the two
-   * collided. The Home page already ships a clean CTA frame (no baked copy)
-   * whose own label sits at (0, -40); borrow that frame at runtime instead of
-   * authoring new prefab/meta/uuid.
+   * V7: with the authored UIButton mounted, the serialized BtnStart artwork is
+   * switched off so the two do not double-draw. Without it, fall back to the
+   * old behaviour: the serialized Ready pages reuse the *mode card* artwork for
+   * `BtnStart`, whose baked copy collided with the CTA label, so the clean Home
+   * CTA frame is borrowed at runtime instead.
    */
-  private applyCleanStartButtonArt(): void {
+  private applyStartButton(): void {
     const button = this.findNode('BtnStart');
     const sprite = button?.getComponent(Sprite);
     if (!button || !sprite) return;
+    const hasAuthoredArt = Boolean(button.getChildByName(START_ART));
+    if (hasAuthoredArt) {
+      sprite.enabled = false;
+      return;
+    }
+    sprite.enabled = true;
     const serializedFrame = sprite.spriteFrame;
     const cleanFrame = this.findHomeCtaFrame(serializedFrame);
     if (!cleanFrame) {
@@ -165,24 +275,81 @@ export class ModeReadyPageController extends Component {
     if (label) label.string = text;
   }
 
+  private setLabelAlign(name: string, align: number): void {
+    const label = this.findNode(name)?.getComponent(Label);
+    if (label) label.horizontalAlign = align;
+  }
+
+  /**
+   * Fill one stat row. When the UIHudBar prefab is mounted its own Caption/Value
+   * labels carry the text and the page-level pair is hidden — otherwise the two
+   * pairs would draw on top of each other. Without the prefab the page-level
+   * labels keep the text, exactly as before. Either way both labels keep their
+   * string so the read-only QA projection still reports the real values.
+   */
+  private applyStatRow(
+    panelName: string,
+    captionName: string,
+    valueName: string,
+    caption: string,
+    value: string,
+  ): void {
+    const panel = this.node.getChildByName(panelName);
+    const barCaption = panel?.getChildByName('Caption')?.getComponent(Label) || null;
+    const barValue = panel?.getChildByName('Value')?.getComponent(Label) || null;
+    const usesBar = Boolean(barCaption && barValue);
+    if (barCaption) barCaption.string = caption;
+    if (barValue) barValue.string = value;
+    this.setLabel(captionName, caption);
+    this.setLabel(valueName, value);
+    const captionNode = this.findNode(captionName);
+    const valueNode = this.findNode(valueName);
+    if (captionNode) captionNode.active = !usesBar;
+    if (valueNode) valueNode.active = !usesBar;
+  }
+
+  /**
+   * The CTA copy lives on the authored UIButton's own label when that prefab is
+   * mounted, so the page-level BtnStartLabel is hidden to avoid double text.
+   * Without the prefab the page-level label keeps the copy, as before. Either
+   * way the string stays set, so the read-only QA projection still reports it.
+   */
+  private setStartLabel(text: string): void {
+    const artLabel = this.findNode('BtnStart')?.getChildByName(START_ART)?.getChildByName('Label')?.getComponent(Label);
+    this.setLabel('BtnStartLabel', text);
+    const pageLabel = this.findNode('BtnStartLabel');
+    if (pageLabel) pageLabel.active = !artLabel;
+    if (artLabel) artLabel.string = text;
+  }
+
   private refreshProfile(): void {
     const machineLevel = Math.max(1, Math.min(MACHINE_EVOLUTION_CONFIG.length, saveService.data.machineLevel || 1));
     const machine = MACHINE_EVOLUTION_CONFIG[machineLevel - 1];
-    this.setLabel('MachineValue', `LV.${machineLevel} ${machine.title}`);
+    this.applyIntroPanelVisibility();
     if (this.mode === ModeReadyKind.ENDLESS) {
       this.setLabel('HeaderTitle', '无尽探索');
-      this.setLabel('StatCaption', '历史最高纪录');
-      this.setLabel('StatValue', Math.max(0, Math.floor(saveService.data.highScore)).toLocaleString('en-US'));
+      this.setLabelAlign('IntroText', Label.HorizontalAlign.CENTER);
+      this.applyStatRow(
+        STAT_PANEL_TOP, 'StatCaption', 'StatValue',
+        '历史最高纪录',
+        Math.max(0, Math.floor(saveService.data.highScore)).toLocaleString('en-US'),
+      );
       // V4 design-lock.md §06: exactly these two lines, nothing longer.
       this.setLabel('IntroText', '不断吞噬 · 不断成长\n解锁更大目标');
-      this.setLabel('BtnStartLabel', '开始探索');
+      this.setStartLabel('开始探索 ▶');
     } else {
       this.setLabel('HeaderTitle', '竞技乱斗');
-      this.setLabel('StatCaption', '对局规则');
-      this.setLabel('StatValue', '8 人 · 3:00');
+      // Reference 07 lists the rules left-aligned inside the panel; reference 06
+      // centres the two-line copy.
+      this.setLabelAlign('IntroText', Label.HorizontalAlign.LEFT);
+      this.applyStatRow(STAT_PANEL_TOP, 'StatCaption', 'StatValue', '对局规则', '8 人 · 3:00');
       // V4 design-lock.md §07: the five real match rules, in this order.
       this.setLabel('IntroText', '• 8 人\n• 3:00\n• 吞噬成长\n• 淘汰弱小玩家\n• 躲避更大玩家');
-      this.setLabel('BtnStartLabel', '开始乱斗');
+      this.setStartLabel('开始乱斗 ▶');
     }
+    this.applyStatRow(
+      STAT_PANEL_BOTTOM, 'MachineCaption', 'MachineValue',
+      '当前机器', `LV.${machineLevel} ${machine.title}`,
+    );
   }
 }

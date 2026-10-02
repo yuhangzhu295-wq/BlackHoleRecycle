@@ -13,10 +13,19 @@
  *    constructs a new glyph or material path at runtime.
  *  - It is driven by the existing `MACHINE_EVOLVED` event. It never computes
  *    progression itself and never mutates gameplay state.
+ *
+ * V7 PHASE 7: the banner **panel** is now the authored `UIPopup` prefab
+ * (`game_art/ui/prefabs/UIPopup.prefab`, a 9-slice purple panel with a gold
+ * `升级！` title). The presenter only sizes it and sets the dynamic detail.
+ * The old `cc.Graphics` rounded rect survives as a **degradation path**,
+ * reachable only when the authored prefab is unavailable, and in that path the
+ * cloned glyph carries all three lines so no copy is ever lost.
  */
 import { Color, Graphics, instantiate, Label, LabelOutline, Node, UIOpacity, UITransform } from 'cc';
+
 import { eventBus } from '../core/EventBus';
 import { BlackHoleMachine } from '../machine/BlackHoleMachine';
+import { UIAssetLibrary } from './UIAssetLibrary';
 
 const BANNER_DURATION_SECONDS = 2.0;
 /** Keep the text fully legible for most of its short life, then fade. */
@@ -32,6 +41,9 @@ const BANNER_POP_IN_SECONDS = 0.18;
 const BANNER_WIDTH = 600;
 const BANNER_HEIGHT = 200;
 const BANNER_Y = 180;
+
+/** Vertical placement of the cloned glyph when the authored title is present. */
+const DETAIL_Y = -34;
 
 const PANEL_FILL = { r: 91, g: 33, b: 182, a: 236 };
 const PANEL_BORDER = { r: 15, g: 20, b: 38, a: 255 };
@@ -56,6 +68,9 @@ export interface TierUpgradeDiagnostics {
   readonly lastLevel: number;
   readonly lastTitle: string;
   readonly lastText: string;
+  /** V7: true when the authored UIPopup prefab supplied the banner panel. */
+  readonly usesAuthoredPanel: boolean;
+  readonly fallbackReason: string | null;
 }
 
 export class TierUpgradePresenter {
@@ -65,6 +80,8 @@ export class TierUpgradePresenter {
   private lastLevel = 0;
   private lastTitle = '';
   private lastText = '';
+  private usesAuthoredPanel = false;
+  private fallbackReason: string | null = null;
 
   public constructor(
     private readonly host: Node,
@@ -113,25 +130,13 @@ export class TierUpgradePresenter {
     container.setPosition(0, BANNER_Y, 0);
 
     // Panel first so it renders behind the glyphs (sibling order owns draw order).
-    const panelNode = new Node('Panel');
-    panelNode.layer = this.host.layer;
-    container.addChild(panelNode);
-    const panelTransform = panelNode.addComponent(UITransform);
-    panelTransform.setContentSize(BANNER_WIDTH, BANNER_HEIGHT);
-    const panel = panelNode.addComponent(Graphics);
-    panel.fillColor = new Color(PANEL_FILL.r, PANEL_FILL.g, PANEL_FILL.b, PANEL_FILL.a);
-    panel.roundRect(-BANNER_WIDTH * 0.5, -BANNER_HEIGHT * 0.5, BANNER_WIDTH, BANNER_HEIGHT, 20);
-    panel.fill();
-    panel.lineWidth = 6;
-    panel.strokeColor = new Color(PANEL_BORDER.r, PANEL_BORDER.g, PANEL_BORDER.b, PANEL_BORDER.a);
-    panel.roundRect(-BANNER_WIDTH * 0.5, -BANNER_HEIGHT * 0.5, BANNER_WIDTH, BANNER_HEIGHT, 20);
-    panel.stroke();
+    const panelNode = this.mountPanel(container);
 
     const textNode = instantiate(template);
     container.addChild(textNode);
     const textTransform = textNode.getComponent(UITransform);
     if (textTransform) textTransform.setContentSize(BANNER_WIDTH, BANNER_HEIGHT);
-    textNode.setPosition(0, 0, 0);
+    textNode.setPosition(0, panelNode ? DETAIL_Y : 0, 0);
     const label = textNode.getComponent(Label);
     if (!label) {
       container.destroy();
@@ -139,10 +144,14 @@ export class TierUpgradePresenter {
       return;
     }
 
-    const text = `升级！\nLV.${level} ${title}\n解锁更大型目标`;
+    // With the authored panel the headline is the prefab's own gold title; the
+    // cloned HUD glyph then carries only the dynamic detail lines. Without it,
+    // the glyph carries the whole locked copy so nothing is lost.
+    const detail = `LV.${level} ${title}\n解锁更大型目标`;
+    const text = panelNode ? detail : `升级！\n${detail}`;
     label.string = text;
-    label.fontSize = 40;
-    label.lineHeight = 54;
+    label.fontSize = panelNode ? 36 : 40;
+    label.lineHeight = panelNode ? 46 : 54;
     label.horizontalAlign = Label.HorizontalAlign.CENTER;
     label.verticalAlign = Label.VerticalAlign.CENTER;
     label.color = new Color(TITLE_COLOR.r, TITLE_COLOR.g, TITLE_COLOR.b, TITLE_COLOR.a);
@@ -159,6 +168,46 @@ export class TierUpgradePresenter {
     this.lastLevel = level;
     this.lastTitle = title;
     this.lastText = text;
+  }
+
+  /**
+   * Authored `UIPopup` panel, or null when it is not resident yet. Returning
+   * null is not an error: the caller keeps the vector panel and the full copy.
+   */
+  private mountPanel(container: Node): Node | null {
+    const prefab = UIAssetLibrary.getPrefab('popup');
+    if (prefab) {
+      const panelNode = instantiate(prefab);
+      panelNode.layer = this.host.layer;
+      container.addChild(panelNode);
+      panelNode.setPosition(0, 0, 0);
+      panelNode.getComponent(UITransform)?.setContentSize(BANNER_WIDTH, BANNER_HEIGHT);
+      const titleLabel = panelNode.getChildByName('Title')?.getComponent(Label);
+      if (titleLabel) titleLabel.string = '升级！';
+      this.usesAuthoredPanel = true;
+      this.fallbackReason = null;
+      return panelNode;
+    }
+
+    this.usesAuthoredPanel = false;
+    this.fallbackReason = UIAssetLibrary.getLastError()
+      || (UIAssetLibrary.isPending() ? 'authored UI assets pending' : 'authored UI assets unavailable');
+    UIAssetLibrary.ensure();
+
+    const panelNode = new Node('Panel');
+    panelNode.layer = this.host.layer;
+    container.addChild(panelNode);
+    const panelTransform = panelNode.addComponent(UITransform);
+    panelTransform.setContentSize(BANNER_WIDTH, BANNER_HEIGHT);
+    const panel = panelNode.addComponent(Graphics);
+    panel.fillColor = new Color(PANEL_FILL.r, PANEL_FILL.g, PANEL_FILL.b, PANEL_FILL.a);
+    panel.roundRect(-BANNER_WIDTH * 0.5, -BANNER_HEIGHT * 0.5, BANNER_WIDTH, BANNER_HEIGHT, 20);
+    panel.fill();
+    panel.lineWidth = 6;
+    panel.strokeColor = new Color(PANEL_BORDER.r, PANEL_BORDER.g, PANEL_BORDER.b, PANEL_BORDER.a);
+    panel.roundRect(-BANNER_WIDTH * 0.5, -BANNER_HEIGHT * 0.5, BANNER_WIDTH, BANNER_HEIGHT, 20);
+    panel.stroke();
+    return null;
   }
 
   public update(dt: number): void {
@@ -198,6 +247,8 @@ export class TierUpgradePresenter {
       lastLevel: this.lastLevel,
       lastTitle: this.lastTitle,
       lastText: this.lastText,
+      usesAuthoredPanel: this.usesAuthoredPanel,
+      fallbackReason: this.fallbackReason,
     };
   }
 }

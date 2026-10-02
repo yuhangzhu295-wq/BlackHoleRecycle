@@ -1,0 +1,190 @@
+/**
+ * V7 PHASE 6/7 — reusable UI prefab library contract (source-level, non-runtime).
+ *
+ * Locks the things that would silently rot:
+ *
+ *  1. Every prefab in the library is a REAL prefab with real content. The brief
+ *     forbids empty prefabs by name, so each one must carry at least one
+ *     `cc.Sprite` and the ones that own copy must carry a non-empty `cc.Label`.
+ *  2. The 9-slice frames keep their borders. Creator rewrites a `.png.meta` on
+ *     import, and a border of 0 turns a sliced panel into a stretched one that
+ *     distorts its corners — the exact failure this library exists to avoid.
+ *  3. Every spriteFrame a prefab references resolves to a texture in the same
+ *     `game_art/ui/textures` folder, and no prefab references anything outside
+ *     the bundle. A dangling uuid would make the runtime fall back silently, and
+ *     the fallback is supposed to be an emergency path, not the normal one.
+ *  4. The three converted `cc.Graphics` surfaces actually consume the authored
+ *     assets and keep a documented degradation path.
+ *
+ * It deliberately does NOT claim a visual PASS; portrait acceptance and the
+ * before/after screenshots remain the runtime evidence.
+ */
+import assert from 'node:assert/strict';
+import { readFileSync, existsSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const read = (relative) => readFileSync(path.join(root, relative), 'utf8');
+const readJson = (relative) => JSON.parse(read(relative));
+const exists = (relative) => existsSync(path.join(root, relative));
+
+const UI_ROOT = 'cocos/assets/game_art/ui';
+const TEXTURES_DIR = `${UI_ROOT}/textures`;
+const PREFABS_DIR = `${UI_ROOT}/prefabs`;
+
+// ---- 1. the library is present ----------------------------------------------
+const PREFABS = ['UIPanel', 'UICard', 'UIHudBar', 'UIPopup', 'UIButton'];
+for (const name of PREFABS) {
+  assert(exists(`${PREFABS_DIR}/${name}.prefab`), `missing prefab ${name}.prefab`);
+  assert(exists(`${PREFABS_DIR}/${name}.prefab.meta`), `missing meta for ${name}.prefab`);
+}
+
+const TEXTURES = [
+  { name: 'map_preview_city', width: 560, height: 260, sliced: false },
+  { name: 'map_preview_arena', width: 560, height: 260, sliced: false },
+  { name: 'joystick_base', width: 196, height: 196, sliced: false },
+  { name: 'joystick_knob', width: 76, height: 76, sliced: false },
+  { name: 'ui_panel_9slice', width: 128, height: 128, sliced: true },
+  { name: 'ui_card_9slice', width: 160, height: 160, sliced: true },
+  { name: 'ui_button_9slice', width: 192, height: 128, sliced: true },
+  { name: 'ui_popup_9slice', width: 128, height: 128, sliced: true },
+  { name: 'ui_hud_bar_9slice', width: 128, height: 64, sliced: true },
+];
+
+// ---- 2. every prefab is real, non-empty content -----------------------------
+const textureUuids = new Set();
+for (const texture of TEXTURES) {
+  const metaPath = `${TEXTURES_DIR}/${texture.name}.png.meta`;
+  assert(exists(`${TEXTURES_DIR}/${texture.name}.png`), `missing texture ${texture.name}.png`);
+  assert(exists(metaPath), `missing meta for ${texture.name}.png`);
+  const meta = readJson(metaPath);
+  textureUuids.add(meta.uuid);
+  const sprite = meta.subMetas?.f9941?.userData;
+  assert(sprite, `${texture.name} has no spriteFrame sub-asset`);
+  assert.equal(sprite.width, texture.width, `${texture.name} spriteFrame width drift`);
+  assert.equal(sprite.height, texture.height, `${texture.name} spriteFrame height drift`);
+  if (texture.sliced) {
+    const borders = [sprite.borderLeft, sprite.borderRight, sprite.borderTop, sprite.borderBottom];
+    assert(borders.every((value) => Number.isInteger(value) && value > 0),
+      `${texture.name} lost its 9-slice borders: ${JSON.stringify(borders)}`);
+    // A sliced frame must not be repacked into the dynamic atlas: the border
+    // texels would move under the mesh that expects them where they were.
+    assert.equal(sprite.packable, false, `${texture.name} must not be packable`);
+  } else {
+    assert.equal(sprite.borderLeft, 0, `${texture.name} must not be 9-sliced`);
+  }
+}
+
+for (const name of PREFABS) {
+  const objects = readJson(`${PREFABS_DIR}/${name}.prefab`);
+  assert(Array.isArray(objects) && objects.length > 4, `${name}.prefab is not a real object graph`);
+  assert.equal(objects[0].__type__, 'cc.Prefab', `${name}.prefab object 0 must be the cc.Prefab`);
+  assert.equal(objects[1].__type__, 'cc.Node', `${name}.prefab object 1 must be the root node`);
+  assert.equal(objects[1]._name, name, `${name}.prefab root node name drift`);
+
+  const sprites = objects.filter((entry) => entry?.__type__ === 'cc.Sprite');
+  assert(sprites.length > 0, `${name}.prefab has no cc.Sprite: an empty prefab is forbidden`);
+  const labels = objects.filter((entry) => entry?.__type__ === 'cc.Label');
+  const prefabInfos = objects.filter((entry) => entry?.__type__ === 'cc.PrefabInfo');
+  assert.equal(prefabInfos.length, objects.filter((entry) => entry?.__type__ === 'cc.Node').length,
+    `${name}.prefab must carry one cc.PrefabInfo per node`);
+  const uiTransforms = objects.filter((entry) => entry?.__type__ === 'cc.UITransform');
+  assert.equal(uiTransforms.length, objects.filter((entry) => entry?.__type__ === 'cc.Node').length,
+    `${name}.prefab must carry one cc.UITransform per node`);
+
+  // Every declared spriteFrame must resolve inside this bundle's texture folder,
+  // and the sprite must declare an explicit size mode so the 9-slice is used.
+  for (const sprite of sprites) {
+    const uuid = sprite._spriteFrame?.__uuid__;
+    assert(uuid, `${name}.prefab has a cc.Sprite with no spriteFrame`);
+    const owner = String(uuid).split('@')[0];
+    assert(textureUuids.has(owner),
+      `${name}.prefab references ${uuid}, which is not one of the authored UI textures`);
+    assert.equal(sprite._sizeMode, 0, `${name}.prefab sprite must use CUSTOM size mode`);
+  }
+  for (const label of labels) {
+    assert.equal(typeof label._string, 'string', `${name}.prefab label has no string`);
+    assert(label._string.length > 0, `${name}.prefab ships an empty label: a placeholder is not content`);
+  }
+}
+
+// ---- 3. the shapes the pages depend on --------------------------------------
+const byName = (name) => readJson(`${PREFABS_DIR}/${name}.prefab`);
+const nodeNames = (objects) => objects.filter((entry) => entry?.__type__ === 'cc.Node').map((node) => node._name);
+assert.deepEqual(nodeNames(byName('UICard')), ['UICard', 'Preview', 'Caption'],
+  'UICard must be frame + preview slot + caption');
+assert.deepEqual(nodeNames(byName('UIHudBar')), ['UIHudBar', 'Caption', 'Value'],
+  'UIHudBar must be bar + caption + value');
+assert.deepEqual(nodeNames(byName('UIPopup')), ['UIPopup', 'Title'],
+  'UIPopup must be panel + title');
+assert.deepEqual(nodeNames(byName('UIButton')), ['UIButton', 'Label'],
+  'UIButton must be frame + label');
+assert.deepEqual(nodeNames(byName('UIPanel')), ['UIPanel'], 'UIPanel is a single framed node');
+
+// A 9-slice frame must be authored as `_type: 1` (SLICED); a preview thumbnail
+// must stay `_type: 0` (SIMPLE) so it stretches to the card instead of slicing.
+const cardSprites = byName('UICard').filter((entry) => entry?.__type__ === 'cc.Sprite');
+assert.deepEqual(cardSprites.map((sprite) => sprite._type), [0, 1],
+  'UICard: the preview must be SIMPLE and the card frame SLICED');
+
+// ---- 4. the converted components consume the library ------------------------
+const mapPreview = read('cocos/assets/scripts/ui/MapPreviewGraphic.ts');
+const joystick = read('cocos/assets/scripts/ui/JoystickVisual.ts');
+const tierUpgrade = read('cocos/assets/scripts/ui/TierUpgradePresenter.ts');
+const library = read('cocos/assets/scripts/ui/UIAssetLibrary.ts');
+
+for (const [source, token, detail] of [
+  [mapPreview, "UIAssetLibrary.getPrefab('card')", 'the map preview must mount the authored UICard prefab'],
+  [joystick, "UIAssetLibrary.getFrame('joystickBase')", 'the joystick must adopt the authored base frame'],
+  [joystick, "UIAssetLibrary.getFrame('joystickKnob')", 'the joystick must adopt the authored knob frame'],
+  [tierUpgrade, "UIAssetLibrary.getPrefab('popup')", 'the upgrade banner must mount the authored UIPopup prefab'],
+]) {
+  assert(source.includes(token), detail);
+}
+
+// Each converted component must keep an explicit, reported degradation path, so
+// a failed download can never leave a blank surface without saying so.
+for (const [source, name] of [[mapPreview, 'MapPreviewGraphic'], [joystick, 'JoystickVisual'], [tierUpgrade, 'TierUpgradePresenter']]) {
+  assert(source.includes('fallbackReason'), `${name} must report why the authored path did not run`);
+  assert(source.includes('UIAssetLibrary.ensure()'), `${name} must start the load it depends on`);
+}
+
+// The library must own retries/deduplication through the project's bundle
+// service rather than calling `assetManager.loadBundle` itself, and must load
+// from the declared bundle, never a hard-coded filesystem path.
+assert(library.includes("from '../world/RegionBundleService'"), 'UIAssetLibrary must reuse RegionBundleService');
+assert(library.includes("const BUNDLE = 'game-art'"), 'UIAssetLibrary must load the game-art bundle');
+assert(library.includes("ui/prefabs/"), 'UIAssetLibrary must declare the authored prefab paths');
+
+// Every authored path the library names must correspond to a real file, so a
+// rename cannot silently orphan a prefab or a frame.
+const declaredPaths = [...library.matchAll(/'ui\/(?:prefabs|textures)\/[A-Za-z0-9_]+'/g)].map((match) => match[0].slice(1, -1));
+assert(declaredPaths.length >= PREFABS.length + TEXTURES.length,
+  `UIAssetLibrary declares only ${declaredPaths.length} asset paths`);
+for (const declared of declaredPaths) {
+  // Bundle paths are relative to the bundle root (`game_art/`), so `ui/...`
+  // maps onto the `game_art/ui/` folder.
+  const relative = declared.replace(/^ui\//, '');
+  const onDisk = declared.startsWith('ui/prefabs/')
+    ? `${UI_ROOT}/${relative}.prefab`
+    : `${UI_ROOT}/${relative}.png`;
+  assert(exists(onDisk), `UIAssetLibrary declares ${declared}, but ${onDisk} does not exist`);
+}
+
+// ---- 5. the Mode Ready page mounts the panels the references show -----------
+const modeReady = read('cocos/assets/scripts/ui/ModeReadyPageController.ts');
+for (const token of [
+  "mountPanelBehind(STAT_PANEL_TOP, 'hudBar'",
+  "mountPanelBehind(STAT_PANEL_BOTTOM, 'hudBar'",
+  "mountPanelBehind(INTRO_PANEL, 'panel'",
+  "UIAssetLibrary.getPrefab('button')",
+]) {
+  assert(modeReady.includes(token), `Mode Ready must mount the authored panel: ${token}`);
+}
+assert(modeReady.includes("introPanel.active = this.mode === ModeReadyKind.ARENA"),
+  'the arena rules panel must be arena-only (reference 07)');
+
+console.log(`[PASS] UI prefab library contract: ${PREFABS.length} real prefabs, ${TEXTURES.length} textures, `
+  + `${declaredPaths.length} declared asset paths, 3 converted cc.Graphics surfaces `
+  + '(NON_RUNTIME; portrait acceptance and the before/after screenshots remain required).');

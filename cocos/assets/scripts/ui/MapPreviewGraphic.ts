@@ -5,18 +5,29 @@
  * That art has the mode title and description baked into its pixels, so it was
  * never a map preview and it leaked copy onto the page.
  *
- * This component draws a genuine low-poly thumbnail with the native engine
- * Graphics API, following the same serialization contract as
- * `RoundedPanelGraphic`: only the preview kind is serialized on the node, and
- * the vector paths are rebuilt when the node becomes visible in a built player.
- * No new asset import, no sprite/meta/UUID writeback.
+ * V7 PHASE 7: the preview is now the authored **UICard prefab** from
+ * `game_art/ui/prefabs/UICard.prefab` — a 9-slice card frame, the authored
+ * thumbnail Sprite (`map_preview_city` / `map_preview_arena`) and the
+ * "地图预览 / 竞技场预览" caption the design reference carries. This component
+ * only mounts the card, selects the frame and sets the caption; it no longer
+ * draws geometry in the normal path.
+ *
+ * The old `cc.Graphics` vector preview survives as `drawCity` / `drawArena`, a
+ * **degradation path reachable only when the authored card is unavailable**
+ * (the same contract `BlackHoleMachine.activatePrimitiveCoreFallback` uses). A
+ * failed download therefore leaves a schematic preview instead of a blank card,
+ * and play is never affected.
  */
-import { _decorator, Color, Component, Enum, Graphics, Layers, Node, Sprite, UITransform } from 'cc';
+import { _decorator, Color, Component, Enum, Graphics, instantiate, Label, Layers, Node, Sprite, UITransform } from 'cc';
+
+import { UIAssetLibrary, type UIFrameKey } from './UIAssetLibrary';
 
 const { ccclass, property } = _decorator;
 
-/** Child node that owns the vector preview (see `ensureArtNode`). */
+/** Child node that owns the vector fallback preview (see `ensureArtNode`). */
 const ART_NODE_NAME = 'PreviewArt';
+/** Child node the authored `UICard` prefab is instantiated as. */
+const CARD_NODE_NAME = 'PreviewCard';
 
 export enum MapPreviewKind {
   CITY = 0,
@@ -34,6 +45,11 @@ export interface MapPreviewDiagnostics {
   readonly artNodeName: string | null;
   readonly artLayerIsUi2d: boolean | null;
   readonly spriteEnabled: boolean | null;
+  /** V7: true when the authored thumbnail is the thing on screen. */
+  readonly usesAuthoredArt: boolean;
+  readonly authoredFrame: string | null;
+  /** Why the vector path ran instead, or null when it did not. */
+  readonly fallbackReason: string | null;
 }
 
 /** Kenney-style flat cartoon palette, matched to the V4 colour tokens. */
@@ -70,10 +86,15 @@ export class MapPreviewGraphic extends Component {
 
   private graphics: Graphics | null = null;
   private artNode: Node | null = null;
+  private cardNode: Node | null = null;
   private redrawCount = 0;
   private drawnWidth = 0;
   private drawnHeight = 0;
   private bakedCardArtCleared = false;
+  private usesAuthoredArt = false;
+  private authoredFrame: string | null = null;
+  private fallbackReason: string | null = null;
+  private waitingForAssets = false;
 
   onLoad(): void {
     this.ensureArtNode();
@@ -86,8 +107,9 @@ export class MapPreviewGraphic extends Component {
   }
 
   /**
-   * Read-only observation for the V4 design gate: proves the runtime preview is
-   * a real vector redraw and that the stale mode-card pixels are gone.
+   * Read-only observation for the V4/V7 design gate: proves whether the runtime
+   * preview is the authored thumbnail or the vector degradation path, and that
+   * the stale mode-card pixels are gone either way.
    */
   public getDiagnostics(): MapPreviewDiagnostics {
     const sprite = this.getComponent(Sprite);
@@ -102,18 +124,26 @@ export class MapPreviewGraphic extends Component {
       artNodeName: this.artNode?.name || null,
       artLayerIsUi2d: this.artNode ? this.artNode.layer === Layers.Enum.UI_2D : null,
       spriteEnabled: sprite?.enabled ?? null,
+      usesAuthoredArt: this.usesAuthoredArt,
+      authoredFrame: this.authoredFrame,
+      fallbackReason: this.fallbackReason,
     };
   }
 
+  /** The frame key this preview kind resolves to in the authored library. */
+  private get frameKey(): UIFrameKey {
+    return this.kind === MapPreviewKind.ARENA ? 'mapPreviewArena' : 'mapPreviewCity';
+  }
+
   /**
-   * The vector preview lives on a dedicated child node, for two engine reasons
+   * The vector fallback lives on a dedicated child node, for two engine reasons
    * that a built player enforces and the editor preview hides:
    *  - a `Node` created in code starts on `Layers.Enum.DEFAULT`, and the UI
    *    camera only draws `UI_2D`, so the art is silently invisible unless the
    *    layer is copied from the host;
    *  - `Sprite` and `Graphics` are both `UIRenderer`s, and two renderers on one
-   *    node fight over the node's UI component, so the art must not share the
-   *    node that still carries the serialized `Sprite`.
+   *    node fight over the node's UI component. The authored path uses the
+   *    host's own serialized `Sprite`; the fallback uses this child's `Graphics`.
    */
   private ensureArtNode(): Node | null {
     if (this.artNode?.isValid && this.graphics?.isValid) return this.artNode;
@@ -124,42 +154,84 @@ export class MapPreviewGraphic extends Component {
     if (!existing) this.node.addChild(art);
     art.setPosition(0, 0, 0);
     const transform = art.getComponent(UITransform) || art.addComponent(UITransform);
-    transform.setContentSize(hostTransform?.width || 560, hostTransform?.height || 280);
+    transform.setContentSize(hostTransform?.width || 560, hostTransform?.height || 260);
     this.graphics = art.getComponent(Graphics) || art.addComponent(Graphics);
     this.artNode = art;
     return art;
   }
 
   /**
-   * The serialized node still carries the old mode-card SpriteFrame. Clearing
-   * it removes the baked title/description copy; the vector preview replaces it.
+   * The serialized node still carries the old mode-card SpriteFrame. Replacing
+   * it (authored path) or clearing it (fallback path) removes the baked
+   * title/description copy.
    */
   private clearBakedCardArt(): void {
     const sprite = this.getComponent(Sprite);
     if (!sprite) return;
-    if (sprite.spriteFrame) {
+    if (sprite.spriteFrame && !this.usesAuthoredArt) {
       sprite.spriteFrame = null;
       this.bakedCardArtCleared = true;
     }
-    sprite.enabled = false;
+    if (!this.usesAuthoredArt) sprite.enabled = false;
   }
 
   public redraw(): void {
-    const art = this.ensureArtNode();
-    const graphics = this.graphics;
-    if (!art || !graphics) return;
-
     const hostTransform = this.getComponent(UITransform);
     const width = hostTransform?.width || 0;
     const height = hostTransform?.height || 0;
     if (width <= 0 || height <= 0) return;
 
-    const artTransform = art.getComponent(UITransform);
-    artTransform?.setContentSize(width, height);
+    const art = this.ensureArtNode();
+    const graphics = this.graphics;
+    if (!art || !graphics) return;
+    art.getComponent(UITransform)?.setContentSize(width, height);
 
+    // Primary path: the authored UICard prefab (frame + thumbnail + caption).
+    const frame = UIAssetLibrary.getFrame(this.frameKey);
+    const card = frame ? this.ensureCard(width, height) : null;
+    const previewSprite = card?.getChildByName('Preview')?.getComponent(Sprite) || null;
+    if (card && previewSprite && frame) {
+      if (previewSprite.spriteFrame !== frame) previewSprite.spriteFrame = frame;
+      previewSprite.type = Sprite.Type.SIMPLE;
+      previewSprite.sizeMode = Sprite.SizeMode.CUSTOM;
+      const caption = card.getChildByName('Caption')?.getComponent(Label);
+      if (caption) caption.string = this.kind === MapPreviewKind.ARENA ? '竞技场预览' : '地图预览';
+      this.hideVectorFallback(art, graphics);
+      this.usesAuthoredArt = true;
+      this.authoredFrame = frame.name || this.frameKey;
+      this.fallbackReason = null;
+      this.redrawCount += 1;
+      this.drawnWidth = width;
+      this.drawnHeight = height;
+      return;
+    }
+
+    // Degradation path: the authored card has not arrived (yet).
+    this.usesAuthoredArt = false;
+    this.authoredFrame = null;
+    this.fallbackReason = UIAssetLibrary.getLastError()
+      || (UIAssetLibrary.isPending() ? 'authored UI assets pending' : 'authored UI assets unavailable');
+    const hostSprite = this.getComponent(Sprite);
+    if (hostSprite) {
+      if (hostSprite.spriteFrame) {
+        hostSprite.spriteFrame = null;
+        this.bakedCardArtCleared = true;
+      }
+      hostSprite.enabled = false;
+    }
+    UIAssetLibrary.ensure();
+    if (!this.waitingForAssets) {
+      this.waitingForAssets = true;
+      UIAssetLibrary.whenReady(() => {
+        this.waitingForAssets = false;
+        if (this.node?.isValid) this.redraw();
+      });
+    }
+
+    art.active = true;
+    graphics.enabled = true;
     const left = -width * 0.5;
     const bottom = -height * 0.5;
-
     graphics.clear();
     if (this.kind === MapPreviewKind.ARENA) this.drawArena(graphics, left, bottom, width, height);
     else this.drawCity(graphics, left, bottom, width, height);
@@ -168,7 +240,43 @@ export class MapPreviewGraphic extends Component {
     this.drawnHeight = height;
   }
 
-  /** Endless Exploration: an open low-poly city block with roads and a core. */
+  /**
+   * Mount (or reuse) the authored `UICard` under the host node. It is a child
+   * rather than a replacement so the serialized `MapPreview` node — whose
+   * position and size MODE_READY_LAYOUT owns — keeps its identity.
+   */
+  private ensureCard(width: number, height: number): Node | null {
+    if (this.cardNode?.isValid) {
+      this.cardNode.getComponent(UITransform)?.setContentSize(width, height);
+      return this.cardNode;
+    }
+    const prefab = UIAssetLibrary.getPrefab('card');
+    if (!prefab) return null;
+    const card = instantiate(prefab);
+    card.name = CARD_NODE_NAME;
+    card.layer = this.node.layer;
+    this.node.addChild(card);
+    card.setPosition(0, 0, 0);
+    card.getComponent(UITransform)?.setContentSize(width, height);
+    this.cardNode = card;
+    return card;
+  }
+
+  /** Turn off the vector child and the stale mode-card sprite on the host. */
+  private hideVectorFallback(art: Node, graphics: Graphics): void {
+    graphics.enabled = false;
+    art.active = false;
+    const hostSprite = this.getComponent(Sprite);
+    if (hostSprite) {
+      if (hostSprite.spriteFrame) {
+        hostSprite.spriteFrame = null;
+        this.bakedCardArtCleared = true;
+      }
+      hostSprite.enabled = false;
+    }
+  }
+
+  /** Endless Exploration fallback: an open low-poly city block with a core. */
   private drawCity(graphics: Graphics, left: number, bottom: number, width: number, height: number): void {
     const horizon = bottom + height * 0.62;
 
@@ -248,7 +356,7 @@ export class MapPreviewGraphic extends Component {
     graphics.stroke();
   }
 
-  /** Arena Brawl: a bounded ring with the local core and real rival positions. */
+  /** Arena Brawl fallback: a bounded ring with the local core and rivals. */
   private drawArena(graphics: Graphics, left: number, bottom: number, width: number, height: number): void {
     graphics.fillColor = ARENA_FLOOR_DARK;
     graphics.rect(left, bottom, width, height);
