@@ -12,6 +12,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { inflateSync } from 'node:zlib';
 import { chromium } from 'playwright';
+import { acquireBuildLock } from './lib/build_ownership.mjs';
 
 const thisFile = fileURLToPath(import.meta.url);
 const repoRoot = path.resolve(path.dirname(thisFile), '..');
@@ -261,16 +262,8 @@ function assertNoLargeDarkSurface(pngPath, phase) {
 const cocosBuildTimeoutMs = Number(process.env.BHR_COCOS_BUILD_TIMEOUT_MS || 15 * 60 * 1000);
 
 function buildCocosWebMobile() {
+  const localLock = acquireBuildLock({ purpose: 'Cocos Creator build (web-mobile)' });
   return new Promise((resolve, reject) => {
-    if (!existsSync(creatorExe)) {
-      reject(new Error(`Cocos Creator 3.8.3 was not found: ${creatorExe}`));
-      return;
-    }
-
-    const child = spawn(creatorExe, [
-      '--project', cocosProject,
-      '--build', `platform=web-mobile;debug=false;orientation=portrait;startScene=${REQUIRED_START_SCENE};`
-    ], { cwd: cocosProject, windowsHide: true });
     let output = '';
     let settled = false;
     let timeout = null;
@@ -278,8 +271,21 @@ function buildCocosWebMobile() {
       if (settled) return;
       settled = true;
       if (timeout) clearTimeout(timeout);
+      try {
+        localLock.release();
+      } catch {}
       settle(value);
     };
+
+    if (!existsSync(creatorExe)) {
+      finish(reject, new Error(`Cocos Creator 3.8.3 was not found: ${creatorExe}`));
+      return;
+    }
+
+    const child = spawn(creatorExe, [
+      '--project', cocosProject,
+      '--build', `platform=web-mobile;debug=false;orientation=portrait;startScene=${REQUIRED_START_SCENE};`
+    ], { cwd: cocosProject, windowsHide: true });
     child.stdout.on('data', (chunk) => { output += chunk.toString(); });
     child.stderr.on('data', (chunk) => { output += chunk.toString(); });
     child.on('error', (error) => finish(reject, error));
@@ -5207,10 +5213,15 @@ let server;
 let browser;
 let networkProbeServer;
 let bundleProvenanceStart = null;
+let buildLock = null;
 try {
+  buildLock = acquireBuildLock({
+    purpose: `acceptance:v2 --scope=${acceptanceScope}`,
+  });
   console.log('[acceptance:v2] Building Web Mobile with Cocos Creator 3.8.3...');
   report.build = await buildCocosWebMobile();
   bundleProvenanceStart = censusBundleTree(buildDirectory);
+  buildLock.freezeBundle(bundleProvenanceStart);
   assert(existsSync(path.join(buildDirectory, 'index.html')), `Missing official Cocos build output: ${buildDirectory}`);
 
   if (acceptanceScope === 'network') {
@@ -5292,4 +5303,7 @@ try {
   writeFileSync(scopedReportPath, serializedReport, 'utf8');
   console.log(`[acceptance:v2] Report: ${reportPath}`);
   console.log(`[acceptance:v2] Scoped report: ${scopedReportPath}`);
+  if (buildLock) {
+    buildLock.release();
+  }
 }

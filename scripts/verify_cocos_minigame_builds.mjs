@@ -8,6 +8,7 @@ import { spawn } from 'node:child_process';
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { acquireBuildLock } from './lib/build_ownership.mjs';
 
 const thisFile = fileURLToPath(import.meta.url);
 const repoRoot = path.resolve(path.dirname(thisFile), '..');
@@ -90,6 +91,7 @@ function newestModification(directory) {
 }
 
 function buildPlatform(platform) {
+  const localLock = acquireBuildLock({ purpose: `Cocos Creator build (${platform})` });
   return new Promise((resolve, reject) => {
     const child = spawn(
       creatorExe,
@@ -99,8 +101,12 @@ function buildPlatform(platform) {
     let output = '';
     child.stdout.on('data', (chunk) => { output += chunk.toString(); });
     child.stderr.on('data', (chunk) => { output += chunk.toString(); });
-    child.on('error', reject);
+    child.on('error', (err) => {
+      try { localLock.release(); } catch {}
+      reject(err);
+    });
     child.on('close', (code) => {
+      try { localLock.release(); } catch {}
       if (code === 0 || code === 36) resolve({ code, output });
       else reject(new Error(`Creator launcher failed for ${platform} with exit ${code}.\n${output}`));
     });
@@ -209,7 +215,11 @@ async function main() {
     builds: [],
     failures: [],
   };
+  let buildLock = null;
   try {
+    buildLock = acquireBuildLock({
+      purpose: `verify_cocos_minigame_builds --platform=${requestedPlatform}`,
+    });
     for (const platform of selectedPlatforms) {
       console.log(`[cocos:mini-builds] Building ${platform} with Cocos Creator 3.8.3...`);
       const startedAt = Date.now();
@@ -226,6 +236,9 @@ async function main() {
     console.error(`[cocos:mini-builds] FAIL: ${report.failures[0]}`);
     process.exitCode = 1;
   } finally {
+    if (buildLock) {
+      buildLock.release();
+    }
     report.finishedAt = new Date().toISOString();
     mkdirSync(reportDirectory, { recursive: true });
     const reportName = requireReleaseIds ? 'mini-build-release-preflight.json' : 'mini-build-report.json';

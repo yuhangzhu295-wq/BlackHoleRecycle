@@ -11,6 +11,7 @@ import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
+import { acquireBuildLock } from './lib/build_ownership.mjs';
 
 const scriptFile = fileURLToPath(import.meta.url);
 const root = path.resolve(path.dirname(scriptFile), '..');
@@ -25,8 +26,10 @@ function assert(condition, message) {
 }
 
 function buildCocosWebMobile() {
+  const localLock = acquireBuildLock({ purpose: 'capture_filing_gameplay_screenshots build' });
   return new Promise((resolve, reject) => {
     if (!existsSync(creatorExe)) {
+      try { localLock.release(); } catch {}
       reject(new Error(`Cocos Creator 3.8.3 was not found: ${creatorExe}`));
       return;
     }
@@ -37,8 +40,12 @@ function buildCocosWebMobile() {
     let output = '';
     child.stdout.on('data', (chunk) => { output += chunk.toString(); });
     child.stderr.on('data', (chunk) => { output += chunk.toString(); });
-    child.on('error', reject);
+    child.on('error', (err) => {
+      try { localLock.release(); } catch {}
+      reject(err);
+    });
     child.on('close', (code) => {
+      try { localLock.release(); } catch {}
       if (code === 0 || code === 36) {
         resolve(output);
         return;
@@ -180,7 +187,9 @@ async function openFreshRuntime() {
 let server;
 let browser;
 let context;
+let buildLock = null;
 try {
+  buildLock = acquireBuildLock({ purpose: 'capture_filing_gameplay_screenshots' });
   console.log('[filing-capture] Building the official Cocos Creator 3.8.3 Web Mobile target...');
   await buildCocosWebMobile();
   assert(existsSync(path.join(buildDirectory, 'index.html')), 'Official Cocos Web Mobile build output is missing.');
@@ -270,4 +279,5 @@ try {
   if (context) await context.close();
   if (browser) await browser.close();
   if (server) await new Promise((resolve) => server.close(resolve));
+  if (buildLock) buildLock.release();
 }
