@@ -122,6 +122,11 @@ export class QABridge {
       // The machine owns the list; the QA layer never hardcodes node names.
       machine ? machine.getAnimatedDecorationNodes() : [],
     );
+    const lv5CompositionDiagnostic = WorldCompositionProbe.getLV5CompositionDiagnostic(
+      world,
+      mainCamera,
+      machine?.node || null,
+    );
     const currentCellVisualDiagnostics = WorldCompositionProbe.getCurrentCellVisualDiagnostics(world);
     const goldenPlayer = goldenCityComposition?.player || null;
     const playerViewport = goldenPlayer?.screenBounds && viewport.width > 0 && viewport.height > 0 ? {
@@ -246,6 +251,7 @@ export class QABridge {
         streaming: world ? {
           ...world.getSnapshot(),
           goldenCityComposition,
+          lv5CompositionDiagnostic,
           visualDiagnostics: currentCellVisualDiagnostics,
         } : null,
       },

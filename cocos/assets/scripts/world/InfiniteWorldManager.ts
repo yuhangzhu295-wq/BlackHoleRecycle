@@ -1655,6 +1655,25 @@ export class InfiniteWorldManager extends Component {
     } : null;
   }
 
+  public getAllActiveCellsRuntimeContent(): readonly WorldCellRuntimeContent[] {
+    const results: WorldCellRuntimeContent[] = [];
+    for (const cell of this.activeCells.values()) {
+      results.push({
+        coord: { x: cell.coord.x, z: cell.coord.z },
+        node: cell.node,
+        objects: cell.objects,
+        dynamicVehicles: cell.dynamicVehicles,
+        collectibleSlots: cell.collectibleSlots.map((slot) => ({
+          customId: slot.customId,
+          x: slot.x,
+          z: slot.z,
+          active: slot.active,
+        })),
+      });
+    }
+    return results;
+  }
+
   public getRegionIndex(): number {
     return this.currentRegionIndex;
   }

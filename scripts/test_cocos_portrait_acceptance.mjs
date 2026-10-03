@@ -3469,8 +3469,14 @@ async function verifyFiveLevelProgression(cdp, page, joystick) {
     const stageWidthRatio = stagePlayer?.widthRatio ?? stagePlayer?.width ?? null;
     const stageScreenBounds = stagePlayer?.screenBounds ?? null;
     await page.screenshot({ path: path.join(evidenceDirectory, `v74-lv${stage.level}-390x844.png`) });
+    await page.screenshot({ path: path.join(evidenceDirectory, `v77-lv${stage.level}-390x844.png`) });
     if (stage.level === 5) {
       await page.screenshot({ path: path.join(evidenceDirectory, 'portrait-390x844-lv5-city.png') });
+    }
+    const stageDiag = latest.world?.streaming?.lv5CompositionDiagnostic || null;
+    if (stage.level === 5) {
+      console.log('[LV5_COMPOSITION_DIAGNOSTIC LV5]', JSON.stringify(stageDiag, null, 2));
+      writeFileSync(path.join(evidenceDirectory, 'lv5-composition-diagnostic-lv5.json'), `${JSON.stringify(stageDiag, null, 2)}\n`, 'utf8');
     }
     console.log(`[progression] LV${stage.level} captured: widthRatio=${stageWidthRatio}, screenBounds=${JSON.stringify(stageScreenBounds)}`);
     record.levels.push({
@@ -3481,6 +3487,7 @@ async function verifyFiveLevelProgression(cdp, page, joystick) {
       activePart: stage.part,
       playerWidthRatio: stageWidthRatio,
       playerScreenBounds: stageScreenBounds,
+      compositionDiagnostic: stageDiag,
     });
     return latest;
   };
@@ -3511,6 +3518,10 @@ async function verifyFiveLevelProgression(cdp, page, joystick) {
   const lv1WidthRatio = lv1Player?.widthRatio ?? lv1Player?.width ?? null;
   const lv1ScreenBounds = lv1Player?.screenBounds ?? null;
   await page.screenshot({ path: path.join(evidenceDirectory, 'v74-lv1-390x844.png') });
+  await page.screenshot({ path: path.join(evidenceDirectory, 'v77-lv1-390x844.png') });
+  const lv1Diag = latest.world?.streaming?.lv5CompositionDiagnostic || null;
+  console.log('[LV5_COMPOSITION_DIAGNOSTIC LV1]', JSON.stringify(lv1Diag, null, 2));
+  writeFileSync(path.join(evidenceDirectory, 'lv5-composition-diagnostic-lv1.json'), `${JSON.stringify(lv1Diag, null, 2)}\n`, 'utf8');
   console.log(`[progression] LV1 captured: widthRatio=${lv1WidthRatio}, screenBounds=${JSON.stringify(lv1ScreenBounds)}`);
   record.levels.push({
     level: 1,
@@ -3521,6 +3532,7 @@ async function verifyFiveLevelProgression(cdp, page, joystick) {
     activePart: 'CoreNode',
     playerWidthRatio: lv1WidthRatio,
     playerScreenBounds: lv1ScreenBounds,
+    compositionDiagnostic: lv1Diag,
   });
 
   let openingLastProgressAt = Date.now();

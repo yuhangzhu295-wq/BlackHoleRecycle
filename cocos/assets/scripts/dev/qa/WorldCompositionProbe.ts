@@ -237,6 +237,52 @@ export interface GoldenCityCompositionDiagnostics {
   readonly playableOpenArea: PlayableOpenAreaDiagnostics;
 }
 
+export interface LV5NearestNeighbourSpacing {
+  readonly propCount: number;
+  readonly meanMeters: number | null;
+  readonly medianMeters: number | null;
+  readonly minMeters: number | null;
+  readonly maxMeters: number | null;
+}
+
+export interface LV5ClusterDistribution {
+  readonly cameraLookAtGround: Readonly<{ x: number; z: number }>;
+  readonly screenDistribution: Readonly<{
+    upperHalfProps: number;
+    lowerHalfProps: number;
+    upperHalfRatio: number;
+  }>;
+  readonly zBandDistribution: Readonly<{
+    nearFieldProps: number;
+    midFieldProps: number;
+    farFieldProps: number;
+  }>;
+}
+
+export interface LV5CompositionDiagnostic {
+  readonly activeCellCount: number;
+  readonly cameraDistance: number;
+  readonly coveredWorldAreaMeters2: number;
+  readonly frustumGroundExtents: Readonly<{
+    zTop: number;
+    zBottom: number;
+    widthTop: number;
+    widthBottom: number;
+    depthMeters: number;
+  }>;
+  readonly counts: Readonly<Record<GoldenCityCategory, number>>;
+  readonly visibleEnvironmentCount: number;
+  readonly screenOccupancy: Readonly<{
+    occupiedSamples: number;
+    groundSamples: number;
+    totalSamples: number;
+    screenOccupancyRatio: number | null;
+    largeEmptyGroundRatio: number | null;
+  }>;
+  readonly nearestNeighbourSpacing: LV5NearestNeighbourSpacing;
+  readonly clusterDistribution: LV5ClusterDistribution;
+}
+
 /**
  * Authored slots carry only x/z. Projecting a bare point makes visibility
  * knife-edge at the frame border, so give each slot a small nominal box. This is
@@ -1159,6 +1205,180 @@ export class WorldCompositionProbe {
       objectCoveredSamples,
       openSamples,
       playableOpenAreaRatio: groundSamples > 0 ? openSamples / groundSamples : null,
+    };
+  }
+
+  public static getLV5CompositionDiagnostic(
+    world: InfiniteWorldManager | null,
+    camera: Camera | null,
+    playerNode: Node | null,
+  ): LV5CompositionDiagnostic | null {
+    if (!world || !camera || !camera.node?.isValid) return null;
+    const viewport = view.getViewportRect();
+    if (viewport.width <= 0 || viewport.height <= 0) return null;
+
+    const activeCells = typeof world.getAllActiveCellsRuntimeContent === 'function'
+      ? world.getAllActiveCellsRuntimeContent()
+      : (world.getCellRuntimeContent({ x: Math.round(world.currentCell.x), z: Math.round(world.currentCell.z) })
+        ? [world.getCellRuntimeContent({ x: Math.round(world.currentCell.x), z: Math.round(world.currentCell.z) })!]
+        : []);
+
+    const entries: GoldenCityEntry[] = [];
+    for (const cell of activeCells) {
+      this.collectEnvironmentEntries(cell, camera, viewport, entries);
+      this.collectVehicleEntries(cell, camera, viewport, entries);
+      this.collectCollectibleEntries(cell, camera, viewport, entries);
+    }
+
+    const counts = this.emptyCounts();
+    for (const entry of entries) {
+      if (entry.visible) counts[entry.category] += entry.logicalUnits;
+    }
+    const visibleEnvironmentCount = counts.BUILDING + counts.TREE + counts.POI + counts.ROAD + counts.VEHICLE;
+
+    const emptyGround = this.estimateEmptyGround(entries, viewport);
+    const screenOccupancy = {
+      occupiedSamples: emptyGround.occupiedSamples,
+      groundSamples: emptyGround.groundSamples,
+      totalSamples: emptyGround.totalSamples,
+      screenOccupancyRatio: emptyGround.groundSamples > 0 ? emptyGround.occupiedSamples / emptyGround.groundSamples : null,
+      largeEmptyGroundRatio: emptyGround.largeEmptyGroundRatio,
+    };
+
+    const propCategories = new Set<GoldenCityCategory>(['BUILDING', 'TREE', 'POI', 'VEHICLE']);
+    const visibleProps = entries.filter((e) => e.visible && propCategories.has(e.category) && e.worldBounds && e.screenBounds);
+
+    let spacing: LV5NearestNeighbourSpacing;
+    if (visibleProps.length < 2) {
+      spacing = {
+        propCount: visibleProps.length,
+        meanMeters: null,
+        medianMeters: null,
+        minMeters: null,
+        maxMeters: null,
+      };
+    } else {
+      const positions = visibleProps.map((p) => {
+        const b = p.worldBounds!;
+        return { x: (b.min.x + b.max.x) * 0.5, z: (b.min.z + b.max.z) * 0.5 };
+      });
+      const nnDists: number[] = [];
+      for (let i = 0; i < positions.length; i++) {
+        let minDist = Number.POSITIVE_INFINITY;
+        for (let j = 0; j < positions.length; j++) {
+          if (i === j) continue;
+          const dx = positions[i].x - positions[j].x;
+          const dz = positions[i].z - positions[j].z;
+          const dist = Math.hypot(dx, dz);
+          if (dist < minDist) minDist = dist;
+        }
+        if (Number.isFinite(minDist)) nnDists.push(minDist);
+      }
+      nnDists.sort((a, b) => a - b);
+      const sum = nnDists.reduce((acc, d) => acc + d, 0);
+      const mean = nnDists.length > 0 ? sum / nnDists.length : null;
+      const median = nnDists.length > 0 ? nnDists[Math.floor(nnDists.length * 0.5)] : null;
+      spacing = {
+        propCount: visibleProps.length,
+        meanMeters: mean,
+        medianMeters: median,
+        minMeters: nnDists[0] ?? null,
+        maxMeters: nnDists[nnDists.length - 1] ?? null,
+      };
+    }
+
+    const camPos = camera.node.worldPosition;
+    const forward = camera.node.forward;
+    let lookAtGroundX = camPos.x;
+    let lookAtGroundZ = camPos.z;
+    if (Math.abs(forward.y) > 0.0001) {
+      const t = -camPos.y / forward.y;
+      lookAtGroundX = camPos.x + t * forward.x;
+      lookAtGroundZ = camPos.z + t * forward.z;
+    }
+
+    const midScreenY = viewport.y + viewport.height * 0.5;
+    let upperHalfProps = 0;
+    let lowerHalfProps = 0;
+    for (const prop of visibleProps) {
+      const sb = prop.screenBounds!;
+      const propMidY = (sb.top + sb.bottom) * 0.5;
+      if (propMidY < midScreenY) upperHalfProps++;
+      else lowerHalfProps++;
+    }
+
+    const playerPos = playerNode?.worldPosition || Vec3.ZERO;
+    let nearFieldProps = 0;
+    let midFieldProps = 0;
+    let farFieldProps = 0;
+    for (const prop of visibleProps) {
+      const b = prop.worldBounds!;
+      const pz = (b.min.z + b.max.z) * 0.5;
+      const relZ = pz - playerPos.z;
+      if (relZ > -20) nearFieldProps++;
+      else if (relZ >= -60) midFieldProps++;
+      else farFieldProps++;
+    }
+
+    const clusterDistribution: LV5ClusterDistribution = {
+      cameraLookAtGround: { x: lookAtGroundX, z: lookAtGroundZ },
+      screenDistribution: {
+        upperHalfProps,
+        lowerHalfProps,
+        upperHalfRatio: visibleProps.length > 0 ? upperHalfProps / visibleProps.length : 0,
+      },
+      zBandDistribution: {
+        nearFieldProps,
+        midFieldProps,
+        farFieldProps,
+      },
+    };
+
+    const cameraDistance = playerNode
+      ? Vec3.distance(camera.node.worldPosition, playerNode.worldPosition)
+      : camera.node.worldPosition.length();
+
+    const pitchRad = camera.node.eulerAngles.x * Math.PI / 180;
+    const halfFovV = (camera.fov * 0.5) * Math.PI / 180;
+    const topAngle = pitchRad + halfFovV;
+    const bottomAngle = pitchRad - halfFovV;
+    const aspect = viewport.width / viewport.height;
+    const tanHalfH = Math.tan(halfFovV) * aspect;
+
+    let zTop = lookAtGroundZ;
+    let zBottom = lookAtGroundZ;
+    let widthTop = 0;
+    let widthBottom = 0;
+    let depthMeters = 0;
+    let coveredWorldAreaMeters2 = 0;
+
+    if (Math.sin(topAngle) < 0 && Math.sin(bottomAngle) < 0) {
+      zTop = camPos.z + camPos.y / Math.tan(topAngle);
+      zBottom = camPos.z + camPos.y / Math.tan(bottomAngle);
+      const distTop = Math.abs(camPos.y / Math.sin(topAngle));
+      const distBottom = Math.abs(camPos.y / Math.sin(bottomAngle));
+      widthTop = 2 * distTop * tanHalfH;
+      widthBottom = 2 * distBottom * tanHalfH;
+      depthMeters = Math.abs(zBottom - zTop);
+      coveredWorldAreaMeters2 = ((widthTop + widthBottom) * 0.5) * depthMeters;
+    }
+
+    return {
+      activeCellCount: world.activeCells.size,
+      cameraDistance,
+      coveredWorldAreaMeters2,
+      frustumGroundExtents: {
+        zTop,
+        zBottom,
+        widthTop,
+        widthBottom,
+        depthMeters,
+      },
+      counts,
+      visibleEnvironmentCount,
+      screenOccupancy,
+      nearestNeighbourSpacing: spacing,
+      clusterDistribution,
     };
   }
 }
