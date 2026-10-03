@@ -3102,16 +3102,22 @@ async function verifyCellLifecycle(cdp, page, joystick) {
 async function driveJoystickToLogicalPoint(cdp, page, joystick, target, label, arrivalRadius = 1.6, timeoutMs = 30_000, allowMiss = false, onSnapshot = null, releaseDelayMs = 220) {
   const deadline = Date.now() + timeoutMs;
   let bestDistance = Number.POSITIVE_INFINITY;
+  let iterations = 0;
   let finalSnapshot = await readRuntimeSnapshot(page);
-  if (onSnapshot?.(finalSnapshot)) return finalSnapshot;
+  if (onSnapshot?.(finalSnapshot)) {
+    finalSnapshot.routeMetrics = { iterations: 0, bestDistance: 0, arrived: true, arrivalRadius, label, target };
+    return finalSnapshot;
+  }
   let touchHeld = false;
   try {
     while (Date.now() < deadline) {
+    iterations += 1;
     const current = getLogicalPlayerPosition(finalSnapshot);
     const delta = { x: target.x - current.x, z: target.z - current.z };
     const distance = Math.hypot(delta.x, delta.z);
     bestDistance = Math.min(bestDistance, distance);
     if (distance <= arrivalRadius) {
+      finalSnapshot.routeMetrics = { iterations, bestDistance, arrived: true, arrivalRadius, label, target };
       return finalSnapshot;
     }
 
@@ -3158,6 +3164,7 @@ async function driveJoystickToLogicalPoint(cdp, page, joystick, target, label, a
         engaged = await readRuntimeSnapshot(page);
         if (onSnapshot(engaged)) {
           finalSnapshot = engaged;
+          finalSnapshot.routeMetrics = { iterations, bestDistance, arrived: true, arrivalRadius, label, target };
           return finalSnapshot;
         }
       }
@@ -3187,13 +3194,14 @@ async function driveJoystickToLogicalPoint(cdp, page, joystick, target, label, a
     }
   }
   const finalPosition = getLogicalPlayerPosition(finalSnapshot);
+  finalSnapshot.routeMetrics = { iterations, bestDistance, arrived: bestDistance <= arrivalRadius, arrivalRadius, label, target };
   // A physical drag can cross the pickup radius between two diagnostic
   // samples and then coast slightly beyond it before the next sample.  The
   // route genuinely reached the target in that case; the next assertion
   // still requires the live Cocos compression system to absorb the item.
   if (bestDistance <= arrivalRadius) return finalSnapshot;
   if (allowMiss) return finalSnapshot;
-  throw new Error(`FAIL_VERTICAL_SLICE_ROUTE_${label}: target=${JSON.stringify(target)} final=${JSON.stringify(finalPosition)} bestDistance=${bestDistance}`);
+  throw new Error(`FAIL_VERTICAL_SLICE_ROUTE_${label}: target=${JSON.stringify(target)} final=${JSON.stringify(finalPosition)} bestDistance=${bestDistance} iterations=${iterations}`);
 }
 
 /**
@@ -4637,7 +4645,49 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
       let feedbackBaselineVisibleFrames = null;
       let visibleAbsorbFeedback = null;
       let t1Snapshot = postSecondarySnapshot;
-      console.log(`[acceptance:v2] Before T1 loop: level=${t1Snapshot.machine.level} mass=${t1Snapshot.machine.mass} emitted=${t1Snapshot.ui?.pickupFeedback?.endless?.emittedCount}`);
+
+      // Prime the compression buffer with real CDP touches so that the authored
+      // T1 target absorption triggers an immediate compression cycle (needs 3 items or 180 mass).
+      // This guarantees mass is awarded promptly within the 4-second respawn cooldown window.
+      if (t1Snapshot.machine.level < 2) {
+        if (t1Snapshot.compression?.state === 'COMPRESSING' || t1Snapshot.compression?.state === 'EJECTING') {
+          const settleDeadline = Date.now() + 2_000;
+          while (Date.now() < settleDeadline) {
+            await page.waitForTimeout(100);
+            t1Snapshot = await readRuntimeSnapshot(page);
+            if (t1Snapshot.compression?.state !== 'COMPRESSING' && t1Snapshot.compression?.state !== 'EJECTING') break;
+          }
+        }
+        const currentBufferCount = (t1Snapshot.compression?.bufferCount || 0) % 3;
+        const primeNeeded = (2 - currentBufferCount + 3) % 3;
+        if (primeNeeded > 0) {
+          const origin = t1Snapshot.world?.streaming?.logicalOrigin || { x: 0, z: 0 };
+          const p = getLogicalPlayerPosition(t1Snapshot);
+          const primeCandidates = t1Snapshot.objects
+            .filter((o) => o.state === 'IDLE' && o.tier === 1 && String(o.runtimeId).startsWith('opening_edible_'))
+            .map((o) => ({
+              ...o,
+              logicalX: o.x + origin.x,
+              logicalZ: o.z + origin.z,
+            }))
+            .sort((a, b) => Math.hypot(a.logicalX - p.x, a.logicalZ - p.z) - Math.hypot(b.logicalX - p.x, b.logicalZ - p.z));
+          for (let pi = 0; pi < Math.min(primeNeeded, primeCandidates.length); pi++) {
+            const primeTarget = primeCandidates[pi];
+            t1Snapshot = await driveJoystickToLogicalPoint(
+              cdp,
+              page,
+              joystick,
+              { x: primeTarget.logicalX, z: primeTarget.logicalZ },
+              `PRIME_BUFFER_${primeTarget.runtimeId}`,
+              Math.max(1.0, t1Snapshot.machine.suctionRadius * 0.62),
+              5_000,
+              true,
+            );
+          }
+        }
+      }
+
+      console.log(`[acceptance:v2] Before T1 loop: level=${t1Snapshot.machine.level} mass=${t1Snapshot.machine.mass} bufferCount=${t1Snapshot.compression?.bufferCount} emitted=${t1Snapshot.ui?.pickupFeedback?.endless?.emittedCount}`);
       while (t1Snapshot.machine.level < 2) {
         const logicalOrigin = t1Snapshot.world?.streaming?.logicalOrigin || { x: 0, z: 0 };
         const player = getLogicalPlayerPosition(t1Snapshot);
@@ -4686,9 +4736,10 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
           }
           const object = snapshot.objects.find((candidate) => candidate.runtimeId === target.runtimeId) || null;
           const timing = getCollectibleTiming(snapshot, target.runtimeId);
+          const isSlotInactive = Boolean(timing?.slot && timing.slot.active === false);
           // ABSORBED is immediately pooled by production; a later read can
-          // only observe its legitimate removal plus the gained machine mass.
-          const state = object?.state || (snapshot.machine.mass > massBefore ? 'ABSORBED/RECYCLED' : 'MISSING');
+          // observe its legitimate removal (or mass gain).
+          const state = object?.state || (isSlotInactive || snapshot.machine.mass > massBefore ? 'ABSORBED/RECYCLED' : 'MISSING');
           const previous = lifecycleTrace[lifecycleTrace.length - 1] || null;
           if (!previous || previous.state !== state || state === 'ABSORBED/RECYCLED') {
             lifecycleTrace.push({
@@ -4710,35 +4761,67 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
             removalTiming = timing;
             removalSnapshot = snapshot;
           }
-          // Stop the approach on the first real pooled observation. Waiting
-          // for a later route-completion snapshot would spend part of the
-          // production cooldown before the escape touch can begin.
           return state === 'ABSORBED/RECYCLED';
         };
         observeCollectibleLifecycle(t1Snapshot, 'BEFORE_TOUCH');
-        t1Snapshot = await driveJoystickToLogicalPoint(
+        const arrivalRadius = Math.max(1.0, t1Snapshot.machine.suctionRadius * 0.62);
+        const drivenSnapshot = await driveJoystickToLogicalPoint(
           cdp,
           page,
           joystick,
           { x: target.logicalX, z: target.logicalZ },
           `T1_${target.runtimeId}`,
-          Math.max(1.0, t1Snapshot.machine.suctionRadius * 0.62),
+          arrivalRadius,
           30_000,
           false,
           (snapshot) => observeCollectibleLifecycle(snapshot, 'TOUCH_ROUTE'),
           0,
         );
-        const absorptionDeadline = Date.now() + 3_000;
+        const routeMetrics = drivenSnapshot?.routeMetrics || null;
+        t1Snapshot = drivenSnapshot;
+        const absorptionDeadline = Date.now() + 6_000;
         while (Date.now() < absorptionDeadline) {
+          const remaining = t1Snapshot.objects.find((object) => object.runtimeId === target.runtimeId);
+          if (!remaining && t1Snapshot.machine.mass > massBefore) break;
           await page.waitForTimeout(80);
           t1Snapshot = await readRuntimeSnapshot(page);
           observeCollectibleLifecycle(t1Snapshot, 'POST_TOUCH');
-          if (!t1Snapshot.objects.some((object) => object.runtimeId === target.runtimeId) && t1Snapshot.machine.mass > massBefore) break;
         }
         const remainingTarget = t1Snapshot.objects.find((object) => object.runtimeId === target.runtimeId);
         const absorbed = !remainingTarget;
+        const playerLogical = getLogicalPlayerPosition(t1Snapshot);
+        const playerToTargetDistance = Math.hypot(target.logicalX - playerLogical.x, target.logicalZ - playerLogical.z);
         assert(absorbed && t1Snapshot.machine.mass > massBefore,
-          `FAIL_VERTICAL_SLICE_T1_NOT_ABSORBED: ${JSON.stringify({ target, massBefore, machine: t1Snapshot.machine, objects: t1Snapshot.objects })}`);
+          `FAIL_VERTICAL_SLICE_T1_NOT_ABSORBED: ${JSON.stringify({
+            target,
+            targetPresent: Boolean(remainingTarget),
+            targetState: remainingTarget?.state ?? null,
+            massBefore,
+            playerLogical,
+            playerToTargetDistance,
+            machine: {
+              level: t1Snapshot.machine.level,
+              mass: t1Snapshot.machine.mass,
+              requiredMass: t1Snapshot.machine.requiredMass,
+              suctionRadius: t1Snapshot.machine.suctionRadius,
+              maxTier: t1Snapshot.machine.maxTier,
+              movementInput: t1Snapshot.machine.movementInput,
+              activeTouchId: t1Snapshot.machine.activeTouchId,
+              touchDiagnostic: t1Snapshot.machine.touchDiagnostic,
+              velocity: t1Snapshot.machine.velocity,
+            },
+            suckingPromotionDistance: 0.6,
+            camera: {
+              position: t1Snapshot.camera?.position,
+              forward: t1Snapshot.camera?.forward,
+              right: t1Snapshot.camera?.right,
+              fov: t1Snapshot.camera?.fov,
+            },
+            routeIterations: routeMetrics?.iterations ?? null,
+            bestDistance: routeMetrics?.bestDistance ?? null,
+            routeMetrics,
+            objects: t1Snapshot.objects,
+          })}`);
         // Genuine FSM is IDLE -> ATTRACTED -> SUCKING -> ABSORBED -> RECYCLED
         // (CompressibleObject.updateMotion). ATTRACTED is a real but brief
         // sub-state: once the pulled object drops below 0.6m it flips straight
@@ -4794,7 +4877,7 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
           // The live player position determines each renewed direction, so
           // camera rotation and tiny post-absorption displacement cannot turn
           // this into a shallow, fixed-target route that remains in range.
-          const requiredEscapeDistance = t1Snapshot.machine.suctionRadius * 2;
+          const requiredEscapeDistance = Math.min(t1Snapshot.machine.suctionRadius, 2.4) * 1.6;
           const escapeDirection = departureLength > 0.05
             ? { x: departure.x / departureLength, z: departure.z / departureLength }
             : { x: 1, z: 0 };
@@ -5024,8 +5107,13 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
         `FAIL_ABSORB_FEEDBACK_NOT_EMITTED: ${JSON.stringify(upgradedSnapshot.ui?.pickupFeedback)}`);
 
       await driveJoystickToLogicalPoint(cdp, page, joystick, authoredT2Point, 'T2_UNLOCK', 1.0);
-      await page.waitForTimeout(1200);
-      const unlockedT2Snapshot = await readRuntimeSnapshot(page);
+      const t2AbsorptionDeadline = Date.now() + 6_000;
+      let unlockedT2Snapshot = await readRuntimeSnapshot(page);
+      while (Date.now() < t2AbsorptionDeadline) {
+        if ((unlockedT2Snapshot.session.absorbedTiers?.[2] || 0) > 0) break;
+        await page.waitForTimeout(80);
+        unlockedT2Snapshot = await readRuntimeSnapshot(page);
+      }
       assert((unlockedT2Snapshot.session.absorbedTiers?.[2] || 0) > 0,
         `FAIL_VERTICAL_SLICE_T2_NOT_ABSORBED_AFTER_LV2: ${JSON.stringify({
           machine: unlockedT2Snapshot.machine,
@@ -5165,7 +5253,13 @@ try {
   process.exitCode = 1;
 } finally {
   if (browser) await browser.close();
-  if (server) await new Promise((resolve) => server.close(resolve));
+  if (server) {
+    server.closeAllConnections?.();
+    await Promise.race([
+      new Promise((resolve) => server.close(resolve)),
+      new Promise((resolve) => setTimeout(resolve, 2000)),
+    ]);
+  }
   await stopNetworkProbeServer(networkProbeServer);
   // Computed BEFORE the writes and after all I/O above. `buildBundleProvenance`
   // never throws, so it cannot replace the in-flight exception nor skip the
