@@ -1434,7 +1434,7 @@ exports.methods = {
     caption(settlement, 'RegionValue', '1', 32, 164, -97, 180, 48, new Color(62, 154, 95, 255));
     const arenaLeaderboard = createRoundedPanel('ArenaLeaderboardPanel', settlement, 570, 530, new Color(242, 237, 255, 255), 26);
     place(arenaLeaderboard, 0, 100, 570, 530);
-    caption(settlement, 'ArenaResult', '第 - / 8 名 · 0 kg', 24, 0, 322, 510, 40, new Color(77, 54, 109, 255));
+    caption(settlement, 'ArenaResult', '第 - / 8 名 · 0 kg', 24, 0, 308, 510, 36, new Color(77, 54, 109, 255));
     const arenaRankColors = [
       new Color(255, 207, 66, 255),
       new Color(183, 210, 240, 255),
@@ -1471,11 +1471,11 @@ exports.methods = {
       caption(settlement, `ArenaStat${stat.key}Caption`, stat.caption, 17, stat.x, -221, 150, 30, new Color(83, 63, 108, 255));
       caption(settlement, `ArenaStat${stat.key}Value`, stat.value, 25, stat.x, -259, 152, 40, stat.color);
     }
-    const arenaReward = createRoundedPanel('ArenaRewardPanel', settlement, 522, 94, new Color(255, 244, 202, 255), 24);
-    place(arenaReward, 0, -366, 522, 94);
-    caption(settlement, 'ArenaRewardCaption', '本局获得金币', 22, -150, -348, 244, 38, new Color(120, 80, 31, 255));
-    caption(settlement, 'ArenaRewardValue', '+0', 34, 164, -348, 180, 46, new Color(215, 139, 20, 255));
-    caption(settlement, 'ArenaRewardBreakdown', '质量 0 · 收集 0 · 淘汰 0 · 生存 0 · 名次 0', 15, 0, -385, 480, 28, new Color(137, 104, 58, 255));
+    const arenaReward = createRoundedPanel('ArenaRewardPanel', settlement, 522, 110, new Color(255, 244, 202, 255), 24);
+    place(arenaReward, 0, -365, 522, 110);
+    caption(settlement, 'ArenaRewardCaption', '本局获得金币', 22, -150, -346, 244, 38, new Color(120, 80, 31, 255));
+    caption(settlement, 'ArenaRewardValue', '+0', 34, 164, -346, 180, 46, new Color(215, 139, 20, 255));
+    caption(settlement, 'ArenaRewardBreakdown', '质量 0 · 收集 0 · 淘汰 0 · 生存 0 · 名次 0', 14, 0, -380, 480, 24, new Color(137, 104, 58, 255));
     arenaLeaderboard.active = false;
     settlement.getChildByName('ArenaResult').active = false;
     for (let rank = 1; rank <= 5; rank += 1) {

@@ -41898,7 +41898,7 @@
       "a": 255
     },
     "_spriteFrame": {
-      "__uuid__": "4307ce08-9109-4d83-b83c-5a77fcc8e432@f9941",
+      "__uuid__": "0e3cf648-684c-45c4-a5c0-5c99c6f5f730@f9941",
       "__expectedType__": "cc.SpriteFrame"
     },
     "_type": 1,
@@ -41938,7 +41938,7 @@
     "_lpos": {
       "__type__": "cc.Vec3",
       "x": 0,
-      "y": 322,
+      "y": 308,
       "z": 0
     },
     "_lrot": {
@@ -41977,7 +41977,7 @@
     "_contentSize": {
       "__type__": "cc.Size",
       "width": 510,
-      "height": 40
+      "height": 36
     },
     "_anchorPoint": {
       "__type__": "cc.Vec2",
@@ -46873,7 +46873,7 @@
     "_lpos": {
       "__type__": "cc.Vec3",
       "x": 0,
-      "y": -366,
+      "y": -365,
       "z": 0
     },
     "_lrot": {
@@ -46912,7 +46912,7 @@
     "_contentSize": {
       "__type__": "cc.Size",
       "width": 522,
-      "height": 94
+      "height": 110
     },
     "_anchorPoint": {
       "__type__": "cc.Vec2",
@@ -46942,7 +46942,7 @@
       "a": 255
     },
     "_spriteFrame": {
-      "__uuid__": "4307ce08-9109-4d83-b83c-5a77fcc8e432@f9941",
+      "__uuid__": "0e3cf648-684c-45c4-a5c0-5c99c6f5f730@f9941",
       "__expectedType__": "cc.SpriteFrame"
     },
     "_type": 1,
@@ -46982,7 +46982,7 @@
     "_lpos": {
       "__type__": "cc.Vec3",
       "x": -150,
-      "y": -348,
+      "y": -346,
       "z": 0
     },
     "_lrot": {
@@ -47114,7 +47114,7 @@
     "_lpos": {
       "__type__": "cc.Vec3",
       "x": 164,
-      "y": -348,
+      "y": -346,
       "z": 0
     },
     "_lrot": {
@@ -47246,7 +47246,7 @@
     "_lpos": {
       "__type__": "cc.Vec3",
       "x": 0,
-      "y": -385,
+      "y": -372,
       "z": 0
     },
     "_lrot": {
@@ -47285,7 +47285,7 @@
     "_contentSize": {
       "__type__": "cc.Size",
       "width": 480,
-      "height": 28
+      "height": 24
     },
     "_anchorPoint": {
       "__type__": "cc.Vec2",
@@ -47318,9 +47318,9 @@
     "_horizontalAlign": 1,
     "_verticalAlign": 1,
     "_actualFontSize": 0,
-    "_fontSize": 15,
+    "_fontSize": 14,
     "_fontFamily": "Arial",
-    "_lineHeight": 27,
+    "_lineHeight": 22,
     "_overflow": 0,
     "_enableWrapText": true,
     "_font": null,
