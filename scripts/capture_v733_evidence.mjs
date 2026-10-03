@@ -149,6 +149,7 @@ s = await snap(page);
 await tap(cdp, ...Object.values(pt(rect, s.ui.runtimeHUD.pauseButton, 'PB')));
 await waitState(page, () => window.__BHR_QA__.snapshot().gameState === 'PAUSED', 6000, 'PA');
 await sleep(800);
+await capturePage('06-pause');
 
 // 07-endless-settlement
 s = await snap(page);
@@ -171,10 +172,12 @@ s = await snap(page);
 await tap(cdp, ...Object.values(pt(rect, s.ui.modeArena, 'MA')));
 await waitState(page, () => window.__BHR_QA__.snapshot().gameState === 'MODE_READY', 8000, 'MR');
 await sleep(800);
+await capturePage('08-arena-ready');
 s = await snap(page);
 await tap(cdp, ...Object.values(pt(rect, s.ui.arenaReady.start, 'AS')));
 await waitState(page, () => ['ARENA', 'NETWORK_ARENA'].includes(window.__BHR_QA__.snapshot().gameState), 25000, 'AR');
 await sleep(3200);
+await capturePage('09-arena-gameplay');
 
 // Pause and settle arena
 s = await snap(page);
