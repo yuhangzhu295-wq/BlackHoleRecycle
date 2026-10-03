@@ -684,6 +684,8 @@ class InfiniteWorldCell {
     // and (9, 7) outside both the junction and the arms. Clamp the vertices to
     // 12, keeping 2m of margin. Anchors are deliberately not used here: they
     // are spawn points named per vehicle kind, not road geometry.
+    const centerX = this.coord.x * this.cellSize - logicalOrigin.x;
+    const centerZ = this.coord.z * this.cellSize - logicalOrigin.z;
     const TRAFFIC_ROUTE_RADIUS = 12;
     const roadRouteNames = ['RoadWest', 'RoadNorth', 'RoadEast', 'RoadSouth'];
     const roadRoute = roadRouteNames
@@ -693,10 +695,12 @@ class InfiniteWorldCell {
         const position = node.worldPosition;
         const x = position.x - logicalOrigin.x;
         const z = position.z - logicalOrigin.z;
-        const radius = Math.hypot(x, z);
+        const dx = x - centerX;
+        const dz = z - centerZ;
+        const radius = Math.hypot(dx, dz);
         if (radius <= TRAFFIC_ROUTE_RADIUS) return { x, z };
         const inset = TRAFFIC_ROUTE_RADIUS / radius;
-        return { x: x * inset, z: z * inset };
+        return { x: centerX + dx * inset, z: centerZ + dz * inset };
       });
     if (roadRoute.length < 4) return;
     for (const anchor of routesRoot.children.filter((child) => child.name.startsWith('VehicleAnchor_'))) {
