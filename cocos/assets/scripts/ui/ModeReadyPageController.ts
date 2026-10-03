@@ -51,8 +51,8 @@ export const MODE_READY_LAYOUT = {
   MachineValue:   [260,   40,  125,   42],
   // V7: the arena rule list sits on a UIPanel (reference 07); Endless keeps the
   // bare two-line copy from reference 06.
-  IntroPanel:     [620,  196,    0, -116],
-  IntroText:      [600,  190,    0, -116],
+  IntroPanel:     [580,  180,    0, -106],
+  IntroText:      [500,  150,    0, -106],
   BtnStart:       [480,  150,    0, -290],
   BtnStartLabel:  [440,   60,    0, -290],
 } as const;
@@ -280,6 +280,15 @@ export class ModeReadyPageController extends Component {
     if (label) label.horizontalAlign = align;
   }
 
+  private configureIntroText(align: number, fontSize: number, lineHeight: number): void {
+    const label = this.findNode('IntroText')?.getComponent(Label);
+    if (!label) return;
+    label.horizontalAlign = align;
+    label.overflow = Label.Overflow.CLAMP;
+    label.fontSize = fontSize;
+    label.lineHeight = lineHeight;
+  }
+
   /**
    * Fill one stat row. When the UIHudBar prefab is mounted its own Caption/Value
    * labels carry the text and the page-level pair is hidden — otherwise the two
@@ -329,6 +338,7 @@ export class ModeReadyPageController extends Component {
     if (this.mode === ModeReadyKind.ENDLESS) {
       this.setLabel('HeaderTitle', '无尽探索');
       this.setLabelAlign('IntroText', Label.HorizontalAlign.CENTER);
+      this.configureIntroText(Label.HorizontalAlign.CENTER, 20, 32);
       this.applyStatRow(
         STAT_PANEL_TOP, 'StatCaption', 'StatValue',
         '历史最高纪录',
@@ -342,6 +352,7 @@ export class ModeReadyPageController extends Component {
       // Reference 07 lists the rules left-aligned inside the panel; reference 06
       // centres the two-line copy.
       this.setLabelAlign('IntroText', Label.HorizontalAlign.LEFT);
+      this.configureIntroText(Label.HorizontalAlign.LEFT, 20, 28);
       this.applyStatRow(STAT_PANEL_TOP, 'StatCaption', 'StatValue', '对局规则', '8 人 · 3:00');
       // V4 design-lock.md §07: the five real match rules, in this order.
       this.setLabel('IntroText', '• 8 人\n• 3:00\n• 吞噬成长\n• 淘汰弱小玩家\n• 躲避更大玩家');

@@ -44,6 +44,7 @@ export class ArenaHUDController extends Component {
     this.tierUpgrade.enable();
     this.tierLock ||= new TierLockPresenter(this.node, 'TimerValue');
     this.bind('BtnPause', () => eventBus.emit('UI_TRIGGER_PAUSE'));
+    this.applyStatusStyle();
   }
 
   onDisable(): void {
@@ -242,6 +243,19 @@ export class ArenaHUDController extends Component {
       const arrow = this.node.getChildByName(`BotArrow${side}`);
       if (arrow) arrow.active = arrows[side];
     }
+  }
+
+  private applyStatusStyle(): void {
+    const statusNode = this.node.getChildByName('StatusValue');
+    if (!statusNode) return;
+    const label = statusNode.getComponent(Label);
+    if (label) {
+      label.color = new Color(255, 255, 255, 255);
+      label.isBold = true;
+    }
+    const outline = statusNode.getComponent(LabelOutline) || statusNode.addComponent(LabelOutline);
+    outline.width = 3;
+    outline.color = new Color(10, 16, 28, 255);
   }
 
   private bind(name: string, handler: () => void): void {

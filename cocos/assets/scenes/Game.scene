@@ -33318,6 +33318,14 @@
       "__id__": 868
     },
     "_enabled": true,
+    "_color": {
+      "__type__": "cc.Color",
+      "r": 10,
+      "g": 16,
+      "b": 28,
+      "a": 255
+    },
+    "_width": 3,
     "__prefab": null,
     "_id": "79dTMp5gFACL3P80ZCEKi4"
   },
