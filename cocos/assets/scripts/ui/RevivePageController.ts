@@ -7,7 +7,7 @@
  *
  * No QA mutations, no fake ads, no forced grants.
  */
-import { _decorator, Button, Component, Label } from 'cc';
+import { _decorator, Button, Color, Component, Label, Layers, Node, Sprite, UITransform } from 'cc';
 import { eventBus } from '../core/EventBus';
 import { ArenaMatchSnapshot } from '../gameplay/ArenaMatchManager';
 
@@ -25,6 +25,7 @@ export class RevivePageController extends Component {
   onEnable(): void {
     this.bind('BtnRevive', () => eventBus.emit('ARENA_REVIVE_REQUESTED'));
     this.bind('BtnGiveUp', () => eventBus.emit('ARENA_GIVE_UP_REQUESTED'));
+    this.applyCountdownStyle();
     this.countdownRemaining = REVIVE_COUNTDOWN_SECONDS;
     this.countdownActive = true;
     this.refreshCountdownLabel();
@@ -54,7 +55,62 @@ export class RevivePageController extends Component {
   }
 
   private refreshCountdownLabel(): void {
-    this.setLabel('CountdownValue', `${Math.ceil(this.countdownRemaining)}`);
+    this.setLabel('CountdownValue', `${Math.ceil(this.countdownRemaining)}s`);
+  }
+
+  private applyCountdownStyle(): void {
+    const panel = this.node.getChildByName('CountdownPanel');
+    if (panel) {
+      panel.setPosition(0, -46, 0);
+      const sprite = panel.getComponent(Sprite);
+      if (sprite) sprite.color = new Color(255, 238, 238, 255);
+      const transform = panel.getComponent(UITransform);
+      if (transform) transform.setContentSize(260, 116);
+    }
+
+    let labelNode = this.node.getChildByName('CountdownLabel');
+    if (!labelNode) {
+      labelNode = new Node('CountdownLabel');
+      labelNode.layer = Layers.Enum.UI_2D;
+      this.node.addChild(labelNode);
+      const transform = labelNode.addComponent(UITransform);
+      transform.setContentSize(120, 26);
+      labelNode.setPosition(-40, -32, 0);
+      const label = labelNode.addComponent(Label);
+      label.string = '自动放弃倒计时';
+      label.fontSize = 16;
+      label.lineHeight = 22;
+      label.isBold = true;
+      label.horizontalAlign = Label.HorizontalAlign.CENTER;
+      label.verticalAlign = Label.VerticalAlign.CENTER;
+      label.color = new Color(210, 48, 48, 255);
+    } else {
+      labelNode.setPosition(-40, -32, 0);
+      const transform = labelNode.getComponent(UITransform);
+      if (transform) transform.setContentSize(120, 26);
+      const label = labelNode.getComponent(Label);
+      if (label) {
+        label.string = '自动放弃倒计时';
+        label.fontSize = 16;
+        label.lineHeight = 22;
+        label.isBold = true;
+        label.color = new Color(210, 48, 48, 255);
+      }
+    }
+
+    const valueNode = this.node.getChildByName('CountdownValue');
+    if (valueNode) {
+      valueNode.setPosition(75, -32, 0);
+      const transform = valueNode.getComponent(UITransform);
+      if (transform) transform.setContentSize(50, 30);
+      const label = valueNode.getComponent(Label);
+      if (label) {
+        label.fontSize = 26;
+        label.lineHeight = 30;
+        label.isBold = true;
+        label.color = new Color(235, 35, 35, 255);
+      }
+    }
   }
 
   private bind(name: string, handler: () => void): void {

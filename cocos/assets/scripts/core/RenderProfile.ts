@@ -149,6 +149,10 @@ export const OPENING_CELL_COMPOSITION = {
     // About 3x12 px at this camera distance: not a readable path.
     'ParkPathStonesWest',
     'ParkPathStonesEast',
+    // 4.0m x 1.5m hedge authored at (0, 0, 10.0) directly on the north road
+    // arm in the player's near foreground. Hedge is not a required semantic;
+    // suppressing it clears the road surface and camera sightline.
+    'ParkHedgeNorth',
   ],
   /**
   * Nodes moved inside the cell.

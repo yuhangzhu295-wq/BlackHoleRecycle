@@ -1372,9 +1372,10 @@ exports.methods = {
     place(reviveRibbon, 0, 264, 440, 102);
     caption(revive, 'Title', '复活继续', 52, 0, 264, 420, 74, new Color(255, 230, 102, 255));
     caption(revive, 'LossValue', '黑洞被吞噬 · 掉落了部分质量', 23, 0, 36, 510, 46, new Color(74, 56, 99, 255));
-    const countdownPanel = createRoundedPanel('CountdownPanel', revive, 218, 96, new Color(238, 231, 255, 255), 24);
-    place(countdownPanel, 0, -46, 218, 96);
-    caption(revive, 'CountdownValue', '2.5s', 40, 0, -46, 198, 72, new Color(105, 70, 190, 255));
+    const countdownPanel = createRoundedPanel('CountdownPanel', revive, 260, 116, new Color(255, 238, 238, 255), 24);
+    place(countdownPanel, 0, -46, 260, 116);
+    caption(revive, 'CountdownLabel', '自动放弃倒计时', 16, -40, -32, 120, 26, new Color(210, 48, 48, 255));
+    caption(revive, 'CountdownValue', '5s', 26, 75, -32, 50, 30, new Color(235, 35, 35, 255));
     caption(revive, 'RankValue', '当前第 - / 8', 23, 0, -128, 420, 42, new Color(74, 56, 99, 255));
     await createPrimaryActionButton('BtnRevive', revive, '立即复活', 0, -250, 392, 98, 32);
     createGraphicButton('BtnGiveUp', revive, '结束本局', 0, -378, 340, 78, new Color(105, 70, 190, 255), new Color(255, 255, 255, 255), 26);
