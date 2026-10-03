@@ -161,9 +161,17 @@ export const OPENING_CELL_COMPOSITION = {
    * tall white slab taller than the 2.3 m buildings, still standing on the road.
    * A 1.6x scale on the kerb beside the junction gives a readable post at a
    * believable height without competing with the architecture.
+   *
+   * POI_ParkFountain was authored at (0, 0, 7) directly between the player
+   * (0, 0) and the camera (z = 18.5). At 4m across and distance 22.4m, it
+   * projected as a massive four-petal shape dominating the lower frame and
+   * overlapping the joystick zone. Relocating it to (0, -11) moves it to the
+   * north park area in front of the player, keeping the required fountain
+   * semantic without obstructing the camera sightline.
    */
   relocate: [
     { name: 'POI_CentralSquare', x: -9, z: -9, scale: 1.6 },
+    { name: 'POI_ParkFountain', x: 0, z: -11, scale: 0.8 },
   ],
 } as const;
 
