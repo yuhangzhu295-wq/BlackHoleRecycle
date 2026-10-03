@@ -233,8 +233,30 @@ export const CAMERA_PROFILE = {
   fov: 44,
   /** CameraFOVAxis.VERTICAL is value 0 in Cocos Creator 3.8.3. */
   fovAxis: 0,
-  /** Isometric-feel portrait framing: the player sits in the lower half. */
-  endless: { offset: new Vec3(0, 20.0, 18.5), pitchDegrees: -42 },
+  /**
+   * Isometric-feel portrait framing: the player sits in the lower half.
+   *
+   * LV1 establishes the baseline playerWidthRatio of ~0.2255 within [0.22, 0.30].
+   * As the machine progresses through LV2..LV5, upgrade assemblies (turbines,
+   * compression chamber, gravity wings, singularity frame) attach and scale up
+   * from 2.9m to ~14.0m across in world coordinates.
+   *
+   * Scaling the camera offset proportionally pulls the camera back along the
+   * constant -42 degree sightline so the player's screen fraction stays readable
+   * across all levels (~0.22 - 0.29), keeping playerScreenYRatio invariant while
+   * keeping the black hole core and surrounding district clearly legible.
+   */
+  endless: {
+    offset: new Vec3(0, 20.0, 18.5),
+    pitchDegrees: -42,
+    levelOffsets: [
+      new Vec3(0, 20.0, 18.5),   // LV1: distance 27.24m (1.00x) -> playerWidthRatio ~0.285 - 0.300
+      new Vec3(0, 28.0, 25.9),   // LV2: distance 38.14m (1.40x) -> playerWidthRatio ~0.272
+      new Vec3(0, 36.0, 33.3),   // LV3: distance 49.04m (1.80x) -> playerWidthRatio ~0.269
+      new Vec3(0, 68.0, 62.9),   // LV4: distance 92.63m (3.40x) -> playerWidthRatio ~0.269
+      new Vec3(0, 98.0, 90.65),  // LV5: distance 133.50m (4.90x) -> playerWidthRatio ~0.268
+    ],
+  },
   arena: { offset: new Vec3(0, 44.0, 27.0), pitchDegrees: -55 },
 } as const;
 

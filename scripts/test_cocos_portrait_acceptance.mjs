@@ -3443,17 +3443,30 @@ async function verifyFiveLevelProgression(cdp, page, joystick) {
         }, {}),
         absorbed,
       }));
+    await waitForCameraSettle(page);
+    latest = await readRuntimeSnapshot(page);
     const activeParts = latest.machine.visualMaterials
       .filter((renderer) => renderer.active && String(renderer.path).includes(`MachineVisual_LV${stage.level}/`));
     assert(activeParts.some((renderer) => String(renderer.path).includes(stage.part)
       && renderer.slots?.every((slot) => slot.valid && slot.effect)),
     `FAIL_FULL_PROGRESSION_VISUAL_LV${stage.level}: ${JSON.stringify(activeParts)}`);
+    const stagePlayer = latest.world?.streaming?.goldenCityComposition?.player
+      || latest.camera?.playerViewport;
+    const stageWidthRatio = stagePlayer?.widthRatio ?? stagePlayer?.width ?? null;
+    const stageScreenBounds = stagePlayer?.screenBounds ?? null;
+    await page.screenshot({ path: path.join(evidenceDirectory, `v74-lv${stage.level}-390x844.png`) });
+    if (stage.level === 5) {
+      await page.screenshot({ path: path.join(evidenceDirectory, 'portrait-390x844-lv5-city.png') });
+    }
+    console.log(`[progression] LV${stage.level} captured: widthRatio=${stageWidthRatio}, screenBounds=${JSON.stringify(stageScreenBounds)}`);
     record.levels.push({
       ...stage,
       mass: latest.machine.mass,
       maxTier: latest.machine.maxTier,
       absorbed,
       activePart: stage.part,
+      playerWidthRatio: stageWidthRatio,
+      playerScreenBounds: stageScreenBounds,
     });
     return latest;
   };
@@ -3474,8 +3487,28 @@ async function verifyFiveLevelProgression(cdp, page, joystick) {
   // genuinely wedged run still terminates instead of burning the cap.
   const openingStartedAt = Date.now();
   const openingAbsorptions = [];
+  await waitForCameraSettle(page);
   let latest = await readRuntimeSnapshot(page);
   observeCompression(latest);
+
+  // Capture LV1 baseline frame and metrics for level progression comparison
+  const lv1Player = latest.world?.streaming?.goldenCityComposition?.player
+    || latest.camera?.playerViewport;
+  const lv1WidthRatio = lv1Player?.widthRatio ?? lv1Player?.width ?? null;
+  const lv1ScreenBounds = lv1Player?.screenBounds ?? null;
+  await page.screenshot({ path: path.join(evidenceDirectory, 'v74-lv1-390x844.png') });
+  console.log(`[progression] LV1 captured: widthRatio=${lv1WidthRatio}, screenBounds=${JSON.stringify(lv1ScreenBounds)}`);
+  record.levels.push({
+    level: 1,
+    region: 'bedroom',
+    district: 'RESIDENTIAL',
+    mass: latest.machine.mass,
+    maxTier: latest.machine.maxTier,
+    activePart: 'CoreNode',
+    playerWidthRatio: lv1WidthRatio,
+    playerScreenBounds: lv1ScreenBounds,
+  });
+
   let openingLastProgressAt = Date.now();
   let openingLastMass = latest.machine.mass;
   while (latest.machine.level < 2
@@ -3580,7 +3613,26 @@ async function verifyFiveLevelProgression(cdp, page, joystick) {
   observeCompression(latest);
   assert((latest.session.absorbedTiers?.[2] || 0) > tier2Before,
     `FAIL_FULL_PROGRESSION_T2: ${JSON.stringify({ target: t2Target, absorbedTiers: latest.session?.absorbedTiers })}`);
-  record.levels.push({ level: 2, region: 'bedroom', district: 'RESIDENTIAL', mass: latest.machine.mass, maxTier: latest.machine.maxTier, absorbed: openingAbsorptions, activePart: 'MagneticTurbineLeft' });
+
+  await waitForCameraSettle(page);
+  latest = await readRuntimeSnapshot(page);
+  const lv2Player = latest.world?.streaming?.goldenCityComposition?.player
+    || latest.camera?.playerViewport;
+  const lv2WidthRatio = lv2Player?.widthRatio ?? lv2Player?.width ?? null;
+  const lv2ScreenBounds = lv2Player?.screenBounds ?? null;
+  await page.screenshot({ path: path.join(evidenceDirectory, 'v74-lv2-390x844.png') });
+  console.log(`[progression] LV2 captured: widthRatio=${lv2WidthRatio}, screenBounds=${JSON.stringify(lv2ScreenBounds)}`);
+  record.levels.push({
+    level: 2,
+    region: 'bedroom',
+    district: 'RESIDENTIAL',
+    mass: latest.machine.mass,
+    maxTier: latest.machine.maxTier,
+    absorbed: openingAbsorptions,
+    activePart: 'MagneticTurbineLeft',
+    playerWidthRatio: lv2WidthRatio,
+    playerScreenBounds: lv2ScreenBounds,
+  });
 
   for (const stage of stages) {
     latest = await driveJoystickToLogicalPoint(cdp, page, joystick, stage.point, `FULL_PROGRESSION_${stage.region.toUpperCase()}`, 3.2, 70_000);
@@ -3787,7 +3839,13 @@ async function verifyTrafficReplenishment(cdp, page, joystick) {
   }
   assert(absorbedAt > 0,
     `FAIL_TRAFFIC_REPLENISHMENT_ABSORB: ${JSON.stringify({ targetId, tier5Before, latest: { machine: latest.machine, absorbedTiers: latest.session?.absorbedTiers, vehicles: latest.world?.streaming?.dynamicVehicles, objects: latest.objects } })}`);
-  const absorbTiming = getTrafficTiming(latest, targetId);
+  let absorbTiming = getTrafficTiming(latest, targetId);
+  const timingDeadline = Date.now() + 3000;
+  while ((!absorbTiming || !absorbTiming.slot || absorbTiming.slot.active !== false) && Date.now() < timingDeadline) {
+    await page.waitForTimeout(100);
+    latest = await readRuntimeSnapshot(page);
+    absorbTiming = getTrafficTiming(latest, targetId);
+  }
   assert(absorbTiming?.slot && absorbTiming.slot.active === false,
     `FAIL_TRAFFIC_REPLENISHMENT_SLOT_NOT_COOLING: ${JSON.stringify({ targetId, absorbTiming })}`);
   const cooldownDeadline = absorbTiming.slot.availableAt;

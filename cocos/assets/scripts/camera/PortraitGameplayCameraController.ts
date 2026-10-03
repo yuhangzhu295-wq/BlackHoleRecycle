@@ -17,10 +17,18 @@ export class PortraitGameplayCameraController {
   public static readonly DESIGN_WIDTH = CAMERA_PROFILE.designWidth;
   public static readonly DESIGN_HEIGHT = CAMERA_PROFILE.designHeight;
 
+  private currentLevel: number = 1;
+
   private readonly endlessPreset: PortraitCameraPreset = {
     offset: CAMERA_PROFILE.endless.offset.clone(),
     pitchDegrees: CAMERA_PROFILE.endless.pitchDegrees,
   };
+
+  private readonly endlessLevelPresets: readonly PortraitCameraPreset[] =
+    CAMERA_PROFILE.endless.levelOffsets.map((offset) => ({
+      offset: offset.clone(),
+      pitchDegrees: CAMERA_PROFILE.endless.pitchDegrees,
+    }));
 
   private readonly arenaPreset: PortraitCameraPreset = {
     offset: CAMERA_PROFILE.arena.offset.clone(),
@@ -40,6 +48,16 @@ export class PortraitGameplayCameraController {
 
   public dispose(): void {
     view.off('canvas-resize', this.onCanvasResize, this);
+  }
+
+  public setLevel(level: number): void {
+    if (Number.isFinite(level)) {
+      this.currentLevel = Math.max(1, Math.min(5, Math.floor(level)));
+    }
+  }
+
+  public getCurrentLevel(): number {
+    return this.currentLevel;
   }
 
   public applyPortraitContract(): void {
@@ -64,8 +82,11 @@ export class PortraitGameplayCameraController {
       : new Rect(0, 0, 1, 1);
   }
 
-  public updateFollow(playerPosition: Readonly<Vec3>, state: GameSessionState, dt: number): void {
-    const preset = this.getPreset(state);
+  public updateFollow(playerPosition: Readonly<Vec3>, state: GameSessionState, dt: number, level?: number): void {
+    if (level !== undefined && Number.isFinite(level)) {
+      this.currentLevel = Math.max(1, Math.min(5, Math.floor(level)));
+    }
+    const preset = this.getPreset(state, this.currentLevel);
     Vec3.add(this.targetPosition, playerPosition, preset.offset);
     const current = this.camera.node.position;
     this.camera.node.setPosition(
@@ -76,13 +97,15 @@ export class PortraitGameplayCameraController {
     this.camera.node.setRotationFromEuler(preset.pitchDegrees, 0, 0);
   }
 
-  public getActiveOffset(state: GameSessionState): Readonly<Vec3> {
-    return this.getPreset(state).offset;
+  public getActiveOffset(state: GameSessionState, level?: number): Readonly<Vec3> {
+    return this.getPreset(state, level).offset;
   }
 
-  public getPreset(state: GameSessionState): Readonly<PortraitCameraPreset> {
-    return state === 'ARENA' || state === 'NETWORK_ARENA' || state === 'REVIVING'
-      ? this.arenaPreset
-      : this.endlessPreset;
+  public getPreset(state: GameSessionState, level?: number): Readonly<PortraitCameraPreset> {
+    if (state === 'ARENA' || state === 'NETWORK_ARENA' || state === 'REVIVING') {
+      return this.arenaPreset;
+    }
+    const targetLevel = Math.max(1, Math.min(5, Math.floor(level ?? this.currentLevel)));
+    return this.endlessLevelPresets[targetLevel - 1] || this.endlessPreset;
   }
 }

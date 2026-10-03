@@ -324,6 +324,7 @@ export class GameManager extends Component {
       if (this.gameState === 'PLAYING' && this.machine?.persistsProgression) {
         saveService.setMachineLevel(level);
       }
+      this.portraitCameraController?.setLevel(level);
       this.updateHUD();
     });
 
@@ -545,6 +546,7 @@ export class GameManager extends Component {
     try {
       this.machine.currentMass = Math.max(0, saveService.data.machineMass || 0);
       this.machine.applyEvolutionLevel(Math.max(1, saveService.data.machineLevel || 1), false);
+      this.portraitCameraController?.setLevel(this.machine.currentLevel);
     } finally {
       this.machine.persistsProgression = true;
     }
@@ -943,7 +945,7 @@ export class GameManager extends Component {
         && (this.gameState === 'NETWORK_ARENA' || this.networkSettlementShown)
         ? this.toNetworkArenaSnapshot(this.networkArenaClient.snapshot)
         : this.arenaMatchManager?.getSnapshot() || null,
-      getCameraOffset: (state) => this.portraitCameraController?.getActiveOffset(state) || Vec3.ZERO,
+      getCameraOffset: (state) => this.portraitCameraController?.getActiveOffset(state, this.machine?.currentLevel ?? 1) || Vec3.ZERO,
       getSessionSnapshot: () => ({
         absorbed: this.totalAbsorbedCount,
         absorbedTiers: { ...this.absorbedTierCounts },
@@ -1129,7 +1131,7 @@ export class GameManager extends Component {
 
     // The already scene-saved camera remains the concrete dependency; the
     // portrait service owns its viewport, FOV and follow mathematics.
-    this.portraitCameraController?.updateFollow(mPos, this.gameState, dt);
+    this.portraitCameraController?.updateFollow(mPos, this.gameState, dt, this.machine?.currentLevel ?? 1);
   }
 
   /**
