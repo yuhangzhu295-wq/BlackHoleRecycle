@@ -4490,6 +4490,32 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
         },
         evolved: null,
       };
+
+      // V8: observe the tier-upgrade banner from BEFORE the level-up can fire.
+      // It lives only BANNER_DURATION_SECONDS (2.0s) and is reported through a
+      // single diagnostics read, so a one-shot poll after the fact misses it
+      // entirely -- which is how the round-2 copy change shipped unverified.
+      // The machine is asserted LV1 just above and reaches LV2 during the
+      // absorption drive below, so sampling from here covers the whole window.
+      // Sampling continuously in-page is the only way to prove the banner is
+      // actually presented to the player rather than merely constructed.
+      await page.evaluate(() => {
+        const observer = { maxActiveCount: 0, emittedCount: 0, lastLevel: 0, lastText: '' };
+        window.__BHR_TIER_UPGRADE_OBSERVER__ = observer;
+        const timer = setInterval(() => {
+          try {
+            const endless = window.__BHR_QA__.snapshot().ui?.tierUpgrade?.endless || null;
+            if (!endless) return;
+            if ((endless.emittedCount || 0) > 0) {
+              observer.emittedCount = endless.emittedCount;
+              observer.lastLevel = endless.lastLevel;
+              observer.lastText = endless.lastText;
+            }
+            observer.maxActiveCount = Math.max(observer.maxActiveCount, endless.activeCount || 0);
+          } catch (error) { /* snapshot may be mid-rebuild */ }
+        }, 40);
+        observer.stop = () => clearInterval(timer);
+      });
       const gameplayRender = summariseSceneVisuals(gameplaySnapshot.sceneVisuals);
       assertRenderDiagnostics(gameplayRender, 'endless-opening');
       report.runtimeObservations.push({
@@ -5143,6 +5169,37 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
         })}`);
       report.verticalSlice.pickupFeedback = feedbackSnapshot.ui?.pickupFeedback || null;
       await page.screenshot({ path: path.join(evidenceDirectory, 'portrait-390x844-absorb-feedback.png') });
+
+      // Read the banner observation collected across the whole level-up drive.
+      const tierUpgradeObserver = await page.evaluate(() => {
+        const observer = window.__BHR_TIER_UPGRADE_OBSERVER__ || null;
+        if (observer?.stop) observer.stop();
+        return observer
+          ? {
+            maxActiveCount: observer.maxActiveCount,
+            emittedCount: observer.emittedCount,
+            lastLevel: observer.lastLevel,
+            lastText: observer.lastText,
+          }
+          : null;
+      });
+      const tierUpgrade = (await readRuntimeSnapshot(page)).ui?.tierUpgrade?.endless || null;
+      assert((tierUpgradeObserver?.maxActiveCount || 0) >= 1,
+        `FAIL_TIER_UPGRADE_BANNER_NOT_VISIBLE: the upgrade banner never reported an active frame while the level-up was driven: ${JSON.stringify({ observer: tierUpgradeObserver, live: tierUpgrade })}`);
+      assert((tierUpgrade?.emittedCount || 0) > 0 && (tierUpgrade?.lastLevel || 0) >= 2,
+        `FAIL_TIER_UPGRADE_NOT_EMITTED: ${JSON.stringify(tierUpgrade)}`);
+      // The banner must name the tier it just unlocked. Round 2 replaced the
+      // generic "解锁更大型目标" with an explicit tier hint; this is the only
+      // place that copy is checked, so a regression here is a silent one.
+      const expectedTierHint = tierUpgrade?.lastLevel === 2 ? '现可吸附 T2 中型物件'
+        : tierUpgrade?.lastLevel === 3 ? '现可吸附 T3 大型家具'
+          : tierUpgrade?.lastLevel === 4 ? '现可吸附 T4 重型设备'
+            : tierUpgrade?.lastLevel === 5 ? '现可吸附 T5 车辆与建筑'
+              : null;
+      assert(expectedTierHint && String(tierUpgrade?.lastText || '').includes(expectedTierHint),
+        `FAIL_TIER_UPGRADE_COPY: the LV${tierUpgrade?.lastLevel} banner did not name the tier it unlocked: ${JSON.stringify(tierUpgrade)}`);
+      report.verticalSlice.tierUpgrade = { ...tierUpgrade, observedMaxActiveCount: tierUpgradeObserver?.maxActiveCount ?? null };
+
       await page.waitForTimeout(3200);
       const upgradedSnapshot = await readRuntimeSnapshot(page);
       assert(upgradedSnapshot.machine.level >= 2 && upgradedSnapshot.machine.maxTier >= 2,
