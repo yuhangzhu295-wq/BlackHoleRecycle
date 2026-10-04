@@ -59,10 +59,29 @@ export interface QABridgeReadModel {
   readonly getSaveSnapshot: () => Readonly<Record<string, unknown>>;
   /** V7 PHASE 5: pooled absorb-burst evidence, or null when no runtime host exists. */
   readonly getAbsorbFeedbackDiagnostics: () => Readonly<Record<string, unknown>> | null;
+  readonly getPortraitCameraController?: () => PortraitGameplayCameraController | null;
+}
+
+export interface PlayerControlTraceFrame {
+  readonly timestamp: number;
+  readonly frameDt: number;
+  readonly inputMagnitude: number;
+  readonly inputDirection: { readonly x: number; readonly y: number };
+  readonly desiredDirection: { readonly x: number; readonly y: number; readonly z: number };
+  readonly currentVelocity: { readonly x: number; readonly y: number; readonly z: number; readonly speed: number };
+  readonly desiredVelocity: { readonly x: number; readonly y: number; readonly z: number; readonly speed: number };
+  readonly playerPosition: { readonly x: number; readonly y: number; readonly z: number };
+  readonly acceleration: number;
+  readonly deceleration: number;
+  readonly turnAngle: number;
+  readonly cameraOffsetError: { readonly x: number; readonly y: number; readonly z: number; readonly distance: number };
+  readonly cameraPosition: { readonly x: number; readonly y: number; readonly z: number };
+  readonly cameraTargetPosition: { readonly x: number; readonly y: number; readonly z: number };
 }
 
 interface InstalledQABridge {
   readonly snapshot: () => Record<string, unknown>;
+  readonly getControlTrace: () => PlayerControlTraceFrame[];
 }
 
 type QAHost = typeof globalThis & {
@@ -76,11 +95,18 @@ type QAHost = typeof globalThis & {
  */
 export class QABridge {
   private installedBridge: InstalledQABridge | null = null;
+  private lastSpeed: number = 0;
+  private latestTraceFrame: PlayerControlTraceFrame | null = null;
+  private readonly controlTraceBuffer: PlayerControlTraceFrame[] = [];
+  private totalFramesRecorded: number = 0;
 
   public constructor(private readonly read: QABridgeReadModel) {}
 
   public install(): void {
-    const bridge: InstalledQABridge = { snapshot: () => this.snapshot() };
+    const bridge: InstalledQABridge = {
+      snapshot: () => this.snapshot(),
+      getControlTrace: () => this.controlTraceBuffer.slice(),
+    };
     const host = globalThis as QAHost;
     host.__BHR_QA__ = bridge;
     this.installedBridge = bridge;
@@ -92,6 +118,96 @@ export class QABridge {
       delete host.__BHR_QA__;
     }
     this.installedBridge = null;
+  }
+
+  public recordControlTraceFrame(dt: number): void {
+    const machine = this.read.getMachine();
+    const playerController = this.read.getPlayerController();
+    const cameraController = this.read.getPortraitCameraController ? this.read.getPortraitCameraController() : null;
+    const mainCamera = this.read.getMainCamera();
+    if (!machine || dt <= 0) return;
+
+    const moveInput = playerController?.moveInput;
+    const inputMagnitude = moveInput ? moveInput.length() : 0;
+    const inputDirection = {
+      x: moveInput?.x ?? 0,
+      y: moveInput?.y ?? 0,
+    };
+
+    const desiredDir = playerController?.getDesiredMovementDirection() ?? machine.getMovementDirection();
+    const desiredDirection = {
+      x: desiredDir.x,
+      y: desiredDir.y,
+      z: desiredDir.z,
+    };
+
+    const vx = machine.velocity.x;
+    const vz = machine.velocity.z;
+    const currentSpeed = Math.sqrt(vx * vx + vz * vz);
+    const currentVelocity = {
+      x: vx,
+      y: 0,
+      z: vz,
+      speed: currentSpeed,
+    };
+
+    const targetSpeed = machine.getMoveSpeed() * machine.getMovementMagnitude();
+    const desiredVelocity = {
+      x: desiredDir.x * targetSpeed,
+      y: 0,
+      z: desiredDir.z * targetSpeed,
+      speed: targetSpeed,
+    };
+
+    const pos = machine.node.position;
+    const playerPosition = {
+      x: pos.x,
+      y: pos.y,
+      z: pos.z,
+    };
+
+    const speedDelta = (currentSpeed - this.lastSpeed) / dt;
+    const acceleration = speedDelta > 0 ? speedDelta : 0;
+    const deceleration = speedDelta < 0 ? -speedDelta : 0;
+    this.lastSpeed = currentSpeed;
+
+    let turnAngle = 0;
+    if (currentSpeed > 0.01 && (desiredDirection.x !== 0 || desiredDirection.z !== 0)) {
+      const desiredLen = Math.sqrt(desiredDirection.x * desiredDirection.x + desiredDirection.z * desiredDirection.z);
+      if (desiredLen > 0.0001) {
+        const dot = (vx * desiredDirection.x + vz * desiredDirection.z) / (currentSpeed * desiredLen);
+        const clampedDot = Math.max(-1, Math.min(1, dot));
+        turnAngle = Math.acos(clampedDot) * (180 / Math.PI);
+      }
+    }
+
+    const camOffsetError = cameraController ? cameraController.getOffsetError() : { x: 0, y: 0, z: 0, distance: 0 };
+    const camPos = mainCamera?.node.position ?? Vec3.ZERO;
+    const camTargetPos = cameraController ? cameraController.getTargetPosition() : Vec3.ZERO;
+
+    const frame: PlayerControlTraceFrame = {
+      timestamp: performance.now(),
+      frameDt: dt,
+      inputMagnitude,
+      inputDirection,
+      desiredDirection,
+      currentVelocity,
+      desiredVelocity,
+      playerPosition,
+      acceleration,
+      deceleration,
+      turnAngle,
+      cameraOffsetError: camOffsetError,
+      cameraPosition: { x: camPos.x, y: camPos.y, z: camPos.z },
+      cameraTargetPosition: { x: camTargetPos.x, y: camTargetPos.y, z: camTargetPos.z },
+    };
+
+    this.latestTraceFrame = frame;
+    this.controlTraceBuffer.push(frame);
+    this.totalFramesRecorded += 1;
+    if (this.controlTraceBuffer.length > 1200) {
+      this.controlTraceBuffer.shift();
+    }
   }
 
   private snapshot(): Record<string, unknown> {
@@ -293,6 +409,12 @@ export class QABridge {
       },
       session: this.read.getSessionSnapshot(),
       save: this.read.getSaveSnapshot(),
+      playerControlTrace: {
+        latest: this.latestTraceFrame,
+        recentCount: this.controlTraceBuffer.length,
+        totalRecorded: this.totalFramesRecorded,
+        recentFrames: this.controlTraceBuffer.slice(-120),
+      },
     };
   }
 

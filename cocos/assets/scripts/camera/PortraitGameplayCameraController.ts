@@ -1,5 +1,6 @@
 import { Camera, math, Rect, ResolutionPolicy, Vec3, view } from 'cc';
 import { CAMERA_PROFILE } from '../core/RenderProfile';
+import { PLAYER_FEEL_CONFIG } from '../data/GameConfig';
 import type { GameSessionState } from '../gameplay/session/GameSessionCoordinator';
 
 export interface PortraitCameraPreset {
@@ -89,10 +90,11 @@ export class PortraitGameplayCameraController {
     const preset = this.getPreset(state, this.currentLevel);
     Vec3.add(this.targetPosition, playerPosition, preset.offset);
     const current = this.camera.node.position;
+    const factor = Math.min(1.0, dt * PLAYER_FEEL_CONFIG.cameraFollowSharpness);
     this.camera.node.setPosition(
-      math.lerp(current.x, this.targetPosition.x, dt * 5.0),
-      math.lerp(current.y, this.targetPosition.y, dt * 5.0),
-      math.lerp(current.z, this.targetPosition.z, dt * 5.0),
+      math.lerp(current.x, this.targetPosition.x, factor),
+      math.lerp(current.y, this.targetPosition.y, factor),
+      math.lerp(current.z, this.targetPosition.z, factor),
     );
     this.camera.node.setRotationFromEuler(preset.pitchDegrees, 0, 0);
   }
@@ -107,5 +109,22 @@ export class PortraitGameplayCameraController {
     }
     const targetLevel = Math.max(1, Math.min(5, Math.floor(level ?? this.currentLevel)));
     return this.endlessLevelPresets[targetLevel - 1] || this.endlessPreset;
+  }
+
+  public getTargetPosition(): Readonly<Vec3> {
+    return this.targetPosition;
+  }
+
+  public getOffsetError(): { x: number; y: number; z: number; distance: number } {
+    const current = this.camera.node.position;
+    const dx = current.x - this.targetPosition.x;
+    const dy = current.y - this.targetPosition.y;
+    const dz = current.z - this.targetPosition.z;
+    return {
+      x: dx,
+      y: dy,
+      z: dz,
+      distance: Math.sqrt(dx * dx + dy * dy + dz * dz),
+    };
   }
 }

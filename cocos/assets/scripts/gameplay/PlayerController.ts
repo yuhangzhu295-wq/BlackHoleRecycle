@@ -2,6 +2,7 @@
  * 玩家触控与拖拽控制器 (PlayerController.ts)
  */
 import { _decorator, Component, input, Input, EventTouch, EventMouse, Camera, Node, Vec2, Vec3, director, view } from 'cc';
+import { PLAYER_FEEL_CONFIG } from '../data/GameConfig';
 import { BlackHoleMachine } from '../machine/BlackHoleMachine';
 import { IMovementInput, MouseJoystickInput, TouchJoystickInput } from './MovementInput';
 
@@ -29,8 +30,14 @@ export class PlayerController extends Component {
   public readonly moveInput: Vec2 = new Vec2();
   public isDragging: boolean = false;
   public isPaused: boolean = false;
-  public readonly touchInput: TouchJoystickInput = new TouchJoystickInput(92, 0.1);
-  public readonly mouseInput: MouseJoystickInput = new MouseJoystickInput(92, 0.1);
+  public readonly touchInput: TouchJoystickInput = new TouchJoystickInput(
+    PLAYER_FEEL_CONFIG.joystickRadius,
+    PLAYER_FEEL_CONFIG.joystickDeadZone,
+  );
+  public readonly mouseInput: MouseJoystickInput = new MouseJoystickInput(
+    PLAYER_FEEL_CONFIG.joystickRadius,
+    PLAYER_FEEL_CONFIG.joystickDeadZone,
+  );
   /** Read-only runtime diagnostic exposed through the QA bridge. */
   public lastTouchDiagnostic: TouchInputDiagnostic = {
     phase: 'NONE', id: null, x: 0, y: 0, accepted: false, joystickArea: false, paused: false,
@@ -229,5 +236,9 @@ export class PlayerController extends Component {
     );
     if (this.movementDirection.lengthSqr() > 0.0001) this.movementDirection.normalize();
     this.machine.setMovementDirection(this.movementDirection, Math.min(1, magnitude));
+  }
+
+  public getDesiredMovementDirection(): Readonly<Vec3> {
+    return this.movementDirection;
   }
 }

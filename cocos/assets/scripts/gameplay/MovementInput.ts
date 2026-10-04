@@ -1,4 +1,5 @@
 import { Vec2, math } from 'cc';
+import { PLAYER_FEEL_CONFIG } from '../data/GameConfig';
 
 /** A normalized, device-independent movement source. */
 export interface IMovementInput {
@@ -15,8 +16,8 @@ abstract class JoystickMovementInput implements IMovementInput {
   protected anchorY: number = 0;
 
   public constructor(
-    private readonly maximumRadius: number = 92,
-    private readonly deadZone: number = 0.1,
+    private readonly maximumRadius: number = PLAYER_FEEL_CONFIG.joystickRadius,
+    private readonly deadZone: number = PLAYER_FEEL_CONFIG.joystickDeadZone,
   ) {}
 
   public begin(x: number, y: number): void {

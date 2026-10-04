@@ -6,7 +6,7 @@ import { MACHINE_ASSEMBLY_PALETTE, MACHINE_PALETTE } from '../core/RenderProfile
 import { BlobShadow } from '../core/BlobShadow';
 import { ArtLoader } from '../core/ArtLoader';
 import { BLOB_SHADOW_PROFILE } from '../core/RenderProfile';
-import { IMachineEvolutionConfig, MACHINE_EVOLUTION_CONFIG, ObjectTier } from '../data/GameConfig';
+import { IMachineEvolutionConfig, MACHINE_EVOLUTION_CONFIG, ObjectTier, PLAYER_FEEL_CONFIG } from '../data/GameConfig';
 import { eventBus } from '../core/EventBus';
 import { MeshFactory } from '../core/MeshFactory';
 import { MachineVisualLibrary } from './MachineVisualLibrary';
@@ -567,6 +567,18 @@ export class BlackHoleMachine extends Component {
     this.velocity.set(0, 0, 0);
   }
 
+  public getMovementDirection(): Readonly<Vec3> {
+    return this.movementDirection;
+  }
+
+  public getMovementMagnitude(): number {
+    return this.movementMagnitude;
+  }
+
+  public getMoveSpeed(): number {
+    return this.currentConfig.moveSpeed;
+  }
+
   public isPaused: boolean = false;
 
   public update(dt: number): void {
@@ -602,7 +614,10 @@ export class BlackHoleMachine extends Component {
     const speed = this.currentConfig.moveSpeed * this.movementMagnitude;
     const targetVelocityX = this.movementDirection.x * speed;
     const targetVelocityZ = this.movementDirection.z * speed;
-    const response = Math.min(1.0, dt * (this.movementMagnitude > 0 ? 18 : 32));
+    const responseFactor = this.movementMagnitude > 0
+      ? PLAYER_FEEL_CONFIG.accelerationResponse
+      : PLAYER_FEEL_CONFIG.decelerationResponse;
+    const response = Math.min(1.0, dt * responseFactor);
     this.velocity.x = math.lerp(this.velocity.x, targetVelocityX, response);
     this.velocity.z = math.lerp(this.velocity.z, targetVelocityZ, response);
     if (this.movementMagnitude === 0 && Math.abs(this.velocity.x) + Math.abs(this.velocity.z) < 0.01) {

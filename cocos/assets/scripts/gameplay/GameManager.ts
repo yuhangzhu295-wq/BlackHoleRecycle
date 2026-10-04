@@ -946,6 +946,7 @@ export class GameManager extends Component {
         ? this.toNetworkArenaSnapshot(this.networkArenaClient.snapshot)
         : this.arenaMatchManager?.getSnapshot() || null,
       getCameraOffset: (state) => this.portraitCameraController?.getActiveOffset(state, this.machine?.currentLevel ?? 1) || Vec3.ZERO,
+      getPortraitCameraController: () => this.portraitCameraController,
       getSessionSnapshot: () => ({
         absorbed: this.totalAbsorbedCount,
         absorbedTiers: { ...this.absorbedTierCounts },
@@ -1132,6 +1133,7 @@ export class GameManager extends Component {
     // The already scene-saved camera remains the concrete dependency; the
     // portrait service owns its viewport, FOV and follow mathematics.
     this.portraitCameraController?.updateFollow(mPos, this.gameState, dt, this.machine?.currentLevel ?? 1);
+    this.qaBridge?.recordControlTraceFrame(dt);
   }
 
   /**

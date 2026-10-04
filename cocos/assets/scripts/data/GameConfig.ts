@@ -302,3 +302,42 @@ export const SKINS_CONFIG: readonly ISkinConfig[] = [
   { id: 'skin_emerald_vortex', name: '翡翠漩涡', color: '#10b981', rimColor: '#34d399', price: 3000, unlocked: false, description: '生态环保的超能引力涂装' },
   { id: 'skin_crimson_singularity', name: '猩红奇点', color: '#ef4444', rimColor: '#f43f5e', price: 6000, unlocked: false, description: '撕裂空间的终极奇点涂装' }
 ];
+
+/**
+ * Player Control & Camera Feel Tuning Configuration (V8 P0)
+ *
+ * Data-driven parameters governing the arcade "input follows finger" responsiveness:
+ * - joystick radius and dead-zone
+ * - machine velocity acceleration/deceleration response factors
+ * - camera follow tracking sharpness
+ */
+export interface IPlayerFeelConfig {
+  /** Maximum pixel drag radius for the virtual joystick */
+  readonly joystickRadius: number;
+  /** Dead zone fraction [0, 1] below which input is discarded (~8-12%) */
+  readonly joystickDeadZone: number;
+  /**
+   * Acceleration response factor when stick is deflected (magnitude > 0).
+   * Used in: lerp(v, targetV, Math.min(1, dt * accelerationResponse))
+   */
+  readonly accelerationResponse: number;
+  /**
+   * Deceleration response factor when stick is actively held at partial deflection or reversing.
+   */
+  readonly decelerationResponse: number;
+  /**
+   * Camera follow tracking rate (1/s).
+   * At 18.0, 63% offset covered in ~55ms; at 60fps residual offset under max speed is <0.4m,
+   * eliminating sluggish world sliding while retaining smooth framing.
+   */
+  readonly cameraFollowSharpness: number;
+}
+
+export const PLAYER_FEEL_CONFIG: IPlayerFeelConfig = {
+  joystickRadius: 92,
+  joystickDeadZone: 0.10,
+  accelerationResponse: 20,
+  decelerationResponse: 32,
+  cameraFollowSharpness: 18.0,
+};
+
