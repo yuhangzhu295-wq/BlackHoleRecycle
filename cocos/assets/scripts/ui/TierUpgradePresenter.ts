@@ -147,11 +147,16 @@ export class TierUpgradePresenter {
     // With the authored panel the headline is the prefab's own gold title; the
     // cloned HUD glyph then carries only the dynamic detail lines. Without it,
     // the glyph carries the whole locked copy so nothing is lost.
-    const detail = `LV.${level} ${title}\n解锁更大型目标`;
+    const tierHint = level === 2 ? '现可吸附 T2 中型物件'
+      : level === 3 ? '现可吸附 T3 大型家具'
+      : level === 4 ? '现可吸附 T4 重型设备'
+      : level === 5 ? '现可吸附 T5 车辆与建筑'
+      : '解锁更大型目标';
+    const detail = `LV.${level} ${title}\n解锁更大型目标 (${tierHint})`;
     const text = panelNode ? detail : `升级！\n${detail}`;
     label.string = text;
-    label.fontSize = panelNode ? 36 : 40;
-    label.lineHeight = panelNode ? 46 : 54;
+    label.fontSize = panelNode ? 30 : 34;
+    label.lineHeight = panelNode ? 40 : 46;
     label.horizontalAlign = Label.HorizontalAlign.CENTER;
     label.verticalAlign = Label.VerticalAlign.CENTER;
     label.color = new Color(TITLE_COLOR.r, TITLE_COLOR.g, TITLE_COLOR.b, TITLE_COLOR.a);

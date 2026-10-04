@@ -36,6 +36,10 @@ export class CompressibleObject extends Component {
   private suctionSpinDegreesPerSecond: number = 0;
   private visualYawDegrees: number = 0;
   private visualRollDegrees: number = 0;
+  /** Presentation clock for subtle edible target cue in IDLE. */
+  private ediblePulseTimer: number = 0;
+  /** Presentation clock for turbulent gravitational sway in ATTRACTED. */
+  private attractSwayTimer: number = 0;
   /**
    * V4 reference 09 legibility clock. How long this body has visibly been
    * fighting the pull. Read-only presentation state; it never affects motion,
@@ -148,7 +152,10 @@ export class CompressibleObject extends Component {
       .registerState('IDLE', {
         enter: () => {
           this.suckTimer = 0;
+          this.ediblePulseTimer = 0;
+          this.attractSwayTimer = 0;
           this.node.setScale(Vec3.ONE);
+          this.visualNode?.setScale(Vec3.ONE);
           // A target that escaped the pull must read as normal traffic again.
           this.strainSeconds = 0;
           this.visualRollDegrees = 0;
@@ -159,6 +166,8 @@ export class CompressibleObject extends Component {
       .registerState('ATTRACTED', {
         enter: () => {
           this.suckTimer = 0;
+          this.attractSwayTimer = 0;
+          this.visualNode?.setScale(Vec3.ONE);
           if (this.lockIndicatorNode) this.lockIndicatorNode.active = false;
         }
       })
@@ -171,11 +180,14 @@ export class CompressibleObject extends Component {
       .registerState('ABSORBED', {
         enter: () => {
           this.node.setScale(Vec3.ZERO);
+          this.visualNode?.setScale(Vec3.ONE);
           this.node.active = false;
         }
       })
       .registerState('RECYCLED', {
         enter: () => {
+          this.node.setScale(Vec3.ONE);
+          this.visualNode?.setScale(Vec3.ONE);
           this.node.active = false;
         }
       });
@@ -193,6 +205,8 @@ export class CompressibleObject extends Component {
     this.isLockAlertActive = false;
     this.lockTimer = 0;
     this.lockCooldownTimer = 0;
+    this.ediblePulseTimer = 0;
+    this.attractSwayTimer = 0;
     this.captureOwnerId = null;
     this.suctionSpinDegreesPerSecond = 0;
     this.visualYawDegrees = 0;
@@ -326,6 +340,17 @@ export class CompressibleObject extends Component {
     const profile = getSuctionTierProfile(this.template.tier);
 
     if (state === 'IDLE') {
+      const isEdible = this.template.tier <= machineMaxTier || isMagnetStorm;
+      const perceptionRadius = suctionRadius * 2.0;
+      if (isEdible && distSq < perceptionRadius * perceptionRadius) {
+        this.ediblePulseTimer += dt;
+        const pulse = 1.0 + Math.sin(this.ediblePulseTimer * 5.0) * 0.08;
+        this.visualNode?.setScale(pulse, pulse, pulse);
+      } else if (this.ediblePulseTimer > 0) {
+        this.ediblePulseTimer = 0;
+        this.visualNode?.setScale(Vec3.ONE);
+      }
+
       if (distSq >= suctionRadius * suctionRadius) return false;
       if (this.template.tier > machineMaxTier && !isMagnetStorm) {
         // 等级不足：给出明确的 LV.X 反馈，目标仅被引力轻微拉动，
@@ -389,10 +414,19 @@ export class CompressibleObject extends Component {
         const spinMultiplier = state === 'SUCKING' ? 2.5 : 1;
         this.visualYawDegrees += this.suctionSpinDegreesPerSecond * spinMultiplier * dt;
         this.visualRollDegrees += this.suctionSpinDegreesPerSecond * 0.35 * spinMultiplier * dt;
+      } else if (this.template.tier < 4) {
+        if (state === 'ATTRACTED') {
+          // ATTRACTED: slight deflection and sway wobble
+          this.attractSwayTimer += dt;
+          this.visualYawDegrees += 90.0 * dt;
+          this.visualRollDegrees = Math.sin(this.attractSwayTimer * 9.0) * 10.0;
+        } else if (state === 'SUCKING') {
+          // SUCKING: visibly pulled in, rotating rapidly into the core
+          this.visualYawDegrees += 720.0 * dt;
+          this.visualRollDegrees += 240.0 * dt;
+        }
       }
-      if (this.suctionSpinDegreesPerSecond > 0 || this.template.tier >= 4) {
-        this.visualNode?.setRotationFromEuler(0, this.visualYawDegrees, this.visualRollDegrees);
-      }
+      this.visualNode?.setRotationFromEuler(0, this.visualYawDegrees, this.visualRollDegrees);
       if (result.isAbsorbed) {
         this.transitionTo('ABSORBED');
         return true;

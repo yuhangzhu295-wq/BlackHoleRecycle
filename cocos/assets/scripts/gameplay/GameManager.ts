@@ -1,7 +1,7 @@
 /**
  * 游戏主控制器与运行时生命周期驱动 (GameManager.ts)
  */
-import { _decorator, Component, Node, Camera, Vec3, director, DirectionalLight, Color, Label, LabelOutline, UITransform, instantiate } from 'cc';
+import { _decorator, Component, Node, Camera, Vec3, director, DirectionalLight, Color, Label, LabelOutline, UITransform, instantiate, UIOpacity } from 'cc';
 import { BlackHoleMachine } from '../machine/BlackHoleMachine';
 import { InfiniteWorldManager } from '../world/InfiniteWorldManager';
 import { CompressibleObject } from './CompressibleObject';
@@ -89,6 +89,8 @@ export class GameManager extends Component {
    */
   private registrationBranding: Node | null = null;
   private registrationBrandingVisible: boolean | null = null;
+  /** Elapsed seconds in active endless gameplay; brand fades out after opening. */
+  private gameplayBrandingElapsed: number = 0;
 
   /** Compatibility read model for QA and existing gameplay comparisons. */
   public get gameState(): GameSessionState {
@@ -262,6 +264,9 @@ export class GameManager extends Component {
     outline.width = 3;
     outline.color = new Color(13, 30, 52, 255);
 
+    const opacity = branding.getComponent(UIOpacity) || branding.addComponent(UIOpacity);
+    opacity.opacity = 255;
+
     this.registrationBranding = branding;
     this.registrationBrandingVisible = null;
     this.syncRegistrationBranding();
@@ -270,12 +275,19 @@ export class GameManager extends Component {
   private syncRegistrationBranding(): void {
     if (!this.registrationBranding?.isValid) return;
     // Home already presents the full-size, artwork-backed "黑洞回收站" logo.
-    // Every other player-visible page and gameplay state must retain the
-    // concise title identifier required by the filing screenshot rules.
-    const visible = this.gameState !== 'HOME';
-    if (visible === this.registrationBrandingVisible) return;
-    this.registrationBranding.active = visible;
-    this.registrationBrandingVisible = visible;
+    // In active Endless gameplay, the brand is shown briefly at the opening
+    // then faded to zero opacity, unblocking the core screen for the HUD.
+    // Other pages (e.g. Pause, Settlement) keep it visible for filing requirements.
+    const shouldBeActive = this.gameState !== 'HOME' && (this.gameState !== 'PLAYING' || this.gameplayBrandingElapsed < 3.0);
+    if (shouldBeActive !== this.registrationBranding.active) {
+      this.registrationBranding.active = shouldBeActive;
+      this.registrationBrandingVisible = shouldBeActive;
+    }
+    if (this.gameState !== 'PLAYING') {
+      this.gameplayBrandingElapsed = 0;
+      const opacity = this.registrationBranding.getComponent(UIOpacity);
+      if (opacity) opacity.opacity = 255;
+    }
   }
 
   private initWorld(): void {
@@ -1050,6 +1062,22 @@ export class GameManager extends Component {
   }
 
   update(dt: number): void {
+    if (this.gameState === 'PLAYING' && this.registrationBranding?.isValid) {
+      this.gameplayBrandingElapsed += dt;
+      const fadeStart = 2.0;
+      const fadeDuration = 1.0;
+      const opacity = this.registrationBranding.getComponent(UIOpacity);
+      if (opacity) {
+        if (this.gameplayBrandingElapsed <= fadeStart) {
+          opacity.opacity = 255;
+        } else if (this.gameplayBrandingElapsed < fadeStart + fadeDuration) {
+          const t = (this.gameplayBrandingElapsed - fadeStart) / fadeDuration;
+          opacity.opacity = Math.round((1 - t) * 255);
+        } else {
+          opacity.opacity = 0;
+        }
+      }
+    }
     this.syncRegistrationBranding();
     this.forwardNetworkArenaInput(dt);
     // V7 PHASE 5: advance the absorb bursts before the pause short-circuit, so a

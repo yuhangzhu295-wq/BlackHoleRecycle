@@ -752,6 +752,7 @@ export class BlackHoleMachine extends Component {
     // false) because restoring a save is not a player-visible event.
     if (triggerEvent && this.presentation !== 'BOT') {
       this.levelUpFlourish = BlackHoleMachine.LEVEL_UP_FLOURISH_SECONDS;
+      this.triggerDevourPulse();
     }
   }
 
