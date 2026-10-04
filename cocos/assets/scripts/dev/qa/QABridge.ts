@@ -127,7 +127,8 @@ export class QABridge {
       mainCamera,
       machine?.node || null,
     );
-    const currentCellVisualDiagnostics = WorldCompositionProbe.getCurrentCellVisualDiagnostics(world);
+    const currentCellVisualDiagnostics = WorldCompositionProbe.getCurrentCellVisualDiagnostics(world, mainCamera);
+    const districtProbe = WorldCompositionProbe.getDistrictProbe(world, mainCamera, machine?.node || null);
     const goldenPlayer = goldenCityComposition?.player || null;
     const playerViewport = goldenPlayer?.screenBounds && viewport.width > 0 && viewport.height > 0 ? {
       x: ((goldenPlayer.screenBounds.left + goldenPlayer.screenBounds.right) * 0.5 - viewport.x) / viewport.width,
@@ -169,6 +170,8 @@ export class QABridge {
       camera: {
         fov: mainCamera?.fov ?? null,
         fovAxis: mainCamera?.fovAxis ?? null,
+        near: mainCamera?.near ?? null,
+        far: mainCamera?.far ?? null,
         offset: (() => {
           const offset = this.read.getCameraOffset(gameState);
           return { x: offset.x, y: offset.y, z: offset.z };
@@ -179,12 +182,19 @@ export class QABridge {
           y: mainCamera?.node.position.y ?? 0,
           z: mainCamera?.node.position.z ?? 0,
         },
+        worldPosition: {
+          x: mainCamera?.node.worldPosition.x ?? 0,
+          y: mainCamera?.node.worldPosition.y ?? 0,
+          z: mainCamera?.node.worldPosition.z ?? 0,
+        },
         forward: {
           x: mainCamera?.node.forward.x ?? 0,
+          y: mainCamera?.node.forward.y ?? 0,
           z: mainCamera?.node.forward.z ?? 0,
         },
         right: {
           x: mainCamera?.node.right.x ?? 0,
+          y: mainCamera?.node.right.y ?? 0,
           z: mainCamera?.node.right.z ?? 0,
         },
       },
@@ -253,6 +263,7 @@ export class QABridge {
           goldenCityComposition,
           lv5CompositionDiagnostic,
           visualDiagnostics: currentCellVisualDiagnostics,
+          districtProbe,
         } : null,
       },
       // Engine-side observations only; never CDP DOM metrics or test labels.

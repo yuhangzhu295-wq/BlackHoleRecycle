@@ -494,16 +494,16 @@ class InfiniteWorldCell {
       const object = objectPool.get();
       object.spawn(
         template,
-        worldPos.x - logicalOrigin.x,
-        worldPos.z - logicalOrigin.z,
+        worldPos.x,
+        worldPos.z,
         0.35,
         customId,
       );
       this.objects.push(object);
       this.collectibleSlots.push({
         template,
-        x: worldPos.x,
-        z: worldPos.z,
+        x: worldPos.x + logicalOrigin.x,
+        z: worldPos.z + logicalOrigin.z,
         customId,
         availableAt: 0,
         active: true,
@@ -693,8 +693,8 @@ class InfiniteWorldCell {
       .filter((node): node is Node => Boolean(node))
       .map((node) => {
         const position = node.worldPosition;
-        const x = position.x - logicalOrigin.x;
-        const z = position.z - logicalOrigin.z;
+        const x = position.x;
+        const z = position.z;
         const dx = x - centerX;
         const dz = z - centerZ;
         const radius = Math.hypot(dx, dz);
@@ -712,8 +712,8 @@ class InfiniteWorldCell {
       const template = OBJECT_TEMPLATES.find((candidate) => candidate.type === kind);
       if (!template) continue;
       const worldPos = anchor.worldPosition;
-      const x = worldPos.x - logicalOrigin.x;
-      const z = worldPos.z - logicalOrigin.z;
+      const x = worldPos.x;
+      const z = worldPos.z;
       const object = objectPool.get();
       // The coordinate belongs in the id. Authored traffic used to be the
       // opening cell's alone, so `traffic_0_0_authored_` was correct by
@@ -788,12 +788,12 @@ class InfiniteWorldCell {
         const worldPos = spawnPoint.worldPosition;
         const customId = `cluster_${group.name}_${this.district.kind}_${this.coord.x}_${this.coord.z}_${index}`;
         const object = objectPool.get();
-        object.spawn(template, worldPos.x - logicalOrigin.x, worldPos.z - logicalOrigin.z, 0.35, customId);
+        object.spawn(template, worldPos.x, worldPos.z, 0.35, customId);
         this.objects.push(object);
         this.collectibleSlots.push({
           template,
-          x: worldPos.x,
-          z: worldPos.z,
+          x: worldPos.x + logicalOrigin.x,
+          z: worldPos.z + logicalOrigin.z,
           customId,
           availableAt: 0,
           active: true,
@@ -1411,6 +1411,7 @@ export class InfiniteWorldManager extends Component {
     this.worldCellFactory = new WorldCellFactory({
       cellSize: InfiniteWorldManager.CELL_SIZE,
       parent: this.node,
+      getOrigin: () => this.logicalOrigin,
     });
     // V7 PHASE 3: start loading the authored district maps. Deliberately
     // non-blocking and non-fatal: a cell created before the batch lands waits a
@@ -1845,7 +1846,7 @@ export class InfiniteWorldManager extends Component {
       // never substituted here: Golden City is the authored tutorial layout the
       // golden-city composition gate and the tutorial spawn groups depend on.
       if (this.goldenCityCellPrefab && this.worldCellFactory) {
-        cellNode = this.worldCellFactory.instantiateAuthoredCell(coord, district.kind, this.goldenCityCellPrefab);
+        cellNode = this.worldCellFactory.instantiateAuthoredCell(coord, district.kind, this.goldenCityCellPrefab, undefined, this.logicalOrigin);
         if (cellNode) authoredSource = 'GOLDEN_CITY';
       }
     } else if (this.worldCellFactory) {
@@ -1856,7 +1857,7 @@ export class InfiniteWorldManager extends Component {
       // unavailable. `updateCells()` re-derives the required set every frame.
       const districtMap = DistrictMapLibrary.get(district.kind);
       if (districtMap) {
-        cellNode = this.worldCellFactory.instantiateAuthoredDistrictMap(coord, district.kind, districtMap);
+        cellNode = this.worldCellFactory.instantiateAuthoredDistrictMap(coord, district.kind, districtMap, this.logicalOrigin);
         if (cellNode) authoredSource = 'DISTRICT_MAP';
       } else if (DistrictMapLibrary.isPending()) {
         return;

@@ -3282,11 +3282,54 @@ async function verifyProgressionRegions(cdp, page, canvasRect) {
     `FAIL_REGION_LANDMARK_${checkpoint.id.toUpperCase()}: expected ${checkpoint.landmark}, actual groups=${JSON.stringify(
       (streaming.visualDiagnostics || []).map((entry) => ({ name: entry?.name, descendantNames: entry?.descendantNames })),
     )}`);
+    // V7.4 District content visibility gate:
+    // Assert that the district's authored content is actually inside the camera frustum
+    // and visible on screen (not merely present in the scene graph hundreds of meters away).
+    const groundGroup = (streaming.visualDiagnostics || []).find((g) => g?.name === 'Ground');
+    const roadsGroup = (streaming.visualDiagnostics || []).find((g) => g?.name === 'Roads');
+    const environmentInFrustum = (streaming.visualDiagnostics || []).some(
+      (g) => (g?.name === 'Props' || g?.name === 'Buildings' || g?.name === 'Park') && (g?.inFrustumRendererCount || 0) > 0,
+    );
+    const visibleRendererCount = (streaming.visualDiagnostics || []).reduce(
+      (sum, g) => sum + (g?.inFrustumRendererCount || 0),
+      0,
+    );
+
+    assert(
+      (groundGroup?.inFrustumRendererCount || 0) > 0,
+      `FAIL_REGION_GROUND_VISIBLE_${checkpoint.id.toUpperCase()}: district cell ground is not in camera frustum (inFrustum=${groundGroup?.inFrustumRendererCount || 0})`,
+    );
+    assert(
+      (roadsGroup?.inFrustumRendererCount || 0) > 0,
+      `FAIL_REGION_ROADS_VISIBLE_${checkpoint.id.toUpperCase()}: district cell roads are not in camera frustum (inFrustum=${roadsGroup?.inFrustumRendererCount || 0})`,
+    );
+    assert(
+      environmentInFrustum,
+      `FAIL_REGION_ENVIRONMENT_VISIBLE_${checkpoint.id.toUpperCase()}: district cell environment (Props/Buildings/Park) is not in camera frustum`,
+    );
+    assert(
+      visibleRendererCount >= 10,
+      `FAIL_REGION_CONTENT_IN_FRUSTUM_${checkpoint.id.toUpperCase()}: expected >= 10 visible renderers in district cell, actual ${visibleRendererCount}`,
+    );
+    if (streaming.districtProbe) {
+      const probe = streaming.districtProbe;
+      console.log(`[REGION_PROBE ${checkpoint.id.toUpperCase()}] player logical: (${probe.player?.logicalPosition?.x?.toFixed(1)}, ${probe.player?.logicalPosition?.z?.toFixed(1)}), world: (${probe.player?.worldPosition?.x?.toFixed(1)}, ${probe.player?.worldPosition?.z?.toFixed(1)})`);
+      console.log(`[REGION_PROBE ${checkpoint.id.toUpperCase()}] camera world: (${probe.camera?.worldPosition?.x?.toFixed(1)}, ${probe.camera?.worldPosition?.y?.toFixed(1)}, ${probe.camera?.worldPosition?.z?.toFixed(1)}), fwd: (${probe.camera?.forward?.x?.toFixed(2)}, ${probe.camera?.forward?.y?.toFixed(2)}, ${probe.camera?.forward?.z?.toFixed(2)}), near=${probe.camera?.near}, far=${probe.camera?.far}`);
+      console.log(`[REGION_PROBE ${checkpoint.id.toUpperCase()}] worldOrigin: (${probe.worldOrigin?.x}, ${probe.worldOrigin?.z})`);
+      console.log(`[REGION_PROBE ${checkpoint.id.toUpperCase()}] currentDistrictCell: ${probe.currentDistrictCell?.name}, nodePos: (${probe.currentDistrictCell?.nodePosition?.x}, ${probe.currentDistrictCell?.nodePosition?.z}), worldPos: (${probe.currentDistrictCell?.worldPosition?.x}, ${probe.currentDistrictCell?.worldPosition?.z})`);
+      console.log(`[REGION_PROBE ${checkpoint.id.toUpperCase()}] groups: ${JSON.stringify(probe.currentDistrictCell?.groups)}`);
+      console.log(`[REGION_PROBE ${checkpoint.id.toUpperCase()}] renderers: total=${probe.allRenderersCount}, inFrustum=${probe.inFrustumRenderersCount}`);
+    }
     const directory = path.join(evidenceDirectory, 'regions');
     mkdirSync(directory, { recursive: true });
     const screenshot = path.join(directory, `region-${checkpoint.id}.png`);
     await page.screenshot({ path: screenshot });
-    captures.push({ ...checkpoint, screenshot, travelled: -(getLogicalPlayerPosition(latest).z - start.z) });
+    captures.push({
+      ...checkpoint,
+      screenshot,
+      travelled: -(getLogicalPlayerPosition(latest).z - start.z),
+      probe: streaming.districtProbe || null,
+    });
   }
 
   assert(latest.world?.streaming?.rebaseCount > 0,

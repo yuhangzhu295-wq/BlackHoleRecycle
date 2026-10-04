@@ -5,7 +5,7 @@
  * for acceptance tooling. It is deliberately outside the production world
  * streamer: it neither creates gameplay objects nor changes world state.
  */
-import { Camera, Color, MeshRenderer, Node, Vec3, view } from 'cc';
+import { Camera, Color, MeshRenderer, Node, Vec3, view, geometry } from 'cc';
 import type { CompositionCompetitor } from '../../gameplay/ArenaMatchManager';
 import { CompressibleObject } from '../../gameplay/CompressibleObject';
 import { MACHINE_EVOLUTION_CONFIG } from '../../data/GameConfig';
@@ -421,7 +421,10 @@ export class WorldCompositionProbe {
   }
 
   /** Mirrors the former current-cell visual diagnostics without keeping it in World. */
-  public static getCurrentCellVisualDiagnostics(world: InfiniteWorldManager | null): ReadonlyArray<Record<string, unknown>> {
+  public static getCurrentCellVisualDiagnostics(
+    world: InfiniteWorldManager | null,
+    camera: Camera | null = null,
+  ): ReadonlyArray<Record<string, unknown>> {
     if (!world) return [];
     const cell = world.getCellRuntimeContent({
       x: Math.round(world.currentCell.x),
@@ -458,13 +461,20 @@ export class WorldCompositionProbe {
               color,
             };
           });
+          const inFrustum = Boolean(bounds && camera?.camera?.frustum
+            ? geometry.intersect.aabbFrustum(bounds, camera.camera.frustum) !== 0
+            : false);
           renderers.push({
             name: node.name,
+            worldPosition: { x: node.worldPosition.x, y: node.worldPosition.y, z: node.worldPosition.z },
+            inFrustum,
             primitiveCount,
             materialCount: materials.length,
             bounds: bounds ? {
               center: { x: bounds.center.x, y: bounds.center.y, z: bounds.center.z },
               halfExtents: { x: bounds.halfExtents.x, y: bounds.halfExtents.y, z: bounds.halfExtents.z },
+              min: { x: bounds.center.x - bounds.halfExtents.x, y: bounds.center.y - bounds.halfExtents.y, z: bounds.center.z - bounds.halfExtents.z },
+              max: { x: bounds.center.x + bounds.halfExtents.x, y: bounds.center.y + bounds.halfExtents.y, z: bounds.center.z + bounds.halfExtents.z },
             } : null,
             materials,
           });
@@ -472,15 +482,145 @@ export class WorldCompositionProbe {
         node.children.forEach(visit);
       };
       visit(child);
+      const inFrustumRendererCount = renderers.filter((r) => r.inFrustum as boolean).length;
       return {
         name: child.name,
         active: child.activeInHierarchy,
+        position: { x: child.position.x, y: child.position.y, z: child.position.z },
+        worldPosition: { x: child.worldPosition.x, y: child.worldPosition.y, z: child.worldPosition.z },
         descendantNames,
         meshRendererCount: renderers.length,
-        worldPosition: { x: child.worldPosition.x, y: child.worldPosition.y, z: child.worldPosition.z },
+        inFrustumRendererCount,
+        inFrustum: inFrustumRendererCount > 0,
         renderers,
       };
     });
+  }
+
+  public static getDistrictProbe(
+    world: InfiniteWorldManager | null,
+    camera: Camera | null,
+    playerNode: Node | null,
+  ): Record<string, unknown> | null {
+    if (!world || !camera || !camera.node?.isValid) return null;
+    const camPos = camera.node.worldPosition;
+    const forward = camera.node.forward;
+    const playerWorldPos = playerNode?.worldPosition || Vec3.ZERO;
+    const logicalOrigin = world.logicalOrigin;
+    const playerLogical = {
+      x: playerWorldPos.x + logicalOrigin.x,
+      y: playerWorldPos.y + logicalOrigin.y,
+      z: playerWorldPos.z + logicalOrigin.z,
+    };
+
+    const currentCellContent = world.getCellRuntimeContent({
+      x: Math.round(world.currentCell.x),
+      z: Math.round(world.currentCell.z),
+    });
+
+    const activeCellsContent = typeof world.getAllActiveCellsRuntimeContent === 'function'
+      ? world.getAllActiveCellsRuntimeContent()
+      : (currentCellContent ? [currentCellContent] : []);
+
+    const allRenderers: Array<{
+      cellCoord: { x: number; z: number };
+      groupName: string;
+      name: string;
+      worldPosition: { x: number; y: number; z: number };
+      bounds: {
+        center: { x: number; y: number; z: number };
+        halfExtents: { x: number; y: number; z: number };
+        min: { x: number; y: number; z: number };
+        max: { x: number; y: number; z: number };
+      } | null;
+      inFrustum: boolean;
+    }> = [];
+
+    for (const cell of activeCellsContent) {
+      for (const group of cell.node.children) {
+        const visit = (node: Node): void => {
+          const renderer = node.getComponent(MeshRenderer);
+          if (renderer) {
+            const bounds = renderer.model?.worldBounds || null;
+            const inFrustum = Boolean(bounds && camera?.camera?.frustum
+              ? geometry.intersect.aabbFrustum(bounds, camera.camera.frustum) !== 0
+              : false);
+            allRenderers.push({
+              cellCoord: { x: cell.coord.x, z: cell.coord.z },
+              groupName: group.name,
+              name: node.name,
+              worldPosition: { x: node.worldPosition.x, y: node.worldPosition.y, z: node.worldPosition.z },
+              bounds: bounds ? {
+                center: { x: bounds.center.x, y: bounds.center.y, z: bounds.center.z },
+                halfExtents: { x: bounds.halfExtents.x, y: bounds.halfExtents.y, z: bounds.halfExtents.z },
+                min: { x: bounds.center.x - bounds.halfExtents.x, y: bounds.center.y - bounds.halfExtents.y, z: bounds.center.z - bounds.halfExtents.z },
+                max: { x: bounds.center.x + bounds.halfExtents.x, y: bounds.center.y + bounds.halfExtents.y, z: bounds.center.z + bounds.halfExtents.z },
+              } : null,
+              inFrustum,
+            });
+          }
+          node.children.forEach(visit);
+        };
+        visit(group);
+      }
+    }
+
+    const currentCellNode = currentCellContent?.node || null;
+    const groups: Array<Record<string, unknown>> = [];
+    if (currentCellNode) {
+      for (const child of currentCellNode.children) {
+        let rendererCount = 0;
+        let inFrustumCount = 0;
+        const countVisit = (n: Node): void => {
+          const r = n.getComponent(MeshRenderer);
+          if (r) {
+            rendererCount++;
+            const b = r.model?.worldBounds;
+            if (b && camera?.camera?.frustum && geometry.intersect.aabbFrustum(b, camera.camera.frustum) !== 0) {
+              inFrustumCount++;
+            }
+          }
+          n.children.forEach(countVisit);
+        };
+        countVisit(child);
+        groups.push({
+          name: child.name,
+          position: { x: child.position.x, y: child.position.y, z: child.position.z },
+          worldPosition: { x: child.worldPosition.x, y: child.worldPosition.y, z: child.worldPosition.z },
+          active: child.activeInHierarchy,
+          rendererCount,
+          inFrustumCount,
+        });
+      }
+    }
+
+    return {
+      camera: {
+        worldPosition: { x: camPos.x, y: camPos.y, z: camPos.z },
+        forward: { x: forward.x, y: forward.y, z: forward.z },
+        near: camera.near,
+        far: camera.far,
+      },
+      player: {
+        logicalPosition: playerLogical,
+        worldPosition: { x: playerWorldPos.x, y: playerWorldPos.y, z: playerWorldPos.z },
+      },
+      worldOrigin: { x: logicalOrigin.x, y: logicalOrigin.y, z: logicalOrigin.z },
+      activeCells: activeCellsContent.map((c) => ({
+        coord: { x: c.coord.x, z: c.coord.z },
+        worldOrigin: { x: c.node.worldPosition.x, y: c.node.worldPosition.y, z: c.node.worldPosition.z },
+        nodePosition: { x: c.node.position.x, y: c.node.position.y, z: c.node.position.z },
+      })),
+      currentDistrictCell: currentCellNode ? {
+        name: currentCellNode.name,
+        nodePosition: { x: currentCellNode.position.x, y: currentCellNode.position.y, z: currentCellNode.position.z },
+        worldPosition: { x: currentCellNode.worldPosition.x, y: currentCellNode.worldPosition.y, z: currentCellNode.worldPosition.z },
+        groups,
+      } : null,
+      allRenderersCount: allRenderers.length,
+      inFrustumRenderersCount: allRenderers.filter((r) => r.inFrustum).length,
+      allRenderers,
+    };
   }
 
   private static collectEnvironmentEntries(

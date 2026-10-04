@@ -13,6 +13,8 @@ export interface WorldCellFactoryOptions {
   readonly cellSize: number;
   readonly parent: Node;
   readonly resolvePrefab?: (district: string, coord?: WorldCellCoord) => Prefab | null;
+  readonly origin?: Readonly<Vec3>;
+  readonly getOrigin?: () => Readonly<Vec3>;
 }
 
 /**
@@ -38,12 +40,23 @@ export class WorldCellFactory {
     return this.options.resolvePrefab?.(district, coord) || null;
   }
 
-  public instantiateAuthoredCell(coord: WorldCellCoord, district: string, prefabOverride?: Prefab | null, name = `WorldCell_${coord.x}_${coord.z}`): Node | null {
+  public instantiateAuthoredCell(
+    coord: WorldCellCoord,
+    district: string,
+    prefabOverride?: Prefab | null,
+    name = `WorldCell_${coord.x}_${coord.z}`,
+    origin?: Readonly<Vec3>,
+  ): Node | null {
     const prefab = prefabOverride || this.resolve(district, coord);
     if (!prefab) return null;
     const node = instantiate(prefab);
     node.name = name;
-    node.setPosition(new Vec3(coord.x * this.options.cellSize, 0, coord.z * this.options.cellSize));
+    const effectiveOrigin = origin || this.options.getOrigin?.() || this.options.origin || Vec3.ZERO;
+    node.setPosition(new Vec3(
+      coord.x * this.options.cellSize - effectiveOrigin.x,
+      0,
+      coord.z * this.options.cellSize - effectiveOrigin.z,
+    ));
     this.options.parent.addChild(node);
     return node;
   }
@@ -55,8 +68,13 @@ export class WorldCellFactory {
    * so cell size, coordinate maths and the streaming lifecycle stay identical.
    * A missing prefab returns `null` so the caller keeps the procedural fallback.
    */
-  public instantiateAuthoredDistrictMap(coord: WorldCellCoord, district: string, prefab: Prefab | null): Node | null {
+  public instantiateAuthoredDistrictMap(
+    coord: WorldCellCoord,
+    district: string,
+    prefab: Prefab | null,
+    origin?: Readonly<Vec3>,
+  ): Node | null {
     if (!prefab) return null;
-    return this.instantiateAuthoredCell(coord, district, prefab, `WorldCell_${coord.x}_${coord.z}`);
+    return this.instantiateAuthoredCell(coord, district, prefab, `WorldCell_${coord.x}_${coord.z}`, origin);
   }
 }
