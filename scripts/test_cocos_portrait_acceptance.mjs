@@ -1391,6 +1391,14 @@ async function verifyReviveFlow(cdp, page, canvasRect, homeSnapshot) {
   'FAIL_REVIVE_MODAL_EARLY_CLOSE: ' + JSON.stringify({ frozenRespawnSeconds, held: { gameState: held.gameState, uiScreen: held.uiScreen, arena: held.arena, pages: held.ui?.formalPages } }));
   assert(Math.abs((held.arena?.localRespawnSeconds || 0) - (frozenRespawnSeconds || 0)) < 0.05,
     'FAIL_REVIVE_RESPAWN_CLOCK_ADVANCED: ' + JSON.stringify({ frozenRespawnSeconds, held: held.arena?.localRespawnSeconds }));
+  // V8: the defeated player must be told who beat them and by how much. The
+  // page used to say only "被吞噬后掉落了部分质量", which never answers the one
+  // question a defeated player asks. The regex deliberately does not match that
+  // old fallback, so a regression to the generic copy fails here.
+  const reviveLossText = String(held.ui?.formalPages?.reviveLoss || '');
+  assert(/^被 .+ 吞噬 · 对方 \d+ \/ 你 \d+ · 已击败 \d+ 名对手$/.test(reviveLossText),
+    'FAIL_REVIVE_CAUSE_NOT_SHOWN: the revive page must name the attacker and the mass gap: '
+      + JSON.stringify({ reviveLossText, reviveRank: held.ui?.formalPages?.reviveRank, localDefeat: held.arena?.localDefeat }));
   await page.screenshot({ path: path.join(evidenceDirectory, 'portrait-390x844-revive-hold.png') });
 
   const giveUp = pointForVisibleNode(canvasRect, held, held.ui?.formalPages?.reviveGiveUp, 'REVIVE_GIVE_UP');

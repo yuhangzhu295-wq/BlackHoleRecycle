@@ -638,6 +638,10 @@ export class QABridge {
           })),
         },
         revive: describe(revivePage),
+        // The defeat cause lives only in these two labels; without them the
+        // gate can see that the page opened but not what it told the player.
+        reviveRank: labelText(revivePage?.getChildByName('RankValue') || null),
+        reviveLoss: labelText(revivePage?.getChildByName('LossValue') || null),
         reviveNow: describe(revivePage?.getChildByName('BtnRevive') || null),
         reviveGiveUp: describe(revivePage?.getChildByName('BtnGiveUp') || null),
       },

@@ -51,7 +51,14 @@ export class RevivePageController extends Component {
   public updateState(snapshot: ArenaMatchSnapshot): void {
     // Rank and loss info come from the real snapshot; countdown is page-owned.
     this.setLabel('RankValue', `当前第 ${snapshot.localRank || '-'} / ${snapshot.competitorCount}`);
-    this.setLabel('LossValue', `被吞噬后掉落了部分质量 · 已击败 ${snapshot.localKills} 名对手`);
+    // Name the attacker and the mass gap that decided it. Without this the page
+    // could only say "被吞噬后掉落了部分质量", which never answers the one
+    // question a defeated player asks: who beat me, and by how much.
+    const defeat = snapshot.localDefeat;
+    const loss = defeat
+      ? `被 ${defeat.attackerName} 吞噬 · 对方 ${defeat.attackerMass} / 你 ${defeat.localMassBefore}`
+      : '被吞噬后掉落了部分质量';
+    this.setLabel('LossValue', `${loss} · 已击败 ${snapshot.localKills} 名对手`);
   }
 
   private refreshCountdownLabel(): void {

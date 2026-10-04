@@ -52,8 +52,26 @@ export interface ArenaMatchSnapshot {
   readonly botStates: Readonly<Record<string, ArenaBotState>>;
   readonly eliminationCount: number;
   readonly reason: 'RUNNING' | 'TIME' | 'FORFEIT';
+  /**
+   * Who defeated the local player and how the masses compared at that instant,
+   * captured once at the moment of defeat. The revive page is the only place a
+   * player can learn what killed them, and this snapshot previously carried no
+   * attacker at all, so the page could only say the generic
+   * "被吞噬后掉落了部分质量" and the player had no way to know why they died.
+   */
+  readonly localDefeat: ArenaLocalDefeat | null;
   /** Calculated from this exact final match state; GameManager persists it once. */
   readonly settlementReward: ArenaSettlementReward;
+}
+
+/** The facts behind the local player's defeat, as observed at the defeat frame. */
+export interface ArenaLocalDefeat {
+  readonly attackerId: string;
+  readonly attackerName: string;
+  /** Attacker mass at the defeat frame, so the page can show the real gap. */
+  readonly attackerMass: number;
+  /** Local mass immediately before the dropped mass was removed. */
+  readonly localMassBefore: number;
 }
 
 /**
@@ -169,6 +187,7 @@ export class ArenaMatchManager extends Component {
   private eliminationCount: number = 0;
   private settlementReward: ArenaSettlementReward = EMPTY_SETTLEMENT_REWARD;
   private settlementRewardClaimed: boolean = false;
+  private localDefeat: ArenaLocalDefeat | null = null;
   private matchId: string = '';
   private matchSequence: number = 0;
 
@@ -183,6 +202,7 @@ export class ArenaMatchManager extends Component {
     this.matchPaused = false;
     this.endReason = 'RUNNING';
     this.eliminationCount = 0;
+    this.localDefeat = null;
     this.settlementReward = EMPTY_SETTLEMENT_REWARD;
     this.settlementRewardClaimed = false;
     this.matchId = this.createMatchId();
@@ -336,6 +356,7 @@ export class ArenaMatchManager extends Component {
       botStates,
       eliminationCount: this.eliminationCount,
       reason: this.endReason,
+      localDefeat: this.localDefeat,
       settlementReward: this.settlementReward,
     };
   }
@@ -554,6 +575,10 @@ export class ArenaMatchManager extends Component {
   private defeat(attacker: ArenaCompetitor, victim: ArenaCompetitor): void {
     if (!victim.alive) return;
     const position = victim.node.position.clone();
+    // Read the masses before the drop is applied so the revive page can show the
+    // real gap the player lost to rather than a post-drop figure.
+    const localMassBefore = Math.round(victim.machine.currentMass);
+    const attackerMass = Math.round(attacker.machine.currentMass);
     const droppedMass = Math.max(100, Math.round(victim.machine.currentMass * 0.35));
     this.world?.spawnArenaMassFragments(position, droppedMass, victim.id);
     attacker.kills++;
@@ -568,7 +593,15 @@ export class ArenaMatchManager extends Component {
     victim.machine.isPaused = true;
     victim.node.active = false;
     this.eliminationCount++;
-    if (victim.isLocal) this.callbacks?.onLocalDefeated(this.getSnapshot());
+    if (victim.isLocal) {
+      this.localDefeat = {
+        attackerId: attacker.id,
+        attackerName: attacker.name,
+        attackerMass,
+        localMassBefore,
+      };
+      this.callbacks?.onLocalDefeated(this.getSnapshot());
+    }
   }
 
   private keepInsideArena(competitor: ArenaCompetitor): void {
