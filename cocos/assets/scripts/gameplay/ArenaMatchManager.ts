@@ -53,6 +53,14 @@ export interface ArenaMatchSnapshot {
   readonly eliminationCount: number;
   readonly reason: 'RUNNING' | 'TIME' | 'FORFEIT';
   /**
+   * Ids of the opponents that could defeat the local player right now, derived
+   * from the exact `updateCompetitorCombat` predicate (mass ratio, shields,
+   * warmup, gravity range). The arena HUD marks only these nameplates as
+   * dangerous, so the warning a player sees cannot drift from the rule that
+   * actually kills them. Empty while the local player is shielded or dead.
+   */
+  readonly localThreatIds: readonly string[];
+  /**
    * Who defeated the local player and how the masses compared at that instant,
    * captured once at the moment of defeat. The revive page is the only place a
    * player can learn what killed them, and this snapshot previously carried no
@@ -330,6 +338,26 @@ export class ArenaMatchManager extends Component {
     return this.matchId;
   }
 
+  /**
+   * The opponents that satisfy the real combat predicate against the local
+   * player. Mirrors `updateCompetitorCombat` line for line: warmup, both bodies
+   * alive and unshielded, the attacker's mass over the consume ratio, and
+   * inside gravity range. Kept beside that loop so the two cannot drift.
+   */
+  private getLocalThreatIds(): string[] {
+    const local = this.getLocalCompetitor();
+    if (!local || !local.alive || local.shieldSeconds > 0) return [];
+    if (this.elapsedSeconds < COMBAT_WARMUP_SECONDS) return [];
+    const localMass = Math.max(1, local.machine.currentMass);
+    return this.competitors
+      .filter((competitor) => !competitor.isLocal
+        && competitor.alive
+        && competitor.shieldSeconds <= 0
+        && competitor.machine.currentMass >= localMass * CONSUME_RATIO
+        && distanceXZ(competitor.node.position, local.node.position) <= GRAVITY_RANGE)
+      .map((competitor) => competitor.id);
+  }
+
   public getSnapshot(): ArenaMatchSnapshot {
     const ordered = this.getLeaderboard();
     const local = this.getLocalCompetitor();
@@ -356,6 +384,7 @@ export class ArenaMatchManager extends Component {
       botStates,
       eliminationCount: this.eliminationCount,
       reason: this.endReason,
+      localThreatIds: this.getLocalThreatIds(),
       localDefeat: this.localDefeat,
       settlementReward: this.settlementReward,
     };

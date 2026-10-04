@@ -1382,6 +1382,62 @@ async function verifyReviveFlow(cdp, page, canvasRect, homeSnapshot) {
   await tapReadyStartButton(cdp, page, canvasRect);
   await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'ARENA', undefined, { timeout: 7000 });
 
+  // V8: the player must be able to see which opponent can eat them. A bot is
+  // actively hunting the local player in this phase, so a real threat is
+  // guaranteed to occur. It exists only in the run-up to the kill, so sample
+  // continuously across the whole approach instead of at one instant.
+  // Two things are checked: that localThreatIds equals an independent
+  // recomputation of the combat rule from the leaderboard, and that the HUD
+  // actually renders the warning word on exactly those opponents.
+  let threatEvidence = null;
+  let threatSamples = 0;
+  let threatApproachEnded = 'TIMEOUT';
+  const threatDeadline = Date.now() + 75_000;
+  while (Date.now() < threatDeadline && !threatEvidence) {
+    const sample = await readRuntimeSnapshot(page);
+    if (sample.arena?.localAlive === false || sample.gameState !== 'ARENA') {
+      threatApproachEnded = 'DEFEATED';
+      break;
+    }
+    threatSamples += 1;
+    const threatIds = sample.arena?.localThreatIds || [];
+    if (threatIds.length === 0) {
+      await page.waitForTimeout(80);
+      continue;
+    }
+    const localEntry = (sample.arena?.leaderboard || []).find((entry) => entry.isLocal) || null;
+    const localMass = Math.max(1, localEntry?.mass || 0);
+    const expected = (sample.arena?.leaderboard || [])
+      .filter((entry) => !entry.isLocal && entry.alive && (entry.shieldSeconds || 0) <= 0
+        && entry.mass >= localMass * 1.32
+        && Math.hypot(entry.position.x - (localEntry?.position?.x || 0),
+          entry.position.z - (localEntry?.position?.z || 0)) <= 4.8)
+      .map((entry) => entry.id);
+    threatEvidence = {
+      threatIds,
+      expected,
+      nameplates: sample.ui?.arenaHUD?.nameplates || [],
+      localMass,
+      elapsedSeconds: sample.arena?.elapsedSeconds ?? null,
+    };
+  }
+  assert(threatEvidence,
+    'FAIL_ARENA_THREAT_NEVER_OBSERVED: no opponent was ever reported as able to defeat the local player during a live arena phase: '
+      + JSON.stringify({ threatSamples, threatApproachEnded }));
+  assert(JSON.stringify([...threatEvidence.threatIds].sort()) === JSON.stringify([...threatEvidence.expected].sort()),
+    'FAIL_ARENA_THREAT_RULE_MISMATCH: localThreatIds must equal the combat rule (mass >= local*1.32, unshielded, within 4.8) recomputed from the leaderboard: '
+      + JSON.stringify(threatEvidence));
+  const marked = threatEvidence.nameplates.filter((plate) => threatEvidence.threatIds.includes(plate.id) && plate.active);
+  assert(marked.length === threatEvidence.threatIds.length
+    && marked.every((plate) => String(plate.label).startsWith('危险 ')),
+  'FAIL_ARENA_THREAT_NOT_MARKED: every dangerous opponent must carry a rendered "危险 <name>" nameplate: '
+    + JSON.stringify({ threatIds: threatEvidence.threatIds, nameplates: threatEvidence.nameplates }));
+  const unmarked = threatEvidence.nameplates.filter((plate) => plate.active
+    && String(plate.label).startsWith('危险 ')
+    && !threatEvidence.threatIds.includes(plate.id));
+  assert(unmarked.length === 0,
+    'FAIL_ARENA_THREAT_OVER_MARKED: a non-dangerous opponent was labelled dangerous: ' + JSON.stringify(unmarked));
+
   const defeated = await waitForLocalArenaDefeat(page);
   const frozenRespawnSeconds = defeated.arena?.localRespawnSeconds;
   await page.waitForTimeout(2800);
@@ -1429,7 +1485,7 @@ async function verifyReviveFlow(cdp, page, canvasRect, homeSnapshot) {
     'FAIL_REVIVE_COUNTDOWN_EARLY_EXPIRY: ' + JSON.stringify({ expiryElapsedMs, defeat: expiryDefeat.arena, expired: expired.arena }));
   await page.screenshot({ path: path.join(evidenceDirectory, 'portrait-390x844-revive-expiry.png') });
 
-  return { frozenRespawnSeconds, heldRespawnSeconds: held.arena?.localRespawnSeconds, giveUpReason: givenUp.arena?.reason, expiryElapsedMs, expiryReason: expired.arena?.reason };
+  return { frozenRespawnSeconds, heldRespawnSeconds: held.arena?.localRespawnSeconds, giveUpReason: givenUp.arena?.reason, expiryElapsedMs, expiryReason: expired.arena?.reason, threatEvidence };
 }
 
 /** P6: verify arena settlement page data, reward idempotency, and Restart flow. */

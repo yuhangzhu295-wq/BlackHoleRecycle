@@ -98,6 +98,9 @@ export class ArenaHUDController extends Component {
     if (!camera || !hudTransform || viewport.width <= 0 || viewport.height <= 0) return;
 
     const activeIds = new Set<string>();
+    // Opponents the match manager reports as currently able to defeat the local
+    // player. Computed by the combat rule itself, never re-derived here.
+    const threatIds = new Set(snapshot.localThreatIds || []);
     for (const competitor of snapshot.leaderboard) {
       const nameplate = this.getOrCreateNameplate(competitor.id);
       activeIds.add(competitor.id);
@@ -121,10 +124,15 @@ export class ArenaHUDController extends Component {
 
       const label = nameplate.getComponent(Label);
       if (label) {
-        label.string = competitor.isLocal ? '我' : competitor.name;
-        label.color = competitor.isLocal ? new Color(104, 238, 104, 255) : new Color(255, 255, 255, 255);
-        label.fontSize = competitor.isLocal ? 34 : 24;
-        label.lineHeight = competitor.isLocal ? 38 : 28;
+        // A dangerous opponent gets the word, not just a colour: colour alone is
+        // the first thing lost to a busy background or a colour-blind player.
+        const isThreat = !competitor.isLocal && threatIds.has(competitor.id);
+        label.string = competitor.isLocal ? '我' : isThreat ? `危险 ${competitor.name}` : competitor.name;
+        label.color = competitor.isLocal ? new Color(104, 238, 104, 255)
+          : isThreat ? new Color(255, 92, 92, 255)
+            : new Color(255, 255, 255, 255);
+        label.fontSize = competitor.isLocal ? 34 : isThreat ? 26 : 24;
+        label.lineHeight = competitor.isLocal ? 38 : isThreat ? 30 : 28;
       }
       // Camera screen coordinates are expressed in the current viewport;
       // ArenaHUD is a fixed 720×1280 canvas. Normalize before mapping so the
