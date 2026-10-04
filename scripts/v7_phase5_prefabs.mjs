@@ -162,7 +162,11 @@ function buildBurstPrefab(name, materialUuid) {
     _visFlags: 0,
   });
 
-  const startColorId = push(gradientRange(255, 235, 205, 255));       // 4
+  // V7.4 tuned absorb-burst colour: vivid electric purple/violet (#dc00ff,
+  // 220, 0, 255, alpha 190). Zero green ensures additive blending on bright road
+  // ground (G ~168) preserves its rich purple hue and CANNOT wash out to white
+  // ("一爆就纯白"), while high red and blue deliver a luminous, obvious pop.
+  const startColorId = push(gradientRange(220, 0, 255, 190));       // 4
   const startSizeXId = push(curve(0.6));                             // 5
   const startSizeYId = push(curve(0.6));                             // 6
   const startSizeZId = push(curve(0.6));                             // 7
@@ -175,8 +179,9 @@ function buildBurstPrefab(name, materialUuid) {
   const startDelayId = push(curve(0));                                // 12
   const startLifetimeId = push(curve(0.55));                           // 13
   const gravityModifierId = push(curve(0));                           // 14
-  // 130/s over the 0.35 s window is ~45 particles, under the 64 capacity.
-  const rateOverTimeId = push(curve(200));                            // 15
+  // 140/s over the 0.4 s window is ~56 particles, comfortably within the 128 capacity
+  // while preventing center-stack saturation blowout.
+  const rateOverTimeId = push(curve(140));                            // 15
   const rateOverDistanceId = push(curve(0));                          // 16
 
   const colorOverLifetimeId = push({                                  // 17

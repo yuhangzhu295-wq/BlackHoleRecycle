@@ -216,10 +216,10 @@
     "_mode": 0,
     "color": {
       "__type__": "cc.Color",
-      "r": 255,
-      "g": 235,
-      "b": 205,
-      "a": 255
+      "r": 220,
+      "g": 0,
+      "b": 255,
+      "a": 190
     }
   },
   {
@@ -285,7 +285,7 @@
   {
     "__type__": "cc.CurveRange",
     "mode": 0,
-    "constant": 200,
+    "constant": 140,
     "multiplier": 1
   },
   {

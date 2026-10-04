@@ -1,21 +1,20 @@
 {
   "status": "PASS",
   "creatorExe": "C:\\ProgramData\\cocos\\editors\\Creator\\3.8.3\\CocosCreator.exe",
-  "requestedPlatform": "wechatgame",
+  "requestedPlatform": "web-mobile",
   "requireReleaseIds": false,
-  "startedAt": "2026-10-03T10:43:14.170Z",
+  "startedAt": "2026-10-04T00:11:35.480Z",
   "builds": [
     {
-      "platform": "wechatgame",
-      "outputDirectory": "C:\\Users\\zyu33\\Documents\\Codex\\2026-09-29\\BlackHoleRecycle\\cocos\\build\\wechatgame",
-      "fileCount": 266,
+      "platform": "web-mobile",
+      "outputDirectory": "C:\\Users\\zyu33\\Documents\\Codex\\2026-09-29\\BlackHoleRecycle\\cocos\\build\\web-mobile",
+      "fileCount": 262,
       "requiredFiles": [
-        "game.json",
-        "project.config.json",
+        "index.html",
         "application.js",
-        "src/system.bundle.js"
+        "src/settings.json"
       ],
-      "releaseIdStatus": "configured",
+      "releaseIdStatus": "not-applicable",
       "launchScene": "db://assets/scenes/Game.scene",
       "preloadBundles": [
         "resources",
@@ -24,15 +23,10 @@
       "bootBundles": [
         "world-city"
       ],
-      "subpackages": [
-        "world-construction",
-        "world-city"
-      ],
-      "appId": "wx6ac3f5090a6b99c5",
-      "libVersion": "widelyUsed",
+      "subpackages": [],
       "launcherExitCode": 36
     }
   ],
   "failures": [],
-  "finishedAt": "2026-10-03T10:43:47.649Z"
+  "finishedAt": "2026-10-04T00:12:12.014Z"
 }
