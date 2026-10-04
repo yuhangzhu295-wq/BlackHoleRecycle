@@ -599,6 +599,7 @@ export class QABridge {
       pickupFeedback: this.read.getHUD()?.getPickupFeedbackDiagnostics() || null,
       tierUpgrade: this.read.getHUD()?.getTierUpgradeDiagnostics() || null,
       tierLock: this.read.getHUD()?.getTierLockDiagnostics() || null,
+      firstRunHint: this.read.getHUD()?.getFirstRunHintDiagnostics() || null,
       endlessReady: readyPage(endlessReadyPage),
       arenaReady: readyPage(arenaReadyPage),
       arenaHUD: {

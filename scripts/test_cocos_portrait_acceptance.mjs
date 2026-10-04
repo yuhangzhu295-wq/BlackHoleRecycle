@@ -4430,6 +4430,33 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
           error: error instanceof Error ? error.message : String(error),
         })}`);
       }
+
+      // V8: observe the first-run onboarding hints across the entire opening phase.
+      await page.evaluate(() => {
+        const observer = {
+          maxActiveCount: 0,
+          emittedCount: 0,
+          seenTexts: [],
+          stages: [],
+        };
+        window.__BHR_FIRST_RUN_HINT_OBSERVER__ = observer;
+        const timer = setInterval(() => {
+          try {
+            const hint = window.__BHR_QA__.snapshot().ui?.firstRunHint?.endless || null;
+            if (!hint) return;
+            observer.maxActiveCount = Math.max(observer.maxActiveCount, hint.activeCount || 0);
+            observer.emittedCount = Math.max(observer.emittedCount, hint.emittedCount || 0);
+            if (hint.lastText && !observer.seenTexts.includes(hint.lastText)) {
+              observer.seenTexts.push(hint.lastText);
+            }
+            if (hint.stage && !observer.stages.includes(hint.stage)) {
+              observer.stages.push(hint.stage);
+            }
+          } catch (error) { /* snapshot may be mid-rebuild */ }
+        }, 40);
+        observer.stop = () => clearInterval(timer);
+      });
+
       // Let Creator finish the post-activation imported-renderer material
       // binding before capturing the release-evidence frame. The runtime
       // itself performs only two bounded rebinds; this is not a test setter.
@@ -4590,6 +4617,10 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
       });
 
       if (acceptanceScope === 'pages') {
+        await page.evaluate(() => {
+          const observer = window.__BHR_FIRST_RUN_HINT_OBSERVER__;
+          if (observer?.stop) observer.stop();
+        });
         report.runtimePages = await verifyRuntimePages(cdp, page, canvasRect);
         assert(runtimeErrors.length === 0, `Runtime console errors after page navigation: ${runtimeErrors.join(' | ')}`);
         return;
@@ -5263,6 +5294,38 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
       assert(expectedTierHint && String(tierUpgrade?.lastText || '').includes(expectedTierHint),
         `FAIL_TIER_UPGRADE_COPY: the LV${tierUpgrade?.lastLevel} banner did not name the tier it unlocked: ${JSON.stringify(tierUpgrade)}`);
       report.verticalSlice.tierUpgrade = { ...tierUpgrade, observedMaxActiveCount: tierUpgradeObserver?.maxActiveCount ?? null };
+
+      // V8: assert the first-run onboarding hint lifecycle.
+      const firstRunHintObserver = await page.evaluate(() => {
+        const observer = window.__BHR_FIRST_RUN_HINT_OBSERVER__ || null;
+        if (observer?.stop) observer.stop();
+        return observer
+          ? {
+            maxActiveCount: observer.maxActiveCount,
+            emittedCount: observer.emittedCount,
+            seenTexts: observer.seenTexts ? [...observer.seenTexts] : [],
+            stages: observer.stages ? [...observer.stages] : [],
+          }
+          : null;
+      });
+      const firstRunHint = (await readRuntimeSnapshot(page)).ui?.firstRunHint?.endless || null;
+      const latestSave = (await readRuntimeSnapshot(page)).save || null;
+      assert((firstRunHintObserver?.maxActiveCount || 0) >= 1,
+        `FAIL_FIRST_RUN_HINT_NOT_VISIBLE: onboarding hint never reported an active frame: ${JSON.stringify({ observer: firstRunHintObserver, live: firstRunHint })}`);
+      assert(firstRunHintObserver?.seenTexts.some((text) => text.includes('你是黑洞')),
+        `FAIL_FIRST_RUN_HINT_STAGE1_COPY: stage 1 copy '你是黑洞' was never seen: ${JSON.stringify(firstRunHintObserver)}`);
+      assert((firstRunHint?.activeCount || 0) === 0,
+        `FAIL_FIRST_RUN_HINT_NOT_DISMISSED: hint banner remained active after 10s or absorption: ${JSON.stringify(firstRunHint)}`);
+      assert(latestSave?.tutorialCompleted === true,
+        `FAIL_FIRST_RUN_HINT_NOT_PERSISTED: tutorialCompleted was not set to true: ${JSON.stringify(latestSave)}`);
+      report.verticalSlice.firstRunHint = {
+        observedMaxActiveCount: firstRunHintObserver?.maxActiveCount ?? null,
+        seenTexts: firstRunHintObserver?.seenTexts ?? [],
+        stages: firstRunHintObserver?.stages ?? [],
+        emittedCount: firstRunHintObserver?.emittedCount ?? null,
+        dismissed: (firstRunHint?.activeCount || 0) === 0,
+        tutorialCompleted: latestSave?.tutorialCompleted ?? false,
+      };
 
       await page.waitForTimeout(3200);
       const upgradedSnapshot = await readRuntimeSnapshot(page);

@@ -6,6 +6,7 @@ import { _decorator, Button, Camera, Color, Component, Label, Vec3 } from 'cc';
 import { eventBus } from '../core/EventBus';
 import { CompressibleObject } from '../gameplay/CompressibleObject';
 import { applyHudSafeAreaInset } from './HudSafeAreaInset';
+import { FirstRunHintDiagnostics, FirstRunHintPresenter } from './FirstRunHintPresenter';
 import { PickupFeedbackDiagnostics, PickupFeedbackPresenter } from './PickupFeedbackPresenter';
 import { TierLockDiagnostics, TierLockPresenter } from './TierLockPresenter';
 import { TierUpgradeDiagnostics, TierUpgradePresenter } from './TierUpgradePresenter';
@@ -26,6 +27,10 @@ export class EndlessHUDController extends Component {
    * screen because a Label on a code-built node never renders in a built player.
    */
   private tierLock: TierLockPresenter | null = null;
+  /**
+   * V8 first-run one-time onboarding presentation for Endless mode.
+   */
+  private firstRunHints: FirstRunHintPresenter | null = null;
 
   onEnable(): void {
     // Individual live stat pills already provide all required information.
@@ -39,6 +44,7 @@ export class EndlessHUDController extends Component {
     this.tierUpgrade ||= new TierUpgradePresenter(this.node, 'LevelValue');
     this.tierUpgrade.enable();
     this.tierLock ||= new TierLockPresenter(this.node, 'RegionValue');
+    this.firstRunHints ||= new FirstRunHintPresenter(this.node, 'RegionValue');
     this.bindPause();
   }
 
@@ -50,6 +56,7 @@ export class EndlessHUDController extends Component {
     this.pickupFeedback?.clear();
     this.tierUpgrade?.disable();
     this.tierLock?.clear();
+    this.firstRunHints?.clear();
   }
 
   public updateStats(mass: number, level: number, levelTitle: string, coins: number, regionName: string): void {
@@ -80,6 +87,7 @@ export class EndlessHUDController extends Component {
       : tier === 2 ? new Color(255, 225, 95, 255)
         : new Color(255, 255, 255, 255);
     this.pickupFeedback?.emit(position, score, color);
+    this.firstRunHints?.onObjectAbsorbed();
   }
 
   public getPickupFeedbackDiagnostics(): PickupFeedbackDiagnostics | null {
@@ -99,9 +107,14 @@ export class EndlessHUDController extends Component {
     return this.tierLock?.getDiagnostics() || null;
   }
 
+  public getFirstRunHintDiagnostics(): FirstRunHintDiagnostics | null {
+    return this.firstRunHints?.getDiagnostics() || null;
+  }
+
   update(dt: number): void {
     this.pickupFeedback?.update(dt);
     this.tierUpgrade?.update(dt);
+    this.firstRunHints?.update(dt);
   }
 
   private bindPause(): void {

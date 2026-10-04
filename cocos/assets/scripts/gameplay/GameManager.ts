@@ -974,6 +974,7 @@ export class GameManager extends Component {
         skinId: saveService.data.currentSkinId,
         unlockedSkinIds: [...saveService.data.unlockedSkins],
         homeSkinSelectionCount: this.homeSkinSelectionCount,
+        tutorialCompleted: saveService.data.tutorialCompleted,
       }),
     });
     this.qaBridge.install();
@@ -1050,6 +1051,8 @@ export class GameManager extends Component {
       reason: snapshot.phase === 'FINISHED'
         ? snapshot.finishReason === 'FORFEIT' ? 'FORFEIT' : 'TIME'
         : 'RUNNING',
+      localThreatIds: [],
+      localDefeat: null,
       settlementReward: {
         coins: local?.settlementCoins || 0,
         massCoins: local?.settlementMassCoins || 0,

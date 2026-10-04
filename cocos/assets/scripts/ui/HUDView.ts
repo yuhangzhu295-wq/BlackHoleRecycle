@@ -89,6 +89,12 @@ export class HUDView extends Component {
     return { endless, arena };
   }
 
+  /** Read-only observation of the first-run tutorial hints. */
+  public getFirstRunHintDiagnostics(): Record<string, unknown> | null {
+    const endless = this.findPage('EndlessHUD')?.getComponent(EndlessHUDController)?.getFirstRunHintDiagnostics() || null;
+    return { endless };
+  }
+
   /**
    * V4 reference 10 State A. Called once per gameplay frame with the live world
    * objects; the active page projects the locked target onto the HUD. Nothing
