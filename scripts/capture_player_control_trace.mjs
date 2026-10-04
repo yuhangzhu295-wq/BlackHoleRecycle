@@ -112,6 +112,7 @@ try {
   // We record high-resolution trace frames before, during, and after each phase.
 
   const frames = [];
+  const seenFrames = new Set();
   const sampleInterval = 16; // ~60fps sampling
   let sampling = true;
 
@@ -121,12 +122,23 @@ try {
         const qa = window.__BHR_QA__;
         const snap = qa.snapshot();
         return {
+          // Read the ring buffer, not the single `latest` frame. Sampling
+          // `latest` across a process round trip can read the same stale frame
+          // repeatedly and then skip a whole window of real motion, which makes
+          // a continuous movement look like a teleport.
+          recent: snap.playerControlTrace.recentFrames,
           trace: snap.playerControlTrace.latest,
           machineLevel: snap.machine.level,
         };
       });
-      if (snapData.trace) {
-        frames.push(snapData.trace);
+      const batch = Array.isArray(snapData.recent) && snapData.recent.length
+        ? snapData.recent
+        : (snapData.trace ? [snapData.trace] : []);
+      for (const f of batch) {
+        if (f && !seenFrames.has(f.timestamp)) {
+          seenFrames.add(f.timestamp);
+          frames.push(f);
+        }
       }
       await sleep(sampleInterval);
     }
