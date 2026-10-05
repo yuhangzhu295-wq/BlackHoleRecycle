@@ -52,6 +52,16 @@ export class GameManager extends Component {
    * absorption. Visual only; it reads a world position and owns its own nodes.
    */
   private absorbFeedback: AbsorbFeedbackPool | null = null;
+  /**
+   * §15 death beat. Measured gap between the local player going down and the
+   * Revive modal appearing was 0 ms, i.e. "gameplay normal, then next frame
+   * suddenly Revive" -- the exact behaviour the brief forbids. The modal is now
+   * held for this long while the death spot is marked, so the player sees what
+   * happened to them before the page takes over.
+   */
+  private static readonly ARENA_DEATH_BEAT_SECONDS = 0.7;
+  private arenaDeathBeatRemaining: number = 0;
+  private arenaDeathBeatSnapshot: ArenaMatchSnapshot | null = null;
 
   public score: number = 0;
   public totalAbsorbedCount: number = 0;
@@ -742,6 +752,28 @@ export class GameManager extends Component {
     if (this.compressionSystem) this.compressionSystem.isPaused = true;
     // Freeze the arena respawn clock so the revive page countdown governs timing.
     this.arenaMatchManager?.setMatchPaused(true);
+    // Mark the death spot so the beat has something to look at. The body itself
+    // is already hidden by ArenaMatchManager.defeat.
+    if (this.machine) this.absorbFeedback?.emit(this.machine.node.position);
+    this.arenaDeathBeatRemaining = GameManager.ARENA_DEATH_BEAT_SECONDS;
+    this.arenaDeathBeatSnapshot = snapshot;
+  }
+
+  /**
+   * §15: the death beat. Deliberately a presentation-layer hold, not a global
+   * hit-stop -- nothing is time-scaled, so the match clock, respawn timer and
+   * combat authority are unaffected. It only delays the modal.
+   */
+  private updateArenaDeathBeat(dt: number): void {
+    if (this.arenaDeathBeatRemaining <= 0) return;
+    this.arenaDeathBeatRemaining -= dt;
+    if (this.arenaDeathBeatRemaining > 0) return;
+    const snapshot = this.arenaDeathBeatSnapshot;
+    this.arenaDeathBeatRemaining = 0;
+    this.arenaDeathBeatSnapshot = null;
+    // The match may have moved on (settlement, restart); only present the modal
+    // if this player is still the one waiting to revive.
+    if (!snapshot || this.gameState !== 'REVIVING') return;
     this.hud?.updateRevive(snapshot);
     this.hud?.showScreen('Revive');
   }
@@ -1089,6 +1121,7 @@ export class GameManager extends Component {
     // burst started just before a pause still collapses instead of freezing at
     // full scale. Visual only; it never reads or writes gameplay state.
     this.absorbFeedback?.update(dt);
+    this.updateArenaDeathBeat(dt);
     // 1. 暂停短路保护
     if (this.isPaused) return;
     if (!this.machine || !this.mainCamera) return;
