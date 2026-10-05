@@ -215,6 +215,9 @@ try {
           // ate but the mass never converted": bots get addMass immediately,
           // the local player's mass goes through the compression buffer.
           consumed: a.localConsumed || 0,
+          // §25: the HUD's own feedback text, so a kill beat is verified from
+          // what the player is shown rather than from the kill counter alone.
+          feedbackText: s.ui?.pickupFeedback?.arena?.lastText ?? null,
           px: s.player.position.x,
           pz: s.player.position.z,
           maxTier: s.machine.maxTier,
@@ -248,6 +251,7 @@ try {
         killableOpponentCount: snap.killableIds.length,
         threatCount: snap.threatIds.length,
         consumed: snap.consumed,
+        feedbackText: snap.feedbackText,
         px: snap.px,
         pz: snap.pz,
         maxTier: snap.maxTier,

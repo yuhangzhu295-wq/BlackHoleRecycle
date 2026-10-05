@@ -9,6 +9,7 @@
  * added; it does not claim to be an online match.
  */
 import { _decorator, CCFloat, Component, Node, Vec3 } from 'cc';
+import { eventBus } from '../core/EventBus';
 import { MACHINE_EVOLUTION_CONFIG } from '../data/GameConfig';
 import { BlackHoleMachine } from '../machine/BlackHoleMachine';
 import { InfiniteWorldManager } from '../world/InfiniteWorldManager';
@@ -790,6 +791,16 @@ export class ArenaMatchManager extends Component {
     victim.machine.isPaused = true;
     victim.node.active = false;
     this.eliminationCount++;
+    if (attacker.isLocal) {
+      // §25: a real kill just happened. The HUD subscribes and shows a short
+      // beat (淘汰 +1 / opponent name / mass now on the ground). No modal, no
+      // pause -- this is presentation hung off the real combat result.
+      eventBus.emit('ARENA_LOCAL_KILL', {
+        victimName: victim.name,
+        massReward: droppedMass,
+        position: { x: position.x, y: position.y, z: position.z },
+      });
+    }
     if (victim.isLocal) {
       this.localDefeat = {
         attackerId: attacker.id,

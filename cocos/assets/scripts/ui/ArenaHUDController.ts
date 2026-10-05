@@ -10,6 +10,10 @@ import { TierUpgradeDiagnostics, TierUpgradePresenter } from './TierUpgradePrese
 
 const { ccclass } = _decorator;
 
+/** §25: a kill reads as a win, so it gets its own colour and a short life. */
+const KILL_FEEDBACK_COLOR = new Color(255, 214, 92, 255);
+const KILL_FEEDBACK_SECONDS = 1.1;
+
 const TITLE_HOLD_SECONDS = 2.0;
 const TITLE_FADE_SECONDS = 0.8;
 
@@ -21,6 +25,7 @@ const formatClock = (seconds: number): string => {
 @ccclass('ArenaHUDController')
 export class ArenaHUDController extends Component {
   private bindings: Array<[Button, () => void]> = [];
+  private killUnsubscribe: (() => void) | null = null;
   private readonly projectedBotPosition: Vec3 = new Vec3();
   /**
    * Live world-to-HUD nameplates. These never own competitor state: each
@@ -55,10 +60,27 @@ export class ArenaHUDController extends Component {
     this.tierUpgrade.enable();
     this.tierLock ||= new TierLockPresenter(this.node, 'TimerValue');
     this.bind('BtnPause', () => eventBus.emit('UI_TRIGGER_PAUSE'));
+    // §25 kill feedback: short, no modal, hung off the real combat result.
+    this.killUnsubscribe?.();
+    this.killUnsubscribe = eventBus.on('ARENA_LOCAL_KILL', (payload: {
+      victimName?: string; massReward?: number; position?: { x: number; y: number; z: number };
+    }) => {
+      const position = payload?.position;
+      if (!position) return;
+      this.pickupFeedback?.emit(
+        new Vec3(position.x, position.y, position.z),
+        Math.max(0, Math.round(payload?.massReward ?? 0)),
+        KILL_FEEDBACK_COLOR,
+        `淘汰 ${payload?.victimName ?? '对手'} +${Math.max(0, Math.round(payload?.massReward ?? 0))}`,
+        KILL_FEEDBACK_SECONDS,
+      );
+    }, this);
     this.applyStatusStyle();
   }
 
   onDisable(): void {
+    this.killUnsubscribe?.();
+    this.killUnsubscribe = null;
     this.titleElapsed = 0;
     for (const [button, handler] of this.bindings) button.node.off(Button.EventType.CLICK, handler, this);
     this.bindings.length = 0;

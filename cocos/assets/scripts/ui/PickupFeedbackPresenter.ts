@@ -12,6 +12,8 @@ interface ActiveFeedback {
   readonly node: Node;
   readonly label: Label;
   elapsed: number;
+  /** Per-emission lifetime, so a kill beat can be shorter than a pickup. */
+  durationSeconds: number;
   observedVisibleFrame: boolean;
 }
 
@@ -41,7 +43,13 @@ export class PickupFeedbackPresenter {
     private readonly templateName: string,
   ) {}
 
-  public emit(worldPosition: Readonly<Vec3>, score: number, color: Readonly<Color>): void {
+  public emit(
+    worldPosition: Readonly<Vec3>,
+    score: number,
+    color: Readonly<Color>,
+    textOverride?: string,
+    durationSeconds: number = FEEDBACK_DURATION_SECONDS,
+  ): void {
     if (!this.host.activeInHierarchy) return;
     const template = this.host.getChildByName(this.templateName) || null;
     const hostTransform = this.host.getComponent(UITransform) || null;
@@ -73,7 +81,7 @@ export class PickupFeedbackPresenter {
       console.error(`[PickupFeedbackPresenter] Serialized ${this.templateName} has no Label.`);
       return;
     }
-    const text = `+${Math.max(0, Math.round(score))}`;
+    const text = textOverride ?? `+${Math.max(0, Math.round(score))}`;
     label.string = text;
     label.fontSize = 34;
     label.lineHeight = 38;
@@ -86,7 +94,7 @@ export class PickupFeedbackPresenter {
     const feedbackY = (normalizedY - 0.5) * hostTransform.height + 30;
     node.setPosition(feedbackX, feedbackY, 0);
     node.setScale(1.15, 1.15, 1);
-    this.active.push({ node, label, elapsed: 0, observedVisibleFrame: false });
+    this.active.push({ node, label, elapsed: 0, observedVisibleFrame: false, durationSeconds });
     this.emittedCount++;
     this.lastText = text;
     this.lastPosition.x = feedbackX;
@@ -102,7 +110,7 @@ export class PickupFeedbackPresenter {
         continue;
       }
       feedback.elapsed += Math.max(0, dt);
-      const progress = Math.min(1, feedback.elapsed / FEEDBACK_DURATION_SECONDS);
+      const progress = Math.min(1, feedback.elapsed / feedback.durationSeconds);
       feedback.node.setPosition(
         feedback.node.position.x,
         feedback.node.position.y + dt * 72,
