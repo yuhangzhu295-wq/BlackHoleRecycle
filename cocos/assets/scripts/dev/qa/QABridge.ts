@@ -307,6 +307,7 @@ export class QABridge {
         // never ate" from "the bots took everything first".
         owner: object.getCaptureOwnerId(),
         stateEntries: object.getStateEntryCounts(),
+        ownerReleases: object.ownerReleaseCount,
       };
     });
 

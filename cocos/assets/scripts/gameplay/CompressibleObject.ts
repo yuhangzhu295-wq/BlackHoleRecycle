@@ -32,6 +32,8 @@ export class CompressibleObject extends Component {
   private lockLabel: Label | null = null;
   /** The actual machine currently pulling this entity into its black hole. */
   private captureOwnerId: string | null = null;
+  /** Number of times this body's claim was released because the owner could no longer reach it. */
+  public ownerReleaseCount: number = 0;
   /** Optional physical spin for a real moving vehicle during the shared suction FSM. */
   private suctionSpinDegreesPerSecond: number = 0;
   /** V8.2.1 forensic counters; presentation-free and never read by gameplay. */
@@ -286,6 +288,23 @@ export class CompressibleObject extends Component {
 
   public getCaptureOwnerId(): string | null {
     return this.captureOwnerId;
+  }
+
+  /**
+   * Release a claim whose owner can no longer reach this body.
+   *
+   * updateMotion refuses to advance a body whose captureOwnerId differs from
+   * the consumer, so the selector in ArenaMatchManager must not hand a body to
+   * a competitor that updateMotion will immediately reject: doing so left the
+   * body selected-but-refused every frame, frozen in ATTRACTED, unabsorbable by
+   * anyone and never leaving the world. Releasing the claim here is what makes
+   * the selector and the enforcement agree; it does not weaken ownership, it
+   * only drops a claim the owner cannot service.
+   */
+  public releaseUnreachableClaim(): void {
+    if (!this.captureOwnerId) return;
+    this.captureOwnerId = null;
+    this.ownerReleaseCount += 1;
   }
 
   public showLockAlert(): void {

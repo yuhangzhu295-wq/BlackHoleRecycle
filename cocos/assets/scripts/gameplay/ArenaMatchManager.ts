@@ -661,6 +661,16 @@ export class ArenaMatchManager extends Component {
 
       let owner = object.getCaptureOwnerId();
       let collector = owner ? eligible.find((competitor) => competitor.id === owner) || null : null;
+      if (owner && !collector) {
+        // The claim holder can no longer reach this body. Leaving the claim in
+        // place made the fall-through below pick a competitor that updateMotion
+        // then refuses (its captureOwnerId still names someone else), so the
+        // body was selected every frame and advanced none: frozen in ATTRACTED,
+        // unabsorbable, never recycled. Drop the dead claim so the body can be
+        // collected by whoever can actually reach it.
+        object.releaseUnreachableClaim();
+        owner = null;
+      }
       if (!collector) {
         // The one-body-in-flight throttle is a limit on BOTS, not a rule that the
         // body goes uncollected. Skipping the object outright when the nearest
