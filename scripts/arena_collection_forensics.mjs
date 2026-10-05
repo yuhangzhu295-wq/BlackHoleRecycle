@@ -159,6 +159,8 @@ try {
     const rejectedReasons = new Set();
     let sawAccepted = false;
     let sawTierLocked = false;
+    const episodes = [];
+    let lockStartedAt = 0;
 
     while (Date.now() - t0 < RUN_MS) {
       const snap = await page.evaluate(() => {
@@ -192,24 +194,43 @@ try {
           if (c.rejectedReason === 'TIER_LOCKED') sawTierLocked = true;
           if (c.accepted) sawAccepted = true;
         }
-        const target = eligible[0] || null;
-        if (target) {
-          if (lockedTargetId !== target.objectId) {
-            lockedTargetId = target.objectId;
-            initialDistance = target.distance;
-            minDistance = target.distance;
-          } else {
-            minDistance = Math.min(minDistance, target.distance);
+        // Hold ONE body until it is gone. Re-locking onto `eligible[0]` every
+        // frame reset the distance series whenever the nearest candidate
+        // changed, which is what made the earlier numbers oscillate
+        // (5.00 -> 4.91 -> 2.82 -> 5.22 -> 1.12) instead of tracking a body.
+        const findLocked = () => (trace.nearest || []).find((c) => c.objectId === lockedTargetId) || null;
+        const lockedNow = lockedTargetId ? findLocked() : null;
+        const lockGone = lockedTargetId !== null && (lockedNow === null
+          || lockedNow.state === 'ABSORBED' || lockedNow.state === 'RECYCLED');
+        if (lockGone) {
+          episodes.push({
+            objectId: lockedTargetId, initialDistance, minDistance,
+            reachedRange: firstInRangeMs !== null,
+            vanishedState: lockedNow?.state ?? 'GONE',
+            vanishedByBot: lockedNow?.owner?.startsWith('bot-') ?? null,
+            trackedMs: elapsed - lockStartedAt,
+          });
+          lockedTargetId = null; initialDistance = null; minDistance = null;
+          firstInRangeMs = null; firstAttractedMs = null; firstSuckingMs = null; firstAbsorbedMs = null;
+        }
+        if (lockedTargetId === null) {
+          const fresh = eligible[0] || null;
+          if (fresh) {
+            lockedTargetId = fresh.objectId;
+            initialDistance = fresh.distance;
+            minDistance = fresh.distance;
+            lockStartedAt = elapsed;
           }
-          if (firstInRangeMs === null && target.distance <= attractRadius) firstInRangeMs = elapsed;
-          if (firstAttractedMs === null && snap.states[target.objectId] === 'ATTRACTED') firstAttractedMs = elapsed;
-          if (firstSuckingMs === null && snap.states[target.objectId] === 'SUCKING') firstSuckingMs = elapsed;
-          if (firstAbsorbedMs === null && (snap.states[target.objectId] === 'ABSORBED' || snap.states[target.objectId] === 'RECYCLED')) firstAbsorbedMs = elapsed;
-          // Steer using the object's own render position, which is the same
-          // space the player's node position is in and the same space the
-          // product's distanceXZ measured.
+        }
+        const locked = lockedTargetId ? findLocked() : null;
+        if (locked) {
+          minDistance = Math.min(minDistance, locked.distance);
+          if (firstInRangeMs === null && locked.distance <= attractRadius) firstInRangeMs = elapsed;
+          if (firstAttractedMs === null && snap.states[lockedTargetId] === 'ATTRACTED') firstAttractedMs = elapsed;
+          if (firstSuckingMs === null && snap.states[lockedTargetId] === 'SUCKING') firstSuckingMs = elapsed;
+          if (firstAbsorbedMs === null && (snap.states[lockedTargetId] === 'ABSORBED' || snap.states[lockedTargetId] === 'RECYCLED')) firstAbsorbedMs = elapsed;
           const obj = (await page.evaluate(() => window.__BHR_QA__.snapshot())).objects
-            .find((o) => o.runtimeId === target.objectId);
+            .find((o) => o.runtimeId === lockedTargetId);
           if (obj) await steerTo(obj.x - snap.px, obj.z - snap.pz);
         }
       }
@@ -237,7 +258,7 @@ try {
       finalConsumed: lastConsumed, attractRadius, initialDistance, minDistance,
       firstInRangeMs, firstAttractedMs, firstSuckingMs, firstAbsorbedMs,
       sawAccepted, sawTierLocked, rejectedReasons: [...rejectedReasons],
-      samples,
+      episodes, samples,
     });
     console.log(`game ${game}: attractR=${attractRadius} initD=${initialDistance?.toFixed(2)} minD=${minDistance?.toFixed(2)} inRange=${firstInRangeMs} attracted=${firstAttractedMs} sucking=${firstSuckingMs} absorbed=${firstAbsorbedMs} consumed=${lastConsumed} mass=${startMass}->${samples.at(-1)?.mass}`);
   }
@@ -252,6 +273,21 @@ try {
     else if (m.firstAbsorbedMs !== null) classification = 'COLLECTION_WORKS';
   }
   report.classification = classification;
+  const allEpisodes = report.matches.flatMap((mm) => mm.episodes);
+  report.episodeSummary = {
+    total: allEpisodes.length,
+    reachedRangeBeforeVanishing: allEpisodes.filter((e) => e.reachedRange).length,
+    vanishedByBot: allEpisodes.filter((e) => e.vanishedByBot).length,
+    medianInitialDistance: (() => {
+      const v = allEpisodes.map((e) => e.initialDistance).filter((x) => x !== null).sort((a, b) => a - b);
+      return v.length ? v[Math.floor(v.length / 2)] : null;
+    })(),
+    medianMinDistance: (() => {
+      const v = allEpisodes.map((e) => e.minDistance).filter((x) => x !== null).sort((a, b) => a - b);
+      return v.length ? v[Math.floor(v.length / 2)] : null;
+    })(),
+    episodes: allEpisodes,
+  };
   report.consoleErrors = consoleErrors;
 
   writeFileSync(path.join(outDir, 'collection_forensics.json'), JSON.stringify(report, null, 2), 'utf8');
@@ -261,6 +297,14 @@ try {
   console.log(`  attracted=${m?.firstAttractedMs} sucking=${m?.firstSuckingMs} absorbed=${m?.firstAbsorbedMs}`);
   console.log(`  consumed=${m?.finalConsumed} mass ${m?.startMass}->${m?.finalMass}`);
   console.log(`  consoleErrors=${consoleErrors.length}`);
+  const es = report.episodeSummary;
+  console.log(`
+EPISODES (one body locked until it vanished):`);
+  console.log(`  total=${es.total} reachedRangeBeforeVanishing=${es.reachedRangeBeforeVanishing} vanishedByBot=${es.vanishedByBot}`);
+  console.log(`  median initialDistance=${es.medianInitialDistance?.toFixed(2)} median minDistance=${es.medianMinDistance?.toFixed(2)}`);
+  for (const e of es.episodes) {
+    console.log(`   ${e.objectId} init=${e.initialDistance?.toFixed(2)} min=${e.minDistance?.toFixed(2)} reached=${e.reachedRange} vanished=${e.vanishedState} byBot=${e.vanishedByBot} tracked=${e.trackedMs}ms`);
+  }
 } finally {
   await browser.close();
   server.close();
