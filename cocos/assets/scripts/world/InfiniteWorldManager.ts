@@ -869,6 +869,27 @@ class InfiniteWorldCell {
     return spawned;
   }
 
+  /**
+   * Arena maintenance: remove every body that has finished being absorbed so
+   * its slot is released and can respawn. Endless does this in the same frame
+   * inside `updateObjects`; Arena never ran that code, so absorbed bodies
+   * lingered in the world forever and their slots never came back.
+   */
+  public removeAbsorbedCollectibles(
+    objectPool: ObjectPool<CompressibleObject>,
+    respawnDelaySeconds: number,
+  ): number {
+    let removed = 0;
+    for (let index = this.objects.length - 1; index >= 0; index--) {
+      const object = this.objects[index];
+      const state = object.getState();
+      if (state !== 'ABSORBED' && state !== 'RECYCLED') continue;
+      if (!isCollectibleObject(object)) continue;
+      if (this.removeAbsorbedCollectible(object, objectPool, respawnDelaySeconds)) removed += 1;
+    }
+    return removed;
+  }
+
   public removeAbsorbedCollectible(
     object: CompressibleObject,
     objectPool: ObjectPool<CompressibleObject>,
@@ -1519,6 +1540,33 @@ export class InfiniteWorldManager extends Component {
   public advanceWorldRespawnClock(dt: number): void {
     if (!this.initialized) return;
     for (const cell of this.activeCells.values()) cell.advanceRespawnClock(dt);
+  }
+
+  /**
+   * The removal-and-respawn half of `updateObjects`, without the Endless
+   * suction. ArenaMatchManager owns Arena's suction, so Arena never ran the
+   * code that removes an absorbed body and frees its slot: absorbed bodies
+   * lingered in the world forever, no slot was ever released, and the arena's
+   * live collectible supply drained monotonically to nothing. Measured
+   * consequence: the local player's neighbourhood held 23 T1 bodies at the
+   * opening, 0 by 8.5 s, and never recovered.
+   */
+  public maintainCollectibleLifecycle(dt: number): void {
+    if (!this.initialized || !this.objectPool) return;
+    let activeCollectibleCount = 0;
+    for (const cell of this.activeCells.values()) {
+      activeCollectibleCount += cell.removeAbsorbedCollectibles(
+        this.objectPool,
+        InfiniteWorldManager.COLLECTIBLE_RESPAWN_DELAY_SECONDS,
+      );
+      cell.advanceRespawnClock(dt);
+      activeCollectibleCount += cell.updateCollectibleRespawn(
+        this.objectPool,
+        this.logicalOrigin,
+        activeCollectibleCount,
+        InfiniteWorldManager.MAX_ACTIVE_COLLECTIBLES,
+      );
+    }
   }
 
   public updateObjects(

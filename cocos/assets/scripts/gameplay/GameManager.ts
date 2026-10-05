@@ -1187,7 +1187,7 @@ export class GameManager extends Component {
           // world. Measured consequence: the local player absorbed 0-1 bodies
           // per match even when it survived the whole run. This is the same
           // replenishment Endless already runs, not a new system.
-          this.infiniteWorldManager?.advanceWorldRespawnClock(dt);
+          this.infiniteWorldManager?.maintainCollectibleLifecycle(dt);
           const snapshot = this.arenaMatchManager?.getSnapshot();
           if (snapshot) {
             if (this.gameState === 'ARENA') this.hud?.updateArena(snapshot);
