@@ -244,12 +244,25 @@ try {
     // Steer at the nearest edible body; while dead, hold still.
     if (alive) {
       const player = snap.player.position;
-      const edible = (snap.objects || [])
-        .filter((o) => o.state === 'IDLE' && o.tier <= snap.machine.maxTier)
-        .map((o) => ({ ...o, d: Math.hypot(o.x - player.x, o.z - player.z) }))
+      const localMass = arena.localMass ?? 0;
+      // §12 CHASE before collect: without this the slice could never reach its
+      // own kill milestones, because `localKillableIds` needs proximity and the
+      // driver only ever gathered. Same mass predicate the combat rule uses.
+      const prey = (arena.leaderboard || [])
+        .filter((e) => !e.isLocal && e.alive && localMass >= Math.max(1, e.mass) * 1.32)
+        .map((e) => ({ x: e.position.x, z: e.position.z, d: Math.hypot(e.position.x - player.x, e.position.z - player.z) }))
         .sort((a, b) => a.d - b.d)[0];
-      if (edible) await steerTo(edible.x - player.x, edible.z - player.z);
-      else await steerTo(Math.cos(elapsed / 1000), Math.sin(elapsed / 1000));
+      if (prey) {
+        await steerTo(prey.x - player.x, prey.z - player.z);
+      } else {
+        // Only unclaimed bodies can be taken: ownership is held until absorption.
+        const edible = (snap.objects || [])
+          .filter((o) => o.state === 'IDLE' && o.tier <= snap.machine.maxTier && !o.owner)
+          .map((o) => ({ ...o, d: Math.hypot(o.x - player.x, o.z - player.z) }))
+          .sort((a, b) => a.d - b.d)[0];
+        if (edible) await steerTo(edible.x - player.x, edible.z - player.z);
+        else await steerTo(Math.cos(elapsed / 1000), Math.sin(elapsed / 1000));
+      }
     } else if (touchDown) {
       await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
       touchDown = false;
