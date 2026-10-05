@@ -159,13 +159,37 @@ try {
     const length = Math.hypot(dx, dz) || 1;
     const scale = Math.min(1, length / 4) * JOYSTICK_RADIUS;
     const x = joystick.x + (dx / length) * scale;
-    const y = joystick.y - (dz / length) * scale;
+    // Measured by arena_joystick_calibration: stick dy and world Z share a sign.
+    const y = joystick.y + (dz / length) * scale;
     if (!touchDown) {
       await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: joystick.x, y: joystick.y, id: touchId }] });
       touchDown = true;
     }
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x, y, id: touchId }] });
   };
+
+  // A 60 ms re-aim loop computed in-page, so steering is not hostage to the
+  // ~300 ms telemetry read. This runner was the last one still steering from
+  // inside its telemetry loop, which is why its collection was unreliable.
+  const steerRead = () => page.evaluate(() => {
+    const sv = window.__BHR_QA__.snapshot();
+    const p = sv.player.position;
+    const arena = sv.arena || {};
+    const localMass = arena.localMass ?? 0;
+    const prey = (arena.leaderboard || [])
+      .filter((e) => !e.isLocal && e.alive && localMass >= Math.max(1, e.mass) * 1.32)
+      .map((e) => ({ x: e.position.x, z: e.position.z, d: Math.hypot(e.position.x - p.x, e.position.z - p.z) }))
+      .sort((a, b) => a.d - b.d)[0] || null;
+    if (prey) return { px: p.x, pz: p.z, target: prey };
+    const maxTier = sv.machine.maxTier;
+    let best = null; let bestD = Infinity;
+    for (const o of (sv.objects || [])) {
+      if (o.state !== 'IDLE' || o.tier > maxTier || o.owner) continue;
+      const d = Math.hypot(o.x - p.x, o.z - p.z);
+      if (d < bestD) { bestD = d; best = { x: o.x, z: o.z, d }; }
+    }
+    return { px: p.x, pz: p.z, target: best };
+  });
 
   let lastAlive = true;
   let defeatAt = null;
@@ -179,6 +203,21 @@ try {
   let lastAliveThreatAtMs = null;
   let attackerFromRevive = null;
   const deadline = t0 + MAX_SECONDS * 1000;
+
+  const drive = { running: true };
+  const driveLoop = (async () => {
+    while (drive.running) {
+      try {
+        const live = await steerRead();
+        if (live.target) await steerTo(live.target.x - live.px, live.target.z - live.pz);
+        else if (touchDown) {
+          await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+          touchDown = false;
+        }
+      } catch (error) { /* a frame during a scene transition is not fatal */ }
+      await sleep(60);
+    }
+  })();
 
   while (Date.now() < deadline) {
     const snap = await page.evaluate(() => window.__BHR_QA__.snapshot());
@@ -252,23 +291,15 @@ try {
         .filter((e) => !e.isLocal && e.alive && localMass >= Math.max(1, e.mass) * 1.32)
         .map((e) => ({ x: e.position.x, z: e.position.z, d: Math.hypot(e.position.x - player.x, e.position.z - player.z) }))
         .sort((a, b) => a.d - b.d)[0];
-      if (prey) {
-        await steerTo(prey.x - player.x, prey.z - player.z);
-      } else {
-        // Only unclaimed bodies can be taken: ownership is held until absorption.
-        const edible = (snap.objects || [])
-          .filter((o) => o.state === 'IDLE' && o.tier <= snap.machine.maxTier && !o.owner)
-          .map((o) => ({ ...o, d: Math.hypot(o.x - player.x, o.z - player.z) }))
-          .sort((a, b) => a.d - b.d)[0];
-        if (edible) await steerTo(edible.x - player.x, edible.z - player.z);
-        else await steerTo(Math.cos(elapsed / 1000), Math.sin(elapsed / 1000));
-      }
+      // Steering is owned by the concurrent driveLoop above.
     } else if (touchDown) {
       await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
       touchDown = false;
     }
     await sleep(60);
   }
+  drive.running = false;
+  await driveLoop;
   if (touchDown) await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
 
   capture.running = false;
