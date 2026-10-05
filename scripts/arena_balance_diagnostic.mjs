@@ -220,6 +220,8 @@ try {
           feedbackText: s.ui?.pickupFeedback?.arena?.lastText ?? null,
           // §24: what the player is actually shown for danger and killable.
           nameplateLabels: (s.ui?.arenaHUD?.nameplates || []).filter((n) => n.active).map((n) => n.label),
+          // §26 player visibility
+          pv: s.playerVisibility ?? null,
           px: s.player.position.x,
           pz: s.player.position.z,
           maxTier: s.machine.maxTier,
@@ -255,6 +257,7 @@ try {
         consumed: snap.consumed,
         feedbackText: snap.feedbackText,
         nameplateLabels: snap.nameplateLabels,
+        pv: snap.pv,
         px: snap.px,
         pz: snap.pz,
         maxTier: snap.maxTier,

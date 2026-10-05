@@ -257,6 +257,7 @@ try {
       level: snap.machine.level, mass: snap.machine.mass, absorbTotal,
       edibleCueCount, lockVisibleCount, tierLockActive,
       hintStage: snap.ui?.firstRunHint?.stage ?? null,
+      pv: snap.playerVisibility ?? null,
       hintActive: snap.ui?.firstRunHint?.activeCount ?? null,
       hintRaw: snap.ui?.firstRunHint ?? null,
       tutorialCompleted: snap.save?.tutorialCompleted ?? null,

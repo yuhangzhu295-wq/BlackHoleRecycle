@@ -328,6 +328,29 @@ export class QABridge {
         isMoving: playerController?.isDragging || false,
         isDragging: playerController?.isDragging || false,
       },
+      /**
+       * V8.2 §26: is the player findable at a glance? Normalised screen position
+       * plus the black-hole core's on-screen radius, so "always visible" becomes
+       * a number instead of an opinion. Measured through the same gameplay
+       * camera and the machine's own suction radius, not a re-derivation.
+       */
+      playerVisibility: (() => {
+        const node = machine?.node;
+        if (!node || !mainCamera) return null;
+        const world = node.getWorldPosition();
+        const screen = mainCamera.worldToScreen(world, new Vec3());
+        const viewport = view.getViewportRect();
+        if (viewport.width <= 0 || viewport.height <= 0) return null;
+        const radius = machine?.getSuctionRadius() || 0;
+        const edge = mainCamera.worldToScreen(new Vec3(world.x + radius, world.y, world.z), new Vec3());
+        return {
+          screenX: (screen.x - viewport.x) / viewport.width,
+          screenY: (screen.y - viewport.y) / viewport.height,
+          radiusPx: Math.abs(edge.x - screen.x),
+          level: machine?.currentLevel ?? 0,
+          active: node.activeInHierarchy,
+        };
+      })(),
       camera: {
         fov: mainCamera?.fov ?? null,
         fovAxis: mainCamera?.fovAxis ?? null,
