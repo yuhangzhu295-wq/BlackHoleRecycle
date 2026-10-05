@@ -1149,6 +1149,12 @@ export class GameManager extends Component {
           );
           mPos = this.machine.node.position.clone();
         }
+        // Arena credits the local player's mass at absorption (see
+        // ArenaMatchManager.consumeObject), so the buffered injection must not
+        // also fire there or the mass would be counted twice. Endless keeps it.
+        if (this.compressionSystem) {
+          this.compressionSystem.massInjectionEnabled = this.gameState === 'PLAYING';
+        }
         if (this.gameState === 'PLAYING') {
           this.regionsVisitedCount = Math.max(this.regionsVisitedCount, this.infiniteWorldManager.getRegionIndex() + 1);
           // Endless mode has exactly one resource consumer.

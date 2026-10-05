@@ -724,9 +724,13 @@ export class ArenaMatchManager extends Component {
   private consumeObject(competitor: ArenaCompetitor, object: CompressibleObject): void {
     competitor.consumed++;
     if (competitor.isLocal) {
-      // The player still feeds the existing buffered CompressionSystem. Its
-      // mass and coins therefore arrive through the normal real pipeline.
+      // The player still feeds the existing buffered CompressionSystem for coins
+      // and feedback, but its mass is credited here, at absorption, the same way
+      // every bot's is. Measured asymmetry: bots grew from 1.2 s while the local
+      // player's mass sat at 240 until t=10.0 s, because the buffer only injects
+      // once bufferMass >= 180 or bufferCount >= 3. One economy for both sides.
       this.callbacks?.onLocalObjectAbsorbed(object);
+      competitor.machine.addMass(object.template.mass);
       return;
     }
     // Bots do not own a player-only CompressionSystem, but their mass is only

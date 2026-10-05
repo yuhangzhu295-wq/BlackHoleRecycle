@@ -26,6 +26,13 @@ export type CompressionState = 'IDLE' | 'BUFFERING' | 'READY' | 'COMPRESSING' | 
 export class CompressionSystem extends Component {
   public state: CompressionState = 'IDLE';
   public stateHistory: Array<{ state: CompressionState; timestamp: number }> = [];
+  /**
+   * When false, the compression cycle still runs (coins, feedback, the eject
+   * arc) but does NOT inject mass, because the caller already credited it at
+   * absorption. Arena uses this so the local player's mass converts per body
+   * exactly like every bot's; Endless keeps the buffered economy unchanged.
+   */
+  public massInjectionEnabled: boolean = true;
   public bufferMass: number = 0;
   public bufferValue: number = 0;
   public bufferCount: number = 0;
@@ -177,7 +184,7 @@ export class CompressionSystem extends Component {
       
       // 质量在此刻真实注入机器，触发潜在升级
       if (this.machine) {
-        this.machine.addMass(this.bufferMass);
+        if (this.massInjectionEnabled) this.machine.addMass(this.bufferMass);
         // Clear ONLY the compression shake on Y. Restoring the whole snapshot
         // dragged the machine back to where COMPRESSING began, undoing every
         // metre the player drove during the 0.45 s eject window: the machine is
