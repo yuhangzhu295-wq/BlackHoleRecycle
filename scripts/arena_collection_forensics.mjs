@@ -161,6 +161,8 @@ try {
     let sawTierLocked = false;
     const episodes = [];
     let lockStartedAt = 0;
+    let promotedToSucking = false;
+    let sawAbsorbed = false;
 
     while (Date.now() - t0 < RUN_MS) {
       const snap = await page.evaluate(() => {
@@ -168,8 +170,18 @@ try {
         const s = qa.snapshot();
         // Top-level, sibling of `arena`, not under `ui`.
         const trace = s.arenaSuctionTrace || null;
+        // Full object list for existence, plus monotonic state-entry counters so
+        // a body that promoted through the brief SUCKING phase is still visible
+        // to a 200 ms sampler.
         const states = {};
-        for (const o of (s.objects || [])) states[o.runtimeId] = o.state;
+        for (const o of (s.objects || [])) {
+          states[o.runtimeId] = {
+            state: o.state,
+            sucked: o.stateEntries?.SUCKING ?? 0,
+            absorbed: o.stateEntries?.ABSORBED ?? 0,
+            recycled: o.stateEntries?.RECYCLED ?? 0,
+          };
+        }
         return {
           atMs: Date.now(),
           px: s.player.position.x, pz: s.player.position.z,
@@ -200,13 +212,23 @@ try {
         // (5.00 -> 4.91 -> 2.82 -> 5.22 -> 1.12) instead of tracking a body.
         const findLocked = () => (trace.nearest || []).find((c) => c.objectId === lockedTargetId) || null;
         const lockedNow = lockedTargetId ? findLocked() : null;
-        const lockGone = lockedTargetId !== null && (lockedNow === null
-          || lockedNow.state === 'ABSORBED' || lockedNow.state === 'RECYCLED');
+        const lockedRecord = lockedTargetId ? snap.states[lockedTargetId] ?? null : null;
+        if (lockedRecord) {
+          if (lockedRecord.sucked > 0) promotedToSucking = true;
+          if (lockedRecord.absorbed > 0) sawAbsorbed = true;
+        }
+        // Existence comes from the FULL object list; the trace only supplies
+        // distance. Treating "fell out of the nearest 8" as "vanished" is what
+        // conflated "absorbed" with "merely walked away".
+        const lockGone = lockedTargetId !== null && (lockedRecord === null
+          || lockedRecord.state === 'ABSORBED' || lockedRecord.state === 'RECYCLED');
         if (lockGone) {
           episodes.push({
             objectId: lockedTargetId, initialDistance, minDistance,
             reachedRange: firstInRangeMs !== null,
-            vanishedState: lockedNow?.state ?? 'GONE',
+            promotedToSucking,
+            absorbed: sawAbsorbed,
+            finalState: lockedRecord?.state ?? 'LEFT_WORLD',
             vanishedByBot: lockedNow?.owner?.startsWith('bot-') ?? null,
             trackedMs: elapsed - lockStartedAt,
           });
@@ -226,9 +248,10 @@ try {
         if (locked) {
           minDistance = Math.min(minDistance, locked.distance);
           if (firstInRangeMs === null && locked.distance <= attractRadius) firstInRangeMs = elapsed;
-          if (firstAttractedMs === null && snap.states[lockedTargetId] === 'ATTRACTED') firstAttractedMs = elapsed;
-          if (firstSuckingMs === null && snap.states[lockedTargetId] === 'SUCKING') firstSuckingMs = elapsed;
-          if (firstAbsorbedMs === null && (snap.states[lockedTargetId] === 'ABSORBED' || snap.states[lockedTargetId] === 'RECYCLED')) firstAbsorbedMs = elapsed;
+          const rec = snap.states[lockedTargetId];
+          if (firstAttractedMs === null && rec && (rec.state === 'ATTRACTED' || rec.sucked > 0 || rec.absorbed > 0)) firstAttractedMs = elapsed;
+          if (firstSuckingMs === null && rec && rec.sucked > 0) firstSuckingMs = elapsed;
+          if (firstAbsorbedMs === null && rec && rec.absorbed > 0) firstAbsorbedMs = elapsed;
           const obj = (await page.evaluate(() => window.__BHR_QA__.snapshot())).objects
             .find((o) => o.runtimeId === lockedTargetId);
           if (obj) await steerTo(obj.x - snap.px, obj.z - snap.pz);
@@ -277,6 +300,8 @@ try {
   report.episodeSummary = {
     total: allEpisodes.length,
     reachedRangeBeforeVanishing: allEpisodes.filter((e) => e.reachedRange).length,
+    promotedToSucking: allEpisodes.filter((e) => e.promotedToSucking).length,
+    absorbed: allEpisodes.filter((e) => e.absorbed).length,
     vanishedByBot: allEpisodes.filter((e) => e.vanishedByBot).length,
     medianInitialDistance: (() => {
       const v = allEpisodes.map((e) => e.initialDistance).filter((x) => x !== null).sort((a, b) => a - b);
@@ -300,10 +325,10 @@ try {
   const es = report.episodeSummary;
   console.log(`
 EPISODES (one body locked until it vanished):`);
-  console.log(`  total=${es.total} reachedRangeBeforeVanishing=${es.reachedRangeBeforeVanishing} vanishedByBot=${es.vanishedByBot}`);
+  console.log(`  total=${es.total} reachedRange=${es.reachedRangeBeforeVanishing} promotedToSucking=${es.promotedToSucking} absorbed=${es.absorbed} vanishedByBot=${es.vanishedByBot}`);
   console.log(`  median initialDistance=${es.medianInitialDistance?.toFixed(2)} median minDistance=${es.medianMinDistance?.toFixed(2)}`);
   for (const e of es.episodes) {
-    console.log(`   ${e.objectId} init=${e.initialDistance?.toFixed(2)} min=${e.minDistance?.toFixed(2)} reached=${e.reachedRange} vanished=${e.vanishedState} byBot=${e.vanishedByBot} tracked=${e.trackedMs}ms`);
+    console.log(`   ${e.objectId} init=${e.initialDistance?.toFixed(2)} min=${e.minDistance?.toFixed(2)} reached=${e.reachedRange} sucking=${e.promotedToSucking} absorbed=${e.absorbed} final=${e.finalState} byBot=${e.vanishedByBot} tracked=${e.trackedMs}ms`);
   }
 } finally {
   await browser.close();

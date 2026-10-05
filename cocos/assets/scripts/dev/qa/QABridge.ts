@@ -306,6 +306,7 @@ export class QABridge {
         // first competitor in range, so ownership is what separates "the player
         // never ate" from "the bots took everything first".
         owner: object.getCaptureOwnerId(),
+        stateEntries: object.getStateEntryCounts(),
       };
     });
 

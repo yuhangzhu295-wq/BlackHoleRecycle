@@ -34,6 +34,10 @@ export class CompressibleObject extends Component {
   private captureOwnerId: string | null = null;
   /** Optional physical spin for a real moving vehicle during the shared suction FSM. */
   private suctionSpinDegreesPerSecond: number = 0;
+  /** V8.2.1 forensic counters; presentation-free and never read by gameplay. */
+  private readonly stateEntryCounts: Record<ObjectMotionState, number> = {
+    IDLE: 0, ATTRACTED: 0, SUCKING: 0, ABSORBED: 0, RECYCLED: 0,
+  };
   private visualYawDegrees: number = 0;
   private visualRollDegrees: number = 0;
   /** Presentation clock for subtle edible target cue in IDLE. */
@@ -80,6 +84,15 @@ export class CompressibleObject extends Component {
     if (nextState === 'IDLE') this.stateHistory.length = 0;
     this.stateHistory.push(nextState);
     if (this.stateHistory.length > CompressibleObject.STATE_HISTORY_LIMIT) this.stateHistory.shift();
+    // V8.2.1: monotonic per-state entry counts. SUCKING lasts a fraction of a
+    // second, so an external sampler at 200 ms can skip it entirely and report
+    // "never promoted" for a body that did promote. Counters cannot be missed.
+    this.stateEntryCounts[nextState] += 1;
+  }
+
+  /** Read-only per-state entry counts; monotonic for the life of this body. */
+  public getStateEntryCounts(): Readonly<Record<ObjectMotionState, number>> {
+    return this.stateEntryCounts;
   }
 
   /**
