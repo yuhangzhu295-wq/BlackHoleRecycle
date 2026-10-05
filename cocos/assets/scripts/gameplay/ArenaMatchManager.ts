@@ -557,10 +557,21 @@ export class ArenaMatchManager extends Component {
       return;
     }
 
-    const prey = this.competitors
-      .filter((other) => other.id !== bot.id && other.alive && other.shieldSeconds <= 0
-        && bot.machine.currentMass >= other.machine.currentMass * CONSUME_RATIO)
-      .sort((left, right) => distanceXZ(position, left.node.position) - distanceXZ(position, right.node.position))[0] || null;
+    // No hunting before combat unlocks. updateCompetitorCombat is gated on
+    // COMBAT_WARMUP_SECONDS, so during the preparation window the player cannot
+    // defend itself at all -- yet bots still selected it as prey and converged.
+    // Measured: the local player died within 0.3-0.6 s of the unlock in 5/5
+    // matches (unlock ~15.3 s, death ~15.3-15.6 s), which left it roughly 15 s of
+    // uncontested collection for its whole match. Spending the warm-up
+    // collecting instead of swarming a defenceless target is the same behaviour
+    // the window already assumes; nothing about mass, speed or combat changes.
+    const combatUnlocked = this.elapsedSeconds >= COMBAT_WARMUP_SECONDS;
+    const prey = combatUnlocked
+      ? this.competitors
+        .filter((other) => other.id !== bot.id && other.alive && other.shieldSeconds <= 0
+          && bot.machine.currentMass >= other.machine.currentMass * CONSUME_RATIO)
+        .sort((left, right) => distanceXZ(position, left.node.position) - distanceXZ(position, right.node.position))[0] || null
+      : null;
     if (prey && distanceXZ(position, prey.node.position) < 15) {
       bot.behavior = 'CHASE';
       bot.targetId = prey.id;
