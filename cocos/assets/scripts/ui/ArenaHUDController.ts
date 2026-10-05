@@ -93,11 +93,43 @@ export class ArenaHUDController extends Component {
         statusNode.active = false;
       }
     }
-    snapshot.leaderboard.slice(0, 5).forEach((entry, index) => {
+    // Top 3 + Me leaderboard:
+    // Display Top 3 competitors. If local player is within Top 3, show 4th competitor on row 4.
+    // If local player is 4th or lower, show local player on row 4 with their real rank.
+    // Row 5 is hidden to save HUD space.
+    const top3 = snapshot.leaderboard.slice(0, 3);
+    const localInTop3 = top3.some((entry) => entry.isLocal);
+    const row4Entry = localInTop3
+      ? snapshot.leaderboard[3] || null
+      : snapshot.leaderboard.find((entry) => entry.isLocal) || null;
+    const row4Rank = localInTop3 ? 4 : snapshot.localRank || 4;
+
+    const displayRows: Array<{ rank: number; entry: typeof snapshot.leaderboard[0] | null }> = [
+      { rank: 1, entry: top3[0] || null },
+      { rank: 2, entry: top3[1] || null },
+      { rank: 3, entry: top3[2] || null },
+      { rank: row4Rank, entry: row4Entry },
+    ];
+
+    displayRows.forEach(({ rank, entry }, index) => {
+      const rowNode = this.node.getChildByName(`TopRow${index + 1}`);
+      const labelNode = this.node.getChildByName(`Top${index + 1}`);
+      if (!entry) {
+        if (rowNode) rowNode.active = false;
+        if (labelNode) labelNode.active = false;
+        return;
+      }
+      if (rowNode) rowNode.active = true;
+      if (labelNode) labelNode.active = true;
       const prefix = entry.isLocal ? '你' : entry.name;
       const life = entry.alive ? '' : ' · 重生';
-      this.setLabel(`Top${index + 1}`, `${index + 1}. ${prefix}  ${entry.mass}kg${life}`);
+      this.setLabel(`Top${index + 1}`, `${rank}. ${prefix}  ${entry.mass}kg${life}`);
     });
+
+    const topRow5 = this.node.getChildByName('TopRow5');
+    if (topRow5) topRow5.active = false;
+    const top5 = this.node.getChildByName('Top5');
+    if (top5) top5.active = false;
     this.updateOffscreenBotArrows(snapshot);
     this.updateCompetitorNameplates(snapshot);
   }
@@ -121,6 +153,8 @@ export class ArenaHUDController extends Component {
     // Opponents the match manager reports as currently able to defeat the local
     // player. Computed by the combat rule itself, never re-derived here.
     const threatIds = new Set(snapshot.localThreatIds || []);
+    const positionedNameplates: Array<{ node: Node; x: number; y: number }> = [];
+
     for (const competitor of snapshot.leaderboard) {
       const nameplate = this.getOrCreateNameplate(competitor.id);
       activeIds.add(competitor.id);
@@ -157,11 +191,41 @@ export class ArenaHUDController extends Component {
       // Camera screen coordinates are expressed in the current viewport;
       // ArenaHUD is a fixed 720×1280 canvas. Normalize before mapping so the
       // labels remain aligned at all verified portrait aspect ratios.
-      nameplate.setPosition(
-        (normalizedX - 0.5) * hudTransform.width,
-        (normalizedY - 0.5) * hudTransform.height + 36,
-        0,
-      );
+      const baseX = (normalizedX - 0.5) * hudTransform.width;
+      const baseY = (normalizedY - 0.5) * hudTransform.height + 36;
+      positionedNameplates.push({ node: nameplate, x: baseX, y: baseY });
+    }
+
+    // Nameplate stacking avoidance: when multiple living competitors cluster together,
+    // their nameplates can overlap. We relax overlapping nameplates along Y without hiding any.
+    const MIN_NAMEPLATE_GAP_X = 140;
+    const MIN_NAMEPLATE_GAP_Y = 32;
+    for (let iter = 0; iter < 4; iter += 1) {
+      for (let i = 0; i < positionedNameplates.length; i += 1) {
+        for (let j = i + 1; j < positionedNameplates.length; j += 1) {
+          const a = positionedNameplates[i];
+          const b = positionedNameplates[j];
+          const dx = Math.abs(a.x - b.x);
+          if (dx < MIN_NAMEPLATE_GAP_X) {
+            const dy = b.y - a.y;
+            if (Math.abs(dy) < MIN_NAMEPLATE_GAP_Y) {
+              const overlap = MIN_NAMEPLATE_GAP_Y - Math.abs(dy);
+              const shift = overlap * 0.5;
+              if (dy >= 0) {
+                b.y += shift;
+                a.y -= shift;
+              } else {
+                b.y -= shift;
+                a.y += shift;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    for (const item of positionedNameplates) {
+      item.node.setPosition(item.x, item.y, 0);
     }
 
     for (const [id, nameplate] of this.competitorNameplates) {
