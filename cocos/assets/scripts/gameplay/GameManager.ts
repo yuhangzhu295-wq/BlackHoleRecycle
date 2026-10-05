@@ -1086,6 +1086,7 @@ export class GameManager extends Component {
         ? snapshot.finishReason === 'FORFEIT' ? 'FORFEIT' : 'TIME'
         : 'RUNNING',
       localThreatIds: [],
+      localKillableIds: [],
       localDefeat: null,
       settlementReward: {
         coins: local?.settlementCoins || 0,

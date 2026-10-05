@@ -61,6 +61,14 @@ export interface ArenaMatchSnapshot {
    */
   readonly localThreatIds: readonly string[];
   /**
+   * Ids of the opponents the local player could defeat right now, derived from
+   * the SAME `updateCompetitorCombat` predicate as `localThreatIds` with the
+   * roles reversed. §13 requires the killable state and the danger state to
+   * come from one combat rule, so the HUD and any diagnostic read this rather
+   * than inventing a mass-difference test of their own.
+   */
+  readonly localKillableIds: readonly string[];
+  /**
    * Who defeated the local player and how the masses compared at that instant,
    * captured once at the moment of defeat. The revive page is the only place a
    * player can learn what killed them, and this snapshot previously carried no
@@ -358,6 +366,26 @@ export class ArenaMatchManager extends Component {
       .map((competitor) => competitor.id);
   }
 
+  /**
+   * The opponents the local player satisfies the combat predicate against,
+   * i.e. the ones the player could chase and eat. Mirrors
+   * `getLocalThreatIds` with attacker and victim swapped, so the two can never
+   * disagree about the same rule.
+   */
+  private getLocalKillableIds(): string[] {
+    const local = this.getLocalCompetitor();
+    if (!local || !local.alive || local.shieldSeconds > 0) return [];
+    if (this.elapsedSeconds < COMBAT_WARMUP_SECONDS) return [];
+    const localMass = Math.max(1, local.machine.currentMass);
+    return this.competitors
+      .filter((competitor) => !competitor.isLocal
+        && competitor.alive
+        && competitor.shieldSeconds <= 0
+        && localMass >= Math.max(1, competitor.machine.currentMass) * CONSUME_RATIO
+        && distanceXZ(competitor.node.position, local.node.position) <= GRAVITY_RANGE)
+      .map((competitor) => competitor.id);
+  }
+
   public getSnapshot(): ArenaMatchSnapshot {
     const ordered = this.getLeaderboard();
     const local = this.getLocalCompetitor();
@@ -385,6 +413,7 @@ export class ArenaMatchManager extends Component {
       eliminationCount: this.eliminationCount,
       reason: this.endReason,
       localThreatIds: this.getLocalThreatIds(),
+      localKillableIds: this.getLocalKillableIds(),
       localDefeat: this.localDefeat,
       settlementReward: this.settlementReward,
     };
