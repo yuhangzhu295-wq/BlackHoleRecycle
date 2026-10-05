@@ -653,17 +653,26 @@ export class ArenaMatchManager extends Component {
 
       if (state === 'ABSORBED' || state === 'RECYCLED') continue;
 
+      const position = object.getPosition();
+      const eligible = active
+        .filter((competitor) => object.template.tier <= competitor.machine.getMaxTier()
+          && distanceXZ(competitor.node.position, position) <= competitor.machine.getSuctionRadius())
+        .sort((left, right) => distanceXZ(left.node.position, position) - distanceXZ(right.node.position, position));
+
       let owner = object.getCaptureOwnerId();
-      let collector = owner ? active.find((competitor) => competitor.id === owner) || null : null;
+      let collector = owner ? eligible.find((competitor) => competitor.id === owner) || null : null;
       if (!collector) {
-        const position = object.getPosition();
-        collector = active
-          .filter((competitor) => object.template.tier <= competitor.machine.getMaxTier()
-            && distanceXZ(competitor.node.position, position) <= competitor.machine.getSuctionRadius())
-          .sort((left, right) => distanceXZ(left.node.position, position) - distanceXZ(right.node.position, position))[0] || null;
+        // The one-body-in-flight throttle is a limit on BOTS, not a rule that the
+        // body goes uncollected. Skipping the object outright when the nearest
+        // eligible competitor happened to be a busy bot denied it to everyone --
+        // including an idle competitor standing closer, which is exactly how the
+        // local player was locked out. Take the nearest competitor that is
+        // actually free to collect instead.
+        collector = eligible.find((competitor) => !(competitor.isBot
+          && owner !== competitor.id
+          && botClaims.has(competitor.id))) || null;
       }
       if (!collector) continue;
-      if (collector.isBot && owner !== collector.id && botClaims.has(collector.id)) continue;
       const wasIdleAndUnclaimed = state === 'IDLE' && !owner;
       owner = collector.id;
 
