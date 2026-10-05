@@ -1,5 +1,5 @@
 /** Editor-saved arena HUD bindings. All values originate from ArenaMatchManager. */
-import { _decorator, Button, Camera, Color, Component, director, instantiate, Label, LabelOutline, Node, UITransform, Vec3, view } from 'cc';
+import { _decorator, Button, Camera, Color, Component, director, instantiate, Label, LabelOutline, Node, UIOpacity, UITransform, Vec3, view } from 'cc';
 import { eventBus } from '../core/EventBus';
 import { ArenaMatchSnapshot } from '../gameplay/ArenaMatchManager';
 import { CompressibleObject } from '../gameplay/CompressibleObject';
@@ -9,6 +9,9 @@ import { TierLockDiagnostics, TierLockPresenter } from './TierLockPresenter';
 import { TierUpgradeDiagnostics, TierUpgradePresenter } from './TierUpgradePresenter';
 
 const { ccclass } = _decorator;
+
+const TITLE_HOLD_SECONDS = 2.0;
+const TITLE_FADE_SECONDS = 0.8;
 
 const formatClock = (seconds: number): string => {
   const remaining = Math.max(0, Math.ceil(seconds));
@@ -37,8 +40,16 @@ export class ArenaHUDController extends Component {
    * because a Label on a code-built node never renders in a built player.
    */
   private tierLock: TierLockPresenter | null = null;
+  private titleElapsed = 0;
 
   onEnable(): void {
+    this.titleElapsed = 0;
+    const titleNode = this.node.getChildByName('ArenaTitle');
+    if (titleNode) {
+      titleNode.active = true;
+      const opacity = titleNode.getComponent(UIOpacity) || titleNode.addComponent(UIOpacity);
+      opacity.opacity = 255;
+    }
     this.pickupFeedback ||= new PickupFeedbackPresenter(this.node, 'Top1');
     this.tierUpgrade ||= new TierUpgradePresenter(this.node, 'MassValue');
     this.tierUpgrade.enable();
@@ -48,6 +59,7 @@ export class ArenaHUDController extends Component {
   }
 
   onDisable(): void {
+    this.titleElapsed = 0;
     for (const [button, handler] of this.bindings) button.node.off(Button.EventType.CLICK, handler, this);
     this.bindings.length = 0;
     for (const nameplate of this.competitorNameplates.values()) nameplate.destroy();
@@ -223,6 +235,20 @@ export class ArenaHUDController extends Component {
   update(dt: number): void {
     this.pickupFeedback?.update(dt);
     this.tierUpgrade?.update(dt);
+    this.updateTitleFade(dt);
+  }
+
+  private updateTitleFade(dt: number): void {
+    const titleNode = this.node.getChildByName('ArenaTitle');
+    if (!titleNode || !titleNode.active) return;
+    this.titleElapsed += Math.max(0, dt);
+    if (this.titleElapsed < TITLE_HOLD_SECONDS) return;
+    const fadeProgress = Math.min(1, (this.titleElapsed - TITLE_HOLD_SECONDS) / TITLE_FADE_SECONDS);
+    const opacity = titleNode.getComponent(UIOpacity) || titleNode.addComponent(UIOpacity);
+    opacity.opacity = Math.round((1 - fadeProgress) * 255);
+    if (fadeProgress >= 1) {
+      titleNode.active = false;
+    }
   }
 
   /**
