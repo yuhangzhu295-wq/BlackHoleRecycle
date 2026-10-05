@@ -211,6 +211,8 @@ try {
           // ate but the mass never converted": bots get addMass immediately,
           // the local player's mass goes through the compression buffer.
           consumed: a.localConsumed || 0,
+          px: s.player.position.x,
+          pz: s.player.position.z,
           bufferCount: s.compression?.bufferCount ?? null,
           bufferMass: s.compression?.bufferMass ?? null,
           gameState: s.gameState,
@@ -235,6 +237,8 @@ try {
         killableOpponentCount: snap.killableIds.length,
         threatCount: snap.threatIds.length,
         consumed: snap.consumed,
+        px: snap.px,
+        pz: snap.pz,
         bufferCount: snap.bufferCount,
         bufferMass: snap.bufferMass,
       });
@@ -274,7 +278,11 @@ try {
       finalRank,
       samples,
     });
-    console.log(`game ${game}: unlocked=${timeCombatUnlocked} firstKillable=${timeFirstKillable} opportunity=${killableMs}ms death=${timePlayerDeath} rank=${finalRank}`);
+    const px = report.matches[report.matches.length - 1].samples.map((x) => x.px);
+    const pz = report.matches[report.matches.length - 1].samples.map((x) => x.pz);
+    const travelled = Math.hypot(Math.max(...px) - Math.min(...px), Math.max(...pz) - Math.min(...pz));
+    const consumedTotal = report.matches[report.matches.length - 1].samples.at(-1).consumed;
+    console.log(`game ${game}: unlocked=${timeCombatUnlocked} firstKillable=${timeFirstKillable} opportunity=${killableMs}ms death=${timePlayerDeath} rank=${finalRank} travelled=${travelled.toFixed(2)}m consumed=${consumedTotal}`);
   }
 
   const withOpportunity = report.matches.filter((m) => m.everHadKillableOpponent).length;
