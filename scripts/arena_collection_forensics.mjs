@@ -236,7 +236,15 @@ try {
           firstInRangeMs = null; firstAttractedMs = null; firstSuckingMs = null; firstAbsorbedMs = null;
         }
         if (lockedTargetId === null) {
-          const fresh = eligible[0] || null;
+          // Sweep like a player would: take the nearest UNCLAIMED edible body
+          // from the full object list every frame, rather than locking one body
+          // until it vanishes. A locked chase is not how anyone plays, and it
+          // under-reports how often a real player would be in range.
+          const sweep = (await page.evaluate(() => window.__BHR_QA__.snapshot())).objects
+            .filter((o) => o.state === 'IDLE' && o.tier <= (trace.playerMaxTier ?? 1) && !o.owner)
+            .map((o) => ({ id: o.runtimeId, d: Math.hypot(o.x - snap.px, o.z - snap.pz) }))
+            .sort((a, b) => a.d - b.d)[0] || null;
+          const fresh = sweep ? (trace.nearest || []).find((c) => c.objectId === sweep.id) || { objectId: sweep.id, distance: sweep.d } : null;
           if (fresh) {
             lockedTargetId = fresh.objectId;
             initialDistance = fresh.distance;
