@@ -1504,6 +1504,23 @@ export class InfiniteWorldManager extends Component {
     });
   }
 
+  /**
+   * Advance only the collectible respawn clocks, without running the Endless
+   * suction that `updateObjects` also performs.
+   *
+   * Arena draws from this same world pool but ArenaMatchManager owns its own
+   * suction, so Arena never called `updateObjects` -- and therefore never ran
+   * the `cell.advanceRespawnClock(dt)` inside it. The consequence was that no
+   * collectible ever came back in Arena: the field drained monotonically and
+   * after the opening minute the live supply was gone, which is why the local
+   * player absorbed 0-1 bodies per match even when it survived the whole run.
+   * This is the same replenishment Endless already runs, exposed on its own.
+   */
+  public advanceWorldRespawnClock(dt: number): void {
+    if (!this.initialized) return;
+    for (const cell of this.activeCells.values()) cell.advanceRespawnClock(dt);
+  }
+
   public updateObjects(
     dt: number,
     machinePos: Readonly<Vec3>,

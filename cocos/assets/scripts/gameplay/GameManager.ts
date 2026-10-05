@@ -1179,6 +1179,15 @@ export class GameManager extends Component {
           // ArenaMatchManager performs the same suction FSM with an explicit
           // owner per object, then resolves bots, gravity pull and respawn.
           this.arenaMatchManager?.updateMatch(dt);
+          // Arena draws from the same world object pool as Endless, but Endless
+          // advances the pool's respawn clock inside updateObjects -- which
+          // Arena never calls. So no collectible ever came back: the field
+          // drained monotonically, and after the opening minute the live supply
+          // near the player was zero while inert absorbed debris stayed in the
+          // world. Measured consequence: the local player absorbed 0-1 bodies
+          // per match even when it survived the whole run. This is the same
+          // replenishment Endless already runs, not a new system.
+          this.infiniteWorldManager?.advanceWorldRespawnClock(dt);
           const snapshot = this.arenaMatchManager?.getSnapshot();
           if (snapshot) {
             if (this.gameState === 'ARENA') this.hud?.updateArena(snapshot);
