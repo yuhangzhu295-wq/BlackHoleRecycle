@@ -301,6 +301,7 @@ export class QABridge {
         x: position ? position.x : 0,
         z: position ? position.z : 0,
         lockVisible: object.isShowingLockAlert(),
+        edibleCue: object.isShowingEdibleCue(),
       };
     });
 

@@ -116,6 +116,15 @@ export class CompressibleObject extends Component {
   }
 
   /** Keep render-space pooled objects aligned when the infinite world rebases. */
+  /**
+   * Read-only: true while the edible cue is actually being shown for this body.
+   * Exposed so the vertical-slice runner can time "the player could see what is
+   * edible" from real presentation state rather than inferring it.
+   */
+  public isShowingEdibleCue(): boolean {
+    return this.ediblePulseTimer > 0;
+  }
+
   public applyWorldRebase(shift: Readonly<Vec3>): void {
     this.currentPos.subtract(shift);
     this.node.setPosition(this.currentPos);
