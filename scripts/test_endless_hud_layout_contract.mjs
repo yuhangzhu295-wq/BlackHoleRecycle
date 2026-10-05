@@ -56,7 +56,9 @@ assert.match(manager, /this\.hud\.updateStats\([\s\S]*?this\.machine\.currentMas
 assert.match(manager, /this\.hud\?\.showAbsorbFeedback\(obj\.getPosition\(\), t\.value \* 10, t\.tier\)/);
 assert.match(joystickVisual, /const input = this\.playerController\.moveInput/);
 assert.match(joystickVisual, /this\.knob\.setPosition\(input\.x \* this\.knobRadius, input\.y \* this\.knobRadius, 0\)/);
-assert.match(pickupFeedback, /public emit\(worldPosition: Readonly<Vec3>, score: number, color: Readonly<Color>\)/);
+assert.match(pickupFeedback,
+  /public emit\(\s*worldPosition: Readonly<Vec3>,\s*score: number,\s*color: Readonly<Color>,\s*textOverride\?: string,\s*durationSeconds: number = FEEDBACK_DURATION_SECONDS,\s*\): void/,
+  'PickupFeedbackPresenter.emit must keep the position/score/colour contract and accept only optional text and duration overrides');
 for (const source of [controller, hudView, joystickVisual, pickupFeedback]) {
   assert.doesNotMatch(source, /QABridge|__BHR_QA__|QA_(?:SPAWN|GRANT|TELEPORT|FORCE)/, 'Endless HUD production path must not depend on QA mutation APIs');
 }

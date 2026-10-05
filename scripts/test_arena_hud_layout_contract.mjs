@@ -63,6 +63,8 @@ assert.match(manager, /this\.hud\?\.showAbsorbFeedback\(obj\.getPosition\(\), t\
 assert.match(matchManager, /localKills: local\?\.kills \|\| 0/);
 assert.match(matchManager, /leaderboard: ordered/);
 assert.match(joystickVisual, /const input = this\.playerController\.moveInput/);
-assert.match(pickupFeedback, /public emit\(worldPosition: Readonly<Vec3>, score: number, color: Readonly<Color>\)/);
+assert.match(pickupFeedback,
+  /public emit\(\s*worldPosition: Readonly<Vec3>,\s*score: number,\s*color: Readonly<Color>,\s*textOverride\?: string,\s*durationSeconds: number = FEEDBACK_DURATION_SECONDS,\s*\): void/,
+  'PickupFeedbackPresenter.emit must keep the position/score/colour contract and accept only optional text and duration overrides');
 for (const source of [controller, hudView, joystickVisual, pickupFeedback]) assert.doesNotMatch(source, /QABridge|__BHR_QA__|QA_(?:SPAWN|GRANT|TELEPORT|FORCE)/, 'Arena HUD production path must not depend on QA mutation APIs');
 console.log('[PASS] Arena HUD authoring and live-data contract assertions (NON_RUNTIME; portrait CDP acceptance remains required).');
