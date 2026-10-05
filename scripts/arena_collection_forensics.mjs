@@ -129,6 +129,21 @@ try {
     const t0 = Date.now();
     const joystick = pt(rect, (await page.evaluate(() => window.__BHR_QA__.snapshot())).ui.arenaHUD.joystick, 'JOY');
     let touchDown = false;
+    // Steering must not be hostage to the ~300 ms full-snapshot telemetry: this
+    // read computes the nearest unclaimed edible body INSIDE the page and ships
+    // only the result, so the driver can re-aim every ~60 ms.
+    const steerRead = () => page.evaluate(() => {
+      const sv = window.__BHR_QA__.snapshot();
+      const p = sv.player.position;
+      const maxTier = sv.machine.maxTier;
+      let best = null; let bestD = Infinity;
+      for (const o of (sv.objects || [])) {
+        if (o.state !== 'IDLE' || o.tier > maxTier || o.owner) continue;
+        const d = Math.hypot(o.x - p.x, o.z - p.z);
+        if (d < bestD) { bestD = d; best = { id: o.runtimeId, x: o.x, z: o.z, d }; }
+      }
+      return { px: p.x, pz: p.z, target: best, maxTier, suctionRadius: sv.machine.suctionRadius };
+    });
     const steerTo = async (dx, dz) => {
       const length = Math.hypot(dx, dz) || 1;
       const scale = Math.min(1, length / 3) * 88;
@@ -164,7 +179,33 @@ try {
     let promotedToSucking = false;
     let sawAbsorbed = false;
 
-    while (Date.now() - t0 < RUN_MS) {
+    // A 60 ms re-aim loop, concurrent with the telemetry loop: at 7 m/s a 400 ms
+  // decision interval overshoots a target by ~2.8 m, which is exactly the kind
+  // of driver artifact that made every earlier rate measurement unreliable.
+  const drive = { running: true };
+  const driveLoop = (async () => {
+    while (drive.running) {
+      const live = await steerRead();
+      if (live.target) {
+        if (!touchDown) {
+          await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: joystick.x, y: joystick.y, id: 3 }] });
+          touchDown = true;
+        }
+        const length = Math.hypot(live.target.x - live.px, live.target.z - live.pz) || 1;
+        const scale = Math.min(1, length / 3) * 88;
+        await cdp.send('Input.dispatchTouchEvent', {
+          type: 'touchMove',
+          touchPoints: [{ x: joystick.x + ((live.target.x - live.px) / length) * scale, y: joystick.y + ((live.target.z - live.pz) / length) * scale, id: 3 }],
+        });
+      } else if (touchDown) {
+        await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+        touchDown = false;
+      }
+      await sleep(60);
+    }
+  })();
+
+  while (Date.now() - t0 < RUN_MS) {
       const snap = await page.evaluate(() => {
         const qa = window.__BHR_QA__;
         const s = qa.snapshot();
@@ -260,9 +301,6 @@ try {
           if (firstAttractedMs === null && rec && (rec.state === 'ATTRACTED' || rec.sucked > 0 || rec.absorbed > 0)) firstAttractedMs = elapsed;
           if (firstSuckingMs === null && rec && rec.sucked > 0) firstSuckingMs = elapsed;
           if (firstAbsorbedMs === null && rec && rec.absorbed > 0) firstAbsorbedMs = elapsed;
-          const obj = (await page.evaluate(() => window.__BHR_QA__.snapshot())).objects
-            .find((o) => o.runtimeId === lockedTargetId);
-          if (obj) await steerTo(obj.x - snap.px, obj.z - snap.pz);
         }
       }
       lastConsumed = snap.consumed;
@@ -282,6 +320,8 @@ try {
       if (!snap.alive || snap.gameState !== 'ARENA') break;
       await sleep(200);
     }
+    drive.running = false;
+    await driveLoop;
     if (touchDown) { await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); touchDown = false; }
 
     report.matches.push({
