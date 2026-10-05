@@ -302,6 +302,10 @@ export class QABridge {
         z: position ? position.z : 0,
         lockVisible: object.isShowingLockAlert(),
         edibleCue: object.isShowingEdibleCue(),
+        // Who has claimed this body. ArenaMatchManager grants a claim to the
+        // first competitor in range, so ownership is what separates "the player
+        // never ate" from "the bots took everything first".
+        owner: object.getCaptureOwnerId(),
       };
     });
 

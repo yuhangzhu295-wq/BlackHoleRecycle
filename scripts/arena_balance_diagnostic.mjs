@@ -213,6 +213,13 @@ try {
           consumed: a.localConsumed || 0,
           px: s.player.position.x,
           pz: s.player.position.z,
+          maxTier: s.machine.maxTier,
+          suctionRadius: s.machine.suctionRadius,
+          // Tier histogram and claim ownership within 12 m, which is what
+          // discriminates the three candidate causes of consumed === 0.
+          nearby: (s.objects || [])
+            .filter((o) => Math.hypot(o.x - s.player.position.x, o.z - s.player.position.z) < 12)
+            .map((o) => ({ tier: o.tier, state: o.state, owner: o.owner || null })),
           bufferCount: s.compression?.bufferCount ?? null,
           bufferMass: s.compression?.bufferMass ?? null,
           gameState: s.gameState,
@@ -239,6 +246,15 @@ try {
         consumed: snap.consumed,
         px: snap.px,
         pz: snap.pz,
+        maxTier: snap.maxTier,
+        suctionRadius: snap.suctionRadius,
+        nearbyCount: snap.nearby.length,
+        nearbyEdibleCount: snap.nearby.filter((o) => o.tier <= snap.maxTier).length,
+        nearbyUnclaimedEdible: snap.nearby.filter((o) => o.tier <= snap.maxTier && !o.owner).length,
+        nearbyTierHistogram: snap.nearby.reduce((acc, o) => {
+          acc[o.tier] = (acc[o.tier] || 0) + 1;
+          return acc;
+        }, {}),
         bufferCount: snap.bufferCount,
         bufferMass: snap.bufferMass,
       });
@@ -255,13 +271,19 @@ try {
       // this script hardcoded `tier <= 3` while the player starts at maxTier 1,
       // so it spent the warmup chasing T2/T3 bodies it could never eat and the
       // resulting "player gains nothing" baseline was a measurement artifact.
+      // Chase only UNCLAIMED edible bodies. Ownership in
+      // updateCompetitiveSuction is permanent until absorption, so an object
+      // already owned by a bot can never be taken -- steering at one made the
+      // player follow bots around and eat nothing (the fourth harness bug in
+      // this script, and the one that faked "player never grows").
       const live = await page.evaluate(() => window.__BHR_QA__.snapshot());
       const player = live.player.position;
-      const edible = live.objects
-        .filter((o) => o.state === 'IDLE' && o.tier <= live.machine.maxTier)
+      const target = live.objects
+        .filter((o) => o.state === 'IDLE' && o.tier <= live.machine.maxTier && !o.owner)
         .map((o) => ({ x: o.x, z: o.z, d: Math.hypot(o.x - player.x, o.z - player.z) }))
         .sort((a, b) => a.d - b.d)[0];
-      if (edible) await steerTo(edible.x - player.x, edible.z - player.z);
+      if (target) await steerTo(target.x - player.x, target.z - player.z);
+      else await steerTo(Math.cos(elapsed / 900), Math.sin(elapsed / 900));
       await sleep(POLL_MS);
     }
     if (touchDown) { await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); touchDown = false; }
