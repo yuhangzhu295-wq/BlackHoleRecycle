@@ -282,12 +282,24 @@ try {
       // this script, and the one that faked "player never grows").
       const live = await page.evaluate(() => window.__BHR_QA__.snapshot());
       const player = live.player.position;
-      const target = live.objects
-        .filter((o) => o.state === 'IDLE' && o.tier <= live.machine.maxTier && !o.owner)
-        .map((o) => ({ x: o.x, z: o.z, d: Math.hypot(o.x - player.x, o.z - player.z) }))
+      const localMass = live.arena?.localMass ?? 0;
+      // §12 CHASE: a mass-killable opponent is worth chasing. Without this the
+      // driver only collected, so the player never closed to GRAVITY_RANGE and
+      // `localKillableIds` could never fire -- which reported "no kill
+      // opportunity" for a player that was 44x heavier than its nearest rival.
+      const prey = (live.arena?.leaderboard || [])
+        .filter((e) => !e.isLocal && e.alive && localMass >= Math.max(1, e.mass) * 1.32)
+        .map((e) => ({ x: e.position.x, z: e.position.z, d: Math.hypot(e.position.x - player.x, e.position.z - player.z) }))
         .sort((a, b) => a.d - b.d)[0];
-      if (target) await steerTo(target.x - player.x, target.z - player.z);
-      else await steerTo(Math.cos(elapsed / 900), Math.sin(elapsed / 900));
+      if (prey) { await steerTo(prey.x - player.x, prey.z - player.z); }
+      else {
+        const target = live.objects
+          .filter((o) => o.state === 'IDLE' && o.tier <= live.machine.maxTier && !o.owner)
+          .map((o) => ({ x: o.x, z: o.z, d: Math.hypot(o.x - player.x, o.z - player.z) }))
+          .sort((a, b) => a.d - b.d)[0];
+        if (target) await steerTo(target.x - player.x, target.z - player.z);
+        else await steerTo(Math.cos(elapsed / 900), Math.sin(elapsed / 900));
+      }
       await sleep(POLL_MS);
     }
     if (touchDown) { await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); touchDown = false; }
