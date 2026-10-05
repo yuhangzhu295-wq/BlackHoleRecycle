@@ -124,6 +124,7 @@ export class CompressionSystem extends Component {
       // 压缩震颤动画
       if (this.machine) {
         const shake = Math.sin(this.timer * 35) * this.machine.currentConfig.compressionShakeAmplitude;
+        this.machine.tagExternalPositionWrite('COMPRESSION');
         this.machine.node.setPosition(
           this.compressionBasePosition.x,
           this.compressionBasePosition.y + shake,
@@ -177,7 +178,17 @@ export class CompressionSystem extends Component {
       // 质量在此刻真实注入机器，触发潜在升级
       if (this.machine) {
         this.machine.addMass(this.bufferMass);
-        this.machine.node.setPosition(this.compressionBasePosition);
+        // Clear ONLY the compression shake on Y. Restoring the whole snapshot
+        // dragged the machine back to where COMPRESSING began, undoing every
+        // metre the player drove during the 0.45 s eject window: the machine is
+        // free to integrate in EJECTING, so by now x/z are far from the base.
+        // That stale-snapshot write was the measured ~3.2 m control-trace
+        // discontinuity (3.377 m at 7.5 m/s = 0.450 s = exactly RESOURCE_DROP
+        // duration). Y still needs clearing because the machine's own
+        // integration never writes Y.
+        const settled = this.machine.node.position;
+        this.machine.tagExternalPositionWrite('COMPRESSION');
+        this.machine.node.setPosition(settled.x, this.compressionBasePosition.y, settled.z);
       }
       
       eventBus.emit('UI_UPDATE_HUD', { coins: saveService.data.coins });
