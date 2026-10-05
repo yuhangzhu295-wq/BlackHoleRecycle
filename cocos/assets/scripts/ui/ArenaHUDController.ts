@@ -67,12 +67,20 @@ export class ArenaHUDController extends Component {
     // this font size and renders it as a hyphen, which reads like a negative mass.
     this.setLabel('MassValue', `${Math.round(snapshot.localMass)}kg`);
     this.setLabel('KillValue', `${snapshot.localKills}`);
-    const warmup = Math.max(0, snapshot.combatWarmupRemainingSeconds);
-    this.setLabel('StatusValue', warmup > 0
-      ? `安全准备 ${Math.ceil(warmup)}s`
-      : snapshot.localAlive
-        ? `吞噬 ${snapshot.localConsumed} · ${snapshot.localRespawnSeconds > 0 ? '重生中' : '战斗中'}`
-        : `重生 ${snapshot.localRespawnSeconds.toFixed(1)}s`);
+    const statusNode = this.node.getChildByName('StatusValue');
+    if (statusNode) {
+      const warmup = Math.max(0, snapshot.combatWarmupRemainingSeconds);
+      const isRespawning = !snapshot.localAlive || snapshot.localRespawnSeconds > 0;
+      if (warmup > 0) {
+        statusNode.active = true;
+        this.setLabel('StatusValue', `安全准备 ${Math.ceil(warmup)}s`);
+      } else if (isRespawning) {
+        statusNode.active = true;
+        this.setLabel('StatusValue', `重生 ${Math.max(0, snapshot.localRespawnSeconds).toFixed(1)}s`);
+      } else {
+        statusNode.active = false;
+      }
+    }
     snapshot.leaderboard.slice(0, 5).forEach((entry, index) => {
       const prefix = entry.isLocal ? '你' : entry.name;
       const life = entry.alive ? '' : ' · 重生';
