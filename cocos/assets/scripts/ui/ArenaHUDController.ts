@@ -175,6 +175,9 @@ export class ArenaHUDController extends Component {
     // Opponents the match manager reports as currently able to defeat the local
     // player. Computed by the combat rule itself, never re-derived here.
     const threatIds = new Set(snapshot.localThreatIds || []);
+    // §24: the killable state comes from the SAME combat predicate as danger
+    // (roles reversed), never a second mass-difference rule invented here.
+    const killableIds = new Set(snapshot.localKillableIds || []);
     const positionedNameplates: Array<{ node: Node; x: number; y: number }> = [];
 
     for (const competitor of snapshot.leaderboard) {
@@ -203,12 +206,17 @@ export class ArenaHUDController extends Component {
         // A dangerous opponent gets the word, not just a colour: colour alone is
         // the first thing lost to a busy background or a colour-blind player.
         const isThreat = !competitor.isLocal && threatIds.has(competitor.id);
-        label.string = competitor.isLocal ? '我' : isThreat ? `危险 ${competitor.name}` : competitor.name;
+        const isKillable = !competitor.isLocal && !isThreat && killableIds.has(competitor.id);
+        label.string = competitor.isLocal ? '我'
+          : isThreat ? `危险 ${competitor.name}`
+            : isKillable ? `可追 ${competitor.name}` : competitor.name;
         label.color = competitor.isLocal ? new Color(104, 238, 104, 255)
           : isThreat ? new Color(255, 92, 92, 255)
-            : new Color(255, 255, 255, 255);
-        label.fontSize = competitor.isLocal ? 34 : isThreat ? 26 : 24;
-        label.lineHeight = competitor.isLocal ? 38 : isThreat ? 30 : 28;
+            : isKillable ? new Color(198, 236, 120, 255)
+              : new Color(255, 255, 255, 255);
+        // Danger keeps the largest type: it is the one that must never be missed.
+        label.fontSize = competitor.isLocal ? 34 : isThreat ? 26 : isKillable ? 25 : 24;
+        label.lineHeight = competitor.isLocal ? 38 : isThreat ? 30 : isKillable ? 29 : 28;
       }
       // Camera screen coordinates are expressed in the current viewport;
       // ArenaHUD is a fixed 720×1280 canvas. Normalize before mapping so the

@@ -218,6 +218,8 @@ try {
           // §25: the HUD's own feedback text, so a kill beat is verified from
           // what the player is shown rather than from the kill counter alone.
           feedbackText: s.ui?.pickupFeedback?.arena?.lastText ?? null,
+          // §24: what the player is actually shown for danger and killable.
+          nameplateLabels: (s.ui?.arenaHUD?.nameplates || []).filter((n) => n.active).map((n) => n.label),
           px: s.player.position.x,
           pz: s.player.position.z,
           maxTier: s.machine.maxTier,
@@ -252,6 +254,7 @@ try {
         threatCount: snap.threatIds.length,
         consumed: snap.consumed,
         feedbackText: snap.feedbackText,
+        nameplateLabels: snap.nameplateLabels,
         px: snap.px,
         pz: snap.pz,
         maxTier: snap.maxTier,
