@@ -1276,6 +1276,17 @@ async function verifyArenaFlow(cdp, page, canvasRect, modeSnapshot) {
   assert(defeated, `FAIL_ARENA_CONSUME_PLAYER_TIMEOUT: ${JSON.stringify(collected.arena)}`);
   assert(defeated.gameState === 'REVIVING' && defeated.arena?.localAlive === false,
     `FAIL_ARENA_CONSUME_PLAYER: ${JSON.stringify({ gameState: defeated.gameState, arena: defeated.arena })}`);
+
+  // Wait for the V8.1 730ms death beat to conclude and the Revive modal to open.
+  if (!defeated.ui?.formalPages?.revive?.active) {
+    try {
+      await page.waitForFunction(() => {
+        const snap = window.__BHR_QA__?.snapshot();
+        return snap?.gameState === 'REVIVING' && snap?.ui?.formalPages?.revive?.active === true;
+      }, undefined, { timeout: 3000 });
+      defeated = await readRuntimeSnapshot(page);
+    } catch {}
+  }
   assert(defeated.ui?.formalPages?.revive?.active,
     `FAIL_ARENA_REVIVE_PAGE: ${JSON.stringify(defeated.ui?.formalPages)}`);
   await page.screenshot({ path: path.join(evidenceDirectory, 'portrait-390x844-revive.png') });

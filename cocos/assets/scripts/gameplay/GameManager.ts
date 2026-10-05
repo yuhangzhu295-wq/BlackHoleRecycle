@@ -746,48 +746,6 @@ export class GameManager extends Component {
     }
   }
 
-  private openArenaRevive(snapshot: ArenaMatchSnapshot): void {
-    this.session.enterReviving();
-    if (this.playerController) this.playerController.isPaused = true;
-    if (this.compressionSystem) this.compressionSystem.isPaused = true;
-    // Freeze the arena respawn clock so the revive page countdown governs timing.
-    this.arenaMatchManager?.setMatchPaused(true);
-    // Mark the death spot so the beat has something to look at. The body itself
-    // is already hidden by ArenaMatchManager.defeat.
-    if (this.machine) this.absorbFeedback?.emit(this.machine.node.position);
-    this.arenaDeathBeatRemaining = GameManager.ARENA_DEATH_BEAT_SECONDS;
-    this.arenaDeathBeatSnapshot = snapshot;
-  }
-
-  /**
-   * §15: the death beat. Deliberately a presentation-layer hold, not a global
-   * hit-stop -- nothing is time-scaled, so the match clock, respawn timer and
-   * combat authority are unaffected. It only delays the modal.
-   */
-  private updateArenaDeathBeat(dt: number): void {
-    if (this.arenaDeathBeatRemaining <= 0) return;
-    this.arenaDeathBeatRemaining -= dt;
-    if (this.arenaDeathBeatRemaining > 0) return;
-    const snapshot = this.arenaDeathBeatSnapshot;
-    this.arenaDeathBeatRemaining = 0;
-    this.arenaDeathBeatSnapshot = null;
-    // The match may have moved on (settlement, restart); only present the modal
-    // if this player is still the one waiting to revive.
-    if (!snapshot || this.gameState !== 'REVIVING') return;
-    this.hud?.updateRevive(snapshot);
-    this.hud?.showScreen('Revive');
-  }
-
-  private resumeArenaAfterRespawn(snapshot: ArenaMatchSnapshot): void {
-    this.session.resumeArenaAfterRevive();
-    if (this.playerController) this.playerController.isPaused = false;
-    if (this.compressionSystem) this.compressionSystem.isPaused = false;
-    if (this.machine) this.machine.isPaused = false;
-    this.arenaMatchManager?.setMatchPaused(false);
-    this.hud?.updateArena(snapshot);
-    this.hud?.showScreen('Arena');
-  }
-
   private showArenaSettlement(snapshot: ArenaMatchSnapshot): void {
     this.session.enterSettlement('arena-settlement');
     if (this.playerController) this.playerController.isPaused = true;
@@ -872,6 +830,48 @@ export class GameManager extends Component {
         regionName
       );
     }
+  }
+
+  private openArenaRevive(snapshot: ArenaMatchSnapshot): void {
+    this.session.enterReviving();
+    if (this.playerController) this.playerController.isPaused = true;
+    if (this.compressionSystem) this.compressionSystem.isPaused = true;
+    // Freeze the arena respawn clock so the revive page countdown governs timing.
+    this.arenaMatchManager?.setMatchPaused(true);
+    // Mark the death spot so the beat has something to look at. The body itself
+    // is already hidden by ArenaMatchManager.defeat.
+    if (this.machine) this.absorbFeedback?.emit(this.machine.node.position);
+    this.arenaDeathBeatRemaining = GameManager.ARENA_DEATH_BEAT_SECONDS;
+    this.arenaDeathBeatSnapshot = snapshot;
+  }
+
+  /**
+   * §15: the death beat. Deliberately a presentation-layer hold, not a global
+   * hit-stop -- nothing is time-scaled, so the match clock, respawn timer and
+   * combat authority are unaffected. It only delays the modal.
+   */
+  private updateArenaDeathBeat(dt: number): void {
+    if (this.arenaDeathBeatRemaining <= 0) return;
+    this.arenaDeathBeatRemaining -= dt;
+    if (this.arenaDeathBeatRemaining > 0) return;
+    const snapshot = this.arenaDeathBeatSnapshot;
+    this.arenaDeathBeatRemaining = 0;
+    this.arenaDeathBeatSnapshot = null;
+    // The match may have moved on (settlement, restart); only present the modal
+    // if this player is still the one waiting to revive.
+    if (!snapshot || this.gameState !== 'REVIVING') return;
+    this.hud?.updateRevive(snapshot);
+    this.hud?.showScreen('Revive');
+  }
+
+  private resumeArenaAfterRespawn(snapshot: ArenaMatchSnapshot): void {
+    this.session.resumeArenaAfterRevive();
+    if (this.playerController) this.playerController.isPaused = false;
+    if (this.compressionSystem) this.compressionSystem.isPaused = false;
+    if (this.machine) this.machine.isPaused = false;
+    this.arenaMatchManager?.setMatchPaused(false);
+    this.hud?.updateArena(snapshot);
+    this.hud?.showScreen('Arena');
   }
 
   private setV2HomeVisible(visible: boolean): void {
