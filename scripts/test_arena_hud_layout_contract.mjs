@@ -45,7 +45,9 @@ assert.deepEqual(childNodes(arena).map((child) => child._name), contract.directE
 
 assert.match(controller, /this\.setLabel\('TimerValue', formatClock\(snapshot\.remainingSeconds\)\)/);
 assert.match(controller, /this\.setLabel\('KillValue', `\$\{snapshot\.localKills\}`\)/);
-assert.match(controller, /snapshot\.leaderboard\.slice\(0, 5\)/);
+assert.match(controller, /snapshot\.leaderboard\.slice\(0, 3\)/);
+assert.match(controller, /localInTop3/);
+assert.match(controller, /row4Rank/);
 assert.match(controller, /entry\.isLocal \? '你' : entry\.name/);
 assert.match(controller, /competitor\.isLocal \? new Color\(104, 238, 104, 255\)/);
 assert.match(controller, /private getGameplayCamera\(\): Camera \| null[\s\S]*?getChildByName\('Main Camera'\)/);
