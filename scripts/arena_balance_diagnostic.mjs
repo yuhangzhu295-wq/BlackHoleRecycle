@@ -13,6 +13,20 @@
  * same combat predicate that decides danger (§13), so this diagnostic cannot
  * drift from the rule that actually governs combat.
  *
+ * HARNESS VALIDITY -- READ BEFORE TRUSTING ANY OUTPUT.
+ *
+ * The first baseline run reported 0/20 kill opportunities and ARENA_BALANCE_FAIL.
+ * That number was NOT a product finding: `consumed` was 0 in every sample of
+ * every game, i.e. this harness never drove the player into a single object, so
+ * its player-mass series says nothing about what a real player could achieve.
+ * Three harness bugs have already produced false product signals here:
+ *   1. touching the joystick off-centre (the stick never engages),
+ *   2. filtering edible targets with a hardcoded `tier <= 3` while the player
+ *      starts at maxTier 1,
+ *   3. (this one) never asserting that the player actually moves or absorbs.
+ * So a run is only admissible when it reports the player MOVING and
+ * `consumed > 0`. Until then, no balance conclusion may be drawn from it.
+ *
  * Usage: node scripts/arena_balance_diagnostic.mjs [--games=20]
  */
 import { chromium } from 'playwright';
@@ -193,6 +207,12 @@ try {
           opponentMasses: board,
           killableIds: a.localKillableIds || [],
           threatIds: a.localThreatIds || [],
+          // These two separate "the player never ate anything" from "the player
+          // ate but the mass never converted": bots get addMass immediately,
+          // the local player's mass goes through the compression buffer.
+          consumed: a.localConsumed || 0,
+          bufferCount: s.compression?.bufferCount ?? null,
+          bufferMass: s.compression?.bufferMass ?? null,
           gameState: s.gameState,
         };
       });
@@ -214,6 +234,9 @@ try {
         medianOpponentMass: median(opponents),
         killableOpponentCount: snap.killableIds.length,
         threatCount: snap.threatIds.length,
+        consumed: snap.consumed,
+        bufferCount: snap.bufferCount,
+        bufferMass: snap.bufferMass,
       });
 
       if (!snap.alive) {
@@ -224,9 +247,14 @@ try {
       if (snap.gameState !== 'ARENA') { finalRank = snap.rank; break; }
 
       // Steer at the nearest edible body so the player grows realistically.
-      const player = (await page.evaluate(() => window.__BHR_QA__.snapshot())).player.position;
-      const edible = (await page.evaluate(() => window.__BHR_QA__.snapshot())).objects
-        .filter((o) => o.state === 'IDLE' && o.tier <= 3)
+      // Chase only what this machine can actually swallow. The first version of
+      // this script hardcoded `tier <= 3` while the player starts at maxTier 1,
+      // so it spent the warmup chasing T2/T3 bodies it could never eat and the
+      // resulting "player gains nothing" baseline was a measurement artifact.
+      const live = await page.evaluate(() => window.__BHR_QA__.snapshot());
+      const player = live.player.position;
+      const edible = live.objects
+        .filter((o) => o.state === 'IDLE' && o.tier <= live.machine.maxTier)
         .map((o) => ({ x: o.x, z: o.z, d: Math.hypot(o.x - player.x, o.z - player.z) }))
         .sort((a, b) => a.d - b.d)[0];
       if (edible) await steerTo(edible.x - player.x, edible.z - player.z);
