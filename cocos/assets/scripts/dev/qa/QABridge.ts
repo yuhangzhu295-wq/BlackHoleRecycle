@@ -77,6 +77,26 @@ export interface PlayerControlTraceFrame {
   readonly cameraOffsetError: { readonly x: number; readonly y: number; readonly z: number; readonly distance: number };
   readonly cameraPosition: { readonly x: number; readonly y: number; readonly z: number };
   readonly cameraTargetPosition: { readonly x: number; readonly y: number; readonly z: number };
+  /**
+   * V8.1 CONTROL_TRACE_FORENSICS. Render-space position is only meaningful
+   * together with the logical origin, so both are recorded. `externalWriteCount`
+   * is the machine's own tally of position changes that its movement integration
+   * did not make; a jump that coincides with a rise in this counter is an
+   * external write, not player motion.
+   */
+  readonly logicalOrigin: { readonly x: number; readonly z: number };
+  readonly rebaseCount: number;
+  readonly currentCell: { readonly x: number; readonly z: number };
+  readonly gameState: string;
+  readonly machinePaused: boolean;
+  readonly movementMagnitude: number;
+  readonly externalWriteCount: number;
+  readonly externalWriteDelta: { readonly x: number; readonly z: number };
+  readonly externalWriteSource: string;
+  /** The dt the machine itself integrated with, and how far it moved. */
+  readonly integrationDt: number;
+  readonly integrationDistance: number;
+  readonly machineUpdateCount: number;
 }
 
 interface InstalledQABridge {
@@ -185,6 +205,12 @@ export class QABridge {
     const camPos = mainCamera?.node.position ?? Vec3.ZERO;
     const camTargetPos = cameraController ? cameraController.getTargetPosition() : Vec3.ZERO;
 
+    // CONTROL_TRACE_FORENSICS: the origin, the rebase tally and the machine's
+    // own external-write counter turn "position changed a lot" into an
+    // attributable event instead of a suspicion.
+    const world = this.read.getWorld();
+    const forensics = machine.positionForensics;
+
     const frame: PlayerControlTraceFrame = {
       timestamp: performance.now(),
       frameDt: dt,
@@ -200,6 +226,18 @@ export class QABridge {
       cameraOffsetError: camOffsetError,
       cameraPosition: { x: camPos.x, y: camPos.y, z: camPos.z },
       cameraTargetPosition: { x: camTargetPos.x, y: camTargetPos.y, z: camTargetPos.z },
+      logicalOrigin: { x: world?.logicalOrigin.x ?? 0, z: world?.logicalOrigin.z ?? 0 },
+      rebaseCount: world?.rebaseCount ?? 0,
+      currentCell: { x: world?.currentCell.x ?? 0, z: world?.currentCell.z ?? 0 },
+      gameState: this.read.getGameState(),
+      machinePaused: machine.isPaused,
+      movementMagnitude: machine.getMovementMagnitude(),
+      externalWriteCount: forensics.externalWriteCount,
+      externalWriteDelta: { x: forensics.lastExternalDeltaX, z: forensics.lastExternalDeltaZ },
+      externalWriteSource: forensics.lastExternalSource,
+      integrationDt: forensics.lastIntegrationDt,
+      integrationDistance: forensics.lastIntegrationDistance,
+      machineUpdateCount: forensics.updateCount,
     };
 
     this.latestTraceFrame = frame;

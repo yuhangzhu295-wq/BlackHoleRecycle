@@ -526,6 +526,7 @@ export class GameManager extends Component {
     // 将机器归位
     if (this.machine) {
       this.machine.node.active = true;
+      this.machine.tagExternalPositionWrite('ROUND_START');
       this.machine.node.setPosition(0, 0, 0);
       this.machine.resetMovement();
       this.machine.setPresentation('HYBRID');
@@ -584,6 +585,7 @@ export class GameManager extends Component {
     this.score = 0;
     this.sessionStartCoins = this.currentCoins;
     this.machine.node.active = true;
+    this.machine.tagExternalPositionWrite('ROUND_START');
     this.machine.node.setPosition(0, 0, 0);
     this.machine.resetMovement();
     // Likewise, every arena's eight competitors begin against a freshly
@@ -1105,6 +1107,7 @@ export class GameManager extends Component {
         // in compact render coordinates while the manager retains logical X/Z.
         const rebase = this.infiniteWorldManager.updateCells(mPos);
         if (rebase) {
+          this.machine.tagExternalPositionWrite('REBASE');
           this.machine.node.setPosition(
             mPos.x - rebase.shift.x,
             mPos.y,

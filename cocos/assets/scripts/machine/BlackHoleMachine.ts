@@ -581,7 +581,47 @@ export class BlackHoleMachine extends Component {
 
   public isPaused: boolean = false;
 
+  /**
+   * QA forensics (V8.1): this component is the only thing that should ever
+   * integrate this node's position. Any movement observed between two of our
+   * own integration writes therefore came from somewhere else, and this
+   * records exactly how far and from which tagged source. It exists to settle
+   * the control-trace discontinuity with evidence instead of a guess, and it
+   * never influences movement: it only observes.
+   */
+  private lastIntegratedPosition: Vec3 = new Vec3();
+  private forensicsArmed: boolean = false;
+  public readonly positionForensics = {
+    externalWriteCount: 0,
+    lastExternalDeltaX: 0,
+    lastExternalDeltaZ: 0,
+    lastExternalSource: 'NONE',
+    /** The dt this component was actually handed for its last integration. */
+    lastIntegrationDt: 0,
+    /** How far that integration moved the node. */
+    lastIntegrationDistance: 0,
+    /** How many times this component's update ran. */
+    updateCount: 0,
+  };
+
+  /** Tag an external system that intentionally writes this node's position. */
+  public tagExternalPositionWrite(source: string): void {
+    this.positionForensics.lastExternalSource = source;
+  }
+
   public update(dt: number): void {
+    // Forensics first, and before any early return: an external write that
+    // lands while this component is paused must still be attributed.
+    if (this.forensicsArmed) {
+      const observed = this.node.position;
+      const deltaX = observed.x - this.lastIntegratedPosition.x;
+      const deltaZ = observed.z - this.lastIntegratedPosition.z;
+      if (Math.abs(deltaX) + Math.abs(deltaZ) > 1e-4) {
+        this.positionForensics.externalWriteCount += 1;
+        this.positionForensics.lastExternalDeltaX = deltaX;
+        this.positionForensics.lastExternalDeltaZ = deltaZ;
+      }
+    }
     if (this.materialRebindFrames > 0) {
       const activeAssembly = this.levelVisuals[this.currentLevel - 1] || null;
       if (activeAssembly?.activeInHierarchy) {
@@ -623,9 +663,20 @@ export class BlackHoleMachine extends Component {
     if (this.movementMagnitude === 0 && Math.abs(this.velocity.x) + Math.abs(this.velocity.z) < 0.01) {
       this.velocity.set(0, 0, 0);
     }
+    const preIntegrateX = curPos.x;
+    const preIntegrateZ = curPos.z;
     curPos.x += this.velocity.x * dt;
     curPos.z += this.velocity.z * dt;
     this.node.setPosition(curPos);
+    // Baseline for the next frame's external-write check, plus the exact dt and
+    // distance this integration produced. Comparing these against the trace's
+    // own frameDt is what separates "the machine integrated a huge dt" from
+    // "something else moved the node".
+    this.lastIntegratedPosition.set(curPos);
+    this.forensicsArmed = true;
+    this.positionForensics.lastIntegrationDt = dt;
+    this.positionForensics.lastIntegrationDistance = Math.hypot(curPos.x - preIntegrateX, curPos.z - preIntegrateZ);
+    this.positionForensics.updateCount += 1;
 
     // 2. 磁暴倒计时
     if (this.isMagnetStormActive) {
