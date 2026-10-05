@@ -159,6 +159,49 @@ const COMBAT_WARMUP_SECONDS = 15;
 const START_MASS = 240;
 const ARENA_RADIUS = 44;
 const GRAVITY_RANGE = 4.8;
+/** How far from the local player the DEV candidate trace bothers to record. */
+const TRACE_RADIUS = 15;
+
+/**
+ * V8.2.1 §8: why a body was not collected by the local player. Every rejection
+ * must name a reason; returning a bare false is what made the arena collection
+ * defect take this long to find.
+ */
+export type ArenaSuctionRejectReason =
+  | 'ACCEPTED'
+  | 'ALREADY_ABSORBED'
+  | 'TIER_LOCKED'
+  | 'OUT_OF_RANGE'
+  | 'OWNED_BY_BOT'
+  | 'OWNED_BY_LOCAL'
+  | 'OTHER';
+
+export interface ArenaSuctionCandidateTrace {
+  objectId: string;
+  type: string;
+  tier: number;
+  state: string;
+  owner: string | null;
+  /** Distance in the exact coordinate space the product uses, not a re-derivation. */
+  distance: number;
+  playerMaxTier: number;
+  playerSuctionRadius: number;
+  tierEligible: boolean;
+  distanceEligible: boolean;
+  accepted: boolean;
+  rejectedReason: ArenaSuctionRejectReason;
+}
+
+export interface ArenaSuctionTrace {
+  readonly playerNodePosition: Readonly<{ x: number; y: number; z: number }>;
+  readonly playerMaxTier: number;
+  readonly playerSuctionRadius: number;
+  readonly playerAlive: boolean;
+  /** The nearest candidates to the local player, nearest first. */
+  readonly nearest: readonly ArenaSuctionCandidateTrace[];
+  /** True when the local player was chosen as collector for at least one body. */
+  readonly localAcceptedAny: boolean;
+}
 const CONSUME_RANGE = 1.28;
 const CONSUME_RATIO = 1.32;
 const EMPTY_SETTLEMENT_REWARD: ArenaSettlementReward = {
@@ -204,6 +247,9 @@ export class ArenaMatchManager extends Component {
   private settlementReward: ArenaSettlementReward = EMPTY_SETTLEMENT_REWARD;
   private settlementRewardClaimed: boolean = false;
   private localDefeat: ArenaLocalDefeat | null = null;
+  /** V8.2.1 §7: read-only record of the real candidate decision, DEV only. */
+  private readonly suctionTraceNearest: ArenaSuctionCandidateTrace[] = [];
+  private suctionTraceAcceptedAny = false;
   private matchId: string = '';
   private matchSequence: number = 0;
 
@@ -386,6 +432,22 @@ export class ArenaMatchManager extends Component {
       .map((competitor) => competitor.id);
   }
 
+  /** V8.2.1 §7: the nearest candidates the real suction system saw this frame. */
+  public getSuctionTrace(): ArenaSuctionTrace {
+    const local = this.getLocalCompetitor();
+    const nearest = [...this.suctionTraceNearest].sort((a, b) => a.distance - b.distance).slice(0, 8);
+    return {
+      playerNodePosition: local
+        ? { x: local.node.position.x, y: local.node.position.y, z: local.node.position.z }
+        : { x: 0, y: 0, z: 0 },
+      playerMaxTier: local ? local.machine.getMaxTier() : 0,
+      playerSuctionRadius: local ? local.machine.getSuctionRadius() : 0,
+      playerAlive: Boolean(local?.alive),
+      nearest,
+      localAcceptedAny: this.suctionTraceAcceptedAny,
+    };
+  }
+
   public getSnapshot(): ArenaMatchSnapshot {
     const ordered = this.getLeaderboard();
     const local = this.getLocalCompetitor();
@@ -548,8 +610,47 @@ export class ArenaMatchManager extends Component {
         })
         .map((candidate) => candidate.getCaptureOwnerId() as string),
     );
+    // V8.2.1 §7: reset the read-only candidate trace for this frame.
+    const traceLocal = this.getLocalCompetitor();
+    this.suctionTraceNearest.length = 0;
+    this.suctionTraceAcceptedAny = false;
+
     for (const object of this.world.getAllObjects()) {
       const state = object.getState();
+      const tracePosition = object.getPosition();
+
+      // Record what the LOCAL player's own eligibility checks decide, using the
+      // same node positions and the same suction radius the collector filter
+      // below uses. This is the product's decision, not a re-derivation.
+      let traceEntry: ArenaSuctionCandidateTrace | null = null;
+      if (traceLocal && traceLocal.alive && tracePosition) {
+        const distance = distanceXZ(traceLocal.node.position, tracePosition);
+        if (distance <= TRACE_RADIUS) {
+          const playerMaxTier = traceLocal.machine.getMaxTier();
+          const playerSuctionRadius = traceLocal.machine.getSuctionRadius();
+          const tierEligible = object.template.tier <= playerMaxTier;
+          const distanceEligible = distance <= playerSuctionRadius;
+          traceEntry = {
+            objectId: object.runtimeId,
+            type: object.template.type,
+            tier: object.template.tier,
+            state,
+            owner: object.getCaptureOwnerId(),
+            distance,
+            playerMaxTier,
+            playerSuctionRadius,
+            tierEligible,
+            distanceEligible,
+            accepted: false,
+            rejectedReason: state === 'ABSORBED' || state === 'RECYCLED' ? 'ALREADY_ABSORBED'
+              : !tierEligible ? 'TIER_LOCKED'
+                : !distanceEligible ? 'OUT_OF_RANGE'
+                  : 'OTHER',
+          };
+          this.suctionTraceNearest.push(traceEntry);
+        }
+      }
+
       if (state === 'ABSORBED' || state === 'RECYCLED') continue;
 
       let owner = object.getCaptureOwnerId();
@@ -565,6 +666,14 @@ export class ArenaMatchManager extends Component {
       if (collector.isBot && owner !== collector.id && botClaims.has(collector.id)) continue;
       const wasIdleAndUnclaimed = state === 'IDLE' && !owner;
       owner = collector.id;
+
+      if (traceEntry && traceLocal && collector.id === traceLocal.id) {
+        traceEntry.accepted = true;
+        traceEntry.rejectedReason = 'ACCEPTED';
+        this.suctionTraceAcceptedAny = true;
+      } else if (traceEntry && traceEntry.rejectedReason === 'OTHER') {
+        traceEntry.rejectedReason = traceEntry.owner?.startsWith('bot-') ? 'OWNED_BY_BOT' : 'OTHER';
+      }
       const absorbed = object.updateMotion(
         dt,
         collector.node.position,

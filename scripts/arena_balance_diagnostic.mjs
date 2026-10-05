@@ -173,7 +173,11 @@ try {
       const length = Math.hypot(dx, dz) || 1;
       const scale = Math.min(1, length / 4) * 88;
       const x = joystick.x + (dx / length) * scale;
-      const y = joystick.y - (dz / length) * scale;
+      // Measured by arena_joystick_calibration.mjs: stick dy and world Z have the
+      // SAME sign (up -> -Z, down -> +Z). The earlier `- dz` here inverted the
+      // vertical axis, so the auto-driver walked away from every target while
+      // still covering 30-62 m per match. That was CASE_A, not a product bug.
+      const y = joystick.y + (dz / length) * scale;
       if (!touchDown) {
         await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: joystick.x, y: joystick.y, id: 5 }] });
         touchDown = true;

@@ -428,6 +428,8 @@ export class QABridge {
       // Engine-side observations only; never CDP DOM metrics or test labels.
       performance: this.getPerformanceSnapshot(world),
       arena: this.read.getArenaSnapshot(),
+      // V8.2.1 §7: the real suction candidate decision, not a QA re-derivation.
+      arenaSuctionTrace: this.read.getArenaMatchManager()?.getSuctionTrace() || null,
       settlement: this.getSettlementSnapshot(),
       network: {
         status: networkClient.status,
