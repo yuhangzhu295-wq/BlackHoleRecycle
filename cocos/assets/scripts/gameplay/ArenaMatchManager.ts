@@ -70,6 +70,13 @@ export interface ArenaMatchSnapshot {
    */
   readonly localKillableIds: readonly string[];
   /**
+   * V8.3 §6: how many bots are actively chasing the local player this frame.
+   * Distinguishes "one predator happened to be near" from "the whole field
+   * converged on me", which is the difference between SPAWN_PROXIMITY and
+   * AGGRO_SPIKE.
+   */
+  readonly botsTargetingPlayer: number;
+  /**
    * Who defeated the local player and how the masses compared at that instant,
    * captured once at the moment of defeat. The revive page is the only place a
    * player can learn what killed them, and this snapshot previously carried no
@@ -477,6 +484,8 @@ export class ArenaMatchManager extends Component {
       reason: this.endReason,
       localThreatIds: this.getLocalThreatIds(),
       localKillableIds: this.getLocalKillableIds(),
+      botsTargetingPlayer: this.competitors.filter((competitor) => !competitor.isLocal
+        && competitor.alive && competitor.targetId === PLAYER_ID && competitor.behavior === 'CHASE').length,
       localDefeat: this.localDefeat,
       settlementReward: this.settlementReward,
     };

@@ -1087,6 +1087,7 @@ export class GameManager extends Component {
         : 'RUNNING',
       localThreatIds: [],
       localKillableIds: [],
+      botsTargetingPlayer: 0,
       localDefeat: null,
       settlementReward: {
         coins: local?.settlementCoins || 0,
