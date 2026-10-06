@@ -164,7 +164,8 @@ try {
     const length = Math.hypot(worldDx, worldDz) || 1;
     const scale = Math.min(1, length / 4) * JOYSTICK_RADIUS;
     const x = joystick.x + (worldDx / length) * scale;
-    const y = joystick.y - (worldDz / length) * scale;
+    // Measured by arena_joystick_calibration: stick dy and world Z share a sign.
+    const y = joystick.y + (worldDz / length) * scale;
     // The joystick only captures a touch that BEGINS on its centre; starting
     // the touch already deflected leaves the stick dead (the first run of this
     // script moved the player 0 m because of exactly that).
