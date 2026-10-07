@@ -130,13 +130,13 @@ try {
         const d = Math.hypot(o.x - p.x, o.z - p.z);
         if (d < bd) { bd = d; best = { x: o.x, z: o.z }; }
       }
-      return { mass: sv.machine.mass, level: sv.machine.level, maxTier, px: p.x, pz: p.z, best, tiers, gameState: sv.gameState };
+      return { mass: sv.machine.mass, level: sv.machine.level, maxTier, px: p.x, pz: p.z, best, tiers, gameState: sv.gameState, pv: sv.playerVisibility ?? null };
     });
     const elapsed = Date.now() - t0;
     if (r.best) await steerTo(r.best.x - r.px, r.best.z - r.pz);
     if (elapsed - lastLog >= 5000) {
       lastLog = elapsed;
-      report.samples.push({ t: elapsed, mass: r.mass, level: r.level, maxTier: r.maxTier, tiers: r.tiers });
+      report.samples.push({ t: elapsed, mass: r.mass, level: r.level, maxTier: r.maxTier, tiers: r.tiers, pv: r.pv });
       console.log(`t=${(elapsed / 1000).toFixed(0)}s mass=${r.mass} level=${r.level} maxTier=${r.maxTier}`);
     }
     if (r.gameState !== 'PLAYING') break;
