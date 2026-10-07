@@ -196,6 +196,41 @@ try {
     let lastSampleAt = null;
     let finalRank = null;
 
+    // Steering runs as its own 60 ms loop with the target computed in-page.
+    // It used to run inside the telemetry loop, so every field added to the
+    // sample slowed the driver and the player collected less -- which is exactly
+    // how adding feedbackText/pv here faked a drop from 10-17 bodies per match
+    // down to 1-9, and with it a false "no kill opportunity".
+    const steerRead = () => page.evaluate(() => {
+      const sv = window.__BHR_QA__.snapshot();
+      const p = sv.player.position;
+      const arena = sv.arena || {};
+      const localMass = arena.localMass ?? 0;
+      const prey = (arena.leaderboard || [])
+        .filter((e) => !e.isLocal && e.alive && localMass >= Math.max(1, e.mass) * 1.32)
+        .map((e) => ({ x: e.position.x, z: e.position.z, d: Math.hypot(e.position.x - p.x, e.position.z - p.z) }))
+        .sort((a, b) => a.d - b.d)[0] || null;
+      if (prey) return { px: p.x, pz: p.z, target: prey };
+      const maxTier = sv.machine.maxTier;
+      let best = null; let bd = Infinity;
+      for (const o of (sv.objects || [])) {
+        if (o.state !== 'IDLE' || o.tier > maxTier || o.owner) continue;
+        const d = Math.hypot(o.x - p.x, o.z - p.z);
+        if (d < bd) { bd = d; best = { x: o.x, z: o.z }; }
+      }
+      return { px: p.x, pz: p.z, target: best };
+    });
+    const drive = { running: true };
+    const driveLoop = (async () => {
+      while (drive.running) {
+        try {
+          const live = await steerRead();
+          if (live.target) await steerTo(live.target.x - live.px, live.target.z - live.pz);
+        } catch (error) { /* a frame during a scene transition is not fatal */ }
+        await sleep(60);
+      }
+    })();
+
     while (Date.now() - t0 < OBSERVATION_WINDOW_MS) {
       const snap = await page.evaluate(() => {
         const s = window.__BHR_QA__.snapshot();
@@ -290,28 +325,10 @@ try {
       // already owned by a bot can never be taken -- steering at one made the
       // player follow bots around and eat nothing (the fourth harness bug in
       // this script, and the one that faked "player never grows").
-      const live = await page.evaluate(() => window.__BHR_QA__.snapshot());
-      const player = live.player.position;
-      const localMass = live.arena?.localMass ?? 0;
-      // §12 CHASE: a mass-killable opponent is worth chasing. Without this the
-      // driver only collected, so the player never closed to GRAVITY_RANGE and
-      // `localKillableIds` could never fire -- which reported "no kill
-      // opportunity" for a player that was 44x heavier than its nearest rival.
-      const prey = (live.arena?.leaderboard || [])
-        .filter((e) => !e.isLocal && e.alive && localMass >= Math.max(1, e.mass) * 1.32)
-        .map((e) => ({ x: e.position.x, z: e.position.z, d: Math.hypot(e.position.x - player.x, e.position.z - player.z) }))
-        .sort((a, b) => a.d - b.d)[0];
-      if (prey) { await steerTo(prey.x - player.x, prey.z - player.z); }
-      else {
-        const target = live.objects
-          .filter((o) => o.state === 'IDLE' && o.tier <= live.machine.maxTier && !o.owner)
-          .map((o) => ({ x: o.x, z: o.z, d: Math.hypot(o.x - player.x, o.z - player.z) }))
-          .sort((a, b) => a.d - b.d)[0];
-        if (target) await steerTo(target.x - player.x, target.z - player.z);
-        else await steerTo(Math.cos(elapsed / 900), Math.sin(elapsed / 900));
-      }
       await sleep(POLL_MS);
     }
+    drive.running = false;
+    await driveLoop;
     if (touchDown) { await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); touchDown = false; }
 
     report.matches.push({

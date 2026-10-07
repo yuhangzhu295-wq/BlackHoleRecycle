@@ -65,11 +65,12 @@ export class PickupFeedbackPresenter {
       new Vec3(worldPosition.x, worldPosition.y + 0.95, worldPosition.z),
       this.projectedPosition,
     );
-    const normalizedX = (screen.x - viewport.x) / viewport.width;
-    const normalizedY = (screen.y - viewport.y) / viewport.height;
-    // Feedback outside the game viewport would be unhelpful and could overlap
-    // a phone notch. The gameplay fact is still recorded in diagnostics.
-    if (normalizedX < 0.05 || normalizedX > 0.95 || normalizedY < 0.08 || normalizedY > 0.9) return;
+    // §40: clamp to the safe edge instead of discarding. An off-screen event
+    // still happened, and dropping it meant a kill at the screen edge produced no
+    // feedback at all (measured: 2 of 5 real kills showed nothing). The notch and
+    // edge margins are still respected -- only the discard is gone.
+    const normalizedX = Math.min(0.95, Math.max(0.05, (screen.x - viewport.x) / viewport.width));
+    const normalizedY = Math.min(0.9, Math.max(0.08, (screen.y - viewport.y) / viewport.height));
 
     const node = instantiate(template);
     node.name = `AbsorbFeedback_${this.emittedCount + 1}`;
