@@ -17,6 +17,7 @@
  */
 import { Camera, Color, instantiate, Label, LabelOutline, Node, UITransform, Vec3, view } from 'cc';
 import { CompressibleObject } from '../gameplay/CompressibleObject';
+import { colorFromToken, HUD_SEMANTIC } from './UIStyleTokens';
 
 const CHIP_WIDTH = 210;
 const CHIP_HEIGHT = 56;
@@ -143,10 +144,10 @@ export class TierLockPresenter {
     label.horizontalAlign = Label.HorizontalAlign.CENTER;
     label.verticalAlign = Label.VerticalAlign.CENTER;
     // Locked-target crimson, matching the V4 `--alert-crimson` token.
-    label.color = new Color(255, 92, 92, 255);
+    label.color = colorFromToken(HUD_SEMANTIC.danger);
     const outline = node.getComponent(LabelOutline) || node.addComponent(LabelOutline);
     outline.width = 4;
-    outline.color = new Color(15, 20, 38, 255);
+    outline.color = colorFromToken(HUD_SEMANTIC.textOutlineLegacy);
     this.chip = node;
     this.chipLabel = label;
     this.emittedCount++;

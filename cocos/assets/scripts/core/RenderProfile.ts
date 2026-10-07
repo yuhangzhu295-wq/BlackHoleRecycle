@@ -325,6 +325,14 @@ export const HUD_SEMANTIC = {
   neutralText: '#ffffff',
   /** Outline behind HUD text, so it survives a busy world behind it. */
   textOutline: '#0a101c',
+  /**
+   * Two more dark-navy outlines that were already in the tree, kept at their
+   * existing values so this commit changes no pixels. They are the same role as
+   * `textOutline` and differ only slightly (0f1426 vs 0a101c vs 0d1e34); which
+   * of the three should win is a visual decision, not a silent edit.
+   */
+  textOutlineLegacy: '#0f1426',
+  textOutlineLegacyAlt: '#0d1e34',
 } as const;
 
 /** The machine's own core-mesh palette, shared by BlackHoleMachine and MeshFactory. */
