@@ -235,6 +235,11 @@ export interface GoldenCityCompositionDiagnostics {
     largeEmptyGroundRatio: number | null;
   }>;
   readonly playableOpenArea: PlayableOpenAreaDiagnostics;
+  /**
+   * §41: the player's own position against the solid-occupant footprints. See
+   * estimatePlayerInsideSolidOccupant for what this does and does not answer.
+   */
+  readonly playerInsideSolidOccupant: Readonly<{ inside: boolean; categories: readonly GoldenCityCategory[] }> | null;
 }
 
 export interface LV5NearestNeighbourSpacing {
@@ -342,6 +347,7 @@ export class WorldCompositionProbe {
       },
       emptyGround: this.emptyGround(),
       playableOpenArea: this.emptyPlayableOpenArea(),
+      playerInsideSolidOccupant: null,
       tierLegibility: this.emptyTierLegibility(),
       authoredCollectibleSlots: this.emptyAuthoredCollectibleSlots(),
       authoredResourceClusters: this.emptyAuthoredResourceClusters(),
@@ -415,6 +421,7 @@ export class WorldCompositionProbe {
       player,
       emptyGround: this.estimateEmptyGround(entries, viewport),
       playableOpenArea: this.estimatePlayableOpenArea(entries),
+      playerInsideSolidOccupant: this.estimatePlayerInsideSolidOccupant(entries, playerNode),
       authoredCollectibleSlots: this.collectAuthoredCollectibleSlots(targetCell, camera, viewport, collectibles.length),
       authoredResourceClusters: this.collectAuthoredResourceClusters(targetCell, camera, viewport),
     };
@@ -1270,6 +1277,45 @@ export class WorldCompositionProbe {
    * samples the actual ground-tile footprint union and classifies every sample
    * from live world bounds. It is a pure observer.
    */
+  /** Solid occupants: the same set the open-area sampler treats as blocking. */
+  private static solidOccupantEntries(entries: readonly GoldenCityEntry[]): GoldenCityEntry[] {
+    return entries.filter((entry) => entry.worldBounds
+      && (entry.category === 'BUILDING' || entry.category === 'TREE' || entry.category === 'POI'
+        || (entry.category === 'VEHICLE' && !entry.classificationRule.includes('DynamicVehicle'))));
+  }
+
+  /**
+   * §41: is the player's own position inside a solid occupant's footprint?
+   *
+   * This reuses the open-area sampler's exact predicate, applied to a single
+   * point instead of a grid. It answers "is the black hole clipping into a
+   * building or tree", which is a real composition fault.
+   *
+   * It deliberately does NOT claim to answer "is the player hidden behind a
+   * building". That needs a sightline test, and `worldBounds` here is XZ only --
+   * with no occupant height there is no way to tell a blocking tower from a bench
+   * the camera looks straight over. Reporting the footprint case as if it were
+   * occlusion would over-report.
+   */
+  private static estimatePlayerInsideSolidOccupant(
+    entries: readonly GoldenCityEntry[],
+    playerNode: Node | null,
+  ): { inside: boolean; categories: readonly GoldenCityCategory[] } | null {
+    if (!playerNode?.isValid || !playerNode.activeInHierarchy) return null;
+    const solid = this.solidOccupantEntries(entries);
+    if (solid.length === 0) return { inside: false, categories: [] };
+    const p = playerNode.worldPosition;
+    const hits = solid.filter((entry) => {
+      const b = entry.worldBounds as GoldenCityWorldBounds;
+      return p.x >= b.min.x && p.x <= b.max.x && p.z >= b.min.z && p.z <= b.max.z;
+    });
+    // Spread over a Set is banned here (V4_NO_ES5_UNSAFE_ITERATOR_SPREAD); the
+    // existing sampler collects the same way.
+    const categories: GoldenCityCategory[] = [];
+    new Set(hits.map((entry) => entry.category)).forEach((category) => categories.push(category));
+    return { inside: hits.length > 0, categories };
+  }
+
   private static estimatePlayableOpenArea(entries: readonly GoldenCityEntry[]): PlayableOpenAreaDiagnostics {
     const insideAny = (candidates: readonly GoldenCityEntry[], x: number, z: number): GoldenCityWorldBounds[] => {
       const hits: GoldenCityWorldBounds[] = [];

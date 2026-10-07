@@ -206,7 +206,19 @@ V8.3 证明 LV3–LV5 可达（LV5 约 5.6 分钟）后，`playerVisibility` 插
 
 一个值得记的现象：LV4/LV5 的**在屏半径反而变小**（62–70 px vs LV2/LV3 的 93–100 px）。这不是核心变小，而是**相机随机器尺寸拉远**以保持取景——符合 §25 的预期行为。
 
-**未覆盖**：遮挡（occlusion）仍无程序化判定，只有像素复核（§41 要求复用 `WorldCompositionProbe` 的 static occlusion，尚未接）。
+**遮挡（§41）：brief 的前提不成立，已按可回答的问法落地。**
+
+§41 要求"复用 `WorldCompositionProbe` 的 static occlusion 机制"来判定玩家遮挡。查证后发现：
+
+- 该机制是**2D 足迹采样**（`insideAny(solidEntries, x, z)`），回答的是"某个地面点是否落在实体占用者的 XZ 足迹内"
+- 它**回答不了"玩家是否被镜头与玩家之间的建筑挡住"**——那需要视线测试
+- 而 `GoldenCityWorldBounds` **只有 XZ，没有高度**，所以无法区分"挡视线的楼"和"镜头一眼掠过的长椅"。**用现有数据做真正的视线遮挡会系统性高报。**
+
+因此落地的是**同一套谓词可以真实回答的那个问题**：玩家是否站在实体占用者内部（`playerInsideSolidOccupant`，复用 `solidOccupantEntries` + 相同的 footprint 判定）。它答的是"黑洞有没有嵌进建筑/树里"。
+
+**实测**：2 分钟真实游玩，23/23 采样读到该字段，**玩家位于实体占用者内部 0 次** ✓
+
+**真正的视线遮挡仍是未覆盖项**——要做得先让探针采集占用者高度，那超出"复用现有机制"的范围。
 
 ### 3.3 PLAYER_HERO / GAME_FEEDBACK
 
