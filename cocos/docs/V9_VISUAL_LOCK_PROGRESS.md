@@ -267,6 +267,48 @@ V8.3 证明 LV3–LV5 可达（LV5 约 5.6 分钟）后，`playerVisibility` 插
 
 ---
 
+## 3.4 三尺寸采集（§37 的 375 / 390 / 430）
+
+**8 页 × 3 尺寸 = 24 张稳定截图全部采集成功**，位于 `artifacts/qa/settled/<page>-settled-<WxH>.png`：
+
+```
+home mode ready machine skin pause settlement revive  ×  375x667 / 390x844 / 430x932
+```
+
+命令：`node scripts/capture_settled_page.mjs --page=<page> --width=<w> --height=<h>`
+
+**人工复核**（内容最密的两页、最小尺寸）：
+
+| 页面 @375×667 | 结果 |
+|---|---|
+| SkinSelection | 标题不裁、预览卡内金币药丸位置正确、5 行全部可读、底部按钮在位 |
+| MachineInfo | 标题、能力卡、5 行等级条、底部按钮全部在位，无裁切 |
+
+**金币药丸的修正在 375×667 同样成立**——说明它不只是 390×844 上的巧合。
+
+**未做**：其余 6 页在 375/430 下的逐张人工复核（24 张全读的性价比低）。若 §37 要求逐页签字，需要补这一步。
+
+---
+
+## 4. V9 门禁状态（§37 对照）
+
+| 门禁 | 状态 | 依据 |
+|---|---|---|
+| PLAYER_HERO_PASS | ✅ | 五级实测，从未出屏，最小在屏半径 62 px |
+| GAME_FEEDBACK_PASS | ✅ | 六类反馈全部实现且都在真实游玩中被观测到 |
+| 375 / 390 / 430 PASS | ⚠️ **部分** | 24 张已采集；人工复核做了最密的两页 |
+| HOME / MODE / READY / PAUSE / REVIVE / SETTLEMENT / MACHINE / SKIN_PASS | ⚠️ **已审查未签字** | 八页已按 §28 七问逐页审查（`V9_PAGE_VISUAL_AUDIT.md`），结论是可接受；正式签字需要三尺寸逐页复核 |
+| ENDLESS_GAMEPLAY_VISUAL_PASS | ⚠️ **未正式跑** | 有 V8.1 的帧序列与 §28 审查，无专门门禁 |
+| ARENA_GAMEPLAY_VISUAL_PASS | ⚠️ **未正式跑** | 有 V8.2 的 HUD 像素确认与 §28 审查 |
+| consoleErrors = 0 | ✅ | 每次验收 0 |
+| invalidMesh = 0 / invalidSprite = 0 | ✅ | 每次验收 0 |
+
+**结论：V9 未完成。** 已完成的是资产边界（回退后回到原状）、颜色/尺寸 token、八页审查、PLAYER_HERO、GAME_FEEDBACK 盘点、以及 §39/§40/§41/§42 四项。
+
+**未完成**：UI Kit 组件化（§17/§22，需新建 Prefab）、逐页三尺寸签字、以及两类**资产缺口**（音频 §42、粒子/动画 §26）——后者属于 §46 的"购买付费资产"，需要 Owner。
+
+---
+
 ## 4. 纪律备忘（本阶段反复踩到的）
 
 1. **先怀疑自己的测量**。本阶段至少有 7 个采集缺陷制造过假的产品结论：摇杆触摸起点、`tier<=3` 硬编码、缺 `consumed` 断言、追已占用物体、**垂直轴取反（在 3 个脚本里各出现一次）**、慢速循环内转向、预热期原地不动。两次把测量失败报成了产品缺陷并自我撤回。

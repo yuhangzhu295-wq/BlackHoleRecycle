@@ -25,6 +25,8 @@ const argOf = (n, f) => {
 };
 const PAGE = argOf('page', 'machine');
 const SETTLE_MS = Number(argOf('settleMs', '2500'));
+const WIDTH = Number(argOf('width', '390'));
+const HEIGHT = Number(argOf('height', '844'));
 
 function serve(root) {
   return new Promise((res) => {
@@ -65,7 +67,7 @@ const browser = await chromium.launch({
 });
 try {
   const context = await browser.newContext({
-    viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, deviceScaleFactor: 1,
+    viewport: { width: WIDTH, height: HEIGHT }, hasTouch: true, isMobile: true, deviceScaleFactor: 1,
   });
   const page = await context.newPage();
   await page.goto(`http://127.0.0.1:${port}/?qa=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
@@ -153,7 +155,7 @@ try {
   await sleep(SETTLE_MS);
 
   const after = await snapshot();
-  const file = path.join(outDir, `${PAGE}-settled-390x844.png`);
+  const file = path.join(outDir, `${PAGE}-settled-${WIDTH}x${HEIGHT}.png`);
   await page.screenshot({ path: file });
   console.log(`captured ${file}`);
   console.log(`gameState=${after.gameState} uiScreen=${after.uiScreen}`);
