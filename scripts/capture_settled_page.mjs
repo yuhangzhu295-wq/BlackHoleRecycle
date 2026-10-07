@@ -1,0 +1,97 @@
+/**
+ * Capture a settled screenshot of an overlay page.
+ *
+ * The acceptance captures for these pages are taken while the page is still
+ * animating in, so they show a half-applied dim overlay and can look like a
+ * layout defect that is not there. This waits for the page to settle first.
+ *
+ * Usage: node scripts/capture_settled_page.mjs [--page=machine] [--settleMs=2500]
+ */
+import { chromium } from 'playwright';
+import { createServer } from 'node:http';
+import { existsSync, readFileSync, statSync, mkdirSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const thisFile = fileURLToPath(import.meta.url);
+const repoRoot = path.resolve(path.dirname(thisFile), '..');
+const buildDirectory = path.join(repoRoot, 'cocos', 'build', 'web-mobile');
+const outDir = path.join(repoRoot, 'artifacts', 'qa', 'settled');
+mkdirSync(outDir, { recursive: true });
+
+const argOf = (n, f) => {
+  const h = process.argv.find((a) => a.startsWith(`--${n}=`));
+  return h ? h.split('=')[1] : f;
+};
+const PAGE = argOf('page', 'machine');
+const SETTLE_MS = Number(argOf('settleMs', '2500'));
+
+function serve(root) {
+  return new Promise((res) => {
+    const server = createServer((req, rep) => {
+      const u = new URL(req.url, 'http://127.0.0.1').pathname;
+      const safe = path.normalize(u).replace(/^(\.\.[/\\])+/, '');
+      let fp = path.join(root, safe === '/' ? 'index.html' : safe);
+      if (!existsSync(fp) || statSync(fp).isDirectory()) {
+        if (statSync(fp).isDirectory() && existsSync(path.join(fp, 'index.html'))) fp = path.join(fp, 'index.html');
+        else { rep.writeHead(404); rep.end('404'); return; }
+      }
+      const ext = path.extname(fp).toLowerCase();
+      const ct = {
+        '.html': 'text/html', '.js': 'application/javascript', '.json': 'application/json',
+        '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg',
+      }[ext] || 'application/octet-stream';
+      rep.writeHead(200, { 'Content-Type': ct });
+      rep.end(readFileSync(fp));
+    });
+    server.listen(0, '127.0.0.1', () => res({ server, port: server.address().port }));
+  });
+}
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+async function tap(cdp, x, y) {
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
+  await sleep(60);
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+}
+function pt(rect, node, name) {
+  if (!node?.active || !node?.screen) throw new Error('invisible node: ' + name + ' ' + JSON.stringify(node));
+  return { x: rect.left + rect.width * node.screen.x, y: rect.top + rect.height * node.screen.y };
+}
+
+const { server, port } = await serve(buildDirectory);
+const browser = await chromium.launch({
+  headless: true,
+  args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-webgl', '--no-proxy-server'],
+});
+try {
+  const context = await browser.newContext({
+    viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, deviceScaleFactor: 1,
+  });
+  const page = await context.newPage();
+  await page.goto(`http://127.0.0.1:${port}/?qa=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await page.waitForFunction(() => Boolean(window.__BHR_QA__?.snapshot), undefined, { timeout: 90000 });
+  await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'HOME', undefined, { timeout: 60000 });
+  await sleep(1500);
+  const cdp = await context.newCDPSession(page);
+  const rect = await page.locator('#GameCanvas').evaluate((c) => {
+    const r = c.getBoundingClientRect();
+    return { left: r.left, top: r.top, width: r.width, height: r.height };
+  });
+
+  const snapshot = () => page.evaluate(() => window.__BHR_QA__.snapshot());
+  let s = await snapshot();
+  const targetName = PAGE === 'machine' ? 'machine' : PAGE === 'skin' ? 'skin' : 'mode';
+  const node = s.ui?.[targetName];
+  if (!node) throw new Error(`Home has no "${targetName}" entry: ` + JSON.stringify(Object.keys(s.ui || {})));
+  await tap(cdp, ...Object.values(pt(rect, node, targetName)));
+  await sleep(SETTLE_MS);
+
+  const after = await snapshot();
+  const file = path.join(outDir, `${PAGE}-settled-390x844.png`);
+  await page.screenshot({ path: file });
+  console.log(`captured ${file}`);
+  console.log(`gameState=${after.gameState} uiScreen=${after.uiScreen}`);
+} finally {
+  await browser.close();
+  server.close();
+}

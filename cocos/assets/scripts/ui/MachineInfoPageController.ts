@@ -69,4 +69,6 @@ export class MachineInfoPageController extends Component {
     const label = this.node.getChildByName(name)?.getComponent(Label) || null;
     if (label) label.string = value;
   }
+
+
 }
