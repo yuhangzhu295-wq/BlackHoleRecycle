@@ -220,6 +220,22 @@ V8.3 证明 LV3–LV5 可达（LV5 约 5.6 分钟）后，`playerVisibility` 插
 
 **真正的视线遮挡仍是未覆盖项**——要做得先让探针采集占用者高度，那超出"复用现有机制"的范围。
 
+### 3.2.2 AUDIO：AUDIO_ASSET_REQUIRED（§42）
+
+按 §42 盘点，结论是**音频完全不存在**：
+
+| 检查 | 结果 |
+|---|---|
+| 音频代码（`AudioSource` / `AudioClip` / `playOneShot`） | **0 处引用** |
+| 音频资产（`cocos/assets` 下 mp3 / wav / ogg / m4a） | **0 个文件** |
+| 触觉 | **已存在且已接线** —— `platformAdapter.vibrate` 在 `GameManager.ts:345`(heavy) / `:516`(light) 与 `CompressionSystem.ts:122`(medium) / `:202`(light) |
+
+**标记：`AUDIO_ASSET_REQUIRED`。** §42 明确禁止用假静音资源宣称完成，所以不新建空 AudioSource 来"占位"。
+
+需要的音效（§42 列出的六类）：**吸附 / 吞噬 / 升级 / 击杀 / 死亡 / 按钮**。它们对应的真实事件都已存在（`CompressionSystem` 的压缩状态机、`MACHINE_EVOLVED`、`ARENA_LOCAL_KILL`、死亡节拍、各页按钮的 `Button.EventType.CLICK`），所以**接线点不需要新建，只缺音频资产本身**。
+
+这是**需要 Owner 提供或采购**的项（属于 §46 的"购买付费资产"）。
+
 ### 3.3 PLAYER_HERO / GAME_FEEDBACK
 
 - **PLAYER_HERO（§25）**：所有等级核心黑洞必须可见。已有 `playerVisibility` 插桩（屏幕归一化坐标 + 核心在屏半径）。**已测**：Endless LV1 半径 92–93px、LV2 93–94px、Arena LV1 48–49px，**出屏 0 次**。**未测 LV3/LV5**——但 V8.3 已证明它们可达（LV5 在 5.6 分钟），所以可测。
