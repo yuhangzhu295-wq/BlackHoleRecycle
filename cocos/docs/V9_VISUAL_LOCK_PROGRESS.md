@@ -134,9 +134,13 @@
 |---|---|---|
 | Home | **浅** | 明亮世界背景 + 深色文字 |
 | ModeSelect | **浅** | 蓝天背景 + 深色文字 |
+| EndlessReady | **浅** | 蓝天背景 + 深色文字，但**内部含深藏青药丸**（历史最高纪录 / 当前机器） |
+| Pause | **浅** | 浅紫卡片 + 深色文字 |
 | MachineInfoPage | **深** | 深藏青卡片 + 浅色文字 |
 | SkinSelectionPage | **深** | 深藏青卡片 + 浅色文字 |
-| Revive / Settlement / Pause / EndlessReady / ArenaReady | **未确认** | 需稳定截图 |
+| Revive / Settlement | **未确认** | 需稳定截图 |
+
+**更准确的模型：极性是"表面"的属性，不是"页面"的属性。** `EndlessReady` 一页之内既有浅底（地图预览、规则）又有深底药丸（纪录、当前机器）——所以不能按页面分配 token，必须按**元素所处的表面**判断。
 
 **所以不存在"菜单页都是浅色"这种规则**——Machine 与 Skin 都是深色。`PAGE_SEMANTIC` 不是"浅底调色板"，它只是"菜单/覆盖层页面现有的值"；某个角色是否合适，**仍要对着那一页自己的背景判断**。
 
@@ -154,6 +158,8 @@
 1. `HUD_SEMANTIC` 的值（白字、浅色）**放到浅底页面上会看不见**。所以"浅底页面需要自己的 token 集"（例如 `PAGE_SEMANTIC`）。
 2. 它解释了 §2.1 那处误判——复活页的深红不是不一致，而是**另一极性的正确取值**。任何"跨页统一颜色"的动作，都必须先确认两页是否同一极性。
 3. 它也是 `MachineInfoPage` 的一个具体阻碍：该页 `LevelRow1-5` 已经用**文字**标注状态（`当前使用` / `已解锁` / `下一目标` / `未解锁`，见 `MachineInfoPageController.ts:47-55`），加**颜色**本可让它一眼可扫——但在浅底卡片上写白字不可见，所以必须先有浅底 token。
+
+**采集工具**：`scripts/capture_settled_page.mjs --page=<home|mode|ready|machine|skin|pause|settlement>`。验收截图是**转场中**拍的，会误导（我因此误判过两次），这个脚本会等页面稳定再截。注意 `ui.endlessReady` 是复合对象，可点节点是它的 `.start` 子节点。
 
 **下一轮做法**：
 

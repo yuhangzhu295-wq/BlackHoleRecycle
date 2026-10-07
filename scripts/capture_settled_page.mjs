@@ -80,10 +80,54 @@ try {
 
   const snapshot = () => page.evaluate(() => window.__BHR_QA__.snapshot());
   let s = await snapshot();
-  const targetName = PAGE === 'machine' ? 'machine' : PAGE === 'skin' ? 'skin' : 'mode';
-  const node = s.ui?.[targetName];
-  if (!node) throw new Error(`Home has no "${targetName}" entry: ` + JSON.stringify(Object.keys(s.ui || {})));
-  await tap(cdp, ...Object.values(pt(rect, node, targetName)));
+  const tapUi = async (key, label) => {
+    const node = s.ui?.[key];
+    if (!node) throw new Error(`snapshot has no "${key}": ` + JSON.stringify(Object.keys(s.ui || {})));
+    await tap(cdp, ...Object.values(pt(rect, node, label)));
+    await sleep(600);
+    s = await snapshot();
+  };
+  const waitState = (state, ms = 9000) => page.waitForFunction(
+    (want) => window.__BHR_QA__.snapshot().gameState === want, state, { timeout: ms });
+
+  if (PAGE === 'home') {
+    // nothing to navigate; Home is where we start
+  } else if (PAGE === 'machine' || PAGE === 'skin' || PAGE === 'mode') {
+    await tapUi(PAGE, PAGE);
+  } else if (PAGE === 'ready' || PAGE === 'pause' || PAGE === 'settlement') {
+    await tapUi('start', 'start');
+    await waitState('MODE_SELECT');
+    await tapUi('modeEndless', 'modeEndless');
+    await waitState('MODE_READY');
+    s = await snapshot();
+    if (PAGE === 'ready') {
+      // The ready page is the target: settle here and do not start the match.
+    } else {
+      // ui.endlessReady is a composite ({root, back, start, ...}); the tappable
+      // node with active/screen is its `start` child, not the wrapper.
+      s = await snapshot();
+      const startBtn = s.ui?.endlessReady?.start;
+      if (!startBtn?.active || !startBtn?.screen) throw new Error('ready Start not visible: ' + JSON.stringify(startBtn));
+      await tap(cdp, ...Object.values(pt(rect, startBtn, 'endlessReady.start')));
+      await sleep(700);
+      s = await snapshot();
+      await waitState('PLAYING');
+      await sleep(1200);
+      s = await snapshot();
+      const pauseNode = s.ui?.runtimeHUD?.pauseButton;
+      if (!pauseNode?.active || !pauseNode?.screen) throw new Error('pause button not visible: ' + JSON.stringify(pauseNode));
+      await tap(cdp, ...Object.values(pt(rect, pauseNode, 'pauseButton')));
+      await sleep(700);
+      s = await snapshot();
+      if (PAGE === 'settlement') {
+        await sleep(400);
+        s = await snapshot();
+        await tapUi('pauseSettle', 'pauseSettle');
+      }
+    }
+  } else {
+    throw new Error('unknown --page: ' + PAGE);
+  }
   await sleep(SETTLE_MS);
 
   const after = await snapshot();
