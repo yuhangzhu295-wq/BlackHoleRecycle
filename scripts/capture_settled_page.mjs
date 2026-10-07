@@ -122,9 +122,31 @@ try {
       if (PAGE === 'settlement') {
         await sleep(400);
         s = await snapshot();
-        await tapUi('pauseSettle', 'pauseSettle');
+        // formalPages holds the overlay buttons, not the top-level ui object.
+        const settleBtn = s.ui?.formalPages?.pauseSettle;
+        if (!settleBtn?.active || !settleBtn?.screen) throw new Error('pause settle not visible: ' + JSON.stringify(settleBtn));
+        await tap(cdp, ...Object.values(pt(rect, settleBtn, 'pauseSettle')));
+        await sleep(900);
+        s = await snapshot();
       }
     }
+  } else if (PAGE === 'revive') {
+    // The revive page only exists after a real defeat, so drive an arena match
+    // and wait for it rather than forcing the screen.
+    await tapUi('start', 'start');
+    await waitState('MODE_SELECT');
+    await tapUi('modeArena', 'modeArena');
+    await waitState('MODE_READY');
+    s = await snapshot();
+    const arenaStart = (s.ui?.arenaReady || s.ui?.endlessReady)?.start;
+    if (!arenaStart?.active || !arenaStart?.screen) throw new Error('arena ready Start not visible');
+    await tap(cdp, ...Object.values(pt(rect, arenaStart, 'arenaReady.start')));
+    await waitState('ARENA', 12000);
+    await page.waitForFunction(
+      () => window.__BHR_QA__.snapshot().gameState === 'REVIVING',
+      undefined,
+      { timeout: 90000 },
+    );
   } else {
     throw new Error('unknown --page: ' + PAGE);
   }
