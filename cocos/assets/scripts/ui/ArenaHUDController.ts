@@ -1,6 +1,7 @@
 /** Editor-saved arena HUD bindings. All values originate from ArenaMatchManager. */
 import { _decorator, Button, Camera, Color, Component, director, instantiate, Label, LabelOutline, Node, UIOpacity, UITransform, Vec3, view } from 'cc';
 import { eventBus } from '../core/EventBus';
+import { colorFromToken, HUD_SEMANTIC, tierUpgradeColor } from './UIStyleTokens';
 import { ArenaMatchSnapshot } from '../gameplay/ArenaMatchManager';
 import { CompressibleObject } from '../gameplay/CompressibleObject';
 import { applyHudSafeAreaInset } from './HudSafeAreaInset';
@@ -11,7 +12,7 @@ import { TierUpgradeDiagnostics, TierUpgradePresenter } from './TierUpgradePrese
 const { ccclass } = _decorator;
 
 /** §25: a kill reads as a win, so it gets its own colour and a short life. */
-const KILL_FEEDBACK_COLOR = new Color(255, 214, 92, 255);
+const KILL_FEEDBACK_COLOR = colorFromToken(HUD_SEMANTIC.killFeedback);
 const KILL_FEEDBACK_SECONDS = 1.1;
 
 const TITLE_HOLD_SECONDS = 2.0;
@@ -210,10 +211,10 @@ export class ArenaHUDController extends Component {
         label.string = competitor.isLocal ? '我'
           : isThreat ? `危险 ${competitor.name}`
             : isKillable ? `可追 ${competitor.name}` : competitor.name;
-        label.color = competitor.isLocal ? new Color(104, 238, 104, 255)
-          : isThreat ? new Color(255, 92, 92, 255)
-            : isKillable ? new Color(198, 236, 120, 255)
-              : new Color(255, 255, 255, 255);
+        label.color = competitor.isLocal ? colorFromToken(HUD_SEMANTIC.localPlayer)
+          : isThreat ? colorFromToken(HUD_SEMANTIC.danger)
+            : isKillable ? colorFromToken(HUD_SEMANTIC.killable)
+              : colorFromToken(HUD_SEMANTIC.neutralText);
         // Danger keeps the largest type: it is the one that must never be missed.
         label.fontSize = competitor.isLocal ? 34 : isThreat ? 26 : isKillable ? 25 : 24;
         label.lineHeight = competitor.isLocal ? 38 : isThreat ? 30 : isKillable ? 29 : 28;
@@ -286,7 +287,7 @@ export class ArenaHUDController extends Component {
     label.horizontalAlign = Label.HorizontalAlign.CENTER;
     const outline = nameplate.getComponent(LabelOutline) || nameplate.addComponent(LabelOutline);
     outline.width = 3;
-    outline.color = new Color(10, 16, 28, 255);
+    outline.color = colorFromToken(HUD_SEMANTIC.textOutline);
     this.competitorNameplates.set(id, nameplate);
     return nameplate;
   }
@@ -303,9 +304,7 @@ export class ArenaHUDController extends Component {
   }
 
   public showAbsorbFeedback(position: Readonly<Vec3>, score: number, tier: number): void {
-    const color = tier >= 3 ? new Color(255, 190, 65, 255)
-      : tier === 2 ? new Color(255, 225, 95, 255)
-        : new Color(255, 255, 255, 255);
+    const color = tierUpgradeColor(tier);
     this.pickupFeedback?.emit(position, score, color);
   }
 
@@ -386,12 +385,12 @@ export class ArenaHUDController extends Component {
     if (!statusNode) return;
     const label = statusNode.getComponent(Label);
     if (label) {
-      label.color = new Color(255, 255, 255, 255);
+      label.color = colorFromToken(HUD_SEMANTIC.neutralText);
       label.isBold = true;
     }
     const outline = statusNode.getComponent(LabelOutline) || statusNode.addComponent(LabelOutline);
     outline.width = 3;
-    outline.color = new Color(10, 16, 28, 255);
+    outline.color = colorFromToken(HUD_SEMANTIC.textOutline);
   }
 
   private bind(name: string, handler: () => void): void {

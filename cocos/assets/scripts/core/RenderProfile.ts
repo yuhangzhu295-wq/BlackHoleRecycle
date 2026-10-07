@@ -302,6 +302,31 @@ export const UI_PALETTE = {
   tier5: '#ef476f',
 } as const;
 
+/**
+ * HUD semantic roles. These were previously written as inline `new Color(...)`
+ * literals, and the tier-upgrade pair was duplicated verbatim in both HUD
+ * controllers. Named here so the two HUDs cannot drift apart, and so a role
+ * change happens in one place.
+ */
+export const HUD_SEMANTIC = {
+  /** An opponent that can currently eat the player. */
+  danger: '#ff5c5c',
+  /** An opponent the player can currently eat. */
+  killable: '#c6ec78',
+  /** The local player's own nameplate. */
+  localPlayer: '#68ee68',
+  /** Kill feedback: a win, so it reads gold rather than white. */
+  killFeedback: '#ffd65c',
+  /** Upgrade feedback for tier 2. */
+  upgradeTier2: '#ffe15f',
+  /** Upgrade feedback for tier 3 and above. */
+  upgradeTier3: '#ffbe41',
+  /** Neutral HUD text on a dark panel. */
+  neutralText: '#ffffff',
+  /** Outline behind HUD text, so it survives a busy world behind it. */
+  textOutline: '#0a101c',
+} as const;
+
 /** The machine's own core-mesh palette, shared by BlackHoleMachine and MeshFactory. */
 export const MACHINE_PALETTE = {
   abyssBase: '#281660',

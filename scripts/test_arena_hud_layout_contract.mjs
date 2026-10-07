@@ -7,6 +7,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (relativePath) => readFileSync(path.join(root, relativePath), 'utf8');
 const contract = JSON.parse(read('cocos/docs/design-contracts/arena-hud.json'));
 const scene = JSON.parse(read('cocos/assets/scenes/Game.scene'));
+const renderProfile = read('cocos/assets/scripts/core/RenderProfile.ts');
 const controller = read('cocos/assets/scripts/ui/ArenaHUDController.ts');
 const hudView = read('cocos/assets/scripts/ui/HUDView.ts');
 const manager = read('cocos/assets/scripts/gameplay/GameManager.ts');
@@ -49,7 +50,10 @@ assert.match(controller, /snapshot\.leaderboard\.slice\(0, 3\)/);
 assert.match(controller, /localInTop3/);
 assert.match(controller, /row4Rank/);
 assert.match(controller, /entry\.isLocal \? '你' : entry\.name/);
-assert.match(controller, /competitor\.isLocal \? new Color\(104, 238, 104, 255\)/);
+assert.match(controller, /competitor\.isLocal \? colorFromToken\(HUD_SEMANTIC\.localPlayer\)/,
+  'The local nameplate must read the shared HUD semantic token, not an inline literal');
+assert.match(renderProfile, /localPlayer: '#68ee68'/,
+  'HUD_SEMANTIC.localPlayer must remain the local nameplate green (#68ee68 = 104,238,104)');
 assert.match(controller, /private getGameplayCamera\(\): Camera \| null[\s\S]*?getChildByName\('Main Camera'\)/);
 assert.doesNotMatch(controller, /getComponentInChildren\(Camera\)/, 'Arena world projection must not depend on scene traversal order');
 assert.match(controller, /updateOffscreenBotArrows\(snapshot\)/);

@@ -10,6 +10,7 @@ import { FirstRunHintDiagnostics, FirstRunHintPresenter } from './FirstRunHintPr
 import { PickupFeedbackDiagnostics, PickupFeedbackPresenter } from './PickupFeedbackPresenter';
 import { TierLockDiagnostics, TierLockPresenter } from './TierLockPresenter';
 import { TierUpgradeDiagnostics, TierUpgradePresenter } from './TierUpgradePresenter';
+import { colorFromToken, HUD_SEMANTIC, tierUpgradeColor } from './UIStyleTokens';
 
 const { ccclass } = _decorator;
 
@@ -83,9 +84,7 @@ export class EndlessHUDController extends Component {
   }
 
   public showAbsorbFeedback(position: Readonly<Vec3>, score: number, tier: number): void {
-    const color = tier >= 3 ? new Color(255, 190, 65, 255)
-      : tier === 2 ? new Color(255, 225, 95, 255)
-        : new Color(255, 255, 255, 255);
+    const color = tierUpgradeColor(tier);
     this.pickupFeedback?.emit(position, score, color);
     this.firstRunHints?.onObjectAbsorbed();
   }
