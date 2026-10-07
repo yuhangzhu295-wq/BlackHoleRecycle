@@ -4698,6 +4698,17 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
       assert(authoredT2Target,
         'FAIL_VERTICAL_SLICE_T2_AUTHORING_TARGET_MISSING: tutorial_t2_target was not registered from the opening cell authoring data');
       const authoredT2Point = { x: authoredT2Target.x, z: authoredT2Target.z };
+      // The route helper reports arrival on `bestDistance`, the closest sample it
+      // ever saw, and the machine coasts a little past the target after the stick
+      // releases. For a pickup that is fine -- the compression system still takes
+      // it -- but the lock prompt needs the body to be INSIDE the suction radius
+      // when the 1.4 s pulse fires, so a post-arrival sample can legitimately find
+      // the player just outside it and see nothing. Measured: that made this gate
+      // fail about one run in three with the player 3.47 m away against a 2.4 m
+      // radius, having owned the target moments earlier. Observe the pulse across
+      // the approach itself, which is when a player would see it, instead of only
+      // after the drive returns.
+      let lockSeenDuringRoute = false;
       await driveJoystickToLogicalPoint(
         cdp,
         page,
@@ -4707,7 +4718,13 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
         2.3,
         30_000,
         false,
-        (snapshot) => trackPreLoopFeedback(snapshot, 'T2_LOCK_ROUTE'),
+        (snapshot) => {
+          trackPreLoopFeedback(snapshot, 'T2_LOCK_ROUTE');
+          if (!lockSeenDuringRoute && snapshot.objects.some(
+            (object) => object.runtimeId === 'tutorial_t2_target' && object.lockVisible)) {
+            lockSeenDuringRoute = true;
+          }
+        },
       );
       // `CompressibleObject.showLockAlert()` is a pulse, not a latch: it holds
       // `isLockAlertActive` for 1.4 s and then refuses to re-arm for a further
@@ -4724,8 +4741,10 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
       // in the blink cycle the sample lands.
       let lockedT2Snapshot = await readRuntimeSnapshot(page);
       trackPreLoopFeedback(lockedT2Snapshot, 'T2_LOCK_INITIAL');
-      let lockedT2 = lockedT2Snapshot.objects.find(
-        (object) => object.runtimeId === 'tutorial_t2_target' && object.lockVisible) || null;
+      let lockedT2 = lockSeenDuringRoute
+        ? lockedT2Snapshot.objects.find((object) => object.runtimeId === 'tutorial_t2_target') || true
+        : lockedT2Snapshot.objects.find(
+          (object) => object.runtimeId === 'tutorial_t2_target' && object.lockVisible) || null;
       const lockObservationStart = Date.now();
       const lockObservationDeadline = lockObservationStart + 6_000;
       while (!lockedT2 && Date.now() < lockObservationDeadline) {
