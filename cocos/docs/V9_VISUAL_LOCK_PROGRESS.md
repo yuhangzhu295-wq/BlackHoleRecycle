@@ -99,6 +99,27 @@
 
 **真正缺的组件**：可编辑 ModeCard（旧模式卡**带烘焙文案**，不能当可编辑控件用）、BrandHeader、规范化的 CurrencyPill / LevelPill、按钮的 Button+Label 状态封装、ProgressBar（Machine 当前只有文字 `ProgressValue`）、HUDStat / LeaderboardRow 的独立视觉单元。
 
+### 3.1.1 关键结构事实：游戏里有**两种背景极性**，而 token 只覆盖了一种
+
+这是做 Kit 之前必须先解决的结构问题，也是本阶段一处误判的根源。
+
+| 极性 | 页面 | token 现状 |
+|---|---|---|
+| **深色面板 + 白字** | Endless / Arena Gameplay HUD、升级横幅、锁定提示 | ✅ `HUD_SEMANTIC` 已建立（`neutralText: #ffffff` 等） |
+| **浅底卡片 + 深字** | Home、ModeSelect、Endless/Arena Ready、Pause、Revive、Settlement、Machine、Skin | ❌ **无 token**，颜色仍来自场景中各 Label 的序列化 `_color` |
+
+**为什么这很重要**：
+
+1. `HUD_SEMANTIC` 的值（白字、浅色）**放到浅底页面上会看不见**。所以"浅底页面需要自己的 token 集"（例如 `PAGE_SEMANTIC`）。
+2. 它解释了 §2.1 那处误判——复活页的深红不是不一致，而是**另一极性的正确取值**。任何"跨页统一颜色"的动作，都必须先确认两页是否同一极性。
+3. 它也是 `MachineInfoPage` 的一个具体阻碍：该页 `LevelRow1-5` 已经用**文字**标注状态（`当前使用` / `已解锁` / `下一目标` / `未解锁`，见 `MachineInfoPageController.ts:47-55`），加**颜色**本可让它一眼可扫——但在浅底卡片上写白字不可见，所以必须先有浅底 token。
+
+**下一轮做法**：
+
+1. 从 `Game.scene` 读出浅底页面各 Label 的现有 `_color`，归纳角色（正文 / 次要 / 告警 / 成功 / 禁用 / 描边）
+2. 声明为 token，**先按现值**（零像素变化），再逐页收敛
+3. 收敛完成后，才有资格给 `MachineInfoPage` 等级行、`SettlementPage` 名次等**加语义色**——那才是真正的可见改善
+
 **模板可行性**：11 个界面状态**全部可归入** MENU / GAMEPLAY / OVERLAY，**没有必须成为第四模板的页面**。
 
 **顺序**（§22）：先做 **Endless / Arena Gameplay HUD**，不要先做 Home。
