@@ -328,16 +328,26 @@ export const HUD_SEMANTIC = {
 } as const;
 
 /**
- * Light-page semantic roles, the counterpart to HUD_SEMANTIC.
+ * Menu and overlay page roles, the counterpart to HUD_SEMANTIC.
  *
- * The game has two background polarities: dark panels (Endless/Arena HUD,
- * upgrade banner, lock prompt) use HUD_SEMANTIC, while the menu and overlay
- * pages are light cards with dark text. A HUD value written on a light card is
- * invisible, which is why the two sets are separate rather than one palette.
+ * Polarity is per page, not per group. Read from settled screenshots rather than
+ * assumed:
  *
- * Derived from what the scene already had: 122 labels on the light pages were
+ *   Home         bright world backdrop, dark text        -> light
+ *   ModeSelect   blue sky, dark text                     -> light
+ *   MachineInfo  dark navy card, light text              -> dark
+ *   SkinSelect   dark navy card, light text              -> dark
+ *   Revive / Settlement / Pause / Ready                  -> not yet verified
+ *
+ * So this set is NOT "the light-page palette": it holds the menu/overlay values
+ * as the scene already had them, and a role's suitability still has to be judged
+ * against that page's own background. An earlier version of this comment claimed
+ * the menu and overlay pages were light cards with dark text, which is wrong for
+ * Machine and Skin.
+ *
+ * The values come from what the scene held: 122 labels across these pages were
  * using 40 distinct colours, including three near-identical dark purples for the
- * same body-text role (4e3a68 / 463562 / 4a3863). They now share one token.
+ * same body-text role (4e3a68 / 463562 / 4a3863), which now share one token.
  */
 export const PAGE_SEMANTIC = {
   /** Body text on a light card. Canonical value taken from the machine rows. */

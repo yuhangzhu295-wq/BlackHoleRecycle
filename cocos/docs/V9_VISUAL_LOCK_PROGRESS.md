@@ -124,7 +124,23 @@
 
 **真正缺的组件**：可编辑 ModeCard（旧模式卡**带烘焙文案**，不能当可编辑控件用）、BrandHeader、规范化的 CurrencyPill / LevelPill、按钮的 Button+Label 状态封装、ProgressBar（Machine 当前只有文字 `ProgressValue`）、HUDStat / LeaderboardRow 的独立视觉单元。
 
-### 3.1.1 关键结构事实：游戏里有**两种背景极性**，而 token 只覆盖了一种
+### 3.1.1 关键结构事实：**极性是逐页的**，不是按"HUD vs 页面"分组
+
+**本节原先写的是"两种背景极性：深色面板 vs 浅底卡片"，那个概括是错的**，已按稳定截图更正。
+
+用 `scripts/capture_settled_page.mjs` 逐页拍**稳定后**的画面（验收截图是转场中拍的，会误导），实测结果：
+
+| 页面 | 极性 | 依据 |
+|---|---|---|
+| Home | **浅** | 明亮世界背景 + 深色文字 |
+| ModeSelect | **浅** | 蓝天背景 + 深色文字 |
+| MachineInfoPage | **深** | 深藏青卡片 + 浅色文字 |
+| SkinSelectionPage | **深** | 深藏青卡片 + 浅色文字 |
+| Revive / Settlement / Pause / EndlessReady / ArenaReady | **未确认** | 需稳定截图 |
+
+**所以不存在"菜单页都是浅色"这种规则**——Machine 与 Skin 都是深色。`PAGE_SEMANTIC` 不是"浅底调色板"，它只是"菜单/覆盖层页面现有的值"；某个角色是否合适，**仍要对着那一页自己的背景判断**。
+
+### 3.1.2 （原文，已被 3.1.1 更正）两种背景极性的说法
 
 这是做 Kit 之前必须先解决的结构问题，也是本阶段一处误判的根源。
 
