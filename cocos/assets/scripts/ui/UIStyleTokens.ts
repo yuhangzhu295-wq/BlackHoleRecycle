@@ -7,7 +7,7 @@
  * HUD controllers one shared source for the tier-upgrade ramp.
  */
 import { Color } from 'cc';
-import { HUD_SEMANTIC, PAGE_SEMANTIC, UI_PALETTE } from '../core/RenderProfile';
+import { HUD_SEMANTIC, PAGE_SEMANTIC, UI_METRICS, UI_PALETTE } from '../core/RenderProfile';
 
 const cache = new Map<string, Color>();
 
@@ -31,4 +31,4 @@ export function tierUpgradeColor(tier: number): Color {
       : colorFromToken(HUD_SEMANTIC.neutralText);
 }
 
-export { HUD_SEMANTIC, PAGE_SEMANTIC, UI_PALETTE };
+export { HUD_SEMANTIC, PAGE_SEMANTIC, UI_METRICS, UI_PALETTE };

@@ -7,6 +7,7 @@
  * after a genuine CompressibleObject reaches ABSORBED.
  */
 import { Camera, Color, director, instantiate, Label, LabelOutline, Node, UITransform, Vec3, view } from 'cc';
+import { UI_METRICS } from './UIStyleTokens';
 
 interface ActiveFeedback {
   readonly node: Node;
@@ -83,7 +84,7 @@ export class PickupFeedbackPresenter {
     }
     const text = textOverride ?? `+${Math.max(0, Math.round(score))}`;
     label.string = text;
-    label.fontSize = 34;
+    label.fontSize = UI_METRICS.fontTitle;
     label.lineHeight = 38;
     label.horizontalAlign = Label.HorizontalAlign.CENTER;
     label.color = new Color(color.r, color.g, color.b, 255);

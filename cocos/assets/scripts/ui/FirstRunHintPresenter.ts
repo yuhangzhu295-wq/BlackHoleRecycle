@@ -14,7 +14,7 @@
  */
 import { Color, Graphics, instantiate, Label, LabelOutline, Node, UIOpacity, UITransform } from 'cc';
 import { SaveService } from '../data/SaveService';
-import { colorFromToken, HUD_SEMANTIC } from './UIStyleTokens';
+import { HUD_SEMANTIC, UI_METRICS, colorFromToken } from './UIStyleTokens';
 
 const HINT_WIDTH = 460;
 const HINT_HEIGHT = 64;
@@ -175,7 +175,7 @@ export class FirstRunHintPresenter {
         console.error(`[FirstRunHintPresenter] Serialized ${this.templateName} has no Label.`);
         return;
       }
-      label.fontSize = 28;
+      label.fontSize = UI_METRICS.fontHeading;
       label.lineHeight = 36;
       label.horizontalAlign = Label.HorizontalAlign.CENTER;
       label.verticalAlign = Label.VerticalAlign.CENTER;

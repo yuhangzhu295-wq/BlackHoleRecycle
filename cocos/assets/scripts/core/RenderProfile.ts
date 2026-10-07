@@ -328,6 +328,38 @@ export const HUD_SEMANTIC = {
 } as const;
 
 /**
+ * Spacing, corner and type scale (V9 §20).
+ *
+ * Only the values already in use are named here, so adopting a token changes no
+ * pixels. The scale is deliberately small: seven font sizes were in play across
+ * the UI (16, 24, 25, 26, 28, 30, 34) with no system behind them. Four of them
+ * map exactly onto the steps below and are adopted; 25, 26 and 30 sit between
+ * steps and are left as literals on purpose, because collapsing them is a visible
+ * change that needs a look at the nameplates and the tier-lock chip first.
+ */
+export const UI_METRICS = {
+  spacingXS: 4,
+  spacingS: 8,
+  spacingM: 16,
+  spacingL: 24,
+  spacingXL: 40,
+  /** Small badge or chip corner. */
+  cornerSmall: 8,
+  /** Card corner. */
+  cornerMedium: 16,
+  /** Full-bleed panel corner. */
+  cornerLarge: 28,
+  /** Largest type in the UI: floating pickup and kill feedback. */
+  fontTitle: 34,
+  /** Section and banner headings. */
+  fontHeading: 28,
+  /** Default body and nameplate text. */
+  fontBody: 24,
+  /** Secondary and explanatory text. */
+  fontSmall: 16,
+} as const;
+
+/**
  * Menu and overlay page roles, the counterpart to HUD_SEMANTIC.
  *
  * Polarity is per page, not per group. Read from settled screenshots rather than

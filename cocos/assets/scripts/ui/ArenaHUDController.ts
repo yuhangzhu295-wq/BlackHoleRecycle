@@ -1,7 +1,7 @@
 /** Editor-saved arena HUD bindings. All values originate from ArenaMatchManager. */
 import { _decorator, Button, Camera, Color, Component, director, instantiate, Label, LabelOutline, Node, UIOpacity, UITransform, Vec3, view } from 'cc';
 import { eventBus } from '../core/EventBus';
-import { colorFromToken, HUD_SEMANTIC, tierUpgradeColor } from './UIStyleTokens';
+import { HUD_SEMANTIC, UI_METRICS, colorFromToken, tierUpgradeColor } from './UIStyleTokens';
 import { ArenaMatchSnapshot } from '../gameplay/ArenaMatchManager';
 import { CompressibleObject } from '../gameplay/CompressibleObject';
 import { applyHudSafeAreaInset } from './HudSafeAreaInset';
@@ -281,7 +281,7 @@ export class ArenaHUDController extends Component {
     transform?.setContentSize(184, 34);
     const label = nameplate.getComponent(Label);
     if (!label) throw new Error('[ArenaHUDController] Top1 template has no serialized Label.');
-    label.fontSize = 24;
+    label.fontSize = UI_METRICS.fontBody;
     label.lineHeight = 28;
     label.enableWrapText = false;
     label.horizontalAlign = Label.HorizontalAlign.CENTER;
