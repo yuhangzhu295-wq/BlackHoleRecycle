@@ -327,6 +327,35 @@ export const HUD_SEMANTIC = {
   textOutline: '#0a101c',
 } as const;
 
+/**
+ * Light-page semantic roles, the counterpart to HUD_SEMANTIC.
+ *
+ * The game has two background polarities: dark panels (Endless/Arena HUD,
+ * upgrade banner, lock prompt) use HUD_SEMANTIC, while the menu and overlay
+ * pages are light cards with dark text. A HUD value written on a light card is
+ * invisible, which is why the two sets are separate rather than one palette.
+ *
+ * Derived from what the scene already had: 122 labels on the light pages were
+ * using 40 distinct colours, including three near-identical dark purples for the
+ * same body-text role (4e3a68 / 463562 / 4a3863). They now share one token.
+ */
+export const PAGE_SEMANTIC = {
+  /** Body text on a light card. Canonical value taken from the machine rows. */
+  bodyText: '#4e3a68',
+  /** Smaller explanatory text under a body line. */
+  captionText: '#4a3828',
+  /** A value the player is meant to read first, e.g. best score or current mass. */
+  highlightValue: '#e5ff5b',
+  /** A numeric value in the page's accent purple. */
+  accentValue: '#723fc1',
+  /** Positive state, e.g. an owned or unlocked item. */
+  statePositive: '#5f6e5f',
+  /** Text drawn on top of a filled button (the buttons are purple or gold). */
+  onButtonText: '#ffffff',
+  /** Outline behind light-page text. */
+  textOutline: '#3a2a52',
+} as const;
+
 /** The machine's own core-mesh palette, shared by BlackHoleMachine and MeshFactory. */
 export const MACHINE_PALETTE = {
   abyssBase: '#281660',
