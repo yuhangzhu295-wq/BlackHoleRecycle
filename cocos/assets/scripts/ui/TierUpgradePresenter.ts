@@ -26,6 +26,7 @@ import { Color, Graphics, instantiate, Label, LabelOutline, Node, UIOpacity, UIT
 import { eventBus } from '../core/EventBus';
 import { BlackHoleMachine } from '../machine/BlackHoleMachine';
 import { UIAssetLibrary } from './UIAssetLibrary';
+import { colorFromToken, HUD_SEMANTIC } from './UIStyleTokens';
 
 const BANNER_DURATION_SECONDS = 2.0;
 /** Keep the text fully legible for most of its short life, then fade. */
@@ -48,7 +49,7 @@ const DETAIL_Y = -34;
 const PANEL_FILL = { r: 91, g: 33, b: 182, a: 236 };
 const PANEL_BORDER = { r: 15, g: 20, b: 38, a: 255 };
 const TITLE_COLOR = { r: 255, g: 208, b: 0, a: 255 };
-const OUTLINE_COLOR = { r: 15, g: 20, b: 38, a: 255 };
+const OUTLINE_COLOR = HUD_SEMANTIC.textOutline;
 
 interface IMachineEvolvedPayload {
   readonly level?: number;
@@ -162,7 +163,7 @@ export class TierUpgradePresenter {
     label.color = new Color(TITLE_COLOR.r, TITLE_COLOR.g, TITLE_COLOR.b, TITLE_COLOR.a);
     const outline = textNode.getComponent(LabelOutline) || textNode.addComponent(LabelOutline);
     outline.width = 4;
-    outline.color = new Color(OUTLINE_COLOR.r, OUTLINE_COLOR.g, OUTLINE_COLOR.b, OUTLINE_COLOR.a);
+    outline.color = colorFromToken(OUTLINE_COLOR);
 
     const opacity = container.addComponent(UIOpacity);
     opacity.opacity = 255;

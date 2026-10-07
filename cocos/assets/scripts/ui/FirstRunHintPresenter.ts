@@ -14,6 +14,7 @@
  */
 import { Color, Graphics, instantiate, Label, LabelOutline, Node, UIOpacity, UITransform } from 'cc';
 import { SaveService } from '../data/SaveService';
+import { colorFromToken, HUD_SEMANTIC } from './UIStyleTokens';
 
 const HINT_WIDTH = 460;
 const HINT_HEIGHT = 64;
@@ -22,7 +23,7 @@ const HINT_Y = 140;
 const PANEL_FILL = { r: 35, g: 25, b: 65, a: 220 };
 const PANEL_BORDER = { r: 120, g: 85, b: 230, a: 200 };
 const TEXT_COLOR = { r: 255, g: 245, b: 200, a: 255 };
-const OUTLINE_COLOR = { r: 13, g: 30, b: 52, a: 255 };
+const OUTLINE_COLOR = HUD_SEMANTIC.textOutline;
 
 export interface FirstRunHintDiagnostics {
   readonly activeCount: number;
@@ -181,7 +182,7 @@ export class FirstRunHintPresenter {
       label.color = new Color(TEXT_COLOR.r, TEXT_COLOR.g, TEXT_COLOR.b, TEXT_COLOR.a);
       const outline = textNode.getComponent(LabelOutline) || textNode.addComponent(LabelOutline);
       outline.width = 3;
-      outline.color = new Color(OUTLINE_COLOR.r, OUTLINE_COLOR.g, OUTLINE_COLOR.b, OUTLINE_COLOR.a);
+      outline.color = colorFromToken(OUTLINE_COLOR);
 
       const opacity = container.addComponent(UIOpacity);
       opacity.opacity = 255;

@@ -147,7 +147,7 @@ export class TierLockPresenter {
     label.color = colorFromToken(HUD_SEMANTIC.danger);
     const outline = node.getComponent(LabelOutline) || node.addComponent(LabelOutline);
     outline.width = 4;
-    outline.color = colorFromToken(HUD_SEMANTIC.textOutlineLegacy);
+    outline.color = colorFromToken(HUD_SEMANTIC.textOutline);
     this.chip = node;
     this.chipLabel = label;
     this.emittedCount++;
