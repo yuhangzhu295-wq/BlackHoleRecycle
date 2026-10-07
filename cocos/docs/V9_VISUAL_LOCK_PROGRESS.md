@@ -236,6 +236,23 @@ V8.3 证明 LV3–LV5 可达（LV5 约 5.6 分钟）后，`playerVisibility` 插
 
 这是**需要 Owner 提供或采购**的项（属于 §46 的"购买付费资产"）。
 
+### 3.2.3 GAME_FEEDBACK：六类反馈均已实现且在真实游玩中被观测到（§26）
+
+| 反馈 | 实现 | 真实证据 |
+|---|---|---|
+| ATTRACTED | `CompressibleObject` 摇摆（yaw 90°/s、roll ±10°） | V8.1 Endless 帧序列 |
+| SUCKING | 高速旋转（yaw 720°/s、roll 240°/s） | 同上 |
+| ABSORBED | `AbsorbFeedbackPool` 爆发 + 机器吞噬脉冲（`triggerDevourPulse`） | 同上 |
+| LEVEL UP | `TierUpgradePresenter` 横幅 + 机器升级 flourish | 像素确认（横幅与 LV 变化同帧） |
+| KILL | `PickupFeedbackPresenter` 击杀节拍（`淘汰 <名> +<质量>`，1.1s） | **10/10 真实击杀均显示** |
+| DEATH | 730ms 死亡节拍 + 复活页点名攻击者 | 连续切片实测 `gap 730ms` |
+
+**驱动方式**：目前 ABSORBED（`AbsorbFeedbackPool.update`）、LEVEL UP（`TierUpgradePresenter.update`）、浮动文字（`PickupFeedbackPresenter.update`）各有自己的 `update(dt)`；ATTRACTED/SUCKING 由吸附系统驱动，DEATH 由 `GameManager.updateArenaDeathBeat` 驱动。
+
+§26 要求"避免每种反馈一个新 Update 循环"——**现状是既有循环，本轮没有新增**。把它们合并成一个循环是纯内部重构、无可见收益，且会触碰吸附与 FSM 的既有契约，**本轮不做**。
+
+**未覆盖**：粒子与 Animation 资产为 **0**（`find` 无 `.particle` / `.anim`），所以目前的反馈全部由代码驱动（Tween 式的手写插值 + `Graphics`）。若 §26 要求用 Particle/Animation 资产，那是与 §42 同类的**资产缺口**。
+
 ### 3.3 PLAYER_HERO / GAME_FEEDBACK
 
 - **PLAYER_HERO（§25）**：所有等级核心黑洞必须可见。已有 `playerVisibility` 插桩（屏幕归一化坐标 + 核心在屏半径）。**已测**：Endless LV1 半径 92–93px、LV2 93–94px、Arena LV1 48–49px，**出屏 0 次**。**未测 LV3/LV5**——但 V8.3 已证明它们可达（LV5 在 5.6 分钟），所以可测。
