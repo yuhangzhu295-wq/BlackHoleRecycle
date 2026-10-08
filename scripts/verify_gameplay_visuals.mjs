@@ -22,6 +22,8 @@
  *
  * Usage: node scripts/verify_gameplay_visuals.mjs [--seconds=45]
  */
+import { mkdirSync } from 'node:fs';
+import path from 'node:path';
 import {
   collectGeometry,
   isClipped,
@@ -33,6 +35,8 @@ import {
 } from './lib/page_layout_geometry.mjs';
 
 const buildDirectory = 'cocos/build/web-mobile';
+const SHOT_DIR = 'artifacts/qa/v95/gameplay';
+mkdirSync(SHOT_DIR, { recursive: true });
 
 const argOf = (name, fallback) => {
   const hit = process.argv.find((a) => a.startsWith(`--${name}=`));
@@ -126,6 +130,11 @@ async function sampleMatch(page, cdp, canvasRect, hudNode, label) {
   /** Every HUD node name that was ever projected, so coverage is provable. */
   const observedNodes = new Set();
   let matchSamples = 0;
+  // The tier-upgrade banner lives 2.0 s and the loop samples about every 2.2 s,
+  // so sampling alone misses it outright -- the first run of this gate reported
+  // "0 banner samples" for a match that had one. The bridge's own emitted counter
+  // says when it appeared, and the geometry is sampled at that moment.
+  let lastUpgradeEmitted = -1;
   let endedEarly = null;
   const deadline = Date.now() + SECONDS * 1000;
 
@@ -150,7 +159,22 @@ async function sampleMatch(page, cdp, canvasRect, hudNode, label) {
     }
     iteration += 1;
 
+    if (matchSamples === 8) {
+      await page.screenshot({ path: path.join(SHOT_DIR, `${label.toLowerCase()}-hud.png`) });
+    }
     const live = await snapshot();
+    const upgradeEmitted = Number(live.tierUpgrade?.emittedCount ?? 0);
+    if (lastUpgradeEmitted >= 0 && upgradeEmitted > lastUpgradeEmitted) {
+      const burst = await collectGeometry(page, hudNode);
+      if (!burst.error) {
+        const { content } = splitContent(burst.nodes);
+        for (const node of content) observedNodes.add(node.name);
+        for (const node of content.filter(isClipped)) {
+          clippedSamples.push(`${node.name} L${node.overflowLeft} R${node.overflowRight} T${node.overflowTop} B${node.overflowBottom}`);
+        }
+      }
+    }
+    lastUpgradeEmitted = upgradeEmitted;
     // In Arena the player can be defeated, after which there is no hero to
     // measure; that ends the observation rather than failing it.
     if (live.gameState !== 'ARENA' && live.gameState !== 'PLAYING') {

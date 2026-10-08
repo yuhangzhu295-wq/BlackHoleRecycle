@@ -50,6 +50,26 @@ RESKIN = {
         'MachineStatus': ('pill_dark', True),
     }),
 
+
+    # The gameplay HUDs keep the reference's pill language: dark translucent
+    # panels with a thin light border, hugging the frame edges. TopShade is a
+    # full-bleed gradient rather than a pill, and the four BotArrow nodes are
+    # direction icons, so neither is re-pointed at a pill.
+    'endlesshud': ('EndlessHUD', {
+        'CoinPanel': ('pill_dark', True),
+        'LevelPanel': ('pill_dark', True),
+        'RegionPanel': ('pill_dark', True),
+    }),
+    'arenahud': ('ArenaHUD', {
+        'LeaderboardPanel': ('pill_dark', True),
+        'TopRow1': ('pill_dark', True),
+        'TopRow2': ('pill_dark', True),
+        'TopRow3': ('pill_dark', True),
+        'TopRow4': ('pill_dark', True),
+        'TopRow5': ('pill_dark', True),
+        'TimerPanel': ('pill_dark', True),
+        'StatusPanel': ('pill_dark', True),
+    }),
     'pause': ('PausePage', {
         # Pause and Revive share the dialog language: the board, a ribbon and the
         # two capsule actions.
