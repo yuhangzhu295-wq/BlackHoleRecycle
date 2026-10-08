@@ -372,7 +372,24 @@ home mode ready machine skin pause settlement revive  ×  375x667 / 390x844 / 43
 
 **正确做法**（与 Home 同构，逐页做，不要无脑套）：每页需要"先按可用设计宽收缩面板及其内部行 → 再钳制"两步，收缩规则由该页自己的构图决定。
 
-**未做**：这 7 页的响应式改造。探针已就绪，每改一页即可用 `node scripts/probe_page_layout_geometry.mjs --page=<page> --size=412x915` 量前后。
+### 3.5.6 已修 4 页 / 3 页被设计决策阻塞 / 1 页低于阈值
+
+**已修并实测通过**（`PageSafeArea.ts` 提供 `pageSafeHalfWidth` / `clampNodeIntoSafeSpan` / `fitNodeIntoSafeSpan` / `fitSlicedPanelToSafeSpan` 四个原语，每页自己声明构图规则）：
+
+| 页面 | 修法 | 412×915 结果 |
+|---|---|---|
+| home | 钳制 + 动作行等比缩放 | 无裁切，卡片余量 ≥24 px |
+| mode | `BtnBack` 单节点钳制 + 两张卡等比缩放 | 无裁切；`BtnBack` 24 px、卡片 24 px |
+| pause | `PauseCard` 收窄（sliced 无损） | 卡片 x 24..388，缎带 48.7..363.3（内含 24.7 px） |
+| revive | `ReviveCard` 收窄（sliced 无损） | 无裁切 |
+
+mode 的 `BtnBack` **必须单节点钳制**，不能走 `applyHudSafeAreaInset`：它与 `Header` 纵向重叠 4 设计单位会被归为一组，整组重新居中后按钮仍被裁、而原本正确的 `Header` 被推出右边缘（这正是 §3.5.5 那次回滚的原因）。pause/revive 只需收窄卡片一处——这两页所有兄弟节点都 ≤500 设计宽，最宽的 `ReviveAccentOrange`(500) 仍在收窄后的 509.2 面板内。
+
+**被设计决策阻塞（未修）**：machine / skin / settlement。这三页的面板是 660 设计宽、内部行 564–570，而**页面上所有标签的 `overflow` 都是 `Label.Overflow.NONE`**——即 UITransform 宽度就是真实文字宽度，不是可收缩的框。收窄面板要么让行戳出面板，要么把文字推出面板边缘，两者都要改字号，属于**设计决策**而非布局修正。另外 `SettlementRibbon`(492) / `MachineRibbon`(500) 是 `_type=0` 简单图，收窄会压坏美术；结算页两枚金币（各裁 7.7 px）需要位置钳制。
+
+**低于阈值（未修）**：ready 的 `StatPanelTop`/`StatPanelBottom` 各裁 1.3 px——小于抗锯齿量级，按"实测低于阈值"记录。
+
+**未做**：machine / skin / settlement 的响应式改造。探针已就绪，每改一页用 `node scripts/probe_page_layout_geometry.mjs --page=<page> --size=412x915` 量前后。
 
 ---
 
@@ -384,8 +401,11 @@ home mode ready machine skin pause settlement revive  ×  375x667 / 390x844 / 43
 | GAME_FEEDBACK_PASS | ✅ | 六类反馈全部实现且都在真实游玩中被观测到 |
 | 375 / 390 / 430 PASS | ⚠️ **部分** | 24 张已采集；Home 另有 360/412 两档；人工复核做了最密的两页 |
 | HOME_PASS（几何） | ✅ | 五档视口实测：顶栏内缩 16 px、外圈卡余量 ≥24 px、375 参考构图零变化（§3.5） |
-| MODE / READY / MACHINE / SKIN_PASS | ❌ **未通过** | 412×915 实测有被裁节点：`BtnBack` 左 37 px、两张模式大卡各 12 px、`MachineCard`/`SkinPageCard` 各 29.9 px、ready 状态面板各 1.3 px（§3.5.5） |
-| PAUSE / REVIVE / SETTLEMENT_PASS | ❌ **未通过** | 412×915 实测：`PauseCard`/`ReviveCard` 各 15.6 px、`SettlementCard` 29.9 px、结算页两枚金币各 7.7 px（§3.5.5） |
+| MODE_PASS（几何） | ✅ | 五档视口无裁切；`BtnBack` 与两张模式卡均回到 24 px 交互边距（§3.5.6） |
+| PAUSE_PASS（几何） | ✅ | 412×915 无裁切，卡片 x 24..388、内部缎带 48.7..363.3（§3.5.6） |
+| REVIVE_PASS（几何） | ✅ | 412×915 无裁切（§3.5.6） |
+| MACHINE / SKIN / SETTLEMENT_PASS | ❌ **未通过（被设计决策阻塞）** | 412×915 实测 `*Card` 各 29.9 px、结算页两枚金币各 7.7 px；修复需改字号（所有标签 `overflow=NONE`）与简单图缎带处理，属设计决策（§3.5.6） |
+| READY_PASS | ⚠️ **低于阈值** | 412×915 实测状态面板各裁 1.3 px，小于抗锯齿量级（§3.5.6） |
 | ENDLESS_GAMEPLAY_VISUAL_PASS | ⚠️ **未正式跑** | 有 V8.1 的帧序列与 §28 审查，无专门门禁 |
 | ARENA_GAMEPLAY_VISUAL_PASS | ⚠️ **未正式跑** | 有 V8.2 的 HUD 像素确认与 §28 审查 |
 | consoleErrors = 0 | ✅ | 每次验收 0 |
@@ -393,7 +413,9 @@ home mode ready machine skin pause settlement revive  ×  375x667 / 390x844 / 43
 
 **结论：V9 未完成。** 已完成的是资产边界（回退后回到原状）、颜色/尺寸 token、八页审查、PLAYER_HERO、GAME_FEEDBACK 盘点、以及 §39/§40/§41/§42 四项。
 
-**未完成**：UI Kit 组件化（§17/§22，需新建 Prefab）、逐页三尺寸签字、以及两类**资产缺口**（音频 §42、粒子/动画 §26）——后者属于 §46 的"购买付费资产"，需要 Owner。
+**未完成**：UI Kit 组件化（§17/§22，需新建 Prefab）、machine/skin/settlement 三页的响应式改造（被字号决策阻塞，§3.5.6）、以及两类**资产缺口**（音频 §42、粒子/动画 §26）——后者属于 §46 的"购买付费资产"，需要 Owner。
+
+**已完成且已实测**：home / mode / pause / revive 四页在 360–430 五档视口下均无节点裁切，375 参考构图保留（§3.5.4、§3.5.6）。
 
 ---
 
