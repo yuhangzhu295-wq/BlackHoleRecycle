@@ -38,9 +38,11 @@ RESKIN = {
     'Background': ('field_home', False),
     'HeroBlackHole': ('home_hero_blackhole', False),
     'BtnStart': ('capsule_yellow', True),
-    'BtnMode': ('card_vignette_mode', False),
-    'BtnSkin': ('card_vignette_skin', False),
-    'BtnMachine': ('card_vignette_machine', False),
+    # Composed card art: the vignette inside its white frame with clear space
+    # below for the caption, at the card's own aspect so nothing is cropped.
+    'BtnMode': ('card_home_mode', False),
+    'BtnSkin': ('card_home_skin', False),
+    'BtnMachine': ('card_home_machine', False),
     'CoinPanel': ('pill_dark', True),
     'MachineStatus': ('pill_dark', True),
 }

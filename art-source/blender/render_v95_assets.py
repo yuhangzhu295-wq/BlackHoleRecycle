@@ -114,10 +114,10 @@ def add_black_hole(x, y, radius=0.9, ring_colour=(0.42, 0.24, 1.0), name='hole')
     principled.inputs['Roughness'].default_value = 0.25
     sphere.data.materials.append(core)
     # Squash it so it reads as a disc seen from above, like the reference.
-    sphere.scale = (1.0, 1.0, 0.42)
+    sphere.scale = (1.0, 1.0, 0.30)
 
     bpy.ops.mesh.primitive_torus_add(location=(x, y, radius * 0.16),
-                                     major_radius=radius * 1.12, minor_radius=radius * 0.10,
+                                     major_radius=radius * 1.04, minor_radius=radius * 0.035,
                                      major_segments=64, minor_segments=16)
     ring = bpy.context.active_object
     ring.name = f'{name}-ring'
@@ -128,7 +128,7 @@ def add_black_hole(x, y, radius=0.9, ring_colour=(0.42, 0.24, 1.0), name='hole')
     ring_shader.inputs['Emission Color'].default_value = (*ring_colour, 1.0)
     # Low enough that the ring keeps its colour: at 3.5 under the Standard
     # view transform every channel clipped and the ring rendered white.
-    ring_shader.inputs['Emission Strength'].default_value = 0.55
+    ring_shader.inputs['Emission Strength'].default_value = 1.30
     ring.data.materials.append(emission)
     return [sphere, ring]
 
