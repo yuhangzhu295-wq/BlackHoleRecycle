@@ -159,7 +159,7 @@ async function sampleMatch(page, cdp, canvasRect, hudNode, label) {
     }
     iteration += 1;
 
-    if (matchSamples === 8) {
+    if (matchSamples === 3) {
       await page.screenshot({ path: path.join(SHOT_DIR, `${label.toLowerCase()}-hud.png`) });
     }
     const live = await snapshot();

@@ -39,8 +39,14 @@ def save(image, name):
 def compose_field():
     """Sky, then the city band across the lower middle.
 
+    **Written to `home_field.png`, not back onto `field_home.png`.** The first
+    version composited onto the generator's own output, which gave that one file
+    two producers: running `generate_ui_art.py` afterwards silently wiped the
+    band, and the Home page lost its world with no error anywhere. A composed
+    asset needs a name only the composer writes.
+
     The band is placed so the hero's ground line falls inside it: the hero is
-    drawn at design y ~-20 with a 430-unit width, so its base sits near y +100.
+    drawn at design y ~+30 with a 360-tall frame, so its base sits near y -150.
     """
     width, height = 720, 1280
     field = art('field_home.png').resize((width, height), Image.LANCZOS)
@@ -68,8 +74,11 @@ def compose_field():
     # Multiply, not composite: the band's own alpha has to be preserved.
     band.putalpha(ImageChops.multiply(band.getchannel('A'), mask))
 
-    field.alpha_composite(band, ((width - target_w) // 2, 470))
-    save(field, 'field_home.png')
+    # The band renders with its street centred in its own frame, so its opaque
+    # part sits well below the image top. 300 puts the street across the middle
+    # of the page, where the hero stands, instead of below it.
+    field.alpha_composite(band, ((width - target_w) // 2, 300))
+    save(field, 'home_field.png')
 
 
 def compose_cards():
