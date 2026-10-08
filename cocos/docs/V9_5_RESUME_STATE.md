@@ -93,6 +93,26 @@ Delivered assets live in `cocos/assets/game_art/ui/v95/`.
    reward ledger, restart and return. Endless and Arena must show their own real statistics.
 4. Then the remaining pages, gameplay art, audio, performance, WeChat package, device checks.
 
+## 7b. Finding: the region themes disagree with the world (content decision)
+
+Seven region themes in `data/GameConfig.ts` each declare a `groundColor` and an
+`ambientLight`. **Neither is read anywhere in the project** -- the same class of
+dead configuration as the `settings` fields found earlier, and the direct reason
+every region currently looks alike, which is what the brief describes as the
+scene degenerating into a green blockout.
+
+But applying them is not the fix. The themes are written for **interiors**: the
+opening one is 卧室杂物区, "凌乱的卧室房间，散落着易拉罐、玩具与快递盒", with a brown
+floor colour. The world renders **city districts** -- `bedroom` is deliberately
+mapped to `RESIDENTIAL` in `DistrictTemplates`, with a code comment saying so. So
+the names, the descriptions and the colours all describe something the player is
+not looking at, and painting the declared brown onto a residential street would
+make it look like dirt rather than a bedroom.
+
+This is a content decision, not a code defect: either the regions are re-themed to
+the city the game actually renders, or interior districts are authored for them.
+Both are the owner's call, and neither is a re-skin.
+
 ## 8. Blocked on the owner
 
 - Licensed audio assets (the six effects are provisional synthesis).
