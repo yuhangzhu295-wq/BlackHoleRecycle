@@ -136,6 +136,28 @@
 
 **7 个 Kit 里只有 `UIProgressBar` 被页面消费，其余 6 个尚未接线**——但"已声明未加载"这个缺口已用运行时证据关掉：`npm run verify:ui-kit` 断言 12 个 prefab 与 9 张纹理全部**驻留**（`uiAssets.boundPrefabs` / `boundFrames` 齐全、`lastError` 为 null）。只靠契约（文件存在 + 结构合法）和构建（被打包）都证明不了 Cocos 真的**导入**成功——对象图被 Creator 拒绝时 prefab 只是从 bundle 里消失，而库会把调用方静默降级。这个门禁做反向证明时还暴露一个细节：**一个 prefab 加载失败会让整批都报缺失**，所以它对单点失败同样敏感。
 
+#### 为什么剩下 6 个 Kit prefab **不应该**被页面消费（已核查，勿再尝试）
+
+我把这条当成"待办"挂了几轮，最后去核了贴图，结论是**不能做**——做了就是重复一个本项目已经回退过的回归。
+
+| | 使用的贴图 |
+|---|---|
+| Kit prefab（`UIModeCard` / `UIBrandHeader` / `UICurrencyPill` / `UILevelPill` / `UIHudStat` / `UILeaderboardRow`） | `game_art/ui/textures/`：`ui_card_9slice` / `ui_hud_bar_9slice` |
+| 页面现有 UI（模式卡、页面缎带、金币/等级药丸、结算统计面板与排行行） | `textures/home/`：`mode_card_shelf` / `mode_header` / `home_hud_panel` |
+
+**两者零重叠**：`ui_hud_bar_9slice` 在 `Game.scene` 里出现 **0** 次，`ui_card_9slice` 仅 **2** 次（且不在这些页面上）。所以把 Kit 套进页面不是"组件化重构"，而是**把定制美术换成通用件**——玩家看得见的变化。
+
+**本项目已经犯过一次这个错**：提交 `b710544` 之前，我曾把 72 个 Sprite 从 `mode_card_shelf.png` 移到一个通用 9-slice 上，依据是"边框为 0/0/0/0"这个形式标准，**而没有看图**；结果机器页从深海军蓝卡片变成浅绿色、行也重叠，最终**整体回退**。这次如果照做，是同一个错误的第二次。
+
+**唯一被消费的是 `UIProgressBar`**，因为它是**新增**的（机器档案页此前只有文字 `ProgressValue`，没有进度条），属于加法而非替换——这也是它视觉上安全的原因。
+
+**要让 Kit 真正可被消费，需要 Owner 做一次设计决定**，二选一：
+
+1. **把 Kit 的美术定为规范**：页面逐步改用 Kit 贴图（等于接受一次全站视觉改版）；或
+2. **把 Kit prefab 的贴图改成页面现有美术**（`mode_card_shelf` / `mode_header` / `home_hud_panel`），使消费在视觉上中性——但那样 Kit 就成了这些定制件的第二份拷贝，需要先想清楚它是否还值得独立存在。
+
+在这两条里选一条之前，这 6 个 prefab 的状态是：**已生成、已注册、契约已锁、运行时驻留已逐个断言**（`verify:ui-kit`），但**刻意不被页面引用**。
+
 #### 顺带修掉一个真实缺陷：机器档案页永远显示 0 kg
 
 接线 ProgressBar 时发现：`MachineInfoPageController` 只从**实时场景**的 `BlackHoleMachine` 取质量，而该页从 Home 进入——那里根本没有机器实例。于是"当前质量"和"下一等级"永久显示 0 kg / 0，**而同一页的等级行读的是存档**，页面自相矛盾。存档里本来就有 `machineMass`（`setMachineProgression` 在每次 `addMass` 时写入），所以改为：场景里有机器就用它，否则回落到存档。
@@ -502,7 +524,7 @@ mode 的 `BtnBack` **必须单节点钳制**，不能走 `applyHudSafeAreaInset`
 **仅剩两项，都不是本轮能单方面完成的**：
 
 1. **授权音频资产**（§42）：播放路径、六个音效、静音开关均已实现并有机器证据，但当前音效是**脚本合成的临时资产**；商用授权素材仍需 Owner 采购（§3.2.2）。
-2. **剩余 6 个 Kit prefab 的页面消费**：它们是通用件，而现有页面各有定制美术，替换等于重构已签字页面并改变观感——属设计决策。其加载路径与已被消费的 `UIProgressBar` 完全相同，且 7 个的运行时驻留都由 `verify:ui-kit` 逐个断言。
+2. **剩余 6 个 Kit prefab 的页面消费**：已核查为**不应执行**——Kit 贴图与页面定制美术零重叠，消费等于换皮，且本项目曾因同一做法回退过（`b710544`）。需 Owner 在设计上二选一，详见 §3.1。
 
 **粒子/动画资产**（§26）同属 §46 的「购买付费资产」，需要 Owner。
 
