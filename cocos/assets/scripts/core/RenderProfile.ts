@@ -396,7 +396,25 @@ export const PAGE_SEMANTIC = {
   onButtonText: '#ffffff',
   /** Outline behind light-page text. */
   textOutline: '#3a2a52',
+  /**
+   * The title on a page's ribbon. One token because the four pages that have a
+   * ribbon had drifted to #ffefa1 / #ffe666 / #ffde56 / #ffffff -- all but the
+   * last in the same gold family, so this is a consolidation rather than a
+   * re-tint.
+   */
+  ribbonTitle: '#fbe572',
 } as const;
+
+/**
+ * Label roles addressed by node name, applied before the drift map.
+ *
+ * `Title` is the ribbon title on every page that has one, so a name is the right
+ * key here; the drift map cannot express this because a colour-keyed table would
+ * have to map `#ffffff`, which dozens of unrelated labels use.
+ */
+export const PAGE_TEXT_ROLES: Readonly<Record<string, keyof typeof PAGE_SEMANTIC>> = {
+  Title: 'ribbonTitle',
+};
 
 /**
  * Measured drift in the light pages' label colours, mapped onto the tokens that

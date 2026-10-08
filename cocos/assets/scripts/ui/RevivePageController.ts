@@ -24,6 +24,13 @@ export class RevivePageController extends Component {
   private countdownActive: boolean = false;
 
   onEnable(): void {
+    // The three accent bars were colour strips behind the old flat ribbon. The
+    // V9.5 ribbon carries its own gold rim and tails, so they are redundant
+    // decoration rather than content.
+    for (const accent of ['ReviveAccentPurple', 'ReviveAccentOrange', 'ReviveAccentBlue']) {
+      const node = this.node.getChildByName(accent);
+      if (node) node.active = false;
+    }
     this.bind('BtnRevive', () => eventBus.emit('ARENA_REVIVE_REQUESTED'));
     this.bind('BtnGiveUp', () => eventBus.emit('ARENA_GIVE_UP_REQUESTED'));
     this.applyCountdownStyle();

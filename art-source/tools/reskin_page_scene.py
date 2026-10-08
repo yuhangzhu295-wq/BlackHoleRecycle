@@ -49,6 +49,67 @@ RESKIN = {
         'CoinPanel': ('pill_dark', True),
         'MachineStatus': ('pill_dark', True),
     }),
+
+    'pause': ('PausePage', {
+        # Pause and Revive share the dialog language: the board, a ribbon and the
+        # two capsule actions.
+        'PauseCard': ('board_settlement', True),
+        'PauseRibbon': ('ribbon_settlement', False),
+        'BtnResume': ('capsule_yellow', True),
+        'BtnSettle': ('capsule_purple', True),
+        'BtnHome': ('capsule_purple', True),
+    }),
+    'revive': ('RevivePage', {
+        'ReviveCard': ('board_settlement', True),
+        'ReviveRibbon': ('ribbon_settlement', False),
+        'ReviveBlackHoleHero': ('home_hero_blackhole', False),
+        'ReviveAccentPurple': ('panel_white', True),
+        'ReviveAccentOrange': ('panel_white', True),
+        'ReviveAccentBlue': ('panel_white', True),
+        'CountdownPanel': ('panel_white', True),
+        'BtnRevive': ('capsule_yellow', True),
+        'BtnGiveUp': ('capsule_purple', True),
+    }),
+    'machine': ('MachineInfoPage', {
+        'MachineCard': ('board_settlement', True),
+        'MachineRibbon': ('ribbon_settlement', False),
+        'CurrentPanel': ('panel_white', True),
+        'LevelRow1': ('panel_white', True),
+        'LevelRow2': ('panel_white', True),
+        'LevelRow3': ('panel_white', True),
+        'LevelRow4': ('panel_white', True),
+        'LevelRow5': ('panel_white', True),
+        'BtnBack': ('capsule_purple', True),
+    }),
+    'skin': ('SkinSelectionPage', {
+        'SkinPageCard': ('board_settlement', True),
+        'SkinRibbon': ('ribbon_settlement', False),
+        'CoinPanel': ('pill_dark', True),
+        'PreviewPanel': ('panel_white', True),
+        'PreviewBlackHole': ('home_hero_blackhole', False),
+        'SkinCard_1': ('panel_white', True),
+        'SkinCard_2': ('panel_white', True),
+        'SkinCard_3': ('panel_white', True),
+        'SkinCard_4': ('panel_white', True),
+        'SkinCard_5': ('panel_white', True),
+        # The accents are tinted per skin by the controller, so they take a
+        # neutral rounded square rather than a coloured source.
+        'SkinAccent_1': ('panel_white', True),
+        'SkinAccent_2': ('panel_white', True),
+        'SkinAccent_3': ('panel_white', True),
+        'SkinAccent_4': ('panel_white', True),
+        'SkinAccent_5': ('panel_white', True),
+        'BtnSkin_1': ('capsule_purple', True),
+        'BtnSkin_2': ('capsule_purple', True),
+        'BtnSkin_3': ('capsule_purple', True),
+        'BtnSkin_4': ('capsule_purple', True),
+        'BtnSkin_5': ('capsule_purple', True),
+    }),
+    'ready': ('EndlessReadyPage', {
+        'Background': ('field_mode', False),
+        'MapPreview': ('panel_white', True),
+        'BtnStart': ('capsule_yellow', True),
+    }),
     'mode': ('ModeSelectPage', {
         'Background': ('field_mode', False),
         # The reference gives its cards a thick white outer frame; the shipped

@@ -11,6 +11,7 @@ import {
   HUD_SEMANTIC,
   PAGE_SEMANTIC,
   PAGE_TEXT_DRIFT,
+  PAGE_TEXT_ROLES,
   UI_METRICS,
   UI_PALETTE,
 } from '../core/RenderProfile';
@@ -59,7 +60,7 @@ export function applyPageTextTokens(root: Node | null): number {
       if (label && color) {
         const hex = `#${[color.r, color.g, color.b]
           .map((channel) => channel.toString(16).padStart(2, '0')).join('')}`;
-        const role = PAGE_TEXT_DRIFT[hex];
+        const role = PAGE_TEXT_ROLES[node.name] || PAGE_TEXT_DRIFT[hex];
         if (role) {
           const token = colorFromToken(PAGE_SEMANTIC[role]);
           label.color = new Color(token.r, token.g, token.b, color.a);
