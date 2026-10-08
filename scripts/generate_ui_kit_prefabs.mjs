@@ -27,6 +27,9 @@ const thisFile = fileURLToPath(import.meta.url);
 const repoRoot = path.resolve(path.dirname(thisFile), '..');
 const UI_ROOT = path.join(repoRoot, 'cocos', 'assets', 'game_art', 'ui');
 const TEXTURES_DIR = path.join(UI_ROOT, 'textures');
+// The V9.5 family the pages were re-skinned onto. The Kit draws from it too,
+// so a page and a Kit unit are the same visual source rather than two.
+const V95_DIR = path.join(UI_ROOT, 'v95');
 const PREFABS_DIR = path.join(UI_ROOT, 'prefabs');
 
 /** Deterministic 22-char id in the same alphabet Creator uses for fileIds. */
@@ -41,8 +44,10 @@ function uuidFor(seed) {
 
 /** Resolve `<texture>.png.meta` to the spriteFrame uuid a Sprite must reference. */
 function frameUuid(textureName) {
-  const metaPath = path.join(TEXTURES_DIR, `${textureName}.png.meta`);
-  if (!existsSync(metaPath)) throw new Error(`no texture meta for ${textureName}`);
+  const metaPath = path.join(V95_DIR, `${textureName}.png.meta`);
+  if (!existsSync(metaPath)) {
+    throw new Error(`no texture meta for ${textureName} in ${V95_DIR}`);
+  }
   const meta = JSON.parse(readFileSync(metaPath, 'utf8'));
   return `${meta.uuid}@f9941`;
 }
@@ -71,24 +76,24 @@ const KIT = {
   UIModeCard: {
     size: [610, 278],
     nodes: [
-      node('UIModeCard', [610, 278], { sprite: { texture: 'ui_card_9slice', type: 1 } }),
+      node('UIModeCard', [610, 278], { sprite: { texture: 'board_settlement', type: 1 } }),
       node('Title', [420, 64], { pos: [0, 78], label: { string: '竞技乱斗', fontSize: 46 } }),
       node('Subtitle', [420, 40], { pos: [0, 24], label: { string: '多人竞技', fontSize: 28 } }),
-      node('Badge', [220, 48], { pos: [-155, -84], sprite: { texture: 'ui_hud_bar_9slice', type: 1 } }),
+      node('Badge', [220, 48], { pos: [-155, -84], sprite: { texture: 'pill_dark', type: 1 } }),
       node('BadgeLabel', [200, 36], { pos: [-155, -84], label: { string: '已开放', fontSize: 24 } }),
     ],
   },
   UIBrandHeader: {
     size: [500, 116],
     nodes: [
-      node('UIBrandHeader', [500, 116], { sprite: { texture: 'ui_hud_bar_9slice', type: 1 } }),
+      node('UIBrandHeader', [500, 116], { sprite: { texture: 'plate_brand', type: 1 } }),
       node('Title', [460, 72], { label: { string: '黑洞回收站', fontSize: 54 } }),
     ],
   },
   UICurrencyPill: {
     size: [220, 64],
     nodes: [
-      node('UICurrencyPill', [220, 64], { sprite: { texture: 'ui_hud_bar_9slice', type: 1 } }),
+      node('UICurrencyPill', [220, 64], { sprite: { texture: 'pill_dark', type: 1 } }),
       node('Caption', [72, 40], { pos: [-68, 0], label: { string: '金币', fontSize: 28 } }),
       node('Value', [120, 44], { pos: [36, 0], label: { string: '0', fontSize: 32 } }),
     ],
@@ -96,7 +101,7 @@ const KIT = {
   UILevelPill: {
     size: [220, 64],
     nodes: [
-      node('UILevelPill', [220, 64], { sprite: { texture: 'ui_hud_bar_9slice', type: 1 } }),
+      node('UILevelPill', [220, 64], { sprite: { texture: 'pill_dark', type: 1 } }),
       node('Caption', [72, 40], { pos: [-68, 0], label: { string: '等级', fontSize: 28 } }),
       node('Value', [132, 44], { pos: [30, 0], label: { string: 'LV.1', fontSize: 32 } }),
     ],
@@ -106,10 +111,10 @@ const KIT = {
     size: [500, 38],
     nodes: [
       node('UIProgressBar', [500, 38], {}),
-      node('Track', [500, 38], { sprite: { texture: 'ui_hud_bar_9slice', type: 1 } }),
+      node('Track', [500, 38], { sprite: { texture: 'pill_dark', type: 1 } }),
       node('Fill', [250, 30], {
         pos: [-125, 0],
-        sprite: { texture: 'ui_hud_bar_9slice', type: 1, color: COLOR(104, 238, 104) },
+        sprite: { texture: 'capsule_yellow', type: 1, color: COLOR(104, 238, 104) },
       }),
       node('Value', [300, 32], { label: { string: '0 / 900 kg', fontSize: 20 } }),
     ],
@@ -117,7 +122,7 @@ const KIT = {
   UIHudStat: {
     size: [164, 104],
     nodes: [
-      node('UIHudStat', [164, 104], { sprite: { texture: 'ui_card_9slice', type: 1 } }),
+      node('UIHudStat', [164, 104], { sprite: { texture: 'panel_white', type: 1 } }),
       node('Caption', [150, 30], { pos: [0, 24], label: { string: '吞噬', fontSize: 22 } }),
       node('Value', [152, 40], { pos: [0, -22], label: { string: '0', fontSize: 26 } }),
     ],
@@ -125,7 +130,7 @@ const KIT = {
   UILeaderboardRow: {
     size: [522, 66],
     nodes: [
-      node('UILeaderboardRow', [522, 66], { sprite: { texture: 'ui_hud_bar_9slice', type: 1 } }),
+      node('UILeaderboardRow', [522, 66], { sprite: { texture: 'panel_white', type: 1 } }),
       node('Rank', [50, 42], { pos: [-224, 0], label: { string: '1', fontSize: 22 } }),
       node('Name', [180, 42], { pos: [-96, 0], label: { string: '玩家', fontSize: 23 } }),
       node('Score', [210, 38], { pos: [150, 0], label: { string: '0', fontSize: 18 } }),

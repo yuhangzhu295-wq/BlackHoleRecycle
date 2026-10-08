@@ -31,6 +31,8 @@ const exists = (relative) => existsSync(path.join(root, relative));
 
 const UI_ROOT = 'cocos/assets/game_art/ui';
 const TEXTURES_DIR = `${UI_ROOT}/textures`;
+// The V9.5 family the pages and the Kit both draw from.
+const V95_DIR = `${UI_ROOT}/v95`;
 const PREFABS_DIR = `${UI_ROOT}/prefabs`;
 
 // ---- 1. the library is present ----------------------------------------------
@@ -45,6 +47,16 @@ for (const name of PREFABS) {
   assert(exists(`${PREFABS_DIR}/${name}.prefab`), `missing prefab ${name}.prefab`);
   assert(exists(`${PREFABS_DIR}/${name}.prefab.meta`), `missing meta for ${name}.prefab`);
 }
+
+// Frames the Kit draws from the V9.5 family. Kept as a separate list because
+// their sizes are authored for the pages rather than for the Kit.
+const V95_TEXTURES = [
+  { name: 'panel_white', sliced: true },
+  { name: 'pill_dark', sliced: true },
+  { name: 'plate_brand', sliced: true },
+  { name: 'board_settlement', sliced: true },
+  { name: 'capsule_yellow', sliced: true },
+];
 
 const TEXTURES = [
   { name: 'map_preview_city', width: 560, height: 260, sliced: false },
@@ -80,6 +92,19 @@ for (const texture of TEXTURES) {
   } else {
     assert.equal(sprite.borderLeft, 0, `${texture.name} must not be 9-sliced`);
   }
+}
+
+for (const texture of V95_TEXTURES) {
+  const metaPath = `${V95_DIR}/${texture.name}.png.meta`;
+  assert(exists(metaPath), `missing meta for v95 texture ${texture.name}`);
+  const meta = readJson(metaPath);
+  textureUuids.add(meta.uuid);
+  const sprite = meta.subMetas?.f9941?.userData;
+  assert(sprite, `${texture.name} has no spriteFrame sub-asset`);
+  const borders = [sprite.borderLeft, sprite.borderRight, sprite.borderTop, sprite.borderBottom];
+  assert(borders.every((value) => Number.isInteger(value) && value > 0),
+    `${texture.name} lost its 9-slice borders: ${JSON.stringify(borders)}`);
+  assert.equal(sprite.packable, false, `${texture.name} must not be packable`);
 }
 
 for (const name of PREFABS) {
