@@ -49,6 +49,61 @@ export class SettlementPageController extends Component {
     this.setLabel('LevelValue', `LV.${Math.max(1, level)}`);
     this.setLabel('RegionValue', `${Math.max(1, regions)}`);
     this.setLabel('MassValue', `${Math.round(Math.max(0, mass))} kg`);
+
+    // Endless keeps the three stat cards and the reward bar. The board is a fixed
+    // 660x1120, so hiding them left its lower half empty; and the five equal-width
+    // rows they replace were never the final visual. The captions are re-labelled
+    // to Endless's own facts, so nothing claims a rank or an elimination that this
+    // mode does not have.
+    this.setLabel('ArenaStatMassCaption', '最终质量');
+    this.setLabel('ArenaStatMassValue', `${Math.round(Math.max(0, mass))} kg`);
+    this.setLabel('ArenaStatKillsCaption', '吞噬物品');
+    this.setLabel('ArenaStatKillsValue', `${Math.max(0, absorbed)}`);
+    this.setLabel('ArenaStatTimeCaption', '最终等级');
+    this.setLabel('ArenaStatTimeValue', `LV.${Math.max(1, level)}`);
+    this.setLabel('ArenaRewardCaption', '本局获得金币');
+    this.setLabel('ArenaRewardValue', `+${Math.max(0, coins)}`);
+    // Endless has no reward ledger to itemise, and an empty line is better than a
+    // breakdown of numbers that were never computed.
+    this.setLabel('ArenaRewardBreakdown', '');
+
+    // Endless has no leaderboard, so the middle of the board -- the region the
+    // leaderboard occupies in Arena, y -165..365 -- would be empty. The real
+    // content is distributed across that region instead of being left stacked at
+    // the bottom. None of these nodes is pinned by
+    // docs/design-contracts/settlement.json (which pins only the overlay, the
+    // card, the leaderboard, the breakdown, and the two buttons), so this is a
+    // composition choice rather than a contract change.
+    // A summary line, not a restatement of one card.
+    this.setLabel('ArenaResult', `吞噬 ${Math.max(0, absorbed)} 件 · 最终质量 ${Math.round(Math.max(0, mass))} kg`);
+    // A panel and its caption/value labels are siblings, not parent and children,
+    // so moving a panel alone leaves its text behind -- which is exactly what
+    // happened the first time this was written. The authored offsets are caption
+    // +23 and value -15 from the panel's own y; a cluster moves as a unit.
+    this.placeCluster(250, [['ArenaResult', 0, 0]]);
+    this.placeCluster(30, [
+      ['ArenaStatMassPanel', -184, 0], ['ArenaStatMassCaption', -184, 23], ['ArenaStatMassValue', -184, -15],
+      ['ArenaStatKillsPanel', 0, 0], ['ArenaStatKillsCaption', 0, 23], ['ArenaStatKillsValue', 0, -15],
+      ['ArenaStatTimePanel', 184, 0], ['ArenaStatTimeCaption', 184, 23], ['ArenaStatTimeValue', 184, -15],
+    ]);
+    this.placeCluster(-190, [
+      ['ArenaRewardPanel', 0, 0], ['ArenaRewardCaption', -150, 19], ['ArenaRewardValue', 164, 19],
+    ]);
+  }
+
+  /**
+   * Position a cluster of settlement nodes at `anchorY`, each offset from it.
+   *
+   * Only nodes the settlement layout contract does not pin are moved:
+   * `docs/design-contracts/settlement.json` pins the overlay, the card, the
+   * leaderboard, the reward breakdown and the two buttons, and none of those is
+   * passed here.
+   */
+  private placeCluster(anchorY: number, members: readonly (readonly [string, number, number])[]): void {
+    for (const [name, x, offsetY] of members) {
+      const node = this.node.getChildByName(name);
+      if (node) node.setPosition(x, anchorY + offsetY, 0);
+    }
   }
 
   /** Arena uses the same saved settlement card, with labels bound to match facts. */
@@ -145,8 +200,9 @@ export class SettlementPageController extends Component {
   private setArenaLeaderboardVisible(visible: boolean): void {
     const leaderboard = this.node.getChildByName('ArenaLeaderboardPanel');
     if (leaderboard) leaderboard.active = visible;
-    const result = this.node.getChildByName('ArenaResult');
-    if (result) result.active = visible;
+    // The result line is the settlement's headline in both modes: Arena shows the
+    // placing, Endless the mass. Only the ranking rows below it are arena-only.
+    this.setNodeActive('ArenaResult', true);
     for (let rank = 1; rank <= 5; rank += 1) {
       this.setNodeActive(`ArenaRankRow_${rank}`, visible);
       this.setNodeActive(`ArenaRankBadgePanel_${rank}`, visible);
@@ -157,18 +213,24 @@ export class SettlementPageController extends Component {
     for (const name of ['ArenaPlayerRow', 'ArenaPlayerBadgePanel', 'ArenaPlayerBadge', 'ArenaPlayerName', 'ArenaPlayerScore']) {
       this.setNodeActive(name, visible);
     }
+    // The five equal-width rows are retired in both modes: the stat cards carry
+    // the same facts in a composition that matches the reference.
     for (const child of this.node.children) {
       if (child.name.startsWith('StatRow_') || /^(Absorbed|Mass|Coin|Level|Region)(Caption|Value)$/.test(child.name)) {
-        child.active = !visible;
+        child.active = false;
       }
     }
+    // The three stat cards and the reward bar are shown in both modes -- Arena
+    // binds them to match facts, Endless to its own -- so the board is never
+    // half empty. Only the leaderboard is arena-only.
     for (const name of [
       'ArenaStatMassPanel', 'ArenaStatKillsPanel', 'ArenaStatTimePanel', 'ArenaRewardPanel',
       'ArenaStatMassCaption', 'ArenaStatMassValue', 'ArenaStatKillsCaption', 'ArenaStatKillsValue',
-      'ArenaStatTimeCaption', 'ArenaStatTimeValue', 'ArenaRewardCaption', 'ArenaRewardValue', 'ArenaRewardBreakdown',
+      'ArenaStatTimeCaption', 'ArenaStatTimeValue', 'ArenaRewardCaption', 'ArenaRewardValue',
     ]) {
-      this.setNodeActive(name, visible);
+      this.setNodeActive(name, true);
     }
+    this.setNodeActive('ArenaRewardBreakdown', visible);
   }
 
   private refreshSubtitle(): void {

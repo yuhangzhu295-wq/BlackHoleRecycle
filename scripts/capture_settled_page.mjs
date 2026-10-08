@@ -109,7 +109,10 @@ try {
       // ui.endlessReady is a composite ({root, back, start, ...}); the tappable
       // node with active/screen is its `start` child, not the wrapper.
       s = await snapshot();
-      const startBtn = (s.ui?.arenaReady || s.ui?.endlessReady)?.start;
+      // Pick by mode: the other mode's ready page exists but is inactive, so
+      // an  fallback returns an invisible node.
+      const ready = MODE === 'arena' ? s.ui?.arenaReady : s.ui?.endlessReady;
+      const startBtn = ready?.start;
       if (!startBtn?.active || !startBtn?.screen) throw new Error('ready Start not visible: ' + JSON.stringify(startBtn));
       await tap(cdp, ...Object.values(pt(rect, startBtn, 'endlessReady.start')));
       await sleep(700);
