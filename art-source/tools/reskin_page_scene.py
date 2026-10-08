@@ -49,6 +49,13 @@ RESKIN = {
         'CoinPanel': ('pill_dark', True),
         'MachineStatus': ('pill_dark', True),
     }),
+    'mode': ('ModeSelectPage', {
+        'Background': ('field_mode', False),
+        # The reference gives its cards a thick white outer frame; the shipped
+        # cards were flat illustrated rectangles with no border.
+        'BtnArena': ('mode_card_arena_framed', False),
+        'BtnEndless': ('mode_card_endless_framed', False),
+    }),
     'settlement': ('SettlementPage', {
         'SettlementCard': ('board_settlement', True),
         'SettlementRibbon': ('ribbon_settlement', False),
