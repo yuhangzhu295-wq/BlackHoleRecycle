@@ -10,6 +10,7 @@
 import { _decorator, Button, Component, Label, Node, UITransform } from 'cc';
 import { eventBus } from '../core/EventBus';
 import { saveService } from '../data/SaveService';
+import { clampNodeIntoSafeSpan, fitNodeIntoSafeSpan, pageSafeHalfWidth } from './PageSafeArea';
 
 const { ccclass } = _decorator;
 
@@ -29,12 +30,16 @@ export const MODE_SELECT_LAYOUT = {
   EndlessBestValue:       [280,    44,  150, -274],
 } as const;
 
+/** The two playable mode cards, which are wider than a 20:9 frame can show. */
+const MODE_CARD_NODES: readonly (keyof typeof MODE_SELECT_LAYOUT)[] = ['BtnArena', 'BtnEndless'];
+
 @ccclass('ModeSelectPageController')
 export class ModeSelectPageController extends Component {
   private bindings: Array<[Button, () => void]> = [];
 
   onEnable(): void {
     this.applyLayout();
+    this.fitToVisibleDesignSpace();
     this.hideStaleResiduals();
     this.refreshProfile();
     this.bind('BtnBack', () => eventBus.emit('MODE_BACK_REQUESTED'));
@@ -53,6 +58,36 @@ export class ModeSelectPageController extends Component {
   private applyLayout(): void {
     for (const [name, [width, height, x, y]] of Object.entries(MODE_SELECT_LAYOUT)) {
       this.resizeAndPlace(name, width, height, x, y);
+    }
+  }
+
+  /**
+   * Fit the authored 720-wide composition into the design space the UI camera
+   * actually shows: `1280 / aspect` wide, i.e. 576.3 design px at 412x915, not
+   * the 720 that `view.getVisibleSize()` reports. No-op on 9:16, where the
+   * reference composition already fits.
+   *
+   * Each node is placed from its authored value, so repeated calls cannot drift.
+   */
+  private fitToVisibleDesignSpace(): void {
+    const safeHalfWidth = pageSafeHalfWidth(this.node);
+
+    // Authored at design x = -340..-260, which is 37 screen px off the left edge
+    // at 412x915 -- the back button is cut in half there. Clamped on its own,
+    // not through the cluster clamp: that groups it with `Header` (they overlap
+    // vertically by 4 design px) and recentres the pair, which leaves the button
+    // clipped anyway and pushes the correct header off the right edge.
+    const back = MODE_SELECT_LAYOUT.BtnBack;
+    clampNodeIntoSafeSpan(this.findNode('BtnBack'), back[2], back[0], safeHalfWidth);
+
+    // Both cards are 610 design px wide (+/-305) against a 576.3 design px
+    // visible width, so their rounded corners and the arrow affordance baked
+    // into the sprite are cropped. They have no children, so resizing the
+    // transform is the whole job; both axes take the same factor, so the card
+    // art is not distorted.
+    for (const cardName of MODE_CARD_NODES) {
+      const [width, height, x] = MODE_SELECT_LAYOUT[cardName];
+      fitNodeIntoSafeSpan(this.findNode(cardName), x, width, height, safeHalfWidth);
     }
   }
 
