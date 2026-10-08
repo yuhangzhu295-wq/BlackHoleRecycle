@@ -40,6 +40,27 @@ export function pageSafeHalfWidth(host: Node): number {
 }
 
 /**
+ * Screen px a decorative panel keeps from the frame edge. Matches the inset the
+ * layout tables already document for their top panels ("move panels 16 px inward
+ * from canvas edges").
+ */
+export const PANEL_EDGE_INSET_SCREEN_PX = 16;
+
+/**
+ * The lateral span a page's decorative panels must stay inside.
+ *
+ * Deliberately smaller than `pageSafeHalfWidth`: that one carries the locked
+ * 24 px rule, which binds *interactive* elements. A panel only has to stay off
+ * the edge, and applying the interactive margin to it narrows it further than
+ * necessary -- on a page whose authored panel already fits at 375x667 it would
+ * change the reference composition for no reason.
+ */
+export function pagePanelHalfWidth(host: Node): number {
+  const scale = hudDesignToFrameScale(host) || 1;
+  return hudVisibleHalfWidth(host) - PANEL_EDGE_INSET_SCREEN_PX / scale;
+}
+
+/**
  * Translate a node so its authored rect sits inside `+/-safeHalfWidth`.
  * Returns the shift applied, in design units (0 when it already fits).
  */
@@ -59,8 +80,32 @@ export function clampNodeIntoSafeSpan(
   return shift;
 }
 
-/** Authored geometry per panel, so repeated calls cannot accumulate drift. */
+/** Authored geometry per node, so repeated calls cannot accumulate drift. */
 const panelBase = new WeakMap<Node, { x: number; width: number; height: number }>();
+
+/**
+ * Design px an inner panel keeps from the outer panel's edge. Pages author their
+ * card, then their rows inset inside it; narrowing both to the same span would
+ * leave the rows flush with the card, so the rows take this inset instead.
+ */
+export const INNER_PANEL_INSET_DESIGN_PX = 12;
+
+/** Result of fitting one panel. */
+export interface PanelFit {
+  /** Width applied, in design units. */
+  readonly width: number;
+  /** Applied / authored. 1 when the panel already fits. */
+  readonly factor: number;
+}
+
+function baseOf(node: Node, transform: UITransform): { x: number; width: number; height: number } {
+  let base = panelBase.get(node);
+  if (!base) {
+    base = { x: node.position.x, width: transform.width, height: transform.height };
+    panelBase.set(node, base);
+  }
+  return base;
+}
 
 /**
  * Narrow a sliced panel so it fits the lateral safe span, keeping its height
@@ -82,20 +127,19 @@ const panelBase = new WeakMap<Node, { x: number; width: number; height: number }
  * Returns the width applied in design units, or 0 when the node is missing or
  * is not a sliced sprite (a simple sprite would be squashed by this).
  */
-export function fitSlicedPanelToSafeSpan(node: Node | null, safeHalfWidth: number): number {
-  if (!node?.isValid) return 0;
+export function fitSlicedPanelToSafeSpan(
+  node: Node | null,
+  safeHalfWidth: number,
+  insetDesignPx = 0,
+): PanelFit {
+  if (!node?.isValid) return { width: 0, factor: 1 };
   const sprite = node.getComponent(Sprite);
-  if (!sprite || sprite.type !== Sprite.Type.SLICED) return 0;
+  if (!sprite || sprite.type !== Sprite.Type.SLICED) return { width: 0, factor: 1 };
   const transform = node.getComponent(UITransform);
-  if (!transform) return 0;
+  if (!transform) return { width: 0, factor: 1 };
 
-  let base = panelBase.get(node);
-  if (!base) {
-    base = { x: node.position.x, width: transform.width, height: transform.height };
-    panelBase.set(node, base);
-  }
-
-  const maxWidth = safeHalfWidth * 2;
+  const base = baseOf(node, transform);
+  const maxWidth = Math.max(0, (safeHalfWidth - insetDesignPx) * 2);
   const width = Math.min(base.width, maxWidth);
   transform.setContentSize(width, base.height);
   // Keep the panel's centre: only the width changed, and the anchor may not be
@@ -103,7 +147,23 @@ export function fitSlicedPanelToSafeSpan(node: Node | null, safeHalfWidth: numbe
   const anchorX = transform.anchorX ?? 0.5;
   const centre = base.x + base.width * (0.5 - anchorX);
   node.setPosition(centre - width * (0.5 - anchorX), node.position.y, node.position.z);
-  return width;
+  return { width, factor: base.width > 0 ? width / base.width : 1 };
+}
+
+/**
+ * Move a decorative satellite -- a corner badge, an accent bar -- so it keeps
+ * its place on a panel that `fitSlicedPanelToSafeSpan` has narrowed. Scaling its
+ * offset from the centre by the panel's factor keeps the authored inset
+ * proportional; leaving it put would strand it outside the narrower panel.
+ *
+ * Idempotent: the authored x is remembered on first call.
+ */
+export function trackPanelNarrowing(node: Node | null, factor: number): void {
+  if (!node?.isValid) return;
+  const transform = node.getComponent(UITransform);
+  if (!transform) return;
+  const base = baseOf(node, transform);
+  node.setPosition(base.x * factor, node.position.y, node.position.z);
 }
 
 /**

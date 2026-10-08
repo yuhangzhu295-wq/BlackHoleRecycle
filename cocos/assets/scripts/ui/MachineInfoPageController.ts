@@ -6,12 +6,21 @@
  * action here: levels are earned through the real absorption loop.
  */
 import { _decorator, Button, Component, director, Label, Node } from 'cc';
+import {
+  INNER_PANEL_INSET_DESIGN_PX,
+  fitSlicedPanelToSafeSpan,
+  pagePanelHalfWidth,
+  trackPanelNarrowing,
+} from './PageSafeArea';
 import { eventBus } from '../core/EventBus';
 import { MACHINE_EVOLUTION_CONFIG } from '../data/GameConfig';
 import { saveService } from '../data/SaveService';
 import { BlackHoleMachine } from '../machine/BlackHoleMachine';
 
 const { ccclass } = _decorator;
+
+/** Sliced panels narrower than the card, inset so they read as nested. */
+const INNER_PANEL_NODES: readonly string[] = ['CurrentPanel', 'LevelRow1', 'LevelRow2', 'LevelRow3', 'LevelRow4', 'LevelRow5'];
 
 @ccclass('MachineInfoPageController')
 export class MachineInfoPageController extends Component {
@@ -20,6 +29,7 @@ export class MachineInfoPageController extends Component {
   onEnable(): void {
     this.refresh();
     this.bind('BtnBack', () => eventBus.emit('MACHINE_INFO_BACK_REQUESTED'));
+    this.fitToVisibleDesignSpace();
   }
 
   onDisable(): void {
@@ -52,6 +62,32 @@ export class MachineInfoPageController extends Component {
         `LevelRowText${config.level}`,
         `LV.${config.level}  ${config.title}  ·  ${config.suctionRadius.toFixed(1)}m / T${config.maxTier}  ·  ${state}`,
       );
+    }
+  }
+
+  /**
+   * Fit the authored 720-wide composition into the design space the UI camera
+   * actually shows: `1280 / aspect` wide, not the 720 `view.getVisibleSize()`
+   * reports. No-op on 9:16, where the reference composition already fits.
+   *
+   * MachineCard is 660 design px wide against the 576.3 design px a 20:9 phone
+   * shows, so 29.9 screen px of it is off each edge and its rounded border is
+   * cropped. It and the five LevelRows (564) are all SLICED, so narrowing them is
+   * lossless and leaves their height -- and the page's vertical composition --
+   * untouched. The rows take an inner inset so they still read as sitting inside
+   * the card rather than flush with it.
+   *
+   * Everything else is 500 design px or narrower (MachineRibbon 500, BtnBack 390),
+   * so it stays inside the narrowed card unaided. The row captions are
+   * `Label.Overflow.NONE` and therefore auto-sized; they measure 467 design px at
+   * runtime, which still fits a 485 px row.
+   */
+  private fitToVisibleDesignSpace(): void {
+    const panelHalfWidth = pagePanelHalfWidth(this.node);
+    const card = fitSlicedPanelToSafeSpan(this.node.getChildByName('MachineCard'), panelHalfWidth);
+    for (const panelName of INNER_PANEL_NODES) {
+      fitSlicedPanelToSafeSpan(
+        this.node.getChildByName(panelName), panelHalfWidth, INNER_PANEL_INSET_DESIGN_PX);
     }
   }
 

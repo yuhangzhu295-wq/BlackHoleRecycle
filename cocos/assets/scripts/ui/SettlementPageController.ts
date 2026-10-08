@@ -1,10 +1,22 @@
 /** 编辑器保存的结算页数据绑定与真实按钮事件。 */
 import { _decorator, Button, Component, Label } from 'cc';
+import {
+  INNER_PANEL_INSET_DESIGN_PX,
+  fitSlicedPanelToSafeSpan,
+  pagePanelHalfWidth,
+  trackPanelNarrowing,
+} from './PageSafeArea';
 import { eventBus } from '../core/EventBus';
 import { ArenaMatchSnapshot, ArenaSettlementReward } from '../gameplay/ArenaMatchManager';
 import { GameSessionMode, MODE_TITLES } from '../gameplay/session/GameSessionCoordinator';
 
 const { ccclass } = _decorator;
+
+/** Sliced panels narrower than the card, inset so they read as nested. */
+const INNER_PANEL_NODES: readonly string[] = ['StatRow_223', 'StatRow_143', 'StatRow_63', 'StatRow_-17', 'StatRow_-97', 'ArenaLeaderboardPanel', 'ArenaPlayerRow', 'ArenaRewardPanel', 'ArenaStatMassPanel', 'ArenaStatKillsPanel', 'ArenaStatTimePanel', 'ArenaRankRow_1', 'ArenaRankRow_2', 'ArenaRankRow_3', 'ArenaRankRow_4', 'ArenaRankRow_5'];
+
+/** Simple-sprite corner badges that follow the card's narrowing. */
+const CARD_SATELLITE_NODES: readonly string[] = ['SettlementCoinLeft', 'SettlementCoinRight'];
 
 @ccclass('SettlementPageController')
 export class SettlementPageController extends Component {
@@ -14,6 +26,7 @@ export class SettlementPageController extends Component {
     this.refreshSubtitle();
     this.bind('BtnRestart', () => eventBus.emit('GAME_RESTART_CURRENT'));
     this.bind('BtnHome', () => eventBus.emit('GAME_RETURN_HOME'));
+    this.fitToVisibleDesignSpace();
   }
 
   onDisable(): void {
@@ -85,6 +98,32 @@ export class SettlementPageController extends Component {
       this.setLabel('ArenaPlayerBadge', `${snapshot.localRank || '-'}`);
       this.setLabel('ArenaPlayerName', '我');
       this.setLabel('ArenaPlayerScore', `${Math.round(local.mass)} kg · ${local.kills} 淘汰`);
+    }
+  }
+
+  /**
+   * Fit the authored 720-wide composition into the design space the UI camera
+   * actually shows: `1280 / aspect` wide, not the 720 `view.getVisibleSize()`
+   * reports. No-op on 9:16, where the reference composition already fits.
+   *
+   * SettlementCard is 660 design px wide against the 576.3 design px a 20:9 phone
+   * shows, so 29.9 screen px of it is off each edge and its rounded border is
+   * cropped. It, the stat rows and the leaderboard rows are all SLICED, so
+   * narrowing them is lossless and leaves the vertical composition untouched.
+   *
+   * The two corner coin badges are Simple sprites: they keep their size and follow
+   * the card's narrowing proportionally, which is why they are tracked rather than
+   * resized. SettlementRibbon (492) stays inside the 509 px card.
+   */
+  private fitToVisibleDesignSpace(): void {
+    const panelHalfWidth = pagePanelHalfWidth(this.node);
+    const card = fitSlicedPanelToSafeSpan(this.node.getChildByName('SettlementCard'), panelHalfWidth);
+    for (const panelName of INNER_PANEL_NODES) {
+      fitSlicedPanelToSafeSpan(
+        this.node.getChildByName(panelName), panelHalfWidth, INNER_PANEL_INSET_DESIGN_PX);
+    }
+    for (const satelliteName of CARD_SATELLITE_NODES) {
+      trackPanelNarrowing(this.node.getChildByName(satelliteName), card.factor);
     }
   }
 

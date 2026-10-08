@@ -7,11 +7,20 @@
  * cosmetic by itself.
  */
 import { _decorator, Button, Color, Component, Label, Node, Sprite } from 'cc';
+import {
+  INNER_PANEL_INSET_DESIGN_PX,
+  fitSlicedPanelToSafeSpan,
+  pagePanelHalfWidth,
+  trackPanelNarrowing,
+} from './PageSafeArea';
 import { eventBus } from '../core/EventBus';
 import { SKINS_CONFIG } from '../data/GameConfig';
 import { saveService } from '../data/SaveService';
 
 const { ccclass } = _decorator;
+
+/** Sliced panels narrower than the card, inset so they read as nested. */
+const INNER_PANEL_NODES: readonly string[] = ['PreviewPanel', 'SkinCard_1', 'SkinCard_2', 'SkinCard_3', 'SkinCard_4', 'SkinCard_5'];
 
 @ccclass('SkinSelectionPageController')
 export class SkinSelectionPageController extends Component {
@@ -27,6 +36,7 @@ export class SkinSelectionPageController extends Component {
     });
     this.removeSkinChangedListener = eventBus.on('HOME_SKIN_CHANGED', this.refresh, this);
     this.removeStatusListener = eventBus.on('SKIN_PAGE_STATUS', this.showStatus, this);
+    this.fitToVisibleDesignSpace();
   }
 
   onDisable(): void {
@@ -77,6 +87,28 @@ export class SkinSelectionPageController extends Component {
   private showStatus(message: unknown): void {
     this.setLabel('StatusValue', typeof message === 'string' ? message : '请选择一个皮肤');
     this.refresh();
+  }
+
+  /**
+   * Fit the authored 720-wide composition into the design space the UI camera
+   * actually shows: `1280 / aspect` wide, not the 720 `view.getVisibleSize()`
+   * reports. No-op on 9:16, where the reference composition already fits.
+   *
+   * SkinPageCard is 660 design px wide against the 576.3 design px a 20:9 phone
+   * shows, so 29.9 screen px of it is off each edge and its rounded border is
+   * cropped. It, PreviewPanel and the five SkinCards are all SLICED, so narrowing
+   * them is lossless and leaves the page's vertical composition untouched.
+   *
+   * Every label on the page is 323 design px or narrower at runtime, so it still
+   * fits the narrowed panels; SkinRibbon (430) stays inside the 509 px card.
+   */
+  private fitToVisibleDesignSpace(): void {
+    const panelHalfWidth = pagePanelHalfWidth(this.node);
+    const card = fitSlicedPanelToSafeSpan(this.node.getChildByName('SkinPageCard'), panelHalfWidth);
+    for (const panelName of INNER_PANEL_NODES) {
+      fitSlicedPanelToSafeSpan(
+        this.node.getChildByName(panelName), panelHalfWidth, INNER_PANEL_INSET_DESIGN_PX);
+    }
   }
 
   private bind(name: string, handler: () => void): void {

@@ -380,14 +380,21 @@ home mode ready machine skin pause settlement revive  ×  375x667 / 390x844 / 43
 |---|---|---|
 | home | 钳制 + 动作行等比缩放 | 无裁切，卡片余量 ≥24 px |
 | mode | `BtnBack` 单节点钳制 + 两张卡等比缩放 | 无裁切；`BtnBack` 24 px、卡片 24 px |
-| pause | `PauseCard` 收窄（sliced 无损） | 卡片 x 24..388，缎带 48.7..363.3（内含 24.7 px） |
+| machine | 卡片 + `CurrentPanel` + 5 条等级行收窄（sliced 无损） | 卡片 x 16..396（531.6），行 507.6，行文字 333.6 在行内 |
+| skin | 卡片 + `PreviewPanel` + 5 张皮肤卡收窄 | 卡片 531.6，内卡 507.6，标签最大 323 在卡内 |
+| pause | `PauseCard` 收窄（sliced 无损） | 卡片 x 16..396，缎带在内 |
+| settlement | 卡片 + 统计行 + 排行行收窄；两枚金币等比跟随 | 卡片 531.6，缎带 492 在卡内 |
 | revive | `ReviveCard` 收窄（sliced 无损） | 无裁切 |
 
 mode 的 `BtnBack` **必须单节点钳制**，不能走 `applyHudSafeAreaInset`：它与 `Header` 纵向重叠 4 设计单位会被归为一组，整组重新居中后按钮仍被裁、而原本正确的 `Header` 被推出右边缘（这正是 §3.5.5 那次回滚的原因）。pause/revive 只需收窄卡片一处——这两页所有兄弟节点都 ≤500 设计宽，最宽的 `ReviveAccentOrange`(500) 仍在收窄后的 509.2 面板内。
 
-**被设计决策阻塞（未修）**：machine / skin / settlement。这三页的面板是 660 设计宽、内部行 564–570，而**页面上所有标签的 `overflow` 都是 `Label.Overflow.NONE`**——即 UITransform 宽度就是真实文字宽度，不是可收缩的框。收窄面板要么让行戳出面板，要么把文字推出面板边缘，两者都要改字号，属于**设计决策**而非布局修正。另外 `SettlementRibbon`(492) / `MachineRibbon`(500) 是 `_type=0` 简单图，收窄会压坏美术；结算页两枚金币（各裁 7.7 px）需要位置钳制。
+**⚠️ 更正**：上一版这里写着 machine / skin / settlement "被字号决策阻塞、不能机械修"。**那个结论是错的，已作废。** 我当时按**场景里的作者宽度**判断（`LevelRowText1` 记为 530 设计单位，宽于收窄后的行），但那些 Label 是 `overflow=NONE` **自动撑开**的，运行时实测只有 **467 设计单位**（333.6 px）——完全放得下。又是同一条教训：量运行时，不要按作者表推断。
 
-**低于阈值（未修）**：ready 的 `StatPanelTop`/`StatPanelBottom` 各裁 1.3 px——小于抗锯齿量级，按"实测低于阈值"记录。
+修正后这三页可修且已修：面板收窄到 16 px 边距（与作者注释里"面板从画布边缘内移 16px"一致），内部行/卡片再内缩 12 设计单位。**只有 `ready` 仍未修**：`StatPanelTop`/`StatPanelBottom` 各裁 1.3 px，小于抗锯齿量级，按"实测低于阈值"记录。
+
+**面板用 16 px 而不是 24 px 交互边距**：24 px 是"交互元素"的锁定规则，面板只是背景，只需不贴边；对装饰面板套用交互边距会把它收得比必要更窄，并在一本已放得下的页面上无谓改动 375 参考构图（实测：用 24 px 时 machine 卡片在 375 从 660 收到 627.5；用 16 px 后为 658.2，即 0.9 px 的差别）。所以 `PageSafeArea` 提供 `pageSafeHalfWidth`（交互）与 `pagePanelHalfWidth`（面板）两个入口。
+
+**简单图不缩放**：`SettlementRibbon`(492) / `MachineRibbon`(500) 是 `_type=0`，收窄会压坏美术——它们本来就在收窄后的面板内（492 < 531.6），无需处理。结算页两枚金币也是简单图，按面板收窄系数**等比跟随**位置（`trackPanelNarrowing`），保持它们在卡片角上的相对位置。
 
 **未做**：machine / skin / settlement 的响应式改造。探针已就绪，每改一页用 `node scripts/probe_page_layout_geometry.mjs --page=<page> --size=412x915` 量前后。
 

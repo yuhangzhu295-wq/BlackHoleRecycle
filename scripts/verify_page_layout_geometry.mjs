@@ -51,14 +51,14 @@ const argOf = (name, fallback) => {
 };
 
 /** Pages whose geometry is asserted. */
-const PASSING = ['home', 'mode', 'pause', 'revive'];
+const PASSING = ['home', 'mode', 'machine', 'skin', 'pause', 'settlement', 'revive'];
 
 /**
  * Pages measured but not asserted; see the header. `ready` is here rather than
  * in PASSING because its two stat panels overflow by 1.3 px, below the
  * anti-aliasing threshold, and asserting a sub-pixel margin would be noise.
  */
-const KNOWN_UNFIXED = ['machine', 'skin', 'settlement', 'ready'];
+const KNOWN_UNFIXED = ['ready'];
 
 /** 375x667 is the authored reference; 412x915 is the tightest real aspect. */
 const GATE_SIZES = [

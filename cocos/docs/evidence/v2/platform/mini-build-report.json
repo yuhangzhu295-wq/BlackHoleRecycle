@@ -3,7 +3,7 @@
   "creatorExe": "C:\\ProgramData\\cocos\\editors\\Creator\\3.8.3\\CocosCreator.exe",
   "requestedPlatform": "web-mobile",
   "requireReleaseIds": false,
-  "startedAt": "2026-10-08T02:59:08.167Z",
+  "startedAt": "2026-10-08T03:30:54.425Z",
   "builds": [
     {
       "platform": "web-mobile",
@@ -28,5 +28,5 @@
     }
   ],
   "failures": [],
-  "finishedAt": "2026-10-08T03:00:30.603Z"
+  "finishedAt": "2026-10-08T03:31:44.073Z"
 }

@@ -1,6 +1,6 @@
 /** 编辑器保存的暂停页交互。 */
 import { _decorator, Button, Component } from 'cc';
-import { fitSlicedPanelToSafeSpan, pageSafeHalfWidth } from './PageSafeArea';
+import { fitSlicedPanelToSafeSpan, pagePanelHalfWidth } from './PageSafeArea';
 import { eventBus } from '../core/EventBus';
 
 const { ccclass } = _decorator;
@@ -16,7 +16,7 @@ export class PausePageController extends Component {
     // The panel is authored 620 design px wide against the 576.3 design px a
     // 20:9 phone shows, so 15.6 screen px of it is off each edge and its
     // rounded border is cropped. Sliced, so narrowing is lossless.
-    fitSlicedPanelToSafeSpan(this.node.getChildByName('PauseCard'), pageSafeHalfWidth(this.node));
+    fitSlicedPanelToSafeSpan(this.node.getChildByName('PauseCard'), pagePanelHalfWidth(this.node));
   }
 
   onDisable(): void {

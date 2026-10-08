@@ -8,7 +8,7 @@
  * No QA mutations, no fake ads, no forced grants.
  */
 import { _decorator, Button, Color, Component, Label, Layers, Node, Sprite, UITransform } from 'cc';
-import { fitSlicedPanelToSafeSpan, pageSafeHalfWidth } from './PageSafeArea';
+import { fitSlicedPanelToSafeSpan, pagePanelHalfWidth } from './PageSafeArea';
 import { eventBus } from '../core/EventBus';
 import { ArenaMatchSnapshot } from '../gameplay/ArenaMatchManager';
 
@@ -33,7 +33,7 @@ export class RevivePageController extends Component {
     // The panel is authored 620 design px wide against the 576.3 design px a
     // 20:9 phone shows, so 15.6 screen px of it is off each edge and its
     // rounded border is cropped. Sliced, so narrowing is lossless.
-    fitSlicedPanelToSafeSpan(this.node.getChildByName('ReviveCard'), pageSafeHalfWidth(this.node));
+    fitSlicedPanelToSafeSpan(this.node.getChildByName('ReviveCard'), pagePanelHalfWidth(this.node));
   }
 
   onDisable(): void {
