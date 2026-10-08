@@ -36,6 +36,9 @@ V95 = REPO / 'cocos' / 'assets' / 'game_art' / 'ui' / 'v95'
 # SLICED or the rounded ends stretch.
 RESKIN = {
     'Background': ('field_home', False),
+    # The brand plate carries no text; the name is a Creator Label added
+    # under Logo by art-source/tools/add_logo_label.py.
+    'Logo': ('logo_brand_home', False),
     'HeroBlackHole': ('home_hero_blackhole', False),
     'BtnStart': ('capsule_yellow', True),
     # Composed card art: the vignette inside its white frame with clear space
