@@ -2,7 +2,7 @@
 
 **Round:** `V9.5_UI_ART_DIRECTION_ADOPTION_AND_PRODUCTION`
 **Branch:** `dev/product-finalization-20260929`
-**Status: PHASE A complete. PHASE B in progress, not acceptable yet. PHASE C–E not started.**
+**Status: PHASE A complete. PHASE B STEP 1–2 complete; Home is not wired into Creator. PHASE C–E not started.**
 Nothing here is `VISUAL_LOCKED`.
 
 ---
@@ -14,6 +14,8 @@ Nothing here is `VISUAL_LOCKED`.
 | `d0cd97c` | PHASE A — adopt the v9.5 art direction, name one reference per page, bring the images in |
 | `9455c68` | the V9.5 vector art library (19 assets) generated from source |
 | `039a6a7` | the Blender vignette pipeline (work in progress) |
+| `1fc20a4` | status report |
+| `66c1094` | Home stage assets composed as pages, and the independent 390x844 preview |
 
 Preceding this round: `855d552` and earlier, the V9 engineering round. The tree was clean and
 fully pushed before starting; no unpushed commit was overwritten.
@@ -47,8 +49,16 @@ black holes, or the settlement would disagree with the match just played).
 `art-source/vector/*.py`; the PNGs are build output. Palette sampled from the references.
 Nothing is text: labels and values stay in Creator.
 
-**Blender vignettes — 5 assets, rendered, not yet acceptable** (`039a6a7`): Home's city band, the
-hero black hole, and one interior per entry card.
+**Blender stage assets — Home's two, composed and reviewed** (`66c1094`):
+`home_city_band.png` (720x640) and `home_hero_blackhole.png` (560x560). The camera frames the
+staged ground patch, not the union of the scene, and the scale baseline is taken from the game
+(32-unit blocks, `unitScale()` bindings, a 2.55-unit sedan) rather than chosen by eye.
+
+**Independent 390x844 full-page preview** (`art-source/preview/home-preview-390x844.png`), built
+from these assets plus the vector UI and real type. It is a preview, not the page.
+
+The three entry-card vignettes from `039a6a7` are **superseded** and should be re-rendered with
+the corrected framing when the cards are built.
 
 ## 4. Home and Settlement, before → now
 
@@ -91,19 +101,17 @@ and rejected by me before any review gate; see §9.
 
 ## 9. What is not finished, and what it needs
 
-**Blender vignette compositions.** Rendered and reviewed; three defects remain:
+**Home is not wired into Creator.** This is the gap that matters: the player-visible page has
+not changed, there is no runtime after-shot, and no three-size capture exists. The two stage
+assets and the preview exist; the page does not.
 
-1. **Ground reads as a dark slab.** `tile-low` and the crossroad tile render near-black at card
-   scale, so the cards sit on a black diamond instead of a street. The city band's road tiles
-   render light grey at the same lighting, so the cause is the tile choice and scale, not the
-   lights.
-2. **The black hole is oversized** relative to the ground patch — it reads as a disc filling the
-   card rather than a hole in a street.
-3. **Props are too small** in the city band; the buildings are specks.
+**What remains for PHASE B:** wire the field, brand plate, capsules, pills, glyphs, the city band
+and the hero into `HomePage` with real Label children and the existing coin/level/skin bindings;
+keep every business path; capture 375×667 / 390×844 / 430×932; run the geometry gates and the
+separate visual review against `01-modesel-and-home-language.png`.
 
-**Then, for PHASE B to close:** wire the Home field, brand plate, capsules, pills, glyphs and the
-three card interiors into Creator with real Label children and real data bindings; capture
-375×667 / 390×844 / 430×932; run the geometry gates and the separate visual review.
+**Entry-card vignettes** still need re-rendering with the corrected framing; the current ones
+predate it.
 
 **PHASE C (Settlement)** is designed and its vector surfaces exist (board, ribbon, panels, reward
 bar, badges) but nothing is composed or wired.
