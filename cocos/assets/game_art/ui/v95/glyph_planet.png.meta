@@ -1,0 +1,134 @@
+{
+  "ver": "1.0.27",
+  "importer": "image",
+  "imported": true,
+  "uuid": "22bc4dfb-cf0b-46f5-9f98-53fb21c38b46",
+  "files": [
+    ".json",
+    ".png"
+  ],
+  "subMetas": {
+    "6c48a": {
+      "importer": "texture",
+      "uuid": "22bc4dfb-cf0b-46f5-9f98-53fb21c38b46@6c48a",
+      "displayName": "glyph_planet",
+      "id": "6c48a",
+      "name": "texture",
+      "userData": {
+        "wrapModeS": "repeat",
+        "wrapModeT": "repeat",
+        "minfilter": "linear",
+        "magfilter": "linear",
+        "mipfilter": "none",
+        "anisotropy": 0,
+        "isUuid": true,
+        "imageUuidOrDatabaseUri": "22bc4dfb-cf0b-46f5-9f98-53fb21c38b46",
+        "visible": false
+      },
+      "ver": "1.0.22",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "f9941": {
+      "importer": "sprite-frame",
+      "uuid": "22bc4dfb-cf0b-46f5-9f98-53fb21c38b46@f9941",
+      "displayName": "glyph_planet",
+      "id": "f9941",
+      "name": "spriteFrame",
+      "userData": {
+        "trimType": "auto",
+        "trimThreshold": 1,
+        "rotated": false,
+        "offsetX": 0,
+        "offsetY": 0,
+        "trimX": 9,
+        "trimY": 42,
+        "width": 142,
+        "height": 76,
+        "rawWidth": 160,
+        "rawHeight": 160,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "packable": true,
+        "pixelsToUnit": 100,
+        "pivotX": 0.5,
+        "pivotY": 0.5,
+        "meshType": 0,
+        "vertices": {
+          "rawPosition": [
+            -71,
+            -38,
+            0,
+            71,
+            -38,
+            0,
+            -71,
+            38,
+            0,
+            71,
+            38,
+            0
+          ],
+          "indexes": [
+            0,
+            1,
+            2,
+            2,
+            1,
+            3
+          ],
+          "uv": [
+            9,
+            118,
+            151,
+            118,
+            9,
+            42,
+            151,
+            42
+          ],
+          "nuv": [
+            0.05625,
+            0.2625,
+            0.94375,
+            0.2625,
+            0.05625,
+            0.7375,
+            0.94375,
+            0.7375
+          ],
+          "minPos": [
+            -71,
+            -38,
+            0
+          ],
+          "maxPos": [
+            71,
+            38,
+            0
+          ]
+        },
+        "isUuid": true,
+        "imageUuidOrDatabaseUri": "22bc4dfb-cf0b-46f5-9f98-53fb21c38b46@6c48a",
+        "atlasUuid": ""
+      },
+      "ver": "1.0.12",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    }
+  },
+  "userData": {
+    "hasAlpha": true,
+    "type": "sprite-frame",
+    "fixAlphaTransparencyArtifacts": false,
+    "redirect": "22bc4dfb-cf0b-46f5-9f98-53fb21c38b46@6c48a"
+  }
+}
