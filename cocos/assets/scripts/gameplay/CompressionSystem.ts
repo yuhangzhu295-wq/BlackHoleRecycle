@@ -9,6 +9,7 @@ import { WorldArtLibrary } from '../world/WorldArtLibrary';
 import { saveService } from '../data/SaveService';
 import { platformAdapter } from '../platform/EditorPlatformAdapter';
 import { BlackHoleMachine } from '../machine/BlackHoleMachine';
+import { vibrate } from '../core/Haptics';
 import { eventBus } from '../core/EventBus';
 import {
   RESOURCE_DROP,
@@ -119,7 +120,7 @@ export class CompressionSystem extends Component {
       this.timer = 0;
       if (this.machine) {
         this.compressionBasePosition.set(this.machine.node.position);
-        platformAdapter.vibrate('medium');
+        vibrate('medium');
         eventBus.emit('COMPRESSION_STARTED', {
           duration: this.machine.currentConfig.compressionDuration,
           amplitude: this.machine.currentConfig.compressionShakeAmplitude,
@@ -199,7 +200,7 @@ export class CompressionSystem extends Component {
       }
       
       eventBus.emit('UI_UPDATE_HUD', { coins: saveService.data.coins });
-      platformAdapter.vibrate('light');
+      vibrate('light');
       
       // 重置缓冲池
       this.bufferMass = 0;

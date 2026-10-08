@@ -59,6 +59,8 @@ export interface QABridgeReadModel {
   readonly getSaveSnapshot: () => Readonly<Record<string, unknown>>;
   /** V7 PHASE 5: pooled absorb-burst evidence, or null when no runtime host exists. */
   readonly getAbsorbFeedbackDiagnostics: () => Readonly<Record<string, unknown>> | null;
+  /** V9 §42: sound-effect plays, and how many requests had no clip behind them. */
+  readonly getAudioDiagnostics: () => Readonly<Record<string, unknown>> | null;
   readonly getPortraitCameraController?: () => PortraitGameplayCameraController | null;
 }
 
@@ -430,6 +432,10 @@ export class QABridge {
       // V7 PHASE 6/7 evidence: the authored UI prefab library state. This is the
       // read-only proof that the reusable prefabs and the thumbnails they draw
       // are resident at runtime, not merely present in the bundle on disk.
+      // V9 §42 evidence: a build with no audio must not look identical to a
+      // build whose audio simply had nothing to play, so `missingPlays` is
+      // reported next to `plays`.
+      audio: this.read.getAudioDiagnostics(),
       uiAssets: {
         ready: UIAssetLibrary.isReady(),
         pending: UIAssetLibrary.isPending(),

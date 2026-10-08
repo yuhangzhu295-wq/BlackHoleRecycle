@@ -238,21 +238,28 @@ V8.3 证明 LV3–LV5 可达（LV5 约 5.6 分钟）后，`playerVisibility` 插
 
 **真正的视线遮挡仍是未覆盖项**——要做得先让探针采集占用者高度，那超出"复用现有机制"的范围。
 
-### 3.2.2 AUDIO：AUDIO_ASSET_REQUIRED（§42）
+### 3.2.2 AUDIO：已接线并有机器证据；**资产是临时合成音，授权资产仍需 Owner**（§42）
 
-按 §42 盘点，结论是**音频完全不存在**：
+原状态是 `AUDIO_ASSET_REQUIRED`——音频**完全不存在**（0 处代码引用、0 个音频文件）。现在音频路径已经打通并有端到端证据，但**必须分清两件事**：
 
-| 检查 | 结果 |
+| | 状态 |
 |---|---|
-| 音频代码（`AudioSource` / `AudioClip` / `playOneShot`） | **0 处引用** |
-| 音频资产（`cocos/assets` 下 mp3 / wav / ogg / m4a） | **0 个文件** |
-| 触觉 | **已存在且已接线** —— `platformAdapter.vibrate` 在 `GameManager.ts:345`(heavy) / `:516`(light) 与 `CompressionSystem.ts:122`(medium) / `:202`(light) |
+| 音频代码（`AudioSource` / `AudioClip` / `playOneShot`） | ✅ 已实现（`AudioAssetLibrary` + `AudioDirector`） |
+| 六类音效（吸附/吞噬/升级/击杀/死亡/按钮） | ✅ 六个真实可听的 WAV，`test_audio_asset_contract` 逐个断言"非静音 + 格式正确 + 音高走向符合设计" |
+| 播放路径 | ✅ `verify:audio`：30s 真实游玩 60 次吸收 → **68 次播放、0 次缺资源** |
+| 静音开关 | ✅ 尊重存档里**早已声明却从未被读取**的 `settings.sfx`；预置已静音存档实测 65 次吸收 → **0 次播放** |
+| 触觉开关 | ✅ 同样接上 `settings.vibration`（此前触觉无视该字段） |
+| **授权/商用音频资产** | ❌ **仍需 Owner 采购**（§46）。当前是脚本合成的临时音效 |
 
-**标记：`AUDIO_ASSET_REQUIRED`。** §42 明确禁止用假静音资源宣称完成，所以不新建空 AudioSource 来"占位"。
+**为什么是合成音而不是静音占位**：§42 禁止"用假静音资源宣称完成"。合成音是**真实发声**的，所以它不违反那条；但它是**临时资产**，不是授权素材。`AudioDirector.getDiagnostics()` 因此把 `missingPlays` 与 `plays` 并列报告——一个没有音频的构建不能看起来和一个正常构建一样。
 
-需要的音效（§42 列出的六类）：**吸附 / 吞噬 / 升级 / 击杀 / 死亡 / 按钮**。它们对应的真实事件都已存在（`CompressionSystem` 的压缩状态机、`MACHINE_EVOLVED`、`ARENA_LOCAL_KILL`、死亡节拍、各页按钮的 `Button.EventType.CLICK`），所以**接线点不需要新建，只缺音频资产本身**。
+**接线方式**：音效映射集中在 `AudioDirector` 一处（订阅事件总线），`GameManager` / `CompressionSystem` 不需要长出任何 `if (audio)` 分支。为此补了两个**当时并不存在的领域事件**：`OBJECT_ABSORBED`（在真正完成一次吸收处发出）与 `ARENA_LOCAL_DEFEATED`（在死亡节拍开始处发出）。其余四类直接复用已有事件：`COMPRESSION_STARTED`、`MACHINE_EVOLVED`、`ARENA_LOCAL_KILL`、以及 UI 按钮事件（显式白名单，不用后缀匹配，免得新玩法事件意外变成按钮音）。
 
-这是**需要 Owner 提供或采购**的项（属于 §46 的"购买付费资产"）。
+音效与**已有的触觉在同一批时刻**配对：`CompressionSystem` 的 medium/light 与 `GameManager` 的 heavy/light 四个调用点。
+
+**顺带发现并修掉**：存档里 `settings: { music, sfx, vibration, quality }` 四个字段**全项目无人读取**。我一开始给静音加了顶层 `audioMuted` 字段——那是给同一个事实造了第二个真源，已撤回，改用 `settings.sfx`；`settings.vibration` 也一并接上。
+
+**仍未做**：没有正式的设置页，所以玩家目前**没有开关音效的入口**。`HomePageController` 的注释已经说明了原因（设置按钮没有 Creator 页面支撑时不能作为灰色假按钮出现），所以我没有把齿轮按钮改造成静音开关——那只会用一个图标不匹配的按钮换一个假设置页。开关入口需要一张作者产出的设置页，属设计/Owner 项。
 
 ### 3.2.3 GAME_FEEDBACK：六类反馈均已实现且在真实游玩中被观测到（§26）
 
@@ -486,6 +493,7 @@ mode 的 `BtnBack` **必须单节点钳制**，不能走 `applyHudSafeAreaInset`
 | ARENA_GAMEPLAY_VISUAL_PASS | ✅ | 同上：0 裁切、玩家半径 ≥52 px、HUD 本体被投影验证（§3.5.8） |
 | consoleErrors = 0 | ✅ | 每次验收 0 |
 | invalidMesh = 0 / invalidSprite = 0 | ✅ | 每次验收 0 |
+| AUDIO（§42） | ⚠️ **路径已通，资产待购** | `verify:audio` + `test_audio_asset_contract` 覆盖播放与静音；**授权音频资产仍需 Owner**（§3.2.2） |
 | 三平台构建 | ✅ | `build:web` 269 文件 / `build:wx` 273 文件（AppID 已配置）/ `build:tt` 272 文件，三者均含 `world-construction` + `world-city` 两个分包（§3.6） |
 | 发布预检 | ❌ **阻塞在 Owner 项** | `npm run preflight:release` 如实失败：`bytedance-mini-game requires a real AppID for release preflight; found testappId`。微信侧已配置真实 AppID |
 
@@ -493,7 +501,7 @@ mode 的 `BtnBack` **必须单节点钳制**，不能走 `applyHudSafeAreaInset`
 
 **仅剩两项，都不是本轮能单方面完成的**：
 
-1. **音频资产**（§42）：0 音频代码 / 0 音频资产，需 Owner 购买。§42 禁止用假静音资源充数。
+1. **授权音频资产**（§42）：播放路径、六个音效、静音开关均已实现并有机器证据，但当前音效是**脚本合成的临时资产**；商用授权素材仍需 Owner 采购（§3.2.2）。
 2. **剩余 6 个 Kit prefab 的页面消费**：它们是通用件，而现有页面各有定制美术，替换等于重构已签字页面并改变观感——属设计决策。其加载路径与已被消费的 `UIProgressBar` 完全相同，且 7 个的运行时驻留都由 `verify:ui-kit` 逐个断言。
 
 **粒子/动画资产**（§26）同属 §46 的「购买付费资产」，需要 Owner。

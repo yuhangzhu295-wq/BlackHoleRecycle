@@ -194,6 +194,25 @@ export class SaveService {
     }
   }
 
+  /**
+   * Sound-effect toggle. Writes the `settings.sfx` flag the save has always
+   * declared, rather than a parallel field: two flags for one fact drift.
+   */
+  public setSfxEnabled(enabled: boolean): void {
+    const next = enabled === true;
+    if (this.data.settings.sfx === next) return;
+    this.data.settings.sfx = next;
+    this.save();
+  }
+
+  /** Haptics toggle, same rule as `setSfxEnabled`. */
+  public setVibrationEnabled(enabled: boolean): void {
+    const next = enabled === true;
+    if (this.data.settings.vibration === next) return;
+    this.data.settings.vibration = next;
+    this.save();
+  }
+
   public setMachineProgression(mass: number, level: number): void {
     const nextMass = Number.isFinite(mass) ? Math.max(0, mass) : 0;
     const nextLevel = Number.isFinite(level) ? Math.max(1, Math.floor(level)) : 1;

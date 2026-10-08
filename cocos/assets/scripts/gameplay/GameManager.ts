@@ -17,12 +17,14 @@ import { ArenaMatchManager, ArenaMatchSnapshot } from './ArenaMatchManager';
 import { AuthoritativeArenaSnapshot, ColyseusArenaClient } from '../network/ColyseusArenaClient';
 import { NetworkArenaReplica } from '../network/NetworkArenaReplica';
 import { WorldArtLibrary } from '../world/WorldArtLibrary';
+import { vibrate } from '../core/Haptics';
 import { eventBus } from '../core/EventBus';
 import { BlobShadow } from '../core/BlobShadow';
 import { saveService } from '../data/SaveService';
 import { analyticsService } from '../analytics/AnalyticsService';
 import { platformAdapter } from '../platform/EditorPlatformAdapter';
 import { SKINS_CONFIG } from '../data/GameConfig';
+import { audioDirector, installAudioDirector } from '../audio/AudioDirector';
 
 const { ccclass, property } = _decorator;
 
@@ -342,7 +344,7 @@ export class GameManager extends Component {
   private bindEvents(): void {
     eventBus.on('MACHINE_EVOLVED', ({ level, machine: evolvedMachine }: { level: number; machine?: BlackHoleMachine }) => {
       if (evolvedMachine && evolvedMachine !== this.machine) return;
-      platformAdapter.vibrate('heavy');
+      vibrate('heavy');
       if (this.gameState === 'PLAYING' && this.machine?.persistsProgression) {
         saveService.setMachineLevel(level);
       }
@@ -513,7 +515,7 @@ export class GameManager extends Component {
     eventBus.emit('HOME_SKIN_CHANGED', skin);
     const message = alreadyOwned || skin.unlocked ? `已装备：${skin.name}` : `已解锁并装备：${skin.name}`;
     eventBus.emit('SKIN_PAGE_STATUS', message);
-    platformAdapter.vibrate('light');
+    vibrate('light');
     platformAdapter.showToast(message, 'success');
   }
 
@@ -799,6 +801,10 @@ export class GameManager extends Component {
     this.absorbedTierCounts[t.tier] = (this.absorbedTierCounts[t.tier] || 0) + 1;
     this.score += t.value * 10;
     this.hud?.showAbsorbFeedback(obj.getPosition(), t.value * 10, t.tier);
+    // A body was genuinely absorbed. Emitted as a domain event rather than a
+    // direct call into the audio director, so the sound mapping stays in one
+    // place and other systems can react to the same moment.
+    eventBus.emit('OBJECT_ABSORBED', { tier: t.tier, score: t.value * 10 });
 
     // 严谨进入实体压缩缓冲系统 (不立即加金币与质量)
     if (this.compressionSystem) {
@@ -841,6 +847,7 @@ export class GameManager extends Component {
     // Mark the death spot so the beat has something to look at. The body itself
     // is already hidden by ArenaMatchManager.defeat.
     if (this.machine) this.absorbFeedback?.emit(this.machine.node.position);
+    eventBus.emit('ARENA_LOCAL_DEFEATED', { matchId: snapshot.matchId });
     this.arenaDeathBeatRemaining = GameManager.ARENA_DEATH_BEAT_SECONDS;
     this.arenaDeathBeatSnapshot = snapshot;
   }
@@ -1000,6 +1007,12 @@ export class GameManager extends Component {
         score: this.score,
         regionsVisited: this.regionsVisitedCount,
       }),
+      // Spread into a plain record: the bridge reports loose snapshots, and an
+      // interface without an index signature is not assignable to one.
+      getAudioDiagnostics: () => {
+        const diagnostics = audioDirector()?.getDiagnostics();
+        return diagnostics ? { ...diagnostics } : null;
+      },
       getSaveSnapshot: () => ({
         coins: saveService.data.coins,
         claimedArenaSettlementIds: [...saveService.data.claimedArenaSettlementIds],
@@ -1007,6 +1020,7 @@ export class GameManager extends Component {
         // Read-only: Machine Info renders this as the player's mass, so a check
         // that the page agrees with the save needs to see it.
         machineMass: saveService.data.machineMass,
+        settings: { ...saveService.data.settings },
         bestMass: saveService.data.highScore,
         skinId: saveService.data.currentSkinId,
         unlockedSkinIds: [...saveService.data.unlockedSkins],
@@ -1014,6 +1028,10 @@ export class GameManager extends Component {
         tutorialCompleted: saveService.data.tutorialCompleted,
       }),
     });
+    // Attached here rather than in a scene component so the audio node is owned
+    // by whatever owns the scene; a scene that never reaches this point gets
+    // silence plus a null diagnostic instead of an audio node from nowhere.
+    installAudioDirector(this.node);
     this.qaBridge.install();
   }
 
