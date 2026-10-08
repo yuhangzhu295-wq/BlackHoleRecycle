@@ -88,13 +88,25 @@ black hole with a matching ring, a name tag and a coloured arrow marker.
 board". The image shows a **light blue/cyan board with a white inner panel**. The image wins per
 §2.5. Recorded so the written lock is not cited as authority for cream.
 
-**5.2 The settlement row icon.** The lock's §08 says ranked rows carry a "vehicle icon", and the
-image does show cars. But the lock's own §06 — verified against the arena render — says every
-competitor is a distinctly coloured **black hole**, and that is what the product actually
-simulates. Shipping car icons would make the settlement disagree with the match the player just
-played, which is the "two answers disagree" class of defect. **Resolution: the row icon is the
-competitor's coloured black hole**, using the same colour identity as the arena ring. The vehicle
-silhouettes are used only where a vehicle is genuinely the subject.
+**5.2 The settlement row icon — corrected after checking the product.** The lock's §08 says
+ranked rows carry a "vehicle icon", and the image shows cars. An earlier revision of this document
+resolved that to "the competitor's coloured black hole", on the strength of the lock's §06. That
+resolution was **wrong**, and checking the code is what showed it:
+
+- `ArenaLeaderboardEntry` carries no colour field at all.
+- The Arena HUD colours a competitor's nameplate by **relationship**, not identity: local, threat,
+  killable, neutral (`ArenaHUDController` lines 222-225). There is no per-competitor colour
+  channel anywhere in the product.
+- The `rimColor` values in `GameConfig` belong to the player's *skins*, not to opponents.
+
+So "every competitor is a distinctly coloured black hole" describes an aspiration the product does
+not implement. Adding identity icons to the settlement would therefore **introduce a feature that
+does not exist**, which §2.1 forbids.
+
+**Resolution: the settlement rows carry no identity icon.** Rank badge, name, mass and
+eliminations are all real; an icon would be decoration standing in for data the match never had.
+The vehicle silhouettes in the reference remain usable as *iconography* elsewhere, where a vehicle
+is genuinely the subject.
 
 **5.3 Two mode-select renders.** `黑洞回收站_模式选择.png` and `黑洞回收站模式选择界面.png` are
 not identical. Per §2.3 the second is adopted: it carries the planet glyph, a cleaner title
