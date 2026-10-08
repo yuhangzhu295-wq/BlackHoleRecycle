@@ -59,9 +59,17 @@ const PASSING = ['home', 'mode', 'ready', 'machine', 'skin', 'pause', 'settlemen
  */
 const KNOWN_UNFIXED = [];
 
-/** 375x667 is the authored reference; 412x915 is the tightest real aspect. */
+/**
+ * The three sizes §37 signs off on, plus the tightest real aspect.
+ *
+ * 375x667 is the authored reference, so it also catches an adaptation that fixed
+ * a narrow device by breaking the reference; 390x844 is the most common iPhone
+ * shape and the size the acceptance captures use; 412x915 is the tightest
+ * horizontal case of any real device (20:9).
+ */
 const GATE_SIZES = [
   { width: 375, height: 667, label: 'reference-16:9' },
+  { width: 390, height: 844, label: 'iphone-14' },
   { width: 412, height: 915, label: 'tightest-20:9' },
 ];
 
