@@ -4,18 +4,25 @@
  *
  * Why this exists: the portrait contract asks `view.setDesignResolutionSize`
  * for FIXED_WIDTH, and `view.getVisibleSize()` duly reports 720 x 1558 at
- * 390x844. The UI is not laid out in that space. Its camera is scaled to the
- * design HEIGHT (1280 -> 844 px), so the horizontal design space that actually
- * reaches the screen is 1280/aspect wide -- about 592 units at 390x844, not
- * 720. A layout table authored against 720 therefore looks correct in code and
- * sits off the edge on a real phone. The project already recorded one instance
- * of this (RT-08 HUD pill clip, "usable design x-range of ~[-296, +296]").
+ * 390x844. The UI is not laid out in that space. `UICamera` is orthographic
+ * with `orthoHeight = 640` (= designHeight / 2), so the UI scales to the design
+ * HEIGHT and only `1280 / aspect` design units reach the screen -- about 592 at
+ * 390x844, not 720. A layout table authored against 720 therefore looks correct
+ * in code and sits off the edge on a real phone. The project already recorded
+ * one instance of this (RT-08 HUD pill clip, "usable design x-range of
+ * ~[-296, +296]"); Home was another and is fixed in `HomePageVisual`.
  *
- * Screenshots cannot settle it either: the Home backdrop carries its own
- * dark-outlined cubes that merge with the action cards' outlines under any
- * pixel scan. This reads the live projection instead.
+ * Screenshots cannot settle it: they carry no design->pixel scale, and page
+ * backdrops with their own dark outlines (Home's cubes) merge with UI outlines
+ * under any pixel scan. This reads the live projection instead.
  *
- * Usage: node scripts/probe_page_layout_geometry.mjs [--page=HomePage]
+ * Full-bleed backdrops legitimately overflow and are reported separately: a
+ * node as wide as the design space is meant to be cropped.
+ *
+ * Usage:
+ *   node scripts/probe_page_layout_geometry.mjs --page=home
+ *   node scripts/probe_page_layout_geometry.mjs --page=machine --size=412x915
+ *   node scripts/probe_page_layout_geometry.mjs --page=skin --sizes=all
  */
 import { chromium } from 'playwright';
 import { createServer } from 'node:http';
@@ -29,24 +36,51 @@ const buildDirectory = path.join(repoRoot, 'cocos', 'build', 'web-mobile');
 const outDir = path.join(repoRoot, 'artifacts', 'qa', 'layout');
 mkdirSync(outDir, { recursive: true });
 
-const argOf = (n, f) => {
-  const h = process.argv.find((a) => a.startsWith(`--${n}=`));
-  return h ? h.split('=')[1] : f;
+const argOf = (name, fallback) => {
+  const hit = process.argv.find((a) => a.startsWith(`--${name}=`));
+  return hit ? hit.split('=')[1] : fallback;
 };
-const PAGE = argOf('page', 'HomePage');
+
+/** Canvas child that owns each page's layout. */
+const PAGE_NODES = {
+  home: 'HomePage',
+  mode: 'ModeSelectPage',
+  ready: 'EndlessReadyPage',
+  machine: 'MachineInfoPage',
+  skin: 'SkinSelectionPage',
+  pause: 'PausePage',
+  settlement: 'SettlementPage',
+  revive: 'RevivePage',
+};
 
 /**
- * The real devices this product ships to, plus the two aspect extremes. A
- * layout that fits 375x667 and 430x932 but not 412x915 is not safe: 20:9 is
- * the most common Android shape and is the tightest horizontal case.
+ * 412x915 is the tightest horizontal case of any real device (20:9), so it is
+ * the default single size for the slow, match-driven pages. `--sizes=all`
+ * covers the full spread.
  */
-const SIZES = [
+const ALL_SIZES = [
   { width: 360, height: 780, label: 'android-small-20:9' },
   { width: 375, height: 667, label: 'iphone-se-16:9' },
   { width: 390, height: 844, label: 'iphone-14' },
   { width: 412, height: 915, label: 'pixel-20:9' },
   { width: 430, height: 932, label: 'iphone-max' },
 ];
+
+const PAGE = argOf('page', 'home');
+const PAGE_NODE = PAGE_NODES[PAGE];
+if (!PAGE_NODE) {
+  throw new Error(`unknown --page=${PAGE}; expected one of ${Object.keys(PAGE_NODES).join(', ')}`);
+}
+
+const sizeArg = argOf('size', '');
+const sizesArg = argOf('sizes', '');
+const SIZES = sizeArg
+  ? (() => {
+    const [width, height] = sizeArg.split('x').map(Number);
+    if (!(width > 0) || !(height > 0)) throw new Error(`bad --size=${sizeArg}`);
+    return [{ width, height, label: 'explicit' }];
+  })()
+  : (sizesArg === 'all' ? ALL_SIZES : [ALL_SIZES[3]]);
 
 function serve(root) {
   return new Promise((res) => {
@@ -79,27 +113,18 @@ const COLLECT = `(pageName) => {
   if (!root) return { error: 'missing page ' + pageName, children: canvas?.children.map((c) => c.name) };
 
   const frame = cc.view.getFrameSize();
-  // The Canvas' own camera is the one that renders the UI layer; fall back to
-  // a scene-wide search so a hierarchy change cannot silently disable this.
+  // The Canvas' own camera renders the UI layer; fall back to a scene-wide
+  // search so a hierarchy change cannot silently disable this.
   const allCameras = cc.director.getScene().getComponentsInChildren(cc.Camera);
   const uiCamera = (canvas.getComponent(cc.Canvas)?.cameraComponent)
     || allCameras.find((c) => c.node.name === 'UICamera')
-    || allCameras.find((c) => c.node.getComponent(cc.UITransform));
-  if (!uiCamera) {
-    return { error: 'no UICamera', cameras: allCameras.map((c) => c.node.name) };
-  }
+    || allCameras.find((c) => c.node.getComponent('cc.UITransform'));
+  if (!uiCamera) return { error: 'no UICamera', cameras: allCameras.map((c) => c.node.name) };
+
   const cameraInfo = {
     name: uiCamera.node.name,
     projection: uiCamera.projection,
     orthoHeight: uiCamera.orthoHeight,
-    visibility: uiCamera.visibility,
-    priority: uiCamera.priority,
-    viewport: {
-      x: uiCamera.camera?.viewport?.x ?? null,
-      y: uiCamera.camera?.viewport?.y ?? null,
-      w: uiCamera.camera?.viewport?.width ?? null,
-      h: uiCamera.camera?.viewport?.height ?? null,
-    },
   };
 
   // cc.UITransform is not on the runtime namespace in this build, so the
@@ -136,7 +161,6 @@ const COLLECT = `(pageName) => {
         h: +h.toFixed(1),
         left: +minX.toFixed(1),
         right: +maxX.toFixed(1),
-        // Screen y is measured from the bottom here; report top-down too.
         top: +(frame.height - maxY).toFixed(1),
         bottom: +(frame.height - minY).toFixed(1),
         overflowLeft: +Math.max(0, -minX).toFixed(1),
@@ -167,7 +191,90 @@ try {
     await page.goto(`http://127.0.0.1:${port}/?qa=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await page.waitForFunction(() => Boolean(window.__BHR_QA__?.snapshot), undefined, { timeout: 90000 });
     await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'HOME', undefined, { timeout: 60000 });
-    await sleep(1500);
+    await sleep(1200);
+
+    const cdp = await context.newCDPSession(page);
+    const canvasRect = await page.locator('#GameCanvas').evaluate((c) => {
+      const r = c.getBoundingClientRect();
+      return { left: r.left, top: r.top, width: r.width, height: r.height };
+    });
+
+    let snapshot = await page.evaluate(() => window.__BHR_QA__.snapshot());
+    const tap = async (x, y) => {
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
+      await sleep(60);
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+      await sleep(600);
+      snapshot = await page.evaluate(() => window.__BHR_QA__.snapshot());
+    };
+    const tapUi = async (key) => {
+      const node = snapshot.ui?.[key];
+      if (!node?.active || !node?.screen) {
+        throw new Error(`FAIL_PROBE_NAV_${key}: ${JSON.stringify(node)}`);
+      }
+      await tap(canvasRect.left + canvasRect.width * node.screen.x,
+        canvasRect.top + canvasRect.height * node.screen.y);
+    };
+    const waitState = (state, ms = 12000) => page.waitForFunction(
+      (want) => window.__BHR_QA__.snapshot().gameState === want, state, { timeout: ms });
+
+    // Same navigation the settled-capture runner uses; these pages cannot be
+    // reached without driving the real flow.
+    if (PAGE === 'machine' || PAGE === 'skin' || PAGE === 'mode') {
+      await tapUi(PAGE);
+    } else if (PAGE === 'ready' || PAGE === 'pause' || PAGE === 'settlement') {
+      await tapUi('start');
+      await waitState('MODE_SELECT');
+      await tapUi('modeEndless');
+      await waitState('MODE_READY');
+      if (PAGE !== 'ready') {
+        const startBtn = snapshot.ui?.endlessReady?.start;
+        if (!startBtn?.active || !startBtn?.screen) {
+          throw new Error(`FAIL_PROBE_NAV_READY_START: ${JSON.stringify(startBtn)}`);
+        }
+        await tap(canvasRect.left + canvasRect.width * startBtn.screen.x,
+          canvasRect.top + canvasRect.height * startBtn.screen.y);
+        await waitState('PLAYING');
+        await sleep(1200);
+        // The pause button lives under `runtimeHUD`, not at the top level.
+        snapshot = await page.evaluate(() => window.__BHR_QA__.snapshot());
+        const pauseButton = snapshot.ui?.runtimeHUD?.pauseButton;
+        if (!pauseButton?.active || !pauseButton?.screen) {
+          throw new Error(`FAIL_PROBE_NAV_PAUSE_BUTTON: ${JSON.stringify(pauseButton)}`);
+        }
+        await tap(canvasRect.left + canvasRect.width * pauseButton.screen.x,
+          canvasRect.top + canvasRect.height * pauseButton.screen.y);
+        if (PAGE === 'settlement') {
+          await sleep(400);
+          snapshot = await page.evaluate(() => window.__BHR_QA__.snapshot());
+          const settleBtn = snapshot.ui?.formalPages?.pauseSettle;
+          if (!settleBtn?.active || !settleBtn?.screen) {
+            throw new Error(`FAIL_PROBE_NAV_PAUSE_SETTLE: ${JSON.stringify(settleBtn)}`);
+          }
+          await tap(canvasRect.left + canvasRect.width * settleBtn.screen.x,
+            canvasRect.top + canvasRect.height * settleBtn.screen.y);
+          await sleep(900);
+        }
+      }
+    } else if (PAGE === 'revive') {
+      await tapUi('start');
+      await waitState('MODE_SELECT');
+      await tapUi('modeArena');
+      await waitState('MODE_READY');
+      const arenaStart = (snapshot.ui?.arenaReady || snapshot.ui?.endlessReady)?.start;
+      if (!arenaStart?.active || !arenaStart?.screen) {
+        throw new Error(`FAIL_PROBE_NAV_ARENA_START: ${JSON.stringify(arenaStart)}`);
+      }
+      await tap(canvasRect.left + canvasRect.width * arenaStart.screen.x,
+        canvasRect.top + canvasRect.height * arenaStart.screen.y);
+      await waitState('ARENA');
+      await page.waitForFunction(
+        () => window.__BHR_QA__.snapshot().gameState === 'REVIVING',
+        undefined,
+        { timeout: 120000 },
+      );
+    }
+    await sleep(2500);
 
     const metrics = await page.evaluate(() => {
       const cc = window.cc;
@@ -178,47 +285,55 @@ try {
         .find((camera) => camera && camera.name === 'UICamera');
       return {
         visibleSize: { w: v.getVisibleSize().width, h: v.getVisibleSize().height },
-        designResolution: { w: v.getDesignResolutionSize().width, h: v.getDesignResolutionSize().height },
         frame: { w: v.getFrameSize().width, h: v.getFrameSize().height },
         viewScale: v.getScaleX(),
         uiCameraOrthoHeight: uiCamera ? uiCamera.orthoHeight : null,
-        uiCameraProjection: uiCamera ? uiCamera.projection : null,
       };
     });
 
-    const result = await page.evaluate(eval(`(${COLLECT})`), PAGE);
+    const result = await page.evaluate(eval(`(${COLLECT})`), PAGE_NODE);
     if (result.error) throw new Error(`FAIL_PAGE_GEOMETRY: ${JSON.stringify(result)}`);
 
+    // A node as wide as the design space is a full-bleed backdrop: it is meant
+    // to be cropped, and shifting it would tear a gap along the edge.
+    const designFullBleed = 720;
+    const fullBleed = [];
+    const content = [];
+    for (const node of result.nodes) {
+      if (node.w >= designFullBleed - 1) fullBleed.push(node);
+      else content.push(node);
+    }
+
     const entry = {
+      page: PAGE,
+      pageNode: PAGE_NODE,
       viewport: `${size.width}x${size.height}`,
       label: size.label,
       aspect: +(size.height / size.width).toFixed(4),
       metrics,
-      cameraInfo: result.cameraInfo,
-      // The width of the design space that actually reaches the screen.
-      usableDesignHalfWidth: +(metrics.uiCameraOrthoHeight
-        ? metrics.uiCameraOrthoHeight * (size.width / size.height)
-        : NaN).toFixed(1),
+      // Width of the design space that actually reaches the screen.
+      usableDesignHalfWidth: +(result.cameraInfo.orthoHeight
+        * (size.width / size.height)).toFixed(1),
       nodes: result.nodes,
+      fullBleed: fullBleed.map((n) => n.name),
     };
     report.push(entry);
 
-    const clipped = result.nodes.filter((n) => n.overflowLeft || n.overflowRight || n.overflowTop || n.overflowBottom);
-    console.log(`\n=== ${entry.viewport} (${entry.label}) aspect ${entry.aspect} ===`);
-    console.log(`visibleSize ${metrics.visibleSize.w}x${metrics.visibleSize.h}`
-      + `  viewScale ${metrics.viewScale.toFixed(4)}`
-      + `  uiCamera orthoHeight ${metrics.uiCameraOrthoHeight}`
-      + `  usable design half-width ${entry.usableDesignHalfWidth}`);
-    console.log(`  ui camera: ${JSON.stringify(result.cameraInfo)}`);
-    if (!clipped.length) console.log('  no node overflows the viewport');
+    const clipped = content.filter((n) => n.overflowLeft || n.overflowRight || n.overflowTop || n.overflowBottom);
+    const tight = content.filter((n) => !clipped.includes(n) && (n.left < 8 || size.width - n.right < 8));
+    console.log(`\n=== ${PAGE} @ ${entry.viewport} (${size.label}) aspect ${entry.aspect} ===`);
+    console.log(`  UI camera orthoHeight ${result.cameraInfo.orthoHeight}`
+      + `  => usable design half-width ${entry.usableDesignHalfWidth}`
+      + `  (view.getVisibleSize() claims ${metrics.visibleSize.w} wide)`);
+    console.log(`  ${content.length} content nodes, ${fullBleed.length} full-bleed backdrop(s) ignored:`
+      + ` ${fullBleed.map((n) => n.name).join(', ') || 'none'}`);
+    if (!clipped.length && !tight.length) console.log('  every content node has >= 8 px of margin');
     for (const n of clipped) {
-      console.log(`  CLIPPED ${n.name.padEnd(18)} rect x ${n.left}..${n.right} y ${n.top}..${n.bottom}`
+      console.log(`  CLIPPED ${n.name.padEnd(22)} x ${n.left}..${n.right} y ${n.top}..${n.bottom}`
         + `  overflow L${n.overflowLeft} R${n.overflowRight} T${n.overflowTop} B${n.overflowBottom}`);
     }
-    const nearEdge = result.nodes.filter((n) => !clipped.includes(n)
-      && (n.left < 8 || size.width - n.right < 8));
-    for (const n of nearEdge) {
-      console.log(`  TIGHT   ${n.name.padEnd(18)} rect x ${n.left}..${n.right}`
+    for (const n of tight) {
+      console.log(`  TIGHT   ${n.name.padEnd(22)} x ${n.left}..${n.right}`
         + `  margins L${n.left} R${+(size.width - n.right).toFixed(1)}`);
     }
     await context.close();
@@ -228,11 +343,11 @@ try {
   server.close();
 }
 
-writeFileSync(path.join(outDir, `${PAGE.toLowerCase()}_layout_geometry.json`),
+writeFileSync(path.join(outDir, `${PAGE}_layout_geometry.json`),
   `${JSON.stringify(report, null, 2)}\n`);
 
-const total = report.flatMap((e) => e.nodes
-  .filter((n) => n.overflowLeft || n.overflowRight || n.overflowTop || n.overflowBottom)
+const totals = report.flatMap((e) => e.nodes
+  .filter((n) => n.w < 719 && (n.overflowLeft || n.overflowRight || n.overflowTop || n.overflowBottom))
   .map((n) => `${e.viewport} ${n.name} L${n.overflowLeft} R${n.overflowRight} T${n.overflowTop} B${n.overflowBottom}`));
-console.log(`\nclipped node instances across ${report.length} viewports: ${total.length}`);
-total.forEach((line) => console.log(`  ${line}`));
+console.log(`\n[${PAGE}] clipped content-node instances: ${totals.length}`);
+totals.forEach((line) => console.log(`  ${line}`));

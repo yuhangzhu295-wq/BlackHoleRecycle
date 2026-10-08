@@ -340,7 +340,32 @@ home mode ready machine skin pause settlement revive  ×  375x667 / 390x844 / 43
 
 **验证**：`npm run typecheck:cocos` ✅、`npm run test:contracts` ✅（406 项）、`npm run test:cocos` ✅、`npm run test:authoring` ✅、`npm run acceptance:v2` ✅（375/390/430 三视口全过）。`test_home_layout_contract.mjs` **未被放宽**——它锁的是"布局表 = V4 参考稿"，所以布局表回退成参考值，响应式适配放在 `fitActionRow` 里做。
 
-**未做**：其余 7 页（mode/ready/machine/skin/pause/settlement/revive）的几何探针还没跑。探针已经支持 `--page=<节点名>`，但那些页需要先导航过去，尚未接线。
+### 3.5.5 其余 7 页：同一根因，**但同一套钳制修不了**（已实测）
+
+探针已接上导航（`--page=<home|mode|ready|machine|skin|pause|settlement|revive>`，默认跑最紧的 412×915）。412×915（可用半宽 288.2）实测：
+
+| 页面 | 被裁节点 | 越界 |
+|---|---|---|
+| mode | `BtnBack` | **左 37.0 px** |
+| mode | `BtnArena` / `BtnEndless` | 左右各 12.0 px |
+| machine | `MachineCard` | 左右各 29.9 px |
+| skin | `SkinPageCard` | 左右各 29.9 px |
+| ready | `StatPanelTop` / `StatPanelBottom` | 各 1.3 px |
+| pause / settlement / revive | — | **未测**（需驱动整局比赛） |
+
+已目视确认不是"刻意的满幅面板"：412 下 `BtnBack` 被切掉一半（左上角只剩一块残片），两张模式大卡的圆角和右侧白色箭头指示器被切；`MachineCard` 的圆角被切、退化成满幅矩形，而 375 下圆角是可见的——**同一页在不同设备上结构不一致**。
+
+**我试过的最省事做法，已回滚**：给这 7 个页面的控制器各加一行 `applyHudSafeAreaInset(this.node)`（放在 `onEnable` 末尾，晚于各自的 `applyLayout`）。412×915 实测结果：
+
+- `BtnArena`/`BtnEndless` **一点没变**（仍各裁 12 px）——卡片比屏幕还宽，钳制只能平移，会走"超出安全跨度→居中"分支，位移恰好为 0；
+- `BtnBack` 只从 37 px 改善到 4.9 px；
+- **`Header` 被新引入裁切 4.9 px**（此前完全正常）——它与 `BtnBack` 矩形重叠被归为一组，一起右移后被推出右边缘。
+
+即：**没有修好任何一页，却弄坏了一页**，故整体回滚（`git checkout` 7 个控制器文件，已确认 mode 回到基线且 `Header` 恢复正常）。
+
+**正确做法**（与 Home 同构，逐页做，不要无脑套）：每页需要"先按可用设计宽等比缩放过宽面板 → 再钳制"两步，缩放规则由该页自己的设计意图决定。过宽面板的缩放会改变页面纵向构图，属于**设计决策**，不是可以批量机械套用的改动。
+
+**未做**：这 7 页的修复，以及 pause/settlement/revive 的几何测量。
 
 ---
 
@@ -352,7 +377,8 @@ home mode ready machine skin pause settlement revive  ×  375x667 / 390x844 / 43
 | GAME_FEEDBACK_PASS | ✅ | 六类反馈全部实现且都在真实游玩中被观测到 |
 | 375 / 390 / 430 PASS | ⚠️ **部分** | 24 张已采集；Home 另有 360/412 两档；人工复核做了最密的两页 |
 | HOME_PASS（几何） | ✅ | 五档视口实测：顶栏内缩 16 px、外圈卡余量 ≥24 px、375 参考构图零变化（§3.5） |
-| MODE / READY / PAUSE / REVIVE / SETTLEMENT / MACHINE / SKIN_PASS | ⚠️ **已审查未签字** | 八页已按 §28 七问逐页审查（`V9_PAGE_VISUAL_AUDIT.md`），结论是可接受；这 7 页的几何探针尚未接线（§3.5.4） |
+| MODE / READY / MACHINE / SKIN_PASS | ❌ **未通过** | 412×915 实测有被裁节点：`BtnBack` 左 37 px、两张模式大卡各 12 px、`MachineCard`/`SkinPageCard` 各 29.9 px、ready 状态面板各 1.3 px（§3.5.5） |
+| PAUSE / REVIVE / SETTLEMENT_PASS | ⚠️ **未测** | 需驱动整局比赛才能到达；`V9_PAGE_VISUAL_AUDIT.md` 有 375 下的审查，无 412 几何数据 |
 | ENDLESS_GAMEPLAY_VISUAL_PASS | ⚠️ **未正式跑** | 有 V8.1 的帧序列与 §28 审查，无专门门禁 |
 | ARENA_GAMEPLAY_VISUAL_PASS | ⚠️ **未正式跑** | 有 V8.2 的 HUD 像素确认与 §28 审查 |
 | consoleErrors = 0 | ✅ | 每次验收 0 |
@@ -374,3 +400,4 @@ home mode ready machine skin pause settlement revive  ×  375x667 / 390x844 / 43
 6. **截图取证之前先确认判据成立**。本阶段第 8、9 个假结论都出在这一步：合成截图没有设计→像素的比例基准，底图自带描边的图形又会污染任何描边/颜色检测。凡是"间距、对齐、越界、裁切"这类问题，**量运行时几何**（`probe_page_layout_geometry.mjs`），不要量截图。
 7. **`view.getVisibleSize()` 对 UI 布局是假前提**。它返回 720（FIXED_WIDTH 的设计分辨率），而 UI 实际由 `orthoHeight=640` 的相机渲染，横向只显示 `1280/宽高比`。按 720 推边距，一定得出"有余量"的错误结论。
 8. **布局表与响应式适配要分开**。`test_home_layout_contract.mjs` 锁的是"布局表 = 参考稿"；改布局表去适配窄屏，等于改参考设计。参考值保留，适配放进运行时步骤（`fitActionRow`）。
+9. **"同一个根因"不等于"同一套修法"**。7 个页面与 Home 同根因，但把 Home 用过的钳制批量套上去，一页没修好、还新弄坏一页（§3.5.5）。凡是"顺手批量套"的改动，**必须逐对象量前后**（本阶段探针已支持 `--page=`），没改善就整体回滚，不要留着"至少部分改善"的改动。
