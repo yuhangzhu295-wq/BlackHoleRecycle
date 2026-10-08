@@ -18,6 +18,7 @@
     "acceptance:p0b": "node scripts/test_cocos_p0b_runtime.mjs",
     "acceptance:v2": "node scripts/test_cocos_portrait_acceptance.mjs",
     "verify:layout": "node scripts/verify_page_layout_geometry.mjs",
+    "verify:machine-archive": "node scripts/verify_machine_archive_progress.mjs",
     "probe:layout": "node scripts/probe_page_layout_geometry.mjs",
     "test:perf": "node scripts/test_s11_performance_benchmark.mjs",
     "audit:object-art": "node scripts/validate-object-art-coverage.mjs",

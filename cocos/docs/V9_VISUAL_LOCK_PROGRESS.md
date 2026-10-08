@@ -124,6 +124,20 @@
 
 **真正缺的组件**：可编辑 ModeCard（旧模式卡**带烘焙文案**，不能当可编辑控件用）、BrandHeader、规范化的 CurrencyPill / LevelPill、按钮的 Button+Label 状态封装、ProgressBar（Machine 当前只有文字 `ProgressValue`）、HUDStat / LeaderboardRow 的独立视觉单元。
 
+#### 已交付：7 个新 Kit prefab（`npm run verify:machine-archive` 有运行时证据）
+
+`UIModeCard`(5 节点，含**可编辑** Title/Subtitle/BadgeLabel 三个真 Label) / `UIBrandHeader` / `UICurrencyPill` / `UILevelPill` / `UIProgressBar`(Track+Fill 双 Sprite) / `UIHudStat` / `UILeaderboardRow`。全部位于 `game_art/ui/prefabs/`，由 `scripts/generate_ui_kit_prefabs.mjs` **生成而非手写**——`.prefab` 是对象图，`__id__` 引用与"每节点一个 `cc.UITransform` + 一个 `cc.PrefabInfo`"的计数必须严丝合缝，而 Cocos 对不上时只报静默导入失败。生成器同时是纹理 uuid 变化的唯一同步点。
+
+已注册进 `UIAssetLibrary.UI_PREFAB_PATHS`（7 个新 key），并扩展 `test_ui_prefab_library_contract.mjs` 锁住各 Kit 的槽位名与关键形状（ModeCard 必须有 3 个 Label，否则又变成"烘焙文案"那个坑；ProgressBar 的 Fill 颜色必须与 Track 不同，否则显示不出进度）。契约现报 **12 个真 prefab、9 张纹理、21 条声明路径**。
+
+**不生成"按钮的 Button+Label 状态封装"**：`UIButton` 已存在且已被 Ready 页消费，再加一层封装只会产生第二个真源。
+
+#### 顺带修掉一个真实缺陷：机器档案页永远显示 0 kg
+
+接线 ProgressBar 时发现：`MachineInfoPageController` 只从**实时场景**的 `BlackHoleMachine` 取质量，而该页从 Home 进入——那里根本没有机器实例。于是"当前质量"和"下一等级"永久显示 0 kg / 0，**而同一页的等级行读的是存档**，页面自相矛盾。存档里本来就有 `machineMass`（`setMachineProgression` 在每次 `addMass` 时写入），所以改为：场景里有机器就用它，否则回落到存档。
+
+这条有真实游玩证据（`scripts/verify_machine_archive_progress.mjs`）：跑 30s 真实 Endless 写入 `machineMass=3945`，随后页面显示 `3,945 kg`，进度条填充 131.5/500 = 26.3% = 3945/15000，与文字完全一致。该门禁**先断言"这一局真的写入了非零质量"**，否则整段检查是空洞的——第一版用固定绕圈驱动（摇杆偏移 33px，低于标定的 ~88px），玩家几乎没动、质量始终为 0，门禁如实报了 FAIL 而不是放过。
+
 ### 3.1.1 关键结构事实：**极性是逐页的**，不是按"HUD vs 页面"分组
 
 **本节原先写的是"两种背景极性：深色面板 vs 浅底卡片"，那个概括是错的**，已按稳定截图更正。
@@ -428,6 +442,8 @@ mode 的 `BtnBack` **必须单节点钳制**，不能走 `applyHudSafeAreaInset`
 | MACHINE / SKIN / SETTLEMENT_PASS（几何） | ✅ | 412×915 无裁切；卡片 531.6、内部面板 507.6（§3.5.6） |
 | READY_PASS（几何） | ✅ | 412×915 无裁切；`BtnBack` 24 px、状态面板 16 px 边距（§3.5.6） |
 | 逐页几何门禁 | ✅ | `npm run verify:layout`：8 页 × 2 档全部通过（§3.5.7） |
+| UI Kit 组件化（§17/§22） | ✅ | 7 个新 prefab 生成 + 注册 + 契约锁定；`UIProgressBar` 已在机器档案页真实运行（§3.1） |
+| 机器档案数据源 | ✅ | 页面改为读存档，`npm run verify:machine-archive` 以真实游玩写入的 3945 kg 验证（§3.1） |
 | ENDLESS_GAMEPLAY_VISUAL_PASS | ⚠️ **未正式跑** | 有 V8.1 的帧序列与 §28 审查，无专门门禁 |
 | ARENA_GAMEPLAY_VISUAL_PASS | ⚠️ **未正式跑** | 有 V8.2 的 HUD 像素确认与 §28 审查 |
 | consoleErrors = 0 | ✅ | 每次验收 0 |

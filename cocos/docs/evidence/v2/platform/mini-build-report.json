@@ -3,12 +3,12 @@
   "creatorExe": "C:\\ProgramData\\cocos\\editors\\Creator\\3.8.3\\CocosCreator.exe",
   "requestedPlatform": "web-mobile",
   "requireReleaseIds": false,
-  "startedAt": "2026-10-08T03:49:14.655Z",
+  "startedAt": "2026-10-08T05:48:02.111Z",
   "builds": [
     {
       "platform": "web-mobile",
       "outputDirectory": "C:\\Users\\zyu33\\Documents\\Codex\\2026-09-29\\BlackHoleRecycle\\cocos\\build\\web-mobile",
-      "fileCount": 262,
+      "fileCount": 269,
       "requiredFiles": [
         "index.html",
         "application.js",
@@ -28,5 +28,5 @@
     }
   ],
   "failures": [],
-  "finishedAt": "2026-10-08T03:50:09.120Z"
+  "finishedAt": "2026-10-08T05:48:59.499Z"
 }

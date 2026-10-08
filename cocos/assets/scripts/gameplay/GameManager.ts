@@ -1004,6 +1004,9 @@ export class GameManager extends Component {
         coins: saveService.data.coins,
         claimedArenaSettlementIds: [...saveService.data.claimedArenaSettlementIds],
         machineLevel: saveService.data.machineLevel,
+        // Read-only: Machine Info renders this as the player's mass, so a check
+        // that the page agrees with the save needs to see it.
+        machineMass: saveService.data.machineMass,
         bestMass: saveService.data.highScore,
         skinId: saveService.data.currentSkinId,
         unlockedSkinIds: [...saveService.data.unlockedSkins],
