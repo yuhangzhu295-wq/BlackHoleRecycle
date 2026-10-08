@@ -21,6 +21,7 @@
     "verify:machine-archive": "node scripts/verify_machine_archive_progress.mjs",
     "verify:ui-kit": "node scripts/verify_ui_kit_library.mjs",
     "verify:gameplay-visuals": "node scripts/verify_gameplay_visuals.mjs",
+    "verify:page-tokens": "node scripts/verify_page_text_tokens.mjs",
     "probe:layout": "node scripts/probe_page_layout_geometry.mjs",
     "test:perf": "node scripts/test_s11_performance_benchmark.mjs",
     "audit:object-art": "node scripts/validate-object-art-coverage.mjs",

@@ -5,6 +5,7 @@
  * 在运行时创建 Node、Graphics、Label 或 Button，也不会退回到旧 HUD 作为替代品。
  */
 import { _decorator, Camera, Component, director, Node, Vec3 } from 'cc';
+import { applyPageTextTokens } from './UIStyleTokens';
 import { CompressibleObject } from '../gameplay/CompressibleObject';
 import { EndlessHUDController } from './EndlessHUDController';
 import { SettlementPageController } from './SettlementPageController';
@@ -42,6 +43,12 @@ export class HUDView extends Component {
     pause.active = name === 'Pause';
     settlement.active = name === 'Settlement';
     this.currentScreenName = name;
+
+    // Same token pass as the pages: the Arena HUD ships three near-duplicate
+    // white/outline variants of its own. Applied after the active flags so the
+    // labels are visible and therefore visited.
+    const shown = { Gameplay: endless, Arena: arena, Revive: revive, Pause: pause, Settlement: settlement }[name];
+    applyPageTextTokens(shown);
   }
 
   public hideAllScreens(): void {

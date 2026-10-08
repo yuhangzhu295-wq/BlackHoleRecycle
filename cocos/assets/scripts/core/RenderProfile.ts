@@ -398,6 +398,35 @@ export const PAGE_SEMANTIC = {
   textOutline: '#3a2a52',
 } as const;
 
+/**
+ * Measured drift in the light pages' label colours, mapped onto the tokens that
+ * should have owned them.
+ *
+ * `Game.scene` serialises 51 distinct Label colours, of which only 6 match a
+ * token. Eleven of the rest are near-duplicates of a token -- imperceptible
+ * shifts (total RGB distance <= 27 out of 765) of the same semantic role, e.g.
+ * `#4e3a68` / `#463562` / `#4a3863` / `#4d366d` are all the body purple. They are
+ * listed here so the consolidation is an explicit, reviewable act rather than a
+ * silent re-tint, and `applyPageTextTokens` applies it at runtime.
+ *
+ * Colours deliberately absent from this map are the ones that are genuinely
+ * distinct -- the danger reds, the golds, the blues. Their nearest token is 33+
+ * away, so folding them in would be a redesign, not a consolidation.
+ */
+export const PAGE_TEXT_DRIFT: Readonly<Record<string, keyof typeof PAGE_SEMANTIC>> = {
+  '#463562': 'bodyText',        // SkinName_*
+  '#4a3863': 'bodyText',        // ModeSelect / Ready Subtitle
+  '#493763': 'bodyText',        // Ready Subtitle
+  '#4d366d': 'bodyText',        // ArenaResult
+  '#533f6c': 'bodyText',        // ArenaStatMassCaption
+  '#533a7e': 'bodyText',        // PreviewNameValue
+  '#443865': 'bodyText',        // Arena TimerValue
+  '#382a52': 'textOutline',     // ArenaRankName_*
+  '#f4f9ff': 'onButtonText',    // ArenaHUD Top1..5
+  '#ebf8ff': 'onButtonText',    // ArenaHUD MassValue
+  '#f5f9ff': 'onButtonText',    // ArenaHUD StatusValue
+};
+
 /** The machine's own core-mesh palette, shared by BlackHoleMachine and MeshFactory. */
 export const MACHINE_PALETTE = {
   abyssBase: '#281660',

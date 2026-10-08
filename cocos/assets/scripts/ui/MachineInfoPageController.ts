@@ -6,6 +6,7 @@
  * action here: levels are earned through the real absorption loop.
  */
 import { _decorator, Button, Component, director, instantiate, Label, Node, Sprite, UITransform } from 'cc';
+import { applyPageTextTokens } from './UIStyleTokens';
 import {
   INNER_PANEL_INSET_DESIGN_PX,
   fitSlicedPanelToSafeSpan,
@@ -39,6 +40,10 @@ export class MachineInfoPageController extends Component {
     this.bind('BtnBack', () => eventBus.emit('MACHINE_INFO_BACK_REQUESTED'));
     this.mountProgressBar();
     this.fitToVisibleDesignSpace();
+    // V9 §20/§22: this page serialises its own text colours, and several are
+    // imperceptible variants of a token. Folding them here makes the token file
+    // the source of the colour actually drawn. See PAGE_TEXT_DRIFT.
+    applyPageTextTokens(this.node);
   }
 
   onDisable(): void {

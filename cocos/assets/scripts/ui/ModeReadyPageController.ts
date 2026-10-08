@@ -18,6 +18,7 @@
  * 全部资源缺失时自动退回本页原来的样子，不影响开局流程。
  */
 import { _decorator, Button, Component, Enum, instantiate, Label, Node, Sprite, SpriteFrame, UITransform } from 'cc';
+import { applyPageTextTokens } from './UIStyleTokens';
 import {
   clampNodeIntoSafeSpan,
   fitSlicedPanelToSafeSpan,
@@ -91,6 +92,10 @@ export class ModeReadyPageController extends Component {
     this.bind('BtnBack', () => eventBus.emit('READY_BACK_REQUESTED'));
     this.bind('BtnStart', () => eventBus.emit('READY_START_REQUESTED'));
     this.fitToVisibleDesignSpace();
+    // V9 §20/§22: this page serialises its own text colours, and several are
+    // imperceptible variants of a token. Folding them here makes the token file
+    // the source of the colour actually drawn. See PAGE_TEXT_DRIFT.
+    applyPageTextTokens(this.node);
   }
 
   onDisable(): void {

@@ -4,6 +4,7 @@
  * 本组件只读取真实存档数据、绑定事件并驱动已存在的组件。
  */
 import { _decorator, Button, Color, Component, director, Label, Node, Sprite } from 'cc';
+import { applyPageTextTokens } from './UIStyleTokens';
 import { eventBus } from '../core/EventBus';
 import { MACHINE_EVOLUTION_CONFIG, SKINS_CONFIG } from '../data/GameConfig';
 import { saveService } from '../data/SaveService';
@@ -21,6 +22,10 @@ export class HomePageController extends Component {
     this.hideUnavailableActions();
     this.bindButtons();
     this.removeSkinChangedListener = eventBus.on('HOME_SKIN_CHANGED', this.refreshProfile, this);
+    // V9 §20/§22: this page serialises its own text colours, and several are
+    // imperceptible variants of a token. Folding them here makes the token file
+    // the source of the colour actually drawn. See PAGE_TEXT_DRIFT.
+    applyPageTextTokens(this.node);
   }
 
   onDisable(): void {

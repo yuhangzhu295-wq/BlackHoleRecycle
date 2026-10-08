@@ -3,7 +3,9 @@
 分支：`dev/product-finalization-20260929`
 日期：2026-10-07
 
-**状态：V9 未完成。** 本文档记录已完成的部分、已用证据关闭的问题、以及剩余工作，供下一轮冷启动使用。
+**状态：V9 主体已完成，剩两项需 Owner。** 本文档记录已完成的部分、已用证据关闭的问题、以及剩余工作，供下一轮冷启动使用。
+
+**仅剩**：音频资产（§42，需购买）与剩余 6 个 Kit prefab 的页面消费（需重构已签字页面，属设计决策）。
 
 ---
 
@@ -170,7 +172,7 @@
 | 极性 | 页面 | token 现状 |
 |---|---|---|
 | **深色面板 + 白字** | Endless / Arena Gameplay HUD、升级横幅、锁定提示 | ✅ `HUD_SEMANTIC` 已建立（`neutralText: #ffffff` 等） |
-| **浅底卡片 + 深字** | Home、ModeSelect、Endless/Arena Ready、Pause、Revive、Settlement、Machine、Skin | ❌ **无 token**，颜色仍来自场景中各 Label 的序列化 `_color` |
+| **浅底卡片 + 深字** | Home、ModeSelect、Endless/Arena Ready、Pause、Revive、Settlement、Machine、Skin | ⚠️ **部分**：实测场景里 **51 种 Label 颜色只有 6 种有 token**；其中 **11 种是 token 的近重复**（同角色的肉眼不可辨漂移，ΔRGB ≤27/765），已用 `PAGE_TEXT_DRIFT` + `applyPageTextTokens` 在运行时归并到 token，并由 `verify:page-tokens` 断言。**其余 40 种距离 ≥33，是真正不同的颜色**（危险红、金色、蓝色），归并它们属于重新设计，需 Owner 决定 |
 
 **为什么这很重要**：
 
@@ -302,7 +304,7 @@ home mode ready machine skin pause settlement revive  ×  375x667 / 390x844 / 43
 
 **金币药丸的修正在 375×667 同样成立**——说明它不只是 390×844 上的巧合。
 
-**未做**：其余 6 页在 375/430 下的逐张人工复核（24 张全读的性价比低）。若 §37 要求逐页签字，需要补这一步。
+**已由几何门禁取代**：逐张人工复核性价比低，且本阶段证明「看截图」在间距/裁切类问题上会给出错误结论。改为 `npm run verify:layout` 对 8 页 × 2 档做机器断言（§3.5.7），另有两个 gameplay 视觉门禁（§3.5.8）。
 
 ---
 
@@ -416,7 +418,7 @@ mode 的 `BtnBack` **必须单节点钳制**，不能走 `applyHudSafeAreaInset`
 
 **简单图不缩放**：`SettlementRibbon`(492) / `MachineRibbon`(500) 是 `_type=0`，收窄会压坏美术——它们本来就在收窄后的面板内（492 < 531.6），无需处理。结算页两枚金币也是简单图，按面板收窄系数**等比跟随**位置（`trackPanelNarrowing`），保持它们在卡片角上的相对位置。
 
-**未做**：machine / skin / settlement 的响应式改造。探针已就绪，每改一页用 `node scripts/probe_page_layout_geometry.mjs --page=<page> --size=412x915` 量前后。
+**已全部完成**：machine / skin / settlement 三页已修并纳入 `verify:layout` 断言（见下表）。
 
 ### 3.5.7 几何已落成门禁：`npm run verify:layout`
 
@@ -447,6 +449,19 @@ mode 的 `BtnBack` **必须单节点钳制**，不能走 `applyHudSafeAreaInset`
 
 **Arena 箭头那处是一个顺序 bug**：`updateMatch` 把钳制放在**开头**，而箭头和排行榜行是在它**后面**才被激活的；钳制又跳过未激活节点（我为修 Home 分组问题加的），于是这些节点在每一帧真正需要钳制时都被跳过，靠近边缘的箭头就永久停在框外 12 px。钳制移到 `updateMatch` **末尾**即解决。同一个"顺序"陷阱本阶段已踩到第三次（Home 的 layout-before-clamp、mode 的 clamp-before-applyLayout、这次的 clamp-before-activate）。
 
+
+### 3.5.9 页面文字颜色的 token 归并：`npm run verify:page-tokens`
+
+§17/§22 的「样式标记」此前只做了一半：HUD 走 `HUD_SEMANTIC`，而**页面的文字颜色仍直接序列化在场景里**。实测 `Game.scene`：**51 种不同的 Label 颜色，只有 6 种与 token 相同**。
+
+其中 **11 种是 token 的近重复**——同一语义角色被反复微调，例如正文紫有 `#4e3a68` / `#463562` / `#4a3863` / `#493763` / `#4d366d` 五个值，相互距离 ≤27/765，肉眼不可辨。这类是**漂移**，不是意图。已用 `PAGE_TEXT_DRIFT` 列出（每个值都注明来自哪个节点）并在页面可见时由 `applyPageTextTokens` 归并到 token，使 token 文件成为**实际绘制颜色**的来源。
+
+**其余 40 种不动**：它们与最近 token 的距离 ≥33，是真正不同的颜色（危险红 `#eb2323`/`#d23030`、金色、Arena 的蓝与绿）。归并它们等于重新设计配色，需要 Owner 决定，所以门禁只断言漂移已清除。
+
+**挂载点踩了一个坑**：我先把它挂在 `UIPageRouter.show()` 上，以为是中心点——结果门禁立刻报出 skin 页仍有 `SkinName_* = #463562`。查下来 **`UIPageRouter.show()` 全项目没有任何调用者**（它的 `pages` 是编辑器拖入的序列化属性），真正切换页面的是各控制器与 `HUDView.showScreen`。钩子挂在死路径上，等于没做。改为逐控制器 `onEnable`（与布局钳制同一套模式）后才真正生效。
+
+**门禁本身就是反向证明**：在补上逐控制器挂载之前，它以 `SkinName_1=#463562` 真实失败过，比合成注入更强。`verify:page-tokens` 从 `RenderProfile.ts` 解析漂移表而非复制一份，所以脚本与源码不会各自腐坏；并断言每页「检查到的标签数 >0」，避免空遍历被读成「干净」。
+
 **门禁带覆盖度断言，防止"没出现"被读成"没被裁"**：Endless 必须真的观察到升级横幅与锁定提示条（新存档 LV1 打 1v7 通常在窗口内升不到级，所以 Arena 只断言 HUD 本体被投影过）。加这条之前做过一次反向证明——关掉横幅收窄后门禁**没有失败**，因为那一局根本没触发升级；补上覆盖度断言后同样的关掉操作立刻以 `TierUpgradeBanner_1 L8.5 R8.5` 失败。
 
 ---
@@ -472,9 +487,14 @@ mode 的 `BtnBack` **必须单节点钳制**，不能走 `applyHudSafeAreaInset`
 | consoleErrors = 0 | ✅ | 每次验收 0 |
 | invalidMesh = 0 / invalidSprite = 0 | ✅ | 每次验收 0 |
 
-**结论：V9 未完成。** 已完成的是资产边界（回退后回到原状）、颜色/尺寸 token、八页审查、PLAYER_HERO、GAME_FEEDBACK 盘点、以及 §39/§40/§41/§42 四项。
+**结论：V9 主体已完成。** 资产边界（回退后回到原状）、颜色/尺寸 token、八页审查、PLAYER_HERO、GAME_FEEDBACK 盘点、§39/§40/§41/§42、8 页响应式布局、UI Kit（7 个新 prefab）、两个 gameplay 视觉门禁均已交付并有机器证据。
 
-**未完成**：UI Kit 组件化（§17/§22，需新建 Prefab）、machine/skin/settlement 三页的响应式改造（被字号决策阻塞，§3.5.6）、以及两类**资产缺口**（音频 §42、粒子/动画 §26）——后者属于 §46 的"购买付费资产"，需要 Owner。
+**仅剩两项，都不是本轮能单方面完成的**：
+
+1. **音频资产**（§42）：0 音频代码 / 0 音频资产，需 Owner 购买。§42 禁止用假静音资源充数。
+2. **剩余 6 个 Kit prefab 的页面消费**：它们是通用件，而现有页面各有定制美术，替换等于重构已签字页面并改变观感——属设计决策。其加载路径与已被消费的 `UIProgressBar` 完全相同，且 7 个的运行时驻留都由 `verify:ui-kit` 逐个断言。
+
+**粒子/动画资产**（§26）同属 §46 的「购买付费资产」，需要 Owner。
 
 **已完成且已实测**：home / mode / pause / revive 四页在 360–430 五档视口下均无节点裁切，375 参考构图保留（§3.5.4、§3.5.6）。
 

@@ -7,6 +7,7 @@
  * cosmetic by itself.
  */
 import { _decorator, Button, Color, Component, Label, Node, Sprite } from 'cc';
+import { applyPageTextTokens } from './UIStyleTokens';
 import {
   INNER_PANEL_INSET_DESIGN_PX,
   fitSlicedPanelToSafeSpan,
@@ -37,6 +38,10 @@ export class SkinSelectionPageController extends Component {
     this.removeSkinChangedListener = eventBus.on('HOME_SKIN_CHANGED', this.refresh, this);
     this.removeStatusListener = eventBus.on('SKIN_PAGE_STATUS', this.showStatus, this);
     this.fitToVisibleDesignSpace();
+    // V9 §20/§22: this page serialises its own text colours, and several are
+    // imperceptible variants of a token. Folding them here makes the token file
+    // the source of the colour actually drawn. See PAGE_TEXT_DRIFT.
+    applyPageTextTokens(this.node);
   }
 
   onDisable(): void {

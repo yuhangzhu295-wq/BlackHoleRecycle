@@ -8,6 +8,7 @@
  * or time-limited-leaderboard entries are rendered or accessible from this page.
  */
 import { _decorator, Button, Component, Label, Node, UITransform } from 'cc';
+import { applyPageTextTokens } from './UIStyleTokens';
 import { eventBus } from '../core/EventBus';
 import { saveService } from '../data/SaveService';
 import { clampNodeIntoSafeSpan, fitNodeIntoSafeSpan, pageSafeHalfWidth } from './PageSafeArea';
@@ -45,6 +46,10 @@ export class ModeSelectPageController extends Component {
     this.bind('BtnBack', () => eventBus.emit('MODE_BACK_REQUESTED'));
     this.bind('BtnArena', () => eventBus.emit('MODE_ARENA_REQUESTED'));
     this.bind('BtnEndless', () => eventBus.emit('MODE_ENDLESS_REQUESTED'));
+    // V9 §20/§22: this page serialises its own text colours, and several are
+    // imperceptible variants of a token. Folding them here makes the token file
+    // the source of the colour actually drawn. See PAGE_TEXT_DRIFT.
+    applyPageTextTokens(this.node);
   }
 
   onDisable(): void {
