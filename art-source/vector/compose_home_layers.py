@@ -79,7 +79,10 @@ def compose_cards():
     by the node's content size.
     """
     width, height = 320, 224
-    art_h = 176                      # framed vignette occupies the top
+    # The caption sits 32 design units below the card's centre, which is 79% of a
+    # 112-tall card. The framed vignette therefore has to end by ~70% or the two
+    # overlap -- which is what the previous 176px frame did.
+    art_h = 138                      # framed vignette occupies the top
     frame = art('frame_card.png')
 
     for entry in ('mode', 'machine', 'skin'):
@@ -94,7 +97,7 @@ def compose_cards():
         if vignette.width > inner_w:
             left = (vignette.width - inner_w) // 2
             vignette = vignette.crop((left, 0, left + inner_w, art_h))
-        card.alpha_composite(vignette, ((width - vignette.width) // 2, 6))
+        card.alpha_composite(vignette, ((width - vignette.width) // 2, 4))
 
         framed = frame.resize((width, art_h), Image.LANCZOS)
         card.alpha_composite(framed, (0, 0))
