@@ -27,6 +27,7 @@ import { eventBus } from '../core/EventBus';
 import { BlackHoleMachine } from '../machine/BlackHoleMachine';
 import { UIAssetLibrary } from './UIAssetLibrary';
 import { colorFromToken, HUD_SEMANTIC } from './UIStyleTokens';
+import { pagePanelHalfWidth } from './PageSafeArea';
 
 const BANNER_DURATION_SECONDS = 2.0;
 /** Keep the text fully legible for most of its short life, then fade. */
@@ -38,6 +39,11 @@ const BANNER_POP_IN_SECONDS = 0.18;
  * top HUD row (coins / level / region / pause) into one unreadable band, so the
  * banner now sits clear below it: at 180 its 3-line text block spans roughly
  * 0.33-0.43 of the visible height, leaving the HUD band untouched.
+ */
+/**
+ * Authored banner width. On a 20:9 phone the UI camera shows only ~576 design
+ * px, so this is narrowed at runtime by `bannerWidth()`; the panel is a sliced
+ * `UIPopup`, so narrowing is lossless.
  */
 const BANNER_WIDTH = 600;
 const BANNER_HEIGHT = 200;
@@ -81,6 +87,8 @@ export class TierUpgradePresenter {
   private lastLevel = 0;
   private lastTitle = '';
   private lastText = '';
+  /** Narrowed banner width for this device; see BANNER_WIDTH. */
+  private bannerWidth = BANNER_WIDTH;
   private usesAuthoredPanel = false;
   private fallbackReason: string | null = null;
 
@@ -119,6 +127,9 @@ export class TierUpgradePresenter {
 
     this.clear();
 
+    // The authored 600 design px is wider than a 20:9 frame shows.
+    this.bannerWidth = Math.min(BANNER_WIDTH, pagePanelHalfWidth(this.host) * 2);
+
     const container = new Node(`TierUpgradeBanner_${this.emittedCount + 1}`);
     // A code-created Node starts on Layers.Enum.DEFAULT, which the UI camera
     // never draws. Copying the host layer is what makes the banner visible in a
@@ -127,7 +138,7 @@ export class TierUpgradePresenter {
     container.layer = this.host.layer;
     this.host.addChild(container);
     const containerTransform = container.addComponent(UITransform);
-    containerTransform.setContentSize(BANNER_WIDTH, BANNER_HEIGHT);
+    containerTransform.setContentSize(this.bannerWidth, BANNER_HEIGHT);
     container.setPosition(0, BANNER_Y, 0);
 
     // Panel first so it renders behind the glyphs (sibling order owns draw order).
@@ -136,7 +147,7 @@ export class TierUpgradePresenter {
     const textNode = instantiate(template);
     container.addChild(textNode);
     const textTransform = textNode.getComponent(UITransform);
-    if (textTransform) textTransform.setContentSize(BANNER_WIDTH, BANNER_HEIGHT);
+    if (textTransform) textTransform.setContentSize(this.bannerWidth, BANNER_HEIGHT);
     textNode.setPosition(0, panelNode ? DETAIL_Y : 0, 0);
     const label = textNode.getComponent(Label);
     if (!label) {
@@ -187,7 +198,7 @@ export class TierUpgradePresenter {
       panelNode.layer = this.host.layer;
       container.addChild(panelNode);
       panelNode.setPosition(0, 0, 0);
-      panelNode.getComponent(UITransform)?.setContentSize(BANNER_WIDTH, BANNER_HEIGHT);
+      panelNode.getComponent(UITransform)?.setContentSize(this.bannerWidth, BANNER_HEIGHT);
       const titleLabel = panelNode.getChildByName('Title')?.getComponent(Label);
       if (titleLabel) titleLabel.string = '升级！';
       this.usesAuthoredPanel = true;
@@ -204,14 +215,14 @@ export class TierUpgradePresenter {
     panelNode.layer = this.host.layer;
     container.addChild(panelNode);
     const panelTransform = panelNode.addComponent(UITransform);
-    panelTransform.setContentSize(BANNER_WIDTH, BANNER_HEIGHT);
+    panelTransform.setContentSize(this.bannerWidth, BANNER_HEIGHT);
     const panel = panelNode.addComponent(Graphics);
     panel.fillColor = new Color(PANEL_FILL.r, PANEL_FILL.g, PANEL_FILL.b, PANEL_FILL.a);
-    panel.roundRect(-BANNER_WIDTH * 0.5, -BANNER_HEIGHT * 0.5, BANNER_WIDTH, BANNER_HEIGHT, 20);
+    panel.roundRect(-this.bannerWidth * 0.5, -BANNER_HEIGHT * 0.5, this.bannerWidth, BANNER_HEIGHT, 20);
     panel.fill();
     panel.lineWidth = 6;
     panel.strokeColor = new Color(PANEL_BORDER.r, PANEL_BORDER.g, PANEL_BORDER.b, PANEL_BORDER.a);
-    panel.roundRect(-BANNER_WIDTH * 0.5, -BANNER_HEIGHT * 0.5, BANNER_WIDTH, BANNER_HEIGHT, 20);
+    panel.roundRect(-this.bannerWidth * 0.5, -BANNER_HEIGHT * 0.5, this.bannerWidth, BANNER_HEIGHT, 20);
     panel.stroke();
     return null;
   }

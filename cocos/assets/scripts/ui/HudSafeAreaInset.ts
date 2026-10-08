@@ -203,6 +203,20 @@ export function hudVisibleHalfWidth(host: Node): number {
   return Math.min(designHalfWidth, visibleHalfWidth);
 }
 
+/**
+ * Half-height, in design units, of the region the UI camera shows. The camera is
+ * orthographic with `orthoHeight = designHeight / 2`, so this is constant across
+ * devices -- the width is what shrinks -- but it is read from the camera rather
+ * than assumed so a framing change cannot silently invalidate the callers that
+ * clamp against it.
+ */
+export function hudVisibleHalfHeight(host: Node): number {
+  const orthoHeight = uiCameraOf(host)?.orthoHeight;
+  if (orthoHeight !== undefined && orthoHeight > 0) return orthoHeight;
+  const design = view.getDesignResolutionSize();
+  return design.height > 0 ? design.height * 0.5 : 640;
+}
+
 /** The x-range every HUD child must stay inside, in design units. */
 export function hudSafeHalfWidth(host: Node): number {
   const scale = hudDesignToFrameScale(host) || 1;

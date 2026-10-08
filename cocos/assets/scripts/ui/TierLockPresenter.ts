@@ -18,15 +18,18 @@
 import { Camera, Color, instantiate, Label, LabelOutline, Node, UITransform, Vec3, view } from 'cc';
 import { CompressibleObject } from '../gameplay/CompressibleObject';
 import { colorFromToken, HUD_SEMANTIC } from './UIStyleTokens';
+import { hudDesignToFrameScale, hudVisibleHalfHeight, hudVisibleHalfWidth } from './HudSafeAreaInset';
 
 const CHIP_WIDTH = 210;
 const CHIP_HEIGHT = 56;
 const CHIP_FONT_SIZE = 30;
 /** Height above the body's origin, so the chip clears the model's own volume. */
 const CHIP_WORLD_OFFSET_Y = 1.7;
-/** Same viewport guard as the pickup feedback: never under a notch or off-frame. */
-const VIEWPORT_MARGIN_X = 0.06;
-const VIEWPORT_MARGIN_Y = 0.1;
+/**
+ * Screen px the chip keeps from the frame edge once it has been clamped into the
+ * safe span. The pickup feedback uses the same inset for the same reason.
+ */
+const CHIP_EDGE_INSET_SCREEN_PX = 12;
 
 export interface TierLockDiagnostics {
   readonly emittedCount: number;
@@ -81,8 +84,15 @@ export class TierLockPresenter {
     );
     const normalizedX = (screen.x - viewport.x) / viewport.width;
     const normalizedY = (screen.y - viewport.y) / viewport.height;
-    if (normalizedX < VIEWPORT_MARGIN_X || normalizedX > 1 - VIEWPORT_MARGIN_X
-      || normalizedY < VIEWPORT_MARGIN_Y || normalizedY > 1 - VIEWPORT_MARGIN_Y) {
+    // Off-frame targets have nothing to point at; near-edge ones do.
+    //
+    // This used to discard anything within a 0.06 / 0.1 margin of the edge, and
+    // that guard only tested the *anchor* point -- so a 210 px-wide chip anchored
+    // just inside the margin still hung 29 px off the frame at 412x915, and the
+    // player got no prompt at all for a body they were standing next to. §40
+    // settled the same question for the pickup feedback: clamp to the safe edge,
+    // do not drop the feedback.
+    if (normalizedX < 0 || normalizedX > 1 || normalizedY < 0 || normalizedY > 1) {
       this.hide();
       return;
     }
@@ -91,8 +101,14 @@ export class TierLockPresenter {
     const label = this.chipLabel;
     if (!chip || !label) return;
     if (label.string !== text) label.string = text;
-    const chipX = (normalizedX - 0.5) * hostTransform.width;
-    const chipY = (normalizedY - 0.5) * hostTransform.height;
+    const frameScale = hudDesignToFrameScale(this.host) || 1;
+    const inset = CHIP_EDGE_INSET_SCREEN_PX / frameScale;
+    const limitX = Math.max(0, hudVisibleHalfWidth(this.host) - inset - CHIP_WIDTH / 2);
+    const limitY = Math.max(0, hudVisibleHalfHeight(this.host) - inset - CHIP_HEIGHT / 2);
+    const rawX = (normalizedX - 0.5) * hostTransform.width;
+    const rawY = (normalizedY - 0.5) * hostTransform.height;
+    const chipX = Math.min(limitX, Math.max(-limitX, rawX));
+    const chipY = Math.min(limitY, Math.max(-limitY, rawY));
     chip.setPosition(chipX, chipY, 0);
     chip.active = true;
     this.lastText = text;

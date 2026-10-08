@@ -93,9 +93,6 @@ export class ArenaHUDController extends Component {
   }
 
   public updateMatch(snapshot: ArenaMatchSnapshot): void {
-    // A 390x844 device crops ~64 design px from each side of the 720x1280
-    // design, which cut the leaderboard, the status panel and the pause button.
-    applyHudSafeAreaInset(this.node);
     this.setLabel('TimerValue', formatClock(snapshot.remainingSeconds));
     this.setLabel('RankValue', `第 ${snapshot.localRank || '-'} / ${snapshot.competitorCount}`);
     // No space before the unit: the serialized LabelOutline bridges the space at
@@ -155,6 +152,17 @@ export class ArenaHUDController extends Component {
     if (top5) top5.active = false;
     this.updateOffscreenBotArrows(snapshot);
     this.updateCompetitorNameplates(snapshot);
+
+    // A 390x844 device crops ~64 design px from each side of the 720x1280
+    // design, which cut the leaderboard, the status panel and the pause button.
+    //
+    // This runs LAST, and that ordering is the whole point. The clamp skips
+    // inactive children -- an invisible node cannot be clipped, and counting one
+    // distorted the grouping -- but `updateOffscreenBotArrows` and the leaderboard
+    // rows *activate* nodes further up this method. Clamping first meant those
+    // nodes were skipped on every pass that mattered, and a bot arrow authored
+    // near the frame edge stayed 12 px off it.
+    applyHudSafeAreaInset(this.node);
   }
 
   /**

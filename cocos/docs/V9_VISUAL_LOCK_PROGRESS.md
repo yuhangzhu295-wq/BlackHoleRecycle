@@ -428,6 +428,27 @@ mode 的 `BtnBack` **必须单节点钳制**，不能走 `applyHudSafeAreaInset`
 
 运行：`npm run verify:layout`（可选 `--pages=home,mode` 只跑部分）。
 
+### 3.5.8 两个 gameplay 视觉门禁已补上：`npm run verify:gameplay-visuals`
+
+此前 `ENDLESS/ARENA_GAMEPLAY_VISUAL_PASS` 一直挂着"未正式跑"——**数据其实一直被采集，只是没人断言**：桥里已有 `ui.safeArea`/`ui.pills`/`ui.pillPanels`（RT-08 药丸投影）和 `playerVisibility`（归一化屏幕位置 + 屏上半径），而验收脚本一个都没读。现在补上门禁：真实跑 Endless 与 Arena，全程采样，断言
+
+- **HUD 任何节点都不被裁**（含瞬时节点：升级横幅、锁定提示条、机器人方向箭头、排行榜行）；
+- **玩家始终在屏内**且屏上半径 ≥40 px（§37 在 375 上实测最差 62 px；40 是回归底线而非复述测量值）。
+
+补这个门禁当场抓出**三个此前未记录的缺陷**，全部同一类（按 720 宽授权 / 按屏幕边缘定位）：
+
+| 缺陷 | 实测 | 修法 |
+|---|---|---|
+| 升级横幅 | `BANNER_WIDTH = 600` 设计宽 → 412 下各裁 **8.5 px** | 按 `pagePanelHalfWidth` 运行时收窄（sliced 无损） |
+| 锁定提示条 | `CHIP_WIDTH = 210`，跟随物体投影点 → 右裁 **29 px** | 改为**钳到安全边**，不再在近边时直接隐藏 |
+| Arena 右侧机器人箭头 / 排行榜 | `BotArrowRight` 右裁 **12 px**、`TopRow*` 各 1.9 px | 见下 |
+
+**锁定提示条那处是 §40 的同类问题**：它的守卫只检查**锚点**是否在边缘内，没检查提示条自身宽度；而且注释还写着"与拾取反馈同一套守卫"——但拾取反馈在 §40 已改成钳到安全边，注释早已腐坏。现在两边一致：钳到安全边，不丢反馈。
+
+**Arena 箭头那处是一个顺序 bug**：`updateMatch` 把钳制放在**开头**，而箭头和排行榜行是在它**后面**才被激活的；钳制又跳过未激活节点（我为修 Home 分组问题加的），于是这些节点在每一帧真正需要钳制时都被跳过，靠近边缘的箭头就永久停在框外 12 px。钳制移到 `updateMatch` **末尾**即解决。同一个"顺序"陷阱本阶段已踩到第三次（Home 的 layout-before-clamp、mode 的 clamp-before-applyLayout、这次的 clamp-before-activate）。
+
+**门禁带覆盖度断言，防止"没出现"被读成"没被裁"**：Endless 必须真的观察到升级横幅与锁定提示条（新存档 LV1 打 1v7 通常在窗口内升不到级，所以 Arena 只断言 HUD 本体被投影过）。加这条之前做过一次反向证明——关掉横幅收窄后门禁**没有失败**，因为那一局根本没触发升级；补上覆盖度断言后同样的关掉操作立刻以 `TierUpgradeBanner_1 L8.5 R8.5` 失败。
+
 ---
 
 ## 4. V9 门禁状态（§37 对照）
@@ -446,8 +467,8 @@ mode 的 `BtnBack` **必须单节点钳制**，不能走 `applyHudSafeAreaInset`
 | 逐页几何门禁 | ✅ | `npm run verify:layout`：8 页 × 2 档全部通过（§3.5.7） |
 | UI Kit 组件化（§17/§22） | ✅ | 7 个新 prefab 生成 + 注册 + 契约锁定；`UIProgressBar` 已在机器档案页真实运行（§3.1） |
 | 机器档案数据源 | ✅ | 页面改为读存档，`npm run verify:machine-archive` 以真实游玩写入的 3945 kg 验证（§3.1） |
-| ENDLESS_GAMEPLAY_VISUAL_PASS | ⚠️ **未正式跑** | 有 V8.1 的帧序列与 §28 审查，无专门门禁 |
-| ARENA_GAMEPLAY_VISUAL_PASS | ⚠️ **未正式跑** | 有 V8.2 的 HUD 像素确认与 §28 审查 |
+| ENDLESS_GAMEPLAY_VISUAL_PASS | ✅ | `npm run verify:gameplay-visuals`：全程采样 0 裁切、玩家半径 ≥99 px、升级横幅与锁定提示条均被触发（§3.5.8） |
+| ARENA_GAMEPLAY_VISUAL_PASS | ✅ | 同上：0 裁切、玩家半径 ≥52 px、HUD 本体被投影验证（§3.5.8） |
 | consoleErrors = 0 | ✅ | 每次验收 0 |
 | invalidMesh = 0 / invalidSprite = 0 | ✅ | 每次验收 0 |
 
