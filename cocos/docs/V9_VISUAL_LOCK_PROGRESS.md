@@ -486,6 +486,8 @@ mode 的 `BtnBack` **必须单节点钳制**，不能走 `applyHudSafeAreaInset`
 | ARENA_GAMEPLAY_VISUAL_PASS | ✅ | 同上：0 裁切、玩家半径 ≥52 px、HUD 本体被投影验证（§3.5.8） |
 | consoleErrors = 0 | ✅ | 每次验收 0 |
 | invalidMesh = 0 / invalidSprite = 0 | ✅ | 每次验收 0 |
+| 三平台构建 | ✅ | `build:web` 269 文件 / `build:wx` 273 文件（AppID 已配置）/ `build:tt` 272 文件，三者均含 `world-construction` + `world-city` 两个分包（§3.6） |
+| 发布预检 | ❌ **阻塞在 Owner 项** | `npm run preflight:release` 如实失败：`bytedance-mini-game requires a real AppID for release preflight; found testappId`。微信侧已配置真实 AppID |
 
 **结论：V9 主体已完成。** 资产边界（回退后回到原状）、颜色/尺寸 token、八页审查、PLAYER_HERO、GAME_FEEDBACK 盘点、§39/§40/§41/§42、8 页响应式布局、UI Kit（7 个新 prefab）、两个 gameplay 视觉门禁均已交付并有机器证据。
 
@@ -495,6 +497,20 @@ mode 的 `BtnBack` **必须单节点钳制**，不能走 `applyHudSafeAreaInset`
 2. **剩余 6 个 Kit prefab 的页面消费**：它们是通用件，而现有页面各有定制美术，替换等于重构已签字页面并改变观感——属设计决策。其加载路径与已被消费的 `UIProgressBar` 完全相同，且 7 个的运行时驻留都由 `verify:ui-kit` 逐个断言。
 
 **粒子/动画资产**（§26）同属 §46 的「购买付费资产」，需要 Owner。
+
+### 3.6 三平台构建：本轮全部重跑
+
+V9 改动了 UI（7 个新 prefab、5 个页面控制器、`HUDView`、颜色 token 归并），而此前只验证过 web-mobile 一条构建路径。小游戏包可能失败在 web 成功的地方（包体、分包、API 差异），所以三条都重跑了：
+
+| 平台 | 结果 | AppID |
+|---|---|---|
+| web-mobile | ✅ 269 文件 | n/a |
+| wechatgame | ✅ 273 文件 | `wx6ac3f5090a6b99c5`（已配置） |
+| bytedance-mini-game | ✅ 272 文件 | `testappId`（**占位符**） |
+
+三者都产出 `world-construction` + `world-city` 两个分包，启动场景与 boot 区域一致。
+
+`npm run preflight:release` 以 **EXIT=1 如实失败**，且信息精确：`bytedance-mini-game requires a real AppID for release preflight; found testappId`。也就是说发布路径上唯一的阻塞是**抖音 AppID 未配置**——这是 §35 的"不要猜 AppID"正确执行的结果（项目用占位符而不是编一个值），属 Owner 项。
 
 **已完成且已实测**：**全部 8 页**（home / mode / ready / machine / skin / pause / settlement / revive）在 375×667 / 390×844 / 412×915 三档下均无节点裁切，Home 另测 360×780 与 430×932 共五档；375 参考构图保留（§3.5.4、§3.5.6、§3.5.7）。
 

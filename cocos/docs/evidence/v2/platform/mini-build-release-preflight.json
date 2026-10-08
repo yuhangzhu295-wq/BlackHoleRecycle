@@ -3,12 +3,12 @@
   "creatorExe": "C:\\ProgramData\\cocos\\editors\\Creator\\3.8.3\\CocosCreator.exe",
   "requestedPlatform": "wechatgame,bytedance-mini-game",
   "requireReleaseIds": true,
-  "startedAt": "2026-09-16T10:29:08.345Z",
+  "startedAt": "2026-10-08T08:27:32.820Z",
   "builds": [
     {
       "platform": "wechatgame",
-      "outputDirectory": "C:\\Users\\zyu33\\Documents\\Codex\\2026-08-28\\ji\\cocos\\build\\wechatgame",
-      "fileCount": 191,
+      "outputDirectory": "C:\\Users\\zyu33\\Documents\\Codex\\2026-09-29\\BlackHoleRecycle\\cocos\\build\\wechatgame",
+      "fileCount": 273,
       "requiredFiles": [
         "game.json",
         "project.config.json",
@@ -16,12 +16,25 @@
         "src/system.bundle.js"
       ],
       "releaseIdStatus": "configured",
+      "launchScene": "db://assets/scenes/Game.scene",
+      "preloadBundles": [
+        "resources",
+        "main"
+      ],
+      "bootBundles": [
+        "world-city"
+      ],
+      "subpackages": [
+        "world-construction",
+        "world-city"
+      ],
       "appId": "wx6ac3f5090a6b99c5",
+      "libVersion": "widelyUsed",
       "launcherExitCode": 36
     }
   ],
   "failures": [
     "bytedance-mini-game requires a real AppID for release preflight; found testappId."
   ],
-  "finishedAt": "2026-09-16T10:30:03.505Z"
+  "finishedAt": "2026-10-08T08:28:54.818Z"
 }
