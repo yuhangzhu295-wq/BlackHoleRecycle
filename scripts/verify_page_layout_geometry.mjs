@@ -106,7 +106,7 @@ const checkPage = async (pageKey, size, assert) => {
 
     const label = `${pageKey}@${size.width}x${size.height}`;
     if (clipped.length === 0 && tight.length === 0) {
-      console.log(`[PASS] ${label}: ${content.length} content nodes, all >= ${MIN_MARGIN_PX} px inside`
+      console.log(`[PASS] ${label}: ${content.length} content nodes, none clipped and every interactive one >= ${MIN_MARGIN_PX} px inside`
         + ` (usable design half-width ${(result.cameraInfo.orthoHeight * size.width / size.height).toFixed(1)}`
         + `, view.getVisibleSize() claims ${metrics.visibleSize.w})`);
       return;

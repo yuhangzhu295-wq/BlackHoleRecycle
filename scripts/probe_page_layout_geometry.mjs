@@ -97,7 +97,12 @@ try {
       + `  (view.getVisibleSize() claims ${metrics.visibleSize.w} wide)`);
     console.log(`  ${content.length} content nodes, ${fullBleed.length} full-bleed backdrop(s) ignored:`
       + ` ${fullBleed.map((n) => n.name).join(', ') || 'none'}`);
-    if (!clipped.length && !tight.length) console.log('  every content node has >= 8 px of margin');
+    // Do not claim more than was checked: the margin floor applies to
+    // interactive nodes only, so a clean result means 'nothing is clipped'
+    // plus 'every interactive node kept its margin', not a uniform 8 px.
+    if (!clipped.length && !tight.length) {
+      console.log('  no content node is clipped; every interactive node keeps >= 8 px');
+    }
     for (const n of clipped) {
       console.log(`  CLIPPED ${n.name.padEnd(22)} x ${n.left}..${n.right} y ${n.top}..${n.bottom}`
         + `  overflow L${n.overflowLeft} R${n.overflowRight} T${n.overflowTop} B${n.overflowBottom}`);
