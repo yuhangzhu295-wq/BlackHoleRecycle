@@ -18,6 +18,12 @@
  * 全部资源缺失时自动退回本页原来的样子，不影响开局流程。
  */
 import { _decorator, Button, Component, Enum, instantiate, Label, Node, Sprite, SpriteFrame, UITransform } from 'cc';
+import {
+  clampNodeIntoSafeSpan,
+  fitSlicedPanelToSafeSpan,
+  pagePanelHalfWidth,
+  pageSafeHalfWidth,
+} from './PageSafeArea';
 import { eventBus } from '../core/EventBus';
 import { MACHINE_EVOLUTION_CONFIG } from '../data/GameConfig';
 import { saveService } from '../data/SaveService';
@@ -63,6 +69,10 @@ const STAT_PANEL_BOTTOM = 'StatPanelBottom';
 const INTRO_PANEL = 'IntroPanel';
 const START_ART = 'BtnStartArt';
 
+
+/** Sliced stat panels authored wider than a 20:9 frame can show. */
+const READY_PANEL_NODES: readonly string[] = ['StatPanelTop', 'StatPanelBottom'];
+
 @ccclass('ModeReadyPageController')
 export class ModeReadyPageController extends Component {
   @property({ type: Enum(ModeReadyKind), tooltip: '该 Ready 页对应的玩法模式。' })
@@ -80,6 +90,7 @@ export class ModeReadyPageController extends Component {
     this.refreshProfile();
     this.bind('BtnBack', () => eventBus.emit('READY_BACK_REQUESTED'));
     this.bind('BtnStart', () => eventBus.emit('READY_START_REQUESTED'));
+    this.fitToVisibleDesignSpace();
   }
 
   onDisable(): void {
@@ -252,6 +263,31 @@ export class ModeReadyPageController extends Component {
     const transform = node.getComponent(UITransform);
     if (transform) transform.setContentSize(width, height);
     node.setPosition(x, y, 0);
+  }
+
+  /**
+   * Fit the authored 720-wide composition into the design space the UI camera
+   * actually shows: `1280 / aspect` wide, not the 720 `view.getVisibleSize()`
+   * reports. No-op on 9:16, where the reference composition already fits.
+   *
+   * BtnBack is authored at design x = -285 against a usable half-width of 288.2
+   * at 412x915, i.e. 2.3 screen px from the edge -- inside the corner radius of
+   * a 20:9 phone. It is interactive, so it takes the locked 24 px margin, on its
+   * own rather than through the cluster clamp.
+   *
+   * StatPanelTop and StatPanelBottom are 580 design px wide (+/-290), so they are
+   * clipped by 1.3 px per side; they are Sliced, so narrowing is lossless and
+   * leaves the vertical composition untouched. MapPreview and PreviewCard are
+   * Graphics surfaces, not Sliced sprites, and are left alone: resizing a node
+   * that a Graphics component draws into would clip the drawing rather than
+   * scale it. They sit 5.8 px inside the frame, unclipped.
+   */
+  private fitToVisibleDesignSpace(): void {
+    const back = MODE_READY_LAYOUT.BtnBack;
+    clampNodeIntoSafeSpan(this.findNode('BtnBack'), back[2], back[0], pageSafeHalfWidth(this.node));
+    for (const panelName of READY_PANEL_NODES) {
+      fitSlicedPanelToSafeSpan(this.findNode(panelName), pagePanelHalfWidth(this.node));
+    }
   }
 
   private findNode(name: string): Node | null {

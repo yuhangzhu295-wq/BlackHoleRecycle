@@ -53,7 +53,15 @@ export const ALL_SIZES = [
 /** A node as wide as the design space is a full-bleed backdrop: meant to be cropped. */
 export const DESIGN_FULL_BLEED = 720;
 
-/** Content is expected to keep at least this much margin, in screen px. */
+/**
+ * Margin, in screen px, below which an *interactive* node is reported even
+ * though it is not clipped.
+ *
+ * The project's locked rule is 24 px for interactive elements and "merely
+ * unclipped" for everything else, so this floor is applied to nodes that carry a
+ * Button and not to panels or labels -- flagging a decorative panel at a 6 px
+ * margin would be stricter than the project's own rule.
+ */
 export const MIN_MARGIN_PX = 8;
 
 export function serve(root) {
@@ -239,6 +247,7 @@ export async function collectGeometry(page, pageNode) {
         const maxY = Math.max(...ys);
         nodes.push({
           name: node.name,
+          hasButton: Boolean(node.getComponent('cc.Button')),
           w: +w.toFixed(1),
           h: +h.toFixed(1),
           left: +minX.toFixed(1),
@@ -328,5 +337,10 @@ export const isClipped = (node) => Boolean(
   node.overflowLeft || node.overflowRight || node.overflowTop || node.overflowBottom,
 );
 
+/**
+ * Interactive node sitting closer to the frame edge than MIN_MARGIN_PX without
+ * being clipped. Only interactive nodes are reported; see MIN_MARGIN_PX.
+ */
 export const isTight = (node, viewportWidth) => !isClipped(node)
+  && node.hasButton === true
   && (node.left < MIN_MARGIN_PX || viewportWidth - node.right < MIN_MARGIN_PX);

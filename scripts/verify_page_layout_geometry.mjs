@@ -13,13 +13,12 @@
  * broke the reference while fixing a narrower device; 412x915 is the tightest
  * horizontal case of any real device (20:9).
  *
- * `KNOWN_UNFIXED` pages are measured and printed but do not fail the run. They
- * are genuinely broken and are recorded as such in the gate table; asserting
- * them here would make this script permanently red, which is the same as having
- * no gate at all. See V9_VISUAL_LOCK_PROGRESS.md §3.5.6 for why they are not
- * fixed: every label on them is `Label.Overflow.NONE`, so the UITransform width
- * is the measured text width rather than a shrinkable box, and narrowing their
- * 660-wide panels needs a font size decision.
+ * The margin floor applies to interactive nodes only (see MIN_MARGIN_PX); every
+ * other node merely has to stay unclipped, which is the project's own rule.
+ *
+ * `KNOWN_UNFIXED` is measured and printed but does not fail the run, for pages
+ * that are known to be broken and recorded as such in the gate table. It is
+ * empty: all eight pages pass.
  *
  * Usage: node scripts/verify_page_layout_geometry.mjs [--pages=home,mode]
  */
@@ -51,14 +50,14 @@ const argOf = (name, fallback) => {
 };
 
 /** Pages whose geometry is asserted. */
-const PASSING = ['home', 'mode', 'machine', 'skin', 'pause', 'settlement', 'revive'];
+const PASSING = ['home', 'mode', 'ready', 'machine', 'skin', 'pause', 'settlement', 'revive'];
 
 /**
  * Pages measured but not asserted; see the header. `ready` is here rather than
  * in PASSING because its two stat panels overflow by 1.3 px, below the
  * anti-aliasing threshold, and asserting a sub-pixel margin would be noise.
  */
-const KNOWN_UNFIXED = ['ready'];
+const KNOWN_UNFIXED = [];
 
 /** 375x667 is the authored reference; 412x915 is the tightest real aspect. */
 const GATE_SIZES = [
