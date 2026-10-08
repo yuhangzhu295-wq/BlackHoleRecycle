@@ -132,6 +132,8 @@
 
 **不生成"按钮的 Button+Label 状态封装"**：`UIButton` 已存在且已被 Ready 页消费，再加一层封装只会产生第二个真源。
 
+**7 个 Kit 里只有 `UIProgressBar` 被页面消费，其余 6 个尚未接线**——但"已声明未加载"这个缺口已用运行时证据关掉：`npm run verify:ui-kit` 断言 12 个 prefab 与 9 张纹理全部**驻留**（`uiAssets.boundPrefabs` / `boundFrames` 齐全、`lastError` 为 null）。只靠契约（文件存在 + 结构合法）和构建（被打包）都证明不了 Cocos 真的**导入**成功——对象图被 Creator 拒绝时 prefab 只是从 bundle 里消失，而库会把调用方静默降级。这个门禁做反向证明时还暴露一个细节：**一个 prefab 加载失败会让整批都报缺失**，所以它对单点失败同样敏感。
+
 #### 顺带修掉一个真实缺陷：机器档案页永远显示 0 kg
 
 接线 ProgressBar 时发现：`MachineInfoPageController` 只从**实时场景**的 `BlackHoleMachine` 取质量，而该页从 Home 进入——那里根本没有机器实例。于是"当前质量"和"下一等级"永久显示 0 kg / 0，**而同一页的等级行读的是存档**，页面自相矛盾。存档里本来就有 `machineMass`（`setMachineProgression` 在每次 `addMass` 时写入），所以改为：场景里有机器就用它，否则回落到存档。
