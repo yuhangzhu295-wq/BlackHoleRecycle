@@ -336,7 +336,7 @@ home mode ready machine skin pause settlement revive  ×  375x667 / 390x844 / 43
 
 最紧的 20:9 也满足了项目锁定的 24 px 交互边距。
 
-**仍未处理**：`Logo` 节点在 412×915 上溢出 8.5 px。其可见字形只占节点宽的一半（大量透明留白），**不是用户可见缺陷**，故按"实测低于阈值"记录而非"修复"。`HomePage`/`Background`/`SafeAreaRoot` 的溢出是刻意的满幅底图。
+**`Logo` 的溢出已用贴图实测证清**：`home_logo.png` 是 600×180，**不透明图形只在 x 183..532**（宽 350，占贴图 58%；左留白 183、右留白 67）。Logo 节点尺寸就是整张贴图的 600×180，所以 412×915 下被裁的 8.5 px **全部是透明留白**——可见字形实际横跨屏幕 122..372 px，左侧还有约 130 px、右侧约 40 px 余量。因此这不是用户可见缺陷，但**不是"放宽断言"**：门禁改为对不透明矩形断言（`TRANSPARENT_PADDING` 记录了测量值，可复核），而不是把这一页从断言里摘出去。`HomePage`/`Background`/`SafeAreaRoot` 的溢出是刻意的满幅底图。
 
 **验证**：`npm run typecheck:cocos` ✅、`npm run test:contracts` ✅（406 项）、`npm run test:cocos` ✅、`npm run test:authoring` ✅、`npm run acceptance:v2` ✅（375/390/430 三视口全过）。`test_home_layout_contract.mjs` **未被放宽**——它锁的是"布局表 = V4 参考稿"，所以布局表回退成参考值，响应式适配放在 `fitActionRow` 里做。
 
@@ -390,6 +390,16 @@ mode 的 `BtnBack` **必须单节点钳制**，不能走 `applyHudSafeAreaInset`
 **低于阈值（未修）**：ready 的 `StatPanelTop`/`StatPanelBottom` 各裁 1.3 px——小于抗锯齿量级，按"实测低于阈值"记录。
 
 **未做**：machine / skin / settlement 的响应式改造。探针已就绪，每改一页用 `node scripts/probe_page_layout_geometry.mjs --page=<page> --size=412x915` 量前后。
+
+### 3.5.7 几何已落成门禁：`npm run verify:layout`
+
+一次性的测量会腐坏——后来任何一次布局改动都可能把已修的页面悄悄推回屏幕外。所以把它变成可重复的门禁（`scripts/verify_page_layout_geometry.mjs`，共享逻辑在 `scripts/lib/page_layout_geometry.mjs`）：
+
+- **断言** `home / mode / pause / revive` 在 **375×667 与 412×915** 两档下所有内容节点都在框内且留白 ≥8 px。375 是布局表所依据的 16:9 参考档，用它顺带抓住"修窄屏却改坏了参考稿"；412 是最紧的 20:9。
+- **只测量不断言** `machine / skin / settlement / ready`，打印其越界明细但不使运行失败。它们确实有问题且已记在门禁表里；把它们也断言进去会让这个脚本永远是红的，那等于没有门禁。
+- 空节点列表会**显式失败**（`FAIL_LAYOUT_PROBE_EMPTY`）。本阶段出过一次 `cc.UITransform` 取不到导致遍历为空、却读成"无越界"的假绿，这条断言就是为了堵住它。
+
+运行：`npm run verify:layout`（可选 `--pages=home,mode` 只跑部分）。
 
 ---
 
