@@ -65,8 +65,12 @@ import { Button, Camera, Node, UITransform, Vec3, view } from 'cc';
 /**
  * Locked lateral padding for interactive HUD elements, in SCREEN px. Applied per
  * group; label-only groups get 0 (they must merely stay unclipped).
+ *
+ * Exported because a page whose authored composition is simply too wide for a
+ * 20:9 frame cannot be fixed by translation at all -- it has to resize, and it
+ * must resize against the same locked margin rather than inventing its own.
  */
-const SAFE_AREA_MARGIN_SCREEN_PX = 24;
+export const HUD_INTERACTIVE_MARGIN_SCREEN_PX = 24;
 
 /**
  * Horizontal gap, in design px, below which two vertically-overlapping children
@@ -96,12 +100,27 @@ interface SafeAreaState {
   last: HudSafeAreaPass | null;
 }
 
+export interface HudSafeAreaOptions {
+  /**
+   * Lateral padding, in SCREEN px, for groups that hold no interactive node.
+   * Defaults to 0, which is the locked HUD rule: a label group there only has
+   * to stay unclipped. A page whose own design calls for a visible inset from
+   * the frame edge states its value instead of the shared clamp guessing it --
+   * Home places its top panels 16 px in from the canvas edge, and clamping them
+   * to 0 would satisfy "unclipped" while breaking that composition.
+   */
+  readonly labelMarginScreenPx?: number;
+}
+
 export interface HudSafeAreaGroup {
   readonly names: readonly string[];
   readonly left: number;
   readonly right: number;
   readonly shift: number;
-  /** 24 when the group holds an interactive node, 0 for label-only groups. */
+  /**
+   * 24 when the group holds an interactive node; otherwise the caller's
+   * `labelMarginScreenPx`, which is 0 unless a page asks for a wider inset.
+   */
   readonly marginScreenPx: number;
   /** The x-limit this group was clamped against, in design units. */
   readonly groupSafeHalfWidth: number;
@@ -117,6 +136,7 @@ export interface HudSafeAreaPass {
   readonly childCount: number;
   readonly itemCount: number;
   readonly skippedFullBleed: readonly string[];
+  readonly skippedInactive: readonly string[];
   readonly earlyReturn: boolean;
   readonly groups: readonly HudSafeAreaGroup[];
 }
@@ -186,7 +206,7 @@ export function hudVisibleHalfWidth(host: Node): number {
 /** The x-range every HUD child must stay inside, in design units. */
 export function hudSafeHalfWidth(host: Node): number {
   const scale = hudDesignToFrameScale(host) || 1;
-  return hudVisibleHalfWidth(host) - SAFE_AREA_MARGIN_SCREEN_PX / scale;
+  return hudVisibleHalfWidth(host) - HUD_INTERACTIVE_MARGIN_SCREEN_PX / scale;
 }
 
 /** Group children whose rectangles overlap, so a cluster moves as one unit. */
@@ -244,9 +264,10 @@ function buildGroups(items: Item[]): Item[][] {
  * Clamp the HUD's direct children into the region the UI camera can actually
  * show. Safe to call every frame; it does nothing once everything fits.
  */
-export function applyHudSafeAreaInset(host: Node): void {
+export function applyHudSafeAreaInset(host: Node, options?: HudSafeAreaOptions): void {
   if (!host?.isValid) return;
 
+  const labelMarginScreenPx = options?.labelMarginScreenPx ?? 0;
   const transform = host.getComponent(UITransform);
   const designHalfWidth = (transform?.width || 720) * 0.5;
   const safeHalfWidth = hudSafeHalfWidth(host);
@@ -268,6 +289,7 @@ export function applyHudSafeAreaInset(host: Node): void {
       childCount: host.children.length,
       itemCount: 0,
       skippedFullBleed: [],
+      skippedInactive: [],
       earlyReturn: false,
       groups: [],
       ...pass,
@@ -282,8 +304,19 @@ export function applyHudSafeAreaInset(host: Node): void {
 
   const items: Item[] = [];
   const skippedFullBleed: string[] = [];
+  const skippedInactive: string[] = [];
   for (const child of host.children) {
     if (!child.isValid) continue;
+    // An inactive node is not drawn, so it cannot be clipped -- and letting it
+    // into the grouping actively misplaces the nodes that are drawn. Home's
+    // `BtnSettings` sits at design x=288 while inactive, and its rect overlaps
+    // the action-card row vertically; counting it widened that row's union by
+    // 40 design px, which pushed the group past the safe span and recentred the
+    // whole row to compensate for a button nobody can see.
+    if (!child.activeInHierarchy) {
+      skippedInactive.push(child.name);
+      continue;
+    }
     const childTransform = child.getComponent(UITransform);
     if (!childTransform) continue;
     const width = childTransform.width || 0;
@@ -326,10 +359,11 @@ export function applyHudSafeAreaInset(host: Node): void {
       if (item.right > unionRight) unionRight = item.right;
     }
     // The 24 px rule binds interactive elements only; a label-only group merely
-    // has to stay unclipped. See the header note.
+    // has to stay unclipped unless the caller's own composition asks for more.
+    // See the header note and HudSafeAreaOptions.
     const marginScreenPx = group.some((item) => isInteractive(item.node))
-      ? SAFE_AREA_MARGIN_SCREEN_PX
-      : 0;
+      ? HUD_INTERACTIVE_MARGIN_SCREEN_PX
+      : labelMarginScreenPx;
     const groupSafeHalfWidth = visibleHalfWidth - marginScreenPx / scale;
     const width = unionRight - unionLeft;
     let shift = 0;
@@ -355,5 +389,5 @@ export function applyHudSafeAreaInset(host: Node): void {
     }
   }
 
-  record({ itemCount: items.length, skippedFullBleed, groups });
+  record({ itemCount: items.length, skippedFullBleed, skippedInactive, groups });
 }
