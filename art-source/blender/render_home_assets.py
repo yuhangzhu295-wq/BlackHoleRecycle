@@ -94,7 +94,7 @@ def build_hero():
     everything = add_black_hole(0.0, 0.0, 1.35, (0.36, 0.18, 0.98))
     bpy.context.view_layer.update()
     report('hero bounds', world_bounds(everything))
-    frame_camera(world_bounds(everything), 560, 560, margin=1.25)
+    frame_camera(world_bounds(everything), 560, 560, margin=1.9)
     light_scene((0.55, 0.78, 1.0))
     render('home_hero_blackhole.png', 560, 560)
 
