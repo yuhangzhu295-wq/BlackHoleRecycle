@@ -196,7 +196,7 @@ def build_board_settlement():
     `ui-v5-final/design-lock.md` calls this board "cream"; the adopted render
     shows light blue with a white inner panel, and the image wins.
     """
-    width, height = 620, 900
+    width, height = 660, 1120
     image = canvas(width, height)
     draw = ImageDraw.Draw(image)
     rounded(draw, capsule_box(width, height, 6), 46 * SS, fill=rgba(BOARD_CYAN, 255))
@@ -292,7 +292,7 @@ def build_board_endless():
     every page onto one plate; the endless board drops the arena cyan for the
     field's own blue so it does not imply a ranking it does not have.
     """
-    width, height = 620, 900
+    width, height = 660, 1120
     image = canvas(width, height)
     draw = ImageDraw.Draw(image)
     rounded(draw, capsule_box(width, height, 6), 46 * SS, fill=rgba('#2f9fe0', 255))

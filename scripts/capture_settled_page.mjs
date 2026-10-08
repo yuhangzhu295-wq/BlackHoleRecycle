@@ -25,6 +25,7 @@ const argOf = (n, f) => {
 };
 const PAGE = argOf('page', 'machine');
 const SETTLE_MS = Number(argOf('settleMs', '2500'));
+const MODE = argOf('mode', 'endless');
 const WIDTH = Number(argOf('width', '390'));
 const HEIGHT = Number(argOf('height', '844'));
 
@@ -99,7 +100,7 @@ try {
   } else if (PAGE === 'ready' || PAGE === 'pause' || PAGE === 'settlement') {
     await tapUi('start', 'start');
     await waitState('MODE_SELECT');
-    await tapUi('modeEndless', 'modeEndless');
+    await tapUi(MODE === 'arena' ? 'modeArena' : 'modeEndless', MODE);
     await waitState('MODE_READY');
     s = await snapshot();
     if (PAGE === 'ready') {
@@ -108,15 +109,16 @@ try {
       // ui.endlessReady is a composite ({root, back, start, ...}); the tappable
       // node with active/screen is its `start` child, not the wrapper.
       s = await snapshot();
-      const startBtn = s.ui?.endlessReady?.start;
+      const startBtn = (s.ui?.arenaReady || s.ui?.endlessReady)?.start;
       if (!startBtn?.active || !startBtn?.screen) throw new Error('ready Start not visible: ' + JSON.stringify(startBtn));
       await tap(cdp, ...Object.values(pt(rect, startBtn, 'endlessReady.start')));
       await sleep(700);
       s = await snapshot();
-      await waitState('PLAYING');
+      await waitState(MODE === 'arena' ? 'ARENA' : 'PLAYING', 20000);
       await sleep(1200);
       s = await snapshot();
-      const pauseNode = s.ui?.runtimeHUD?.pauseButton;
+      // Arena has its own HUD; runtimeHUD is the Endless one and is inactive there.
+      const pauseNode = MODE === 'arena' ? s.ui?.arenaHUD?.pauseButton : s.ui?.runtimeHUD?.pauseButton;
       if (!pauseNode?.active || !pauseNode?.screen) throw new Error('pause button not visible: ' + JSON.stringify(pauseNode));
       await tap(cdp, ...Object.values(pt(rect, pauseNode, 'pauseButton')));
       await sleep(700);
@@ -155,7 +157,8 @@ try {
   await sleep(SETTLE_MS);
 
   const after = await snapshot();
-  const file = path.join(outDir, `${PAGE}-settled-${WIDTH}x${HEIGHT}.png`);
+  const suffix = PAGE === 'settlement' ? `-${MODE}` : '';
+  const file = path.join(outDir, `${PAGE}${suffix}-settled-${WIDTH}x${HEIGHT}.png`);
   await page.screenshot({ path: file });
   console.log(`captured ${file}`);
   console.log(`gameState=${after.gameState} uiScreen=${after.uiScreen}`);
