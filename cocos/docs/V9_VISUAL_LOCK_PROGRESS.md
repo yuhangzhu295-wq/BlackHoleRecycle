@@ -344,14 +344,21 @@ home mode ready machine skin pause settlement revive  ×  375x667 / 390x844 / 43
 
 探针已接上导航（`--page=<home|mode|ready|machine|skin|pause|settlement|revive>`，默认跑最紧的 412×915）。412×915（可用半宽 288.2）实测：
 
-| 页面 | 被裁节点 | 越界 |
-|---|---|---|
-| mode | `BtnBack` | **左 37.0 px** |
-| mode | `BtnArena` / `BtnEndless` | 左右各 12.0 px |
-| machine | `MachineCard` | 左右各 29.9 px |
-| skin | `SkinPageCard` | 左右各 29.9 px |
-| ready | `StatPanelTop` / `StatPanelBottom` | 各 1.3 px |
-| pause / settlement / revive | — | **未测**（需驱动整局比赛） |
+| 页面 | 被裁节点 | 越界 | 面板设计宽 |
+|---|---|---|---|
+| mode | `BtnBack` | **左 37.0 px** | — |
+| mode | `BtnArena` / `BtnEndless` | 左右各 12.0 px | 610（`_type=0` 简单图） |
+| machine | `MachineCard` | 左右各 29.9 px | 660 |
+| skin | `SkinPageCard` | 左右各 29.9 px | 660 |
+| settlement | `SettlementCard` | 左右各 29.9 px | 660 |
+| settlement | `SettlementCoinLeft` / `Right` | 各 7.7 px | — |
+| pause | `PauseCard` | 左右各 15.6 px | 620 |
+| revive | `ReviveCard` | 左右各 15.6 px | 620 |
+| ready | `StatPanelTop` / `StatPanelBottom` | 各 1.3 px | — |
+
+**这更像一个系统性问题，而不是 7 个独立决策**：除 mode 外，每页都有一块 610–660 设计宽的主面板，而 412×915 只能显示 576.3。经查，`MachineCard` / `SkinPageCard` / `PauseCard` / `SettlementCard` / `ReviveCard` **五块面板共用同一个 `_type=1`（9-slice）资源**（`spriteFrame` uuid `4307ce08-910…`），所以收窄它们的宽度对边框是无损的。
+
+**但仍不是一次批量改**：`MachineCard` 内部的等级行本身宽 564 设计单位，比收窄后的卡片（531.6）还宽——只收卡片会让行戳出面板。所以每页都要像 Home 的 `fitActionRow` 那样，**把面板和它的内部行一起做响应式**，规则由该页自己的构图决定。mode 的两张大卡是 `_type=0` 简单图，收窄会压坏美术，属于设计决策。
 
 已目视确认不是"刻意的满幅面板"：412 下 `BtnBack` 被切掉一半（左上角只剩一块残片），两张模式大卡的圆角和右侧白色箭头指示器被切；`MachineCard` 的圆角被切、退化成满幅矩形，而 375 下圆角是可见的——**同一页在不同设备上结构不一致**。
 
@@ -363,9 +370,9 @@ home mode ready machine skin pause settlement revive  ×  375x667 / 390x844 / 43
 
 即：**没有修好任何一页，却弄坏了一页**，故整体回滚（`git checkout` 7 个控制器文件，已确认 mode 回到基线且 `Header` 恢复正常）。
 
-**正确做法**（与 Home 同构，逐页做，不要无脑套）：每页需要"先按可用设计宽等比缩放过宽面板 → 再钳制"两步，缩放规则由该页自己的设计意图决定。过宽面板的缩放会改变页面纵向构图，属于**设计决策**，不是可以批量机械套用的改动。
+**正确做法**（与 Home 同构，逐页做，不要无脑套）：每页需要"先按可用设计宽收缩面板及其内部行 → 再钳制"两步，收缩规则由该页自己的构图决定。
 
-**未做**：这 7 页的修复，以及 pause/settlement/revive 的几何测量。
+**未做**：这 7 页的响应式改造。探针已就绪，每改一页即可用 `node scripts/probe_page_layout_geometry.mjs --page=<page> --size=412x915` 量前后。
 
 ---
 
@@ -378,7 +385,7 @@ home mode ready machine skin pause settlement revive  ×  375x667 / 390x844 / 43
 | 375 / 390 / 430 PASS | ⚠️ **部分** | 24 张已采集；Home 另有 360/412 两档；人工复核做了最密的两页 |
 | HOME_PASS（几何） | ✅ | 五档视口实测：顶栏内缩 16 px、外圈卡余量 ≥24 px、375 参考构图零变化（§3.5） |
 | MODE / READY / MACHINE / SKIN_PASS | ❌ **未通过** | 412×915 实测有被裁节点：`BtnBack` 左 37 px、两张模式大卡各 12 px、`MachineCard`/`SkinPageCard` 各 29.9 px、ready 状态面板各 1.3 px（§3.5.5） |
-| PAUSE / REVIVE / SETTLEMENT_PASS | ⚠️ **未测** | 需驱动整局比赛才能到达；`V9_PAGE_VISUAL_AUDIT.md` 有 375 下的审查，无 412 几何数据 |
+| PAUSE / REVIVE / SETTLEMENT_PASS | ❌ **未通过** | 412×915 实测：`PauseCard`/`ReviveCard` 各 15.6 px、`SettlementCard` 29.9 px、结算页两枚金币各 7.7 px（§3.5.5） |
 | ENDLESS_GAMEPLAY_VISUAL_PASS | ⚠️ **未正式跑** | 有 V8.1 的帧序列与 §28 审查，无专门门禁 |
 | ARENA_GAMEPLAY_VISUAL_PASS | ⚠️ **未正式跑** | 有 V8.2 的 HUD 像素确认与 §28 审查 |
 | consoleErrors = 0 | ✅ | 每次验收 0 |
