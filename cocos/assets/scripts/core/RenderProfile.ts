@@ -258,7 +258,18 @@ export const CAMERA_PROFILE = {
       new Vec3(0, 28.0, 25.9),   // LV2: distance 38.14m (1.40x) -> playerWidthRatio ~0.272
       new Vec3(0, 36.0, 33.3),   // LV3: distance 49.04m (1.80x) -> playerWidthRatio ~0.269
       new Vec3(0, 68.0, 62.9),   // LV4: distance 92.63m (3.40x) -> playerWidthRatio ~0.269
-      new Vec3(0, 98.0, 90.65),  // LV5: distance 133.50m (4.90x) -> playerWidthRatio ~0.268
+      // LV5 was 4.90x (distance 133.50m), which pulled the visible ground out to
+      // 16,353 m2 -- 24x the LV1 footprint -- while InfiniteWorldManager streams
+      // only a 3x3 cell neighbourhood (~96 m of reach). The far field is
+      // therefore outside the resident cells by construction, and it measured as
+      // 60.8% large-empty ground with 39.2% screen occupancy, against 0.6% and
+      // 99.4% at LV1: the upper third of the frame was a flat brown void.
+      //
+      // 3.60x keeps the pullback, so the world still shrinks as the machine grows,
+      // but brings the visible footprint back inside the streamed radius instead
+      // of past it. The cost is a larger player on screen, which is the direction
+      // the "growth must be visible by eye" requirement wants anyway.
+      new Vec3(0, 72.0, 66.6),   // LV5: distance 98.06m (3.60x) -> playerWidthRatio ~0.365
     ],
   },
   arena: { offset: new Vec3(0, 44.0, 27.0), pitchDegrees: -55 },
