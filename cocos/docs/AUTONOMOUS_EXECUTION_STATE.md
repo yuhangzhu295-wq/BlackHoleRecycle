@@ -1,8 +1,8 @@
 # AUTONOMOUS EXECUTION STATE
 
-- CURRENT_HEAD: `090621d` (clean tree; 12 commits ahead of `origin/dev/product-finalization-20260929`)
+- CURRENT_HEAD: `822a3e4` (clean tree; 15 commits ahead of `origin/dev/product-finalization-20260929`)
 - CURRENT_PHASE: `RELEASE_BLOCKERS_AND_PRODUCT_CLOSEOUT`
-- CURRENT_SCOPE: settings + audio (done); next LV5 far field, UI re-audit, performance
+- CURRENT_SCOPE: settings + audio + Mode Select plinth (done); next the card interiors and vortex art, LV5 far field, performance
 - LAST_UPDATED: 2026-10-09
 
 ---
@@ -27,6 +27,8 @@
 | 14 | Douyin developer tool found, downloaded, installed, launched | Kenney-style provenance in §4; tool at `AppData/Local/Programs/@bytedminiprogram-ide`, **parked on its login page** |
 | 15 | Sound toggle on the Pause page | cloned from `BtnSettle`; `scripts/probe_settings_toggle.mjs` PASS (real tap, save flag, survives reload) |
 | 16 | Settlement reward cue added from a verified CC0 source | `cocos/docs/AUDIO_PROVENANCE.md`; contract now reports 7 cues |
+| 17 | Mode Select compared against its adopted reference | `cocos/docs/UI_VISUAL_REAUDIT.md` |
+| 18 | Card plinth authored and placed under each card | `art-source/vector/generate_card_plinth.py`; ShelfArena 371.4..405.6 under BtnArena's 222.1..377.9, 0 clipped |
 
 ## 2. VALIDATED_GATES (all on the current tree)
 
@@ -106,7 +108,8 @@ Continuing autonomously. Remaining scopes: LV5 far field, the UI/Gameplay visual
 performance + full gameplay regression, and the refreshed release-candidate audit. What needs the
 owner:
 
-1. **B2** — a Douyin mini-game AppID (no Douyin developer tool is installed; only CapCut/JianyingPro).
+1. **B2** — a Douyin mini-game AppID. The tool is now **installed and open on its login page**; this
+   needs a QR scan.
 2. **B3** — a WeChat AppID this account can open. The DevTools is installed and logged in but rejects
    `wx6ac3f5090a6b99c5` as non-existent, so the simulator and the upload-size figure stay unreachable.
    After that: a scan/confirm, then a real-device pass.
