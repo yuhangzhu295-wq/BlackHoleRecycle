@@ -34,6 +34,7 @@ const REPEAT_FLOOR_MS: Readonly<Record<AudioClipKey, number>> = {
   kill: 0,
   death: 0,
   button: 80,
+  reward: 0,
 };
 
 /** Per-clip mix level, so the frequent cues sit under the rare ones. */
@@ -44,6 +45,7 @@ const CLIP_VOLUME: Readonly<Record<AudioClipKey, number>> = {
   kill: 0.85,
   death: 0.90,
   button: 0.55,
+  reward: 0.85,
 };
 
 /**
@@ -68,12 +70,19 @@ export interface AudioDiagnostics {
   readonly missingPlays: number;
   readonly suppressedByFloor: number;
   readonly lastKey: string | null;
+  /**
+   * Plays per clip. `lastKey` cannot answer "did this cue ever fire": a click
+   * that opens a page emits the button cue after the page's own cue, so the
+   * reward sound can be the second-to-last and look absent.
+   */
+  readonly playCounts: Readonly<Record<string, number>>;
 }
 
 export class AudioDirector {
   private source: AudioSource | null = null;
   private host: Node | null = null;
   private readonly lastPlayedAt = new Map<AudioClipKey, number>();
+  private readonly playCounts = new Map<AudioClipKey, number>();
   private unbind: Array<() => void> = [];
   private plays = 0;
   private missingPlays = 0;
@@ -113,6 +122,9 @@ export class AudioDirector {
     on('ARENA_LOCAL_KILL', () => this.play('kill'));
     on('ARENA_LOCAL_DEFEATED', () => this.play('death'));
     for (const event of BUTTON_EVENTS) on(event, () => this.play('button'));
+    // The settlement page opening is the reward moment. Deliberately not a
+    // BUTTON_EVENT: that list is the click sound, and this cue is the payoff.
+    on('SETTLEMENT_SHOWN', () => this.play('reward'));
   }
 
   public play(key: AudioClipKey): void {
@@ -134,6 +146,7 @@ export class AudioDirector {
     this.lastPlayedAt.set(key, now);
     this.source.playOneShot(clip, CLIP_VOLUME[key]);
     this.plays += 1;
+    this.playCounts.set(key, (this.playCounts.get(key) || 0) + 1);
     this.lastKey = key;
   }
 
@@ -160,6 +173,7 @@ export class AudioDirector {
       missingPlays: this.missingPlays,
       suppressedByFloor: this.suppressedByFloor,
       lastKey: this.lastKey,
+      playCounts: Object.fromEntries(this.playCounts),
     };
   }
 

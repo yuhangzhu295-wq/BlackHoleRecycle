@@ -23,6 +23,9 @@ export class SettlementPageController extends Component {
   private bindings: Array<[Button, () => void]> = [];
 
   onEnable(): void {
+    // Announced so the audio layer can play the reward cue without the page
+    // reaching into it; the page itself stays a view.
+    eventBus.emit('SETTLEMENT_SHOWN');
     this.refreshSubtitle();
     this.bind('BtnRestart', () => eventBus.emit('GAME_RESTART_CURRENT'));
     this.bind('BtnHome', () => eventBus.emit('GAME_RETURN_HOME'));

@@ -26,6 +26,7 @@ export const AUDIO_CLIP_PATHS = {
   kill: 'audio/sfx_kill',
   death: 'audio/sfx_death',
   button: 'audio/sfx_button',
+  reward: 'audio/sfx_reward',
 } as const;
 
 export type AudioClipKey = keyof typeof AUDIO_CLIP_PATHS;

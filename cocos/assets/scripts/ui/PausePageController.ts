@@ -1,7 +1,11 @@
 /** 编辑器保存的暂停页交互。 */
-import { _decorator, Button, Component } from 'cc';
+import { _decorator, Button, Component, Label } from 'cc';
 import { fitSlicedPanelToSafeSpan, pagePanelHalfWidth } from './PageSafeArea';
 import { eventBus } from '../core/EventBus';
+import { audioDirector } from '../audio/AudioDirector';
+
+const SFX_LABEL_ON = '音效：开';
+const SFX_LABEL_OFF = '音效：关';
 
 const { ccclass } = _decorator;
 
@@ -13,6 +17,14 @@ export class PausePageController extends Component {
     this.bind('BtnResume', () => eventBus.emit('UI_TRIGGER_PAUSE'));
     this.bind('BtnSettle', () => eventBus.emit('GAME_TRIGGER_SETTLEMENT'));
     this.bind('BtnHome', () => eventBus.emit('GAME_RETURN_HOME'));
+    // Sound effects. The save has carried `settings.sfx` and `AudioDirector` has
+    // honoured it since V9; only the control was missing, so this binds the flag
+    // that already exists rather than introducing a second one.
+    this.bind('BtnSfxToggle', () => {
+      audioDirector()?.toggleMuted();
+      this.refreshSfxLabel();
+    });
+    this.refreshSfxLabel();
     // The panel is authored 620 design px wide against the 576.3 design px a
     // 20:9 phone shows, so 15.6 screen px of it is off each edge and its
     // rounded border is cropped. Sliced, so narrowing is lossless.
@@ -24,6 +36,14 @@ export class PausePageController extends Component {
       button.node.off(Button.EventType.CLICK, handler, this);
     }
     this.bindings.length = 0;
+  }
+
+  /** Show the current state, so the button reads as a switch, not an action. */
+  private refreshSfxLabel(): void {
+    const label = this.node.getChildByName('BtnSfxToggle')
+      ?.getChildByName('BtnSfxToggleLabel')?.getComponent(Label);
+    const director = audioDirector();
+    if (label && director) label.string = director.isMuted() ? SFX_LABEL_OFF : SFX_LABEL_ON;
   }
 
   private bind(name: string, handler: () => void): void {

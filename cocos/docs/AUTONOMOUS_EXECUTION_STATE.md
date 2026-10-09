@@ -2,6 +2,7 @@
 
 - CURRENT_HEAD: `090621d` (clean tree; 12 commits ahead of `origin/dev/product-finalization-20260929`)
 - CURRENT_PHASE: `RELEASE_BLOCKERS_AND_PRODUCT_CLOSEOUT`
+- CURRENT_SCOPE: settings + audio (done); next LV5 far field, UI re-audit, performance
 - LAST_UPDATED: 2026-10-09
 
 ---
@@ -23,6 +24,9 @@
 | 11 | Boot bundles load in parallel | `Promise.all`, per-bundle retry kept; built artifact verified |
 | 12 | LV5 framing brought back inside the streamed radius | occupancy 39.2% → 46.8%, empty ground 60.8% → 53.2%, `playerWidthRatio` 0.367 (predicted 0.365) |
 | 13 | Product re-audit from real runtime evidence | `FINAL_PRODUCT_AND_RELEASE_AUDIT.md` §6.2 |
+| 14 | Douyin developer tool found, downloaded, installed, launched | Kenney-style provenance in §4; tool at `AppData/Local/Programs/@bytedminiprogram-ide`, **parked on its login page** |
+| 15 | Sound toggle on the Pause page | cloned from `BtnSettle`; `scripts/probe_settings_toggle.mjs` PASS (real tap, save flag, survives reload) |
+| 16 | Settlement reward cue added from a verified CC0 source | `cocos/docs/AUDIO_PROVENANCE.md`; contract now reports 7 cues |
 
 ## 2. VALIDATED_GATES (all on the current tree)
 
@@ -59,12 +63,15 @@
 
 ### B2 — Douyin AppID is `testappId`
 - Evidence: `cocos/build/bytedance-mini-game/project.config.json` → `"appid": "testappId"`.
-- Tried: searched for the Douyin developer tool — **not installed** (only CapCut/JianyingPro under
-  `AppData/Local/Bytedance`); searched the project for a real AppID; the WeChat AppID
-  `wx6ac3f5090a6b99c5` exists in config but the DevTools rejects it as non-existent.
+- **Toolchain now installed autonomously**: read the official download page in a real browser
+  (`developer.open-douyin.com`), took the official ByteDance CDN link for
+  **抖音开发者工具 4.5.6** (`win32`, 299.4 MB, HTTP 200, PE verified, sha256
+  `2ae14987f421c912d1fb8baccf68fa0ca886ab0496eaf944dfe917f894368ab1`), ran the installer through its
+  GUI (per-user, no admin), and launched it. It is **open on its login page** with a Douyin-app QR
+  code and a phone-login form.
 - Autonomously doable: Douyin build, config validation, package audit (all pass).
-- Owner input needed: a real Douyin mini-game AppID, or a Douyin developer account login.
-- Status: `WAITING_FOR_OWNER_AUTH`
+- Owner input needed: scan the QR in the open tool (or supply a Douyin mini-game AppID).
+- Status: `WAITING_FOR_OWNER_AUTH` — parked on the login screen, one scan away
 
 ### B3 — WeChat DevTools authoritative package size + real device
 - Evidence: DevTools installed, **logged in**, CLI service port now enabled. `cli open --project`
@@ -95,14 +102,17 @@
 
 ## 7. NEXT_ACTION
 
-All gates are green and the tree is committed. What remains needs the owner:
+Continuing autonomously. Remaining scopes: LV5 far field, the UI/Gameplay visual re-audit,
+performance + full gameplay regression, and the refreshed release-candidate audit. What needs the
+owner:
 
 1. **B2** — a Douyin mini-game AppID (no Douyin developer tool is installed; only CapCut/JianyingPro).
 2. **B3** — a WeChat AppID this account can open. The DevTools is installed and logged in but rejects
    `wx6ac3f5090a6b99c5` as non-existent, so the simulator and the upload-size figure stay unreachable.
    After that: a scan/confirm, then a real-device pass.
-3. **Scope item, not a defect** — a settings page (`BtnSettings` is deliberately hidden because no page
-   backs it; adding one is a feature and would change the pinned Home layout contract).
+3. ~~Scope item, not a defect — a settings page~~ **DONE as a Pause-page sound toggle**, which avoids
+   the pinned Home layout contract entirely. `settings.vibration` has a persisted setter but no
+   consumer, so no vibration control was added rather than shipping a switch that does nothing.
 4. **Provisional audio** — 6 real non-silent SFX are wired; licensed production audio remains a
    release-checklist item.
 5. **LV5 far field** — partially improved; closing it fully needs a streaming change or far-field art.

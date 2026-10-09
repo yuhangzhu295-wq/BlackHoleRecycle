@@ -1,8 +1,8 @@
 /**
  * Gate: sound effects actually play, and muting actually silences them.
  *
- * The asset contract proves the six clips exist, are audible and are shaped as
- * intended. It cannot prove any of them is ever played, or that the mute flag is
+ * The asset contract proves the declared clips exist, are audible and are shaped
+ * as intended. It cannot prove any of them is ever played, or that the mute flag is
  * honoured -- a director wired to nothing, or one that ignores `settings.sfx`,
  * passes every source-level check.
  *
@@ -17,6 +17,7 @@
  *
  * Usage: node scripts/verify_audio.mjs [--seconds=30]
  */
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
@@ -121,6 +122,14 @@ async function playEndless(page, cdp, canvasRect, label) {
 
 try {
   // ---- A. a fresh save must make sound ------------------------------------
+/** The clip keys `AudioAssetLibrary` declares, read from the source of truth. */
+function declaredClipKeys() {
+  const source = readFileSync(
+    path.join(repoRoot, 'cocos', 'assets', 'scripts', 'audio', 'AudioAssetLibrary.ts'), 'utf8');
+  const table = source.slice(source.indexOf('AUDIO_CLIP_PATHS'), source.indexOf('} as const', source.indexOf('AUDIO_CLIP_PATHS')));
+  return [...table.matchAll(/^\s{2}(\w+):/gm)].map((match) => match[1]);
+}
+
   console.log('=== A. fresh save ===');
   const fresh = await openPage(browser, port, SIZE);
   {
@@ -129,8 +138,18 @@ try {
     const atHome = s.audio;
     console.log(`audio at Home: ready=${atHome?.ready} bound=${atHome?.boundClips?.length}`
       + ` lastError=${JSON.stringify(atHome?.lastError)}`);
-    note(Array.isArray(atHome?.boundClips) && atHome.boundClips.length === 6,
-      `all six clips are resident (${atHome?.boundClips?.join(', ') || 'none'})`);
+    // Derived from the clip table rather than a literal count: a hard-coded 6
+    // failed the moment a seventh cue was added deliberately, and would also pass
+    // if one clip were swapped for another while the total stayed the same.
+    const expectedClips = declaredClipKeys();
+    const bound = Array.isArray(atHome?.boundClips) ? atHome.boundClips : [];
+    const missingClips = expectedClips.filter((key) => !bound.includes(key));
+    const unexpectedClips = bound.filter((key) => !expectedClips.includes(key));
+    note(missingClips.length === 0 && unexpectedClips.length === 0
+      && bound.length === expectedClips.length,
+      `${expectedClips.length} declared clips are resident`
+      + ` (bound: ${bound.join(', ') || 'none'}; missing: ${missingClips.join(', ') || 'none'};`
+      + ` unexpected: ${unexpectedClips.join(', ') || 'none'})`);
     note(atHome?.lastError === null, `the audio library loaded without error (${JSON.stringify(atHome?.lastError)})`);
     note(atHome?.muted === false, 'a fresh save starts unmuted');
 
