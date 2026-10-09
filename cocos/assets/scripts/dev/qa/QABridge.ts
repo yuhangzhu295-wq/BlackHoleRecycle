@@ -684,6 +684,20 @@ export class QABridge {
         joystick: describe(arenaHud?.getChildByName('Joystick') || null),
         timer: describe(arenaHud?.getChildByName('TimerValue') || null),
         nameplates: arenaHud?.getComponent(ArenaHUDController)?.getNameplateDiagnostics() || [],
+        /**
+         * Mirrors `runtimeHUD.safeArea`, which was the only HUD exposing it.
+         *
+         * Arena's `LeaderboardPanel` is authored at design x = -226 with width
+         * 236, so its left edge sits at -344 while only ~295.7 design units are
+         * visible at 390x844 -- it depends entirely on this clamp to be pushed
+         * back. The clamp intermittently leaves it 12 px off the frame, and the
+         * per-group shifts below are what distinguishes the two candidate
+         * causes: a group that never qualified for a shift, versus a group wider
+         * than the safe span taking the "centre it" branch, which still overflows
+         * both sides by construction. Without this the failing frame is only
+         * observable as a clipped rect, with no way to see why.
+         */
+        safeArea: arenaHud ? getHudSafeAreaPass(arenaHud) : null,
       },
       formalPages: {
         pause: describe(pausePage),

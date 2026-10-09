@@ -78,6 +78,19 @@ export interface TierUpgradeDiagnostics {
   /** V7: true when the authored UIPopup prefab supplied the banner panel. */
   readonly usesAuthoredPanel: boolean;
   readonly fallbackReason: string | null;
+  /**
+   * Level-ups that produced no banner, and why.
+   *
+   * `MACHINE_EVOLVED` can arrive while the HUD is inactive, or with no template
+   * Label to clone, and `show()` returns before `emittedCount` moves. From the
+   * outside that is indistinguishable from "no banner was emitted", which is what
+   * made the gameplay gate's banner-coverage assertion look like a sampling bug:
+   * runs reached level 2 and reported 0 banner samples. Recording the reason
+   * separates "the banner was suppressed" from "it was drawn and the harness
+   * missed it".
+   */
+  readonly suppressedCount: number;
+  readonly lastSuppressReason: string | null;
 }
 
 export class TierUpgradePresenter {
@@ -91,6 +104,8 @@ export class TierUpgradePresenter {
   private bannerWidth = BANNER_WIDTH;
   private usesAuthoredPanel = false;
   private fallbackReason: string | null = null;
+  private suppressedCount = 0;
+  private lastSuppressReason: string | null = null;
 
   public constructor(
     private readonly host: Node,
@@ -110,17 +125,33 @@ export class TierUpgradePresenter {
 
   /** Only the local player's evolution is announced; bots stay silent. */
   private onEvolved(payload: IMachineEvolvedPayload): void {
-    if (payload?.machine?.isBotPresentation?.()) return;
+    if (payload?.machine?.isBotPresentation?.()) {
+      this.recordSuppressed('bot-presentation');
+      return;
+    }
     const level = Math.max(1, Math.round(Number(payload?.level) || 0));
-    if (level <= 1) return;
+    if (level <= 1) {
+      this.recordSuppressed('level<=1');
+      return;
+    }
     this.show(level, payload?.config?.title || '');
   }
 
+  /** Why a level-up produced no banner; see `TierUpgradeDiagnostics`. */
+  private recordSuppressed(reason: string): void {
+    this.suppressedCount += 1;
+    this.lastSuppressReason = reason;
+  }
+
   private show(level: number, title: string): void {
-    if (!this.host.activeInHierarchy) return;
+    if (!this.host.activeInHierarchy) {
+      this.recordSuppressed('host-inactive');
+      return;
+    }
     const template = this.host.getChildByName(this.templateName) || null;
     const hostTransform = this.host.getComponent(UITransform) || null;
     if (!template || !hostTransform) {
+      this.recordSuppressed('missing-template');
       console.error(`[TierUpgradePresenter] Missing active ${this.templateName} Label template.`);
       return;
     }
@@ -266,6 +297,8 @@ export class TierUpgradePresenter {
       lastText: this.lastText,
       usesAuthoredPanel: this.usesAuthoredPanel,
       fallbackReason: this.fallbackReason,
+      suppressedCount: this.suppressedCount,
+      lastSuppressReason: this.lastSuppressReason,
     };
   }
 }

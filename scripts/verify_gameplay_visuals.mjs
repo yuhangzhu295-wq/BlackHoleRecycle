@@ -134,7 +134,25 @@ async function sampleMatch(page, cdp, canvasRect, hudNode, label) {
   // so sampling alone misses it outright -- the first run of this gate reported
   // "0 banner samples" for a match that had one. The bridge's own emitted counter
   // says when it appeared, and the geometry is sampled at that moment.
-  let lastUpgradeEmitted = -1;
+  // Seed the counter BEFORE the match starts.
+  //
+  // The seed used to be the loop's own first snapshot, with `lastUpgradeEmitted`
+  // starting at -1 and the increase guarded by `>= 0`. That silently dropped any
+  // upgrade that fired between `driver.press()` and that first snapshot: the
+  // counter arrived already non-zero, no increase was ever observed, and the
+  // banner assertion failed with "0 samples" on a match whose level had in fact
+  // gone 1 -> 2. Nothing is absorbed before the match starts, so a snapshot taken
+  // here is a true zero and every later increase is seen.
+  // The counter lives at `ui.tierUpgrade.<endless|arena>.emittedCount` -- the
+  // bridge returns one diagnostics object per HUD, not a flat one. Two earlier
+  // readings of this were wrong (`live.tierUpgrade`, then
+  // `ui.runtimeHUD.tierUpgrade`), and because `Number(undefined ?? 0)` is 0 the
+  // burst sampling below had never once fired: the banner was only caught when
+  // the periodic sample happened to land inside its 2.0 s lifetime, which is why
+  // this assertion passed roughly one run in three.
+  const upgradeMode = label.toLowerCase();
+  const upgradeCounter = (live, mode) => Number(live?.ui?.tierUpgrade?.[mode]?.emittedCount ?? 0);
+  let lastUpgradeEmitted = upgradeCounter(await snapshot(), upgradeMode);
   let endedEarly = null;
   const deadline = Date.now() + SECONDS * 1000;
 
@@ -143,11 +161,36 @@ async function sampleMatch(page, cdp, canvasRect, hudNode, label) {
   // other iteration doubles the number of hero observations the same window
   // yields, and a clipped node stays clipped for far longer than one iteration.
   let iteration = 0;
+  /**
+   * While a tier-upgrade banner is alive, sample geometry on every iteration.
+   *
+   * The banner lives 2.0 s. Two independent misses were producing a run that
+   * reached level 2 while reporting "0 banner samples" (observed in 1 of 4 runs
+   * with `levels seen 1,2`):
+   *
+   *   * the periodic sample runs on even iterations, roughly 2.4 s apart, so a
+   *     2.0 s banner can fall entirely between two of them;
+   *   * a single sample taken the instant the counter moves can also miss it,
+   *     because the presenter creates the container and activates it a frame
+   *     later -- so the old "sample the moment the counter changes" burst could
+   *     observe the banner while it was still inactive.
+   *
+   * Sampling across the banner's whole lifetime removes both. The assertion then
+   * means what it says: a banner that was on screen is seen, and one that is
+   * genuinely never drawn still fails.
+   */
+  const BURST_WINDOW_MS = 2200;
+  let burstUntil = 0;
   await driver.press();
   while (Date.now() < deadline) {
     await driver.step();
 
-    if (iteration % 2 === 0) {
+    const live = await snapshot();
+    const upgradeEmitted = upgradeCounter(live, upgradeMode);
+    if (upgradeEmitted > lastUpgradeEmitted) burstUntil = Date.now() + BURST_WINDOW_MS;
+    lastUpgradeEmitted = upgradeEmitted;
+
+    if (iteration % 2 === 0 || Date.now() < burstUntil) {
       const geometry = await collectGeometry(page, hudNode);
       if (!geometry.error) {
         const { content } = splitContent(geometry.nodes);
@@ -162,19 +205,6 @@ async function sampleMatch(page, cdp, canvasRect, hudNode, label) {
     if (matchSamples === 3) {
       await page.screenshot({ path: path.join(SHOT_DIR, `${label.toLowerCase()}-hud.png`) });
     }
-    const live = await snapshot();
-    const upgradeEmitted = Number(live.tierUpgrade?.emittedCount ?? 0);
-    if (lastUpgradeEmitted >= 0 && upgradeEmitted > lastUpgradeEmitted) {
-      const burst = await collectGeometry(page, hudNode);
-      if (!burst.error) {
-        const { content } = splitContent(burst.nodes);
-        for (const node of content) observedNodes.add(node.name);
-        for (const node of content.filter(isClipped)) {
-          clippedSamples.push(`${node.name} L${node.overflowLeft} R${node.overflowRight} T${node.overflowTop} B${node.overflowBottom}`);
-        }
-      }
-    }
-    lastUpgradeEmitted = upgradeEmitted;
     // In Arena the player can be defeated, after which there is no hero to
     // measure; that ends the observation rather than failing it.
     if (live.gameState !== 'ARENA' && live.gameState !== 'PLAYING') {

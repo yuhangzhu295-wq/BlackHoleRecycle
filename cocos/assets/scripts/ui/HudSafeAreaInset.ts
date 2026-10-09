@@ -93,6 +93,26 @@ function isInteractive(node: Node): boolean {
 /** Rect-overlap tolerance in design px. */
 const OVERLAP_EPSILON = 1;
 
+/**
+ * Transient overlay presenters that the clamp must leave alone.
+ *
+ * These are centred, short-lived banners that size themselves to the frame by
+ * construction (`TierUpgradePresenter` narrows to `pagePanelHalfWidth(host) * 2`),
+ * so clamping them achieves nothing -- but it does real harm, because the clamp
+ * groups by rect overlap and a banner that happens to cross a panel merges into
+ * that panel's group. Measured on Arena at level 2: the tier-upgrade banner
+ * overlapped the leaderboard, the merged union spanned -344..271.5 = 615.5 design
+ * units against a safe span of 591.5, and the clamp took its "wider than the safe
+ * span, centre it instead of clipping one side" branch -- which still clips both
+ * sides, leaving `LeaderboardPanel` 7.9 px off the left edge and the banner 7.9 px
+ * off the right. Exactly `(615.5 - 591.5) / 2` design units at the frame's 0.659
+ * design-to-pixel scale.
+ *
+ * Keep in sync with the names the presenters actually create; the QA pass reports
+ * what it skipped, so a rename that misses this list shows up as a clip.
+ */
+export const HUD_TRANSIENT_OVERLAY_PREFIXES: readonly string[] = ['TierUpgradeBanner_'];
+
 interface SafeAreaState {
   /** First observed position per child, used as the shift origin. */
   readonly base: Map<Node, Vec3>;
@@ -137,6 +157,8 @@ export interface HudSafeAreaPass {
   readonly itemCount: number;
   readonly skippedFullBleed: readonly string[];
   readonly skippedInactive: readonly string[];
+  /** Transient overlays left unclamped; see HUD_TRANSIENT_OVERLAY_PREFIXES. */
+  readonly skippedOverlay: readonly string[];
   readonly earlyReturn: boolean;
   readonly groups: readonly HudSafeAreaGroup[];
 }
@@ -304,6 +326,7 @@ export function applyHudSafeAreaInset(host: Node, options?: HudSafeAreaOptions):
       itemCount: 0,
       skippedFullBleed: [],
       skippedInactive: [],
+      skippedOverlay: [],
       earlyReturn: false,
       groups: [],
       ...pass,
@@ -319,6 +342,7 @@ export function applyHudSafeAreaInset(host: Node, options?: HudSafeAreaOptions):
   const items: Item[] = [];
   const skippedFullBleed: string[] = [];
   const skippedInactive: string[] = [];
+  const skippedOverlay: string[] = [];
   for (const child of host.children) {
     if (!child.isValid) continue;
     // An inactive node is not drawn, so it cannot be clipped -- and letting it
@@ -329,6 +353,13 @@ export function applyHudSafeAreaInset(host: Node, options?: HudSafeAreaOptions):
     // whole row to compensate for a button nobody can see.
     if (!child.activeInHierarchy) {
       skippedInactive.push(child.name);
+      continue;
+    }
+    // A transient overlay is skipped before the width test: it is centred and
+    // already sized to the frame, and merging it into a panel's group is what
+    // pushed that group past the safe span. See HUD_TRANSIENT_OVERLAY_PREFIXES.
+    if (HUD_TRANSIENT_OVERLAY_PREFIXES.some((prefix) => child.name.startsWith(prefix))) {
+      skippedOverlay.push(child.name);
       continue;
     }
     const childTransform = child.getComponent(UITransform);
@@ -383,6 +414,12 @@ export function applyHudSafeAreaInset(host: Node, options?: HudSafeAreaOptions):
     let shift = 0;
     if (width > groupSafeHalfWidth * 2) {
       // Wider than the safe span: centre it rather than clipping one side.
+      // Note this still clips both sides, by `(width - 2 * groupSafeHalfWidth) / 2`.
+      // That is deliberate for a group of related elements that genuinely cannot
+      // fit, but it is not containment -- so anything that merely *overlaps* a
+      // group and is already sized to the frame must not be merged into it (see
+      // HUD_TRANSIENT_OVERLAY_PREFIXES), or the whole group gets centred to
+      // accommodate a node that never needed help.
       shift = -(unionLeft + unionRight) * 0.5;
     } else if (unionLeft < -groupSafeHalfWidth) {
       shift = -groupSafeHalfWidth - unionLeft;
@@ -403,5 +440,5 @@ export function applyHudSafeAreaInset(host: Node, options?: HudSafeAreaOptions):
     }
   }
 
-  record({ itemCount: items.length, skippedFullBleed, skippedInactive, groups });
+  record({ itemCount: items.length, skippedFullBleed, skippedInactive, skippedOverlay, groups });
 }
