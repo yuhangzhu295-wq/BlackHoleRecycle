@@ -1,0 +1,179 @@
+{
+  "schema": "bhr.v95.page-sheets/1",
+  "generatedAt": "2026-10-08T18:56:09.234Z",
+  "buildDirectory": "C:\\Users\\zyu33\\Documents\\Codex\\2026-09-29\\BlackHoleRecycle\\cocos\\build\\web-mobile",
+  "sizes": [
+    {
+      "width": 375,
+      "height": 667,
+      "label": "375x667"
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "label": "390x844"
+    },
+    {
+      "width": 430,
+      "height": 932,
+      "label": "430x932"
+    }
+  ],
+  "pages": [
+    "home",
+    "mode",
+    "ready",
+    "machine",
+    "skin",
+    "pause",
+    "settlement",
+    "revive"
+  ],
+  "captured": [
+    {
+      "page": "home",
+      "size": "375x667",
+      "file": "C:\\Users\\zyu33\\Documents\\Codex\\2026-09-29\\BlackHoleRecycle\\cocos\\docs\\evidence\\v95\\pages\\home-375x667.png",
+      "ms": 6594
+    },
+    {
+      "page": "mode",
+      "size": "375x667",
+      "file": "C:\\Users\\zyu33\\Documents\\Codex\\2026-09-29\\BlackHoleRecycle\\cocos\\docs\\evidence\\v95\\pages\\mode-375x667.png",
+      "ms": 7300
+    },
+    {
+      "page": "ready",
+      "size": "375x667",
+      "file": "C:\\Users\\zyu33\\Documents\\Codex\\2026-09-29\\BlackHoleRecycle\\cocos\\docs\\evidence\\v95\\pages\\ready-375x667.png",
+      "ms": 8089
+    },
+    {
+      "page": "machine",
+      "size": "375x667",
+      "file": "C:\\Users\\zyu33\\Documents\\Codex\\2026-09-29\\BlackHoleRecycle\\cocos\\docs\\evidence\\v95\\pages\\machine-375x667.png",
+      "ms": 7242
+    },
+    {
+      "page": "skin",
+      "size": "375x667",
+      "file": "C:\\Users\\zyu33\\Documents\\Codex\\2026-09-29\\BlackHoleRecycle\\cocos\\docs\\evidence\\v95\\pages\\skin-375x667.png",
+      "ms": 7656
+    },
+    {
+      "page": "pause",
+      "size": "375x667",
+      "file": "C:\\Users\\zyu33\\Documents\\Codex\\2026-09-29\\BlackHoleRecycle\\cocos\\docs\\evidence\\v95\\pages\\pause-375x667.png",
+      "ms": 14108
+    },
+    {
+      "page": "settlement",
+      "size": "375x667",
+      "file": "C:\\Users\\zyu33\\Documents\\Codex\\2026-09-29\\BlackHoleRecycle\\cocos\\docs\\evidence\\v95\\pages\\settlement-375x667.png",
+      "ms": 17490
+    },
+    {
+      "page": "revive",
+      "size": "375x667",
+      "file": "C:\\Users\\zyu33\\Documents\\Codex\\2026-09-29\\BlackHoleRecycle\\cocos\\docs\\evidence\\v95\\pages\\revive-375x667.png",
+      "ms": 25936
+    },
+    {
+      "page": "home",
+      "size": "390x844",
+      "file": "C:\\Users\\zyu33\\Documents\\Codex\\2026-09-29\\BlackHoleRecycle\\cocos\\docs\\evidence\\v95\\pages\\home-390x844.png",
+      "ms": 7254
+    },
+    {
+      "page": "mode",
+      "size": "390x844",
+      "file": "C:\\Users\\zyu33\\Documents\\Codex\\2026-09-29\\BlackHoleRecycle\\cocos\\docs\\evidence\\v95\\pages\\mode-390x844.png",
+      "ms": 7540
+    },
+    {
+      "page": "ready",
+      "size": "390x844",
+      "file": "C:\\Users\\zyu33\\Documents\\Codex\\2026-09-29\\BlackHoleRecycle\\cocos\\docs\\evidence\\v95\\pages\\ready-390x844.png",
+      "ms": 8314
+    },
+    {
+      "page": "machine",
+      "size": "390x844",
+      "file": "C:\\Users\\zyu33\\Documents\\Codex\\2026-09-29\\BlackHoleRecycle\\cocos\\docs\\evidence\\v95\\pages\\machine-390x844.png",
+      "ms": 7350
+    },
+    {
+      "page": "skin",
+      "size": "390x844",
+      "file": "C:\\Users\\zyu33\\Documents\\Codex\\2026-09-29\\BlackHoleRecycle\\cocos\\docs\\evidence\\v95\\pages\\skin-390x844.png",
+      "ms": 7413
+    },
+    {
+      "page": "pause",
+      "size": "390x844",
+      "file": "C:\\Users\\zyu33\\Documents\\Codex\\2026-09-29\\BlackHoleRecycle\\cocos\\docs\\evidence\\v95\\pages\\pause-390x844.png",
+      "ms": 13325
+    },
+    {
+      "page": "settlement",
+      "size": "390x844",
+      "file": "C:\\Users\\zyu33\\Documents\\Codex\\2026-09-29\\BlackHoleRecycle\\cocos\\docs\\evidence\\v95\\pages\\settlement-390x844.png",
+      "ms": 17774
+    },
+    {
+      "page": "revive",
+      "size": "390x844",
+      "file": "C:\\Users\\zyu33\\Documents\\Codex\\2026-09-29\\BlackHoleRecycle\\cocos\\docs\\evidence\\v95\\pages\\revive-390x844.png",
+      "ms": 25329
+    },
+    {
+      "page": "home",
+      "size": "430x932",
+      "file": "C:\\Users\\zyu33\\Documents\\Codex\\2026-09-29\\BlackHoleRecycle\\cocos\\docs\\evidence\\v95\\pages\\home-430x932.png",
+      "ms": 7472
+    },
+    {
+      "page": "mode",
+      "size": "430x932",
+      "file": "C:\\Users\\zyu33\\Documents\\Codex\\2026-09-29\\BlackHoleRecycle\\cocos\\docs\\evidence\\v95\\pages\\mode-430x932.png",
+      "ms": 7362
+    },
+    {
+      "page": "ready",
+      "size": "430x932",
+      "file": "C:\\Users\\zyu33\\Documents\\Codex\\2026-09-29\\BlackHoleRecycle\\cocos\\docs\\evidence\\v95\\pages\\ready-430x932.png",
+      "ms": 7976
+    },
+    {
+      "page": "machine",
+      "size": "430x932",
+      "file": "C:\\Users\\zyu33\\Documents\\Codex\\2026-09-29\\BlackHoleRecycle\\cocos\\docs\\evidence\\v95\\pages\\machine-430x932.png",
+      "ms": 7299
+    },
+    {
+      "page": "skin",
+      "size": "430x932",
+      "file": "C:\\Users\\zyu33\\Documents\\Codex\\2026-09-29\\BlackHoleRecycle\\cocos\\docs\\evidence\\v95\\pages\\skin-430x932.png",
+      "ms": 7502
+    },
+    {
+      "page": "pause",
+      "size": "430x932",
+      "file": "C:\\Users\\zyu33\\Documents\\Codex\\2026-09-29\\BlackHoleRecycle\\cocos\\docs\\evidence\\v95\\pages\\pause-430x932.png",
+      "ms": 13922
+    },
+    {
+      "page": "settlement",
+      "size": "430x932",
+      "file": "C:\\Users\\zyu33\\Documents\\Codex\\2026-09-29\\BlackHoleRecycle\\cocos\\docs\\evidence\\v95\\pages\\settlement-430x932.png",
+      "ms": 16412
+    },
+    {
+      "page": "revive",
+      "size": "430x932",
+      "file": "C:\\Users\\zyu33\\Documents\\Codex\\2026-09-29\\BlackHoleRecycle\\cocos\\docs\\evidence\\v95\\pages\\revive-430x932.png",
+      "ms": 25544
+    }
+  ],
+  "failures": []
+}
