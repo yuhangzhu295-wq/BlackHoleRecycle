@@ -33,6 +33,13 @@ export const MODE_SELECT_LAYOUT = {
 
 /** The two playable mode cards, which are wider than a 20:9 frame can show. */
 const MODE_CARD_NODES: readonly (keyof typeof MODE_SELECT_LAYOUT)[] = ['BtnArena', 'BtnEndless'];
+/** Decorative plinths: [shelf, the card it belongs under]. */
+const MODE_SHELF_PAIRS: readonly (readonly [keyof typeof MODE_SELECT_LAYOUT, keyof typeof MODE_SELECT_LAYOUT])[] = [
+  ['ShelfArena', 'BtnArena'],
+  ['ShelfEndless', 'BtnEndless'],
+];
+/** How far the card's bottom edge sits down over the plinth, in design px. */
+const PLINTH_OVERLAP = 10;
 
 @ccclass('ModeSelectPageController')
 export class ModeSelectPageController extends Component {
@@ -93,6 +100,29 @@ export class ModeSelectPageController extends Component {
     for (const cardName of MODE_CARD_NODES) {
       const [width, height, x] = MODE_SELECT_LAYOUT[cardName];
       fitNodeIntoSafeSpan(this.findNode(cardName), x, width, height, safeHalfWidth);
+    }
+
+    // The plinth is authored 600 design px against the same ~576 design px visible
+    // width, so on its own it overflows the frame by about 2.8 screen px per side.
+    // Narrow it to the card it sits under, less a small inset: the reference shows
+    // a plinth slightly narrower than its card, and this keeps it inside the frame
+    // at every aspect. Width only -- a slab's thickness must not scale with it.
+    // Positioned from the card rather than from MODE_SELECT_LAYOUT: measured at
+    // runtime, the authored shelf y put the plinth *above* its card (screen y
+    // 168.8 against the card's 222.1) when the reference clearly has the card
+    // sitting on the shelf. Deriving it here cannot drift from the card again.
+    for (const [shelfName, cardName] of MODE_SHELF_PAIRS) {
+      const card = this.findNode(cardName);
+      const shelf = this.findNode(shelfName);
+      const cardTransform = card?.getComponent(UITransform);
+      const shelfTransform = shelf?.getComponent(UITransform);
+      if (!card || !shelf || !cardTransform || !shelfTransform) continue;
+      shelfTransform.setContentSize(cardTransform.width - 16, shelfTransform.height);
+      shelf.setPosition(
+        0,
+        card.position.y - cardTransform.height / 2 - shelfTransform.height / 2 + PLINTH_OVERLAP,
+        0,
+      );
     }
   }
 
@@ -164,18 +194,15 @@ export class ModeSelectPageController extends Component {
     // exists to display, so the blue badge strip must not appear on the mode card.
     const availBadge = this.findNode('ArenaAvailability');
     if (availBadge) availBadge.active = false;
-    // ShelfArena / ShelfEndless carry mode_card_shelf.png, which is an empty
-    // white capsule bar with no content of its own. In the portrait frame they
-    // read as two blank white sprite bars floating between the title and the
-    // mode cards, which the V6 brief forbids by name ("empty sprite bar",
-    // "placeholder rectangle"). The mode cards already frame themselves, so the
-    // decorative shelves are pure residue. They stay in MODE_SELECT_LAYOUT so
-    // the layout contract keeps asserting their authored geometry; only their
-    // visibility is suppressed here.
-    for (const emptyShelf of ['ShelfArena', 'ShelfEndless']) {
-      const shelf = this.findNode(emptyShelf);
-      if (shelf) shelf.active = false;
-    }
+    // ShelfArena / ShelfEndless were hidden because `mode_card_shelf.png` was a
+    // blank white capsule with no 9-slice borders, and two floating white bars are
+    // what the V6 brief forbids by name ("empty sprite bar", "placeholder
+    // rectangle"). The placeholder has since been replaced with real plinth art --
+    // a light top face over a darker front face, drawn by
+    // `art-source/vector/generate_card_plinth.py` -- which is the element the
+    // adopted Mode Select reference puts under every card. So the shelves are
+    // shown again, and `mode_card_shelf.png.meta` now carries 16 px horizontal
+    // 9-slice borders so a stretched card keeps square ends.
   }
 }
 
