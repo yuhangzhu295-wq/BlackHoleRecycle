@@ -21,13 +21,14 @@ import sys
 from PIL import Image, ImageChops, ImageDraw
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from art_source import art_path  # noqa: E402
 
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 ART = os.path.join(REPO, 'cocos', 'assets', 'game_art', 'ui', 'v95')
 
 
 def art(name):
-    return Image.open(os.path.join(ART, name)).convert('RGBA')
+    return Image.open(art_path(name)).convert('RGBA')
 
 
 def save(image, name):

@@ -17,17 +17,62 @@ const creatorExe = process.env.COCOS_CREATOR_EXE || 'C:\\ProgramData\\cocos\\edi
 const reportDirectory = path.join(cocosProject, 'docs', 'evidence', 'v2', 'platform');
 const requireReleaseIds = process.argv.includes('--require-release-ids');
 const requestedPlatform = process.argv.find((argument) => argument.startsWith('--platform='))?.slice('--platform='.length) || 'all';
+/**
+ * Platform options are passed as a generated config file, not as `--build` flags.
+ *
+ * `separateEngine` moves the engine into a folder the mini-game host loads as a
+ * subpackage, which takes it out of the main-package budget. The engine is
+ * ~3.96 MB of a 20 MB package, so without it the main package cannot approach
+ * the 4 MB limit.
+ *
+ * The flag form cannot express it. `--build` splits its argument on `;` into
+ * `key=value` pairs, so a dotted path stays a literal top-level key: the log for
+ * `packages.wechatgame.separateEngine=true` shows `packages.wechatgame` arriving
+ * with `separateEngine: false`, and a bare `separateEngine=true` arrives as the
+ * top-level *string* `"true"`. Passing the options as JSON instead makes Creator
+ * ignore every key and silently fall back to `web-desktop`. `configPath=` is the
+ * only form that reaches the nested key, so the config is written here and the
+ * path is handed to `--build`; the option is then verified by its effect on the
+ * built output, because Creator ignores any option it does not recognise.
+ */
+const buildConfigDirectory = path.join(cocosProject, 'build-configs');
+
+function writePlatformBuildConfig(platform) {
+  const config = {
+    platform,
+    debug: false,
+    startScene: REQUIRED_START_SCENE,
+    // The engine is compiled per feature set. Creator's "Cache Build Engine"
+    // preference keys on "engine code and compile options unchanged", and the
+    // wechatgame build was observed reusing an all-features cache after
+    // `modules.includeModules` was cropped, which left dragon-bones/spine/tiled-map
+    // in the shipped package. Rebuilding the engine every time is the only way the
+    // crop is guaranteed to reach the output; it costs about a minute.
+    useBuildEngineCache: false,
+  };
+  if (platformSpecs[platform].miniGame) {
+    config.packages = { [platform]: { orientation: 'portrait', separateEngine: true } };
+  }
+  mkdirSync(buildConfigDirectory, { recursive: true });
+  const configPath = path.join(buildConfigDirectory, `${platform}.json`);
+  writeFileSync(configPath, `${JSON.stringify(config, null, 2)}\n`);
+  return configPath;
+}
+
 const platformSpecs = {
   'web-mobile': {
     outputName: 'web-mobile',
+    miniGame: false,
     requiredFiles: ['index.html', 'application.js', 'src/settings.json'],
   },
   wechatgame: {
     outputName: 'wechatgame',
+    miniGame: true,
     requiredFiles: ['game.json', 'project.config.json', 'application.js', 'src/system.bundle.js'],
   },
   'bytedance-mini-game': {
     outputName: 'bytedance-mini-game',
+    miniGame: true,
     requiredFiles: ['game.json', 'project.config.json', 'application.js', 'src/system.bundle.js'],
   },
 };
@@ -48,8 +93,15 @@ const selectedPlatforms = requestedPlatform === 'all'
  */
 const REQUIRED_START_SCENE = 'scene-game-0001-8888-9999-aaaabbbbcccc';
 const REQUIRED_LAUNCH_SCENE_PATH = 'db://assets/scenes/Game.scene';
-/** Region bundles the boot template loads before the launch scene is scheduled. */
-const REQUIRED_BOOT_BUNDLES = ['world-city'];
+/**
+ * Bundles the boot template must load before it schedules the launch scene.
+ *
+ * Asserted from the built `application.js`, because the failure mode is silent
+ * in the build: a bundle the launch scene references but nothing preloads only
+ * shows up at runtime as `Please load bundle <name> first`, after which the game
+ * never reaches its first frame.
+ */
+const REQUIRED_BOOT_BUNDLES = ['world-city', 'game-art'];
 
 /**
  * Mirrors the DevTools' own schema for `project.config.json` -> `libVersion`
@@ -95,7 +147,7 @@ function buildPlatform(platform) {
   return new Promise((resolve, reject) => {
     const child = spawn(
       creatorExe,
-      ['--project', cocosProject, '--build', `platform=${platform};debug=false;orientation=portrait;startScene=${REQUIRED_START_SCENE};`],
+      ['--project', cocosProject, '--build', `configPath=${writePlatformBuildConfig(platform)}`],
       { cwd: cocosProject, windowsHide: true },
     );
     let output = '';

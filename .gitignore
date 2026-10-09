@@ -44,3 +44,6 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Generated per-platform build option files (see verify_cocos_minigame_builds.mjs).
+cocos/build-configs/

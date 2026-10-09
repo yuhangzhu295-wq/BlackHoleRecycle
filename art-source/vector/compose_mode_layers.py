@@ -24,6 +24,7 @@ import sys
 from PIL import Image, ImageDraw
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from art_source import art_path  # noqa: E402
 
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 ART = os.path.join(REPO, 'cocos', 'assets', 'game_art', 'ui', 'v95')
@@ -70,7 +71,7 @@ def main():
     save(framed_card('mode_arena_card.png'), 'mode_card_arena_framed.png')
     save(framed_card('mode_endless_card.png'), 'mode_card_endless_framed.png')
 
-    field = open_art(os.path.join(ART, 'field_home.png')).resize((720, 1280), Image.LANCZOS)
+    field = open_art(art_path('field_home.png')).resize((720, 1280), Image.LANCZOS)
     save(field, 'field_mode.png')
 
 

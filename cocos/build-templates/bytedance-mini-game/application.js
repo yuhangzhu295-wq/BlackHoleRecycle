@@ -4,21 +4,30 @@ System.register([], function (_export, _context) {
   var cc, Application;
 
   /**
-   * Region-scoped Asset Bundles that the launch scene already references.
+   * Asset Bundles that the launch scene already references.
    *
-   * Game.scene's authored Golden City cell serializes seven commercial-district
-   * meshes that live in the `world-city` bundle, so the bundle must be resident
-   * before the launch scene is deserialized. The engine loads
-   * `settings.assets.preloadBundles` before the launch scene but offers no error
-   * surface, so this template loads the region bundles itself between
+   * Two different reasons, one mechanism:
+   *
+   * - `world-city`: Game.scene's authored Golden City cell serializes seven
+   *   commercial-district meshes from this bundle.
+   * - `game-art`: the re-skinned Home / Mode / Settlement nodes serialize their
+   *   SpriteFrames from this bundle. It is declared a mini-game subpackage, and
+   *   a subpackage is never part of `settings.assets.preloadBundles`, so without
+   *   this the launch scene throws `Please load bundle game-art first` and the
+   *   game never reaches its first frame.
+   *
+   * The engine loads `settings.assets.preloadBundles` before the launch scene but
+   * offers no error surface, so this template loads these bundles itself between
    * `game.init()` and `game.run()`: `run()` is what schedules the launch scene,
    * which makes this the only point where project-controlled, retryable loading
-   * still precedes the first screen.
+   * still precedes the first screen. On a mini game, `loadBundle` is what
+   * triggers the subpackage download.
    *
-   * Keep in sync with REGION_ASSET_BUNDLES in
-   * cocos/assets/scripts/world/InfiniteWorldManager.ts.
+   * `world-city` is kept in sync with REGION_ASSET_BUNDLES in
+   * cocos/assets/scripts/world/InfiniteWorldManager.ts. The whole list is
+   * asserted by scripts/test_boot_bundle_residency.mjs.
    */
-  var BOOT_BUNDLES = ['world-city'];
+  var BOOT_BUNDLES = ['world-city', 'game-art'];
   var BOOT_BUNDLE_MAX_ATTEMPTS = 4;
   var BOOT_BUNDLE_RETRY_DELAY_MS = 300;
 

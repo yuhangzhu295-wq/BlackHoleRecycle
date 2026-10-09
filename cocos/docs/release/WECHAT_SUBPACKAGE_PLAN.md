@@ -9,6 +9,17 @@
 
 **状态：PHASE WP2 三项验收判据全部通过（见 §2.6），但试点 Bundle 尚不可发布（见 R9）。**
 
+> ## ⚠️ 2026-10-09 更正（V10.1 实测）—— 以 `cocos/docs/V10_1_WECHAT_PACKAGE_REPORT.md` 为准
+>
+> 本文档有两处结论已被实测推翻：
+>
+> 1. **§4.2 / §12.4：`separateEngine` 不减少首包。** 原文按「分离引擎把 `cocos-js` 移出首包 ⇒ 下界 1,002.1 KB ⇒ 搬 `shared-gameplay` 后 ≈3,373 KB 达标」推演。Cocos 官方 FAQ 明确：启用引擎插件后引擎代码**仍计入首包**（原文见 V10.1 报告 §2）。该投影作废。
+> 2. **§4.2 手段 C（skybox 850 KB）不是构图决策。** 原文因「两个 scene 都引用了 skybox」判为 MEDIUM 且需业主拍板。实测 `_envLightingType: 0` = `HEMISPHERE_DIFFUSE`（`useIBL` 为假），且两场景**均无 `cc.Skybox` 组件**，贴图是编辑器注入的内置 `default_skybox.hdr` ⇒ **从未被采样**，已移除。
+>
+> 首包实测 **7,394.3 KB**（上限 4,096 KB，1.81×）；把 `assets/main` 载荷全部搬空后**下界仍有 5,487.8 KB（1.34×）** ⇒ 该门禁需业主在「内置 `main` 包分包」与「远程 CDN」之间拍板。
+>
+> 另：§12.5 所述「启动可达的资源仍可分包的机制 = `BOOT_BUNDLES`」已被证实并**加了守卫** —— `scripts/test_boot_bundle_residency.mjs`（接入 `npm run test:contracts`）。守卫的由来是一次真实事故：`game-art` 分包后漏加 `BOOT_BUNDLES`，构建全 PASS 但运行时 `Please load bundle game-art first`、首屏白屏。
+
 ---
 
 ## 1. 平台规则（已对官方文档核验，非旧记忆）

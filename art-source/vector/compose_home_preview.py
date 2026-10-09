@@ -17,6 +17,7 @@ import sys
 from PIL import Image, ImageDraw, ImageFont
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from art_source import art_path  # noqa: E402
 from palette import GOLD_LIGHT, NAVY_DEEP, WHITE, rgb  # noqa: E402
 
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -43,7 +44,7 @@ def font(size):
 
 
 def art(name):
-    return Image.open(os.path.join(ART, name)).convert('RGBA')
+    return Image.open(art_path(name)).convert('RGBA')
 
 
 def place_at(page, image, design_x, design_y, design_w=None, anchor='center'):

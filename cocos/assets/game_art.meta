@@ -7,8 +7,8 @@
   "subMetas": {},
   "userData": {
     "isBundle": true,
-    "bundleConfigID": "default",
+    "bundleConfigID": "mini-game-subpackage",
     "bundleName": "game-art",
-    "priority": 1
+    "priority": 10
   }
 }

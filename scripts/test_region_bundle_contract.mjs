@@ -181,8 +181,15 @@ record(
 const buildScript = readFile('scripts/verify_cocos_minigame_builds.mjs');
 record(
   'BUILD_PASSES_START_SCENE',
-  /startScene=\$\{REQUIRED_START_SCENE\}/.test(buildScript),
-  'headless build passes startScene explicitly',
+  // The launch scene used to be passed as a `--build` flag. It now goes through
+  // the generated per-platform config file, which is the only form that can
+  // express a nested platform option such as `packages.wechatgame.separateEngine`
+  // (`--build` splits its argument on `;` into top-level `key=value` pairs, so a
+  // dotted path stays a literal key and is ignored). Both halves are asserted:
+  // writing the field and actually passing the file are separate failures.
+  /startScene:\s*REQUIRED_START_SCENE/.test(buildScript)
+    && /configPath=\$\{writePlatformBuildConfig\(platform\)\}/.test(buildScript),
+  'headless build writes startScene into the platform config and passes it via configPath',
 );
 record(
   'BUILD_ASSERTS_LAUNCH_SCENE',

@@ -1,3 +1,25 @@
 {
-  "__version__": "1.0.9"
+  "__version__": "1.0.9",
+  "modules": {
+    "includeModules": [
+      "2d",
+      "3d",
+      "animation",
+      "audio",
+      "base",
+      "custom-pipeline",
+      "gfx-empty",
+      "gfx-webgl",
+      "gfx-webgl2",
+      "intersection-2d",
+      "particle",
+      "primitive",
+      "profiler",
+      "terrain",
+      "tween",
+      "ui",
+      "websocket",
+      "websocket-server"
+    ]
+  }
 }
