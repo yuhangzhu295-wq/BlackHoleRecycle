@@ -1,6 +1,6 @@
 # AUTONOMOUS EXECUTION STATE
 
-- CURRENT_HEAD: `e73c9ce` + uncommitted B1 work (see §Working tree)
+- CURRENT_HEAD: `090621d` (clean tree; 12 commits ahead of `origin/dev/product-finalization-20260929`)
 - CURRENT_PHASE: `RELEASE_BLOCKERS_AND_PRODUCT_CLOSEOUT`
 - LAST_UPDATED: 2026-10-09
 
@@ -20,6 +20,9 @@
 | 8 | WeChat DevTools CLI service port enabled (was off) | flipped `security.enableServicePort` in `User Data/.../WeappLocalData/localstorage_b72da75d*.json` (backup `*.bak-zcode`) |
 | 9 | B1 root-caused: main package is 4.75 MB, not 7.22 MB | DevTools rule table `主包尺寸（不包含插件）`; `scripts/measure_wechat_package.py` |
 | 10 | B1 fixed: `art/machines` moved to its own subpackage | **main package 3.57 MB ≤ 4.00 MB**, `subpackages=[game-art,world-construction,art-machines,world-city]` |
+| 11 | Boot bundles load in parallel | `Promise.all`, per-bundle retry kept; built artifact verified |
+| 12 | LV5 framing brought back inside the streamed radius | occupancy 39.2% → 46.8%, empty ground 60.8% → 53.2%, `playerWidthRatio` 0.367 (predicted 0.365) |
+| 13 | Product re-audit from real runtime evidence | `FINAL_PRODUCT_AND_RELEASE_AUDIT.md` §6.2 |
 
 ## 2. VALIDATED_GATES (all on the current tree)
 
@@ -92,5 +95,26 @@
 
 ## 7. NEXT_ACTION
 
-Verify the web-mobile boot with `art-machines` booted, run the full gate set, commit B1, then start
-the product re-audit (P1).
+All gates are green and the tree is committed. What remains needs the owner:
+
+1. **B2** — a Douyin mini-game AppID (no Douyin developer tool is installed; only CapCut/JianyingPro).
+2. **B3** — a WeChat AppID this account can open. The DevTools is installed and logged in but rejects
+   `wx6ac3f5090a6b99c5` as non-existent, so the simulator and the upload-size figure stay unreachable.
+   After that: a scan/confirm, then a real-device pass.
+3. **Scope item, not a defect** — a settings page (`BtnSettings` is deliberately hidden because no page
+   backs it; adding one is a feature and would change the pinned Home layout contract).
+4. **Provisional audio** — 6 real non-silent SFX are wired; licensed production audio remains a
+   release-checklist item.
+5. **LV5 far field** — partially improved; closing it fully needs a streaming change or far-field art.
+
+Do not re-do: B1 (resolved), the boot-residency guard, the two V9.7 HUD fixes, STEP 6, V9.6, V10.
+
+## 8. NOTES FOR THE NEXT SESSION
+
+- The `progression` acceptance scope is not a reliable gate: its moving-traffic stage asks a fixed
+  steering heuristic to intercept a `DRIVE`-state vehicle. Use `acceptance:full` for end-to-end
+  confidence, and the composition diagnostic it emits when LV5 numbers are needed.
+- The WeChat DevTools CLI now works (service port enabled). `cli.bat open --project <dir>` is the
+  fastest way to check package size once a usable AppID exists.
+- `python scripts/measure_wechat_package.py` prints both counting conventions; the plugin is
+  `cocos/` and is excluded per the DevTools' own rule text.
