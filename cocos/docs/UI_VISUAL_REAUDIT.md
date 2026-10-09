@@ -92,7 +92,7 @@ elements are judged.
 | Crown ribbon + subtitle | purple banner, gold title, subtitle bar, gold horns and confetti | purple banner, gold title, subtitle line | **matches** (the horns and confetti are decoration this page has no art for) |
 | Leaderboard table | rank medals, per-row avatar, name, count, time, trophy, highlighted local row | **absent** | correct: Endless has no opponents |
 | Stat cards | **icon-led**: coin, skull, stopwatch, each above its caption and value | text-only captions and values | **difference — FIXED, see below** |
-| Reward row | "获得奖励" heading plus three reward tiles | a single gold coin bar | **difference — not yet done** |
+| Reward row | "获得奖励" heading plus three reward tiles | a single gold coin bar | **difference — deliberately NOT built, see below** |
 | Actions | 继续 (yellow) + 返回首页 (blue) | 再来一局 (yellow) + 返回首页 (purple) | **matches** in role; the secondary is purple per this product's language |
 | Lower half | filled by the reward row | a visible void between the coin bar and the buttons | **difference — same cause as the reward row** |
 
@@ -119,6 +119,27 @@ The panels also grow from 164x104 to 164x140 to hold icon + caption + value
 stacked, which is the reference's card shape, and the caption/value offsets move to
 +2/-36 to sit below the icon. None of these nodes is pinned by
 `docs/design-contracts/settlement.json`.
+
+### The reward row, and the Endless void: why neither is built
+
+The reference's "获得奖励" row shows three tiles (coins x1230, trophy x20, chest
+x1). Endless grants **coins and nothing else**, so two of those three tiles would
+be rewards this mode never pays — which the canon forbids in the same breath as
+fake buttons ("real stats only"). Copying the row would make the page look closer
+to the reference by lying about the reward.
+
+The same row is also what fills the reference's lower half, so the Endless page's
+void has one cause, and I checked both ways out of it rather than guessing:
+
+* **Shrinking the card** is not available. `docs/design-contracts/settlement.json`
+  pins `settlement_card` at 660x920, and the Arena variant needs that height for
+  its five leaderboard rows. Endless shares the card.
+* **Filling it with real data** is available but needs a signature change: the
+  natural content is the absorbed-tier breakdown the session already tracks
+  (`session.absorbedTiers`), and `updateStats` does not receive it today. That is
+  the right fix and it is a follow-up, not a rename of the problem.
+
+So this is recorded as an open difference with its cause, not as done.
 
 ## Other pages
 
