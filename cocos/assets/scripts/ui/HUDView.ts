@@ -64,9 +64,12 @@ export class HUDView extends Component {
     controller?.updateStats(mass, level, levelTitle, coins, regionName || '未知区域');
   }
 
-  public updateSettlement(absorbed: number, coins: number, level: number, regions: number, mass: number = 0): void {
+  public updateSettlement(
+    absorbed: number, coins: number, level: number, regions: number, mass: number = 0,
+    tierBreakdown: string = '',
+  ): void {
     const controller = this.findPage('SettlementPage')?.getComponent(SettlementPageController);
-    controller?.updateStats(absorbed, coins, level, regions, mass);
+    controller?.updateStats(absorbed, coins, level, regions, mass, tierBreakdown);
   }
 
   public updateArena(snapshot: ArenaMatchSnapshot): void {

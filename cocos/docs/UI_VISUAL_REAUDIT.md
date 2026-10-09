@@ -92,7 +92,7 @@ elements are judged.
 | Crown ribbon + subtitle | purple banner, gold title, subtitle bar, gold horns and confetti | purple banner, gold title, subtitle line | **matches** (the horns and confetti are decoration this page has no art for) |
 | Leaderboard table | rank medals, per-row avatar, name, count, time, trophy, highlighted local row | **absent** | correct: Endless has no opponents |
 | Stat cards | **icon-led**: coin, skull, stopwatch, each above its caption and value | text-only captions and values | **difference — FIXED, see below** |
-| Reward row | "获得奖励" heading plus three reward tiles | a single gold coin bar | **difference — deliberately NOT built, see below** |
+| Reward row | "获得奖励" heading plus three reward tiles | a gold coin bar **plus a real per-tier itemisation line** | **difference in form, not in honesty — see below** |
 | Actions | 继续 (yellow) + 返回首页 (blue) | 再来一局 (yellow) + 返回首页 (purple) | **matches** in role; the secondary is purple per this product's language |
 | Lower half | filled by the reward row | a visible void between the coin bar and the buttons | **difference — same cause as the reward row** |
 
@@ -120,7 +120,7 @@ stacked, which is the reference's card shape, and the caption/value offsets move
 +2/-36 to sit below the icon. None of these nodes is pinned by
 `docs/design-contracts/settlement.json`.
 
-### The reward row, and the Endless void: why neither is built
+### The reward row, and the Endless void: what was and was not done
 
 The reference's "获得奖励" row shows three tiles (coins x1230, trophy x20, chest
 x1). Endless grants **coins and nothing else**, so two of those three tiles would
@@ -139,7 +139,19 @@ void has one cause, and I checked both ways out of it rather than guessing:
   (`session.absorbedTiers`), and `updateStats` does not receive it today. That is
   the right fix and it is a follow-up, not a rename of the problem.
 
-So this is recorded as an open difference with its cause, not as done.
+**Done instead:** the second path. The session already tracks per-tier absorption
+(`absorbedTierCounts`), so `updateStats` now takes a formatted `tierBreakdown`,
+`GameManager.formatTierBreakdown()` produces it, and the settlement renders it on
+`ArenaRewardBreakdown` — the node the Arena variant already uses as its reward
+ledger, which is exactly the role this fills in Endless. Measured on a real
+30-second match: `absorbedTiers {1: 57, 2: 2}` rendered as `T1 ×59 · T2 ×3`, and
+the line is now visible at all because it was previously hidden with the rest of
+the arena-only furniture (the visibility pass runs before the text is known).
+
+So the page carries real itemisation where the reference carries invented reward
+tiles, and the remaining empty space below it is still there: this narrows the void
+rather than closing it. Closing it properly means either more real content or a
+card that varies by mode, and the contract pins one card for both.
 
 ## Other pages
 

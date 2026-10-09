@@ -1,6 +1,6 @@
 # AUTONOMOUS EXECUTION STATE
 
-- CURRENT_HEAD: `89ae6e5` (clean tree; 17 commits ahead of `origin/dev/product-finalization-20260929`)
+- CURRENT_HEAD: pending commit (clean tree; 18 commits ahead of `origin/dev/product-finalization-20260929`)
 - CURRENT_PHASE: `RELEASE_BLOCKERS_AND_PRODUCT_CLOSEOUT`
 - CURRENT_SCOPE: Mode Select plinth + Settlement stat icons (done); next the Mode Select card interiors and vortex art, the Endless settlement breakdown, LV5 far field, performance
 - LAST_UPDATED: 2026-10-09
@@ -31,6 +31,7 @@
 | 18 | Card plinth authored and placed under each card | `art-source/vector/generate_card_plinth.py`; ShelfArena 371.4..405.6 under BtnArena's 222.1..377.9, 0 clipped |
 | 19 | Settlement stat cards compared against their reference | `cocos/docs/UI_VISUAL_REAUDIT.md` §Settlement |
 | 20 | Stat card icons authored and wired | `art-source/vector/generate_stat_icons.py`, `scripts/add_settlement_stat_icons.py` |
+| 21 | Endless settlement itemises the run by tier (real data, not invented reward tiles) | `scripts/probe_settlement_breakdown.mjs` PASS: `absorbedTiers {1:57,2:2}` → `T1 ×59 · T2 ×3` |
 
 ## 2. VALIDATED_GATES (all on the current tree)
 

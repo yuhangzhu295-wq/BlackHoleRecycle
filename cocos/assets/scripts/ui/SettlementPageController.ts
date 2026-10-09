@@ -39,7 +39,11 @@ export class SettlementPageController extends Component {
     this.bindings.length = 0;
   }
 
-  public updateStats(absorbed: number, coins: number, level: number, regions: number, mass: number): void {
+  public updateStats(
+    absorbed: number, coins: number, level: number, regions: number, mass: number,
+    /** Per-tier absorption counts, already formatted; '' when there is nothing to itemise. */
+    tierBreakdown: string = '',
+  ): void {
     this.setArenaLeaderboardVisible(false);
     this.setLabel('Title', '本局结算');
     this.setLabel('Subtitle', `${MODE_TITLES.ENDLESS} · 本局数据`);
@@ -66,9 +70,17 @@ export class SettlementPageController extends Component {
     this.setLabel('ArenaStatTimeValue', `LV.${Math.max(1, level)}`);
     this.setLabel('ArenaRewardCaption', '本局获得金币');
     this.setLabel('ArenaRewardValue', `+${Math.max(0, coins)}`);
-    // Endless has no reward ledger to itemise, and an empty line is better than a
-    // breakdown of numbers that were never computed.
-    this.setLabel('ArenaRewardBreakdown', '');
+    // Endless pays coins only, so the reference's three reward tiles would be two
+    // rewards this mode never grants -- which the canon forbids alongside fake
+    // buttons. What Endless does have is a real per-tier absorption ledger, so that
+    // is what itemises the card, and it is also what fills the lower half the
+    // reference fills with its reward row.
+    this.setLabel('ArenaRewardBreakdown', tierBreakdown);
+    // `setArenaLeaderboardVisible(false)` ran at the top of this branch and hid
+    // this node with the rest of the arena-only furniture, before the text above
+    // was known. It is the reward ledger in Arena and the absorption ledger here,
+    // so it belongs on screen whenever it has something to say.
+    this.setNodeActive('ArenaRewardBreakdown', tierBreakdown !== '');
 
     // Endless has no leaderboard, so the middle of the board -- the region the
     // leaderboard occupies in Arena, y -165..365 -- would be empty. The real

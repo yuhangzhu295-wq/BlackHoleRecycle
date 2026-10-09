@@ -69,6 +69,23 @@ export class GameManager extends Component {
   public totalAbsorbedCount: number = 0;
   /** Real per-tier intake ledger; read-only QA exposes what gameplay actually absorbed. */
   private absorbedTierCounts: Record<number, number> = {};
+
+  /**
+   * This run's absorption by tier, as the settlement's itemisation line.
+   *
+   * The Endless settlement card is pinned at 660x920 by the layout contract and
+   * shares it with Arena's five leaderboard rows, so Endless has real space to
+   * fill. Its reward is coins alone, so a reward row would have to invent tiles;
+   * the tier ledger is the real data that belongs there instead.
+   */
+  private formatTierBreakdown(): string {
+    const tiers = Object.keys(this.absorbedTierCounts)
+      .map((key) => Number(key))
+      .filter((tier) => Number.isFinite(tier) && this.absorbedTierCounts[tier] > 0)
+      .sort((a, b) => a - b);
+    if (tiers.length === 0) return '';
+    return tiers.map((tier) => `T${tier} ×${this.absorbedTierCounts[tier]}`).join('  ·  ');
+  }
   public currentCoins: number = 0;
   public regionsVisitedCount: number = 1;
   private readonly session = new GameSessionCoordinator();
@@ -742,7 +759,8 @@ export class GameManager extends Component {
         Math.max(0, this.currentCoins - this.sessionStartCoins),
         this.machine?.currentLevel || 1,
         this.regionsVisitedCount,
-        this.machine?.currentMass || 0
+        this.machine?.currentMass || 0,
+        this.formatTierBreakdown()
       );
       this.hud.showScreen('Settlement');
     }
