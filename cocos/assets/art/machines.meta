@@ -5,5 +5,10 @@
   "uuid": "ae6555ac-d403-40ad-a9a3-1d9b99d05c02",
   "files": [],
   "subMetas": {},
-  "userData": {}
+  "userData": {
+    "isBundle": true,
+    "bundleConfigID": "mini-game-subpackage",
+    "bundleName": "art-machines",
+    "priority": 9
+  }
 }

@@ -15,6 +15,10 @@ System.register([], function (_export, _context) {
    *   a subpackage is never part of `settings.assets.preloadBundles`, so without
    *   this the launch scene throws `Please load bundle game-art first` and the
    *   game never reaches its first frame.
+   * - `art-machines`: Game.scene serializes the five MachineVisual prefabs, which
+   *   reference `poly-google-bulldozer.glb`. That one texture was 1.2 MB of the
+   *   main package, so the folder is its own subpackage and is loaded here for
+   *   the same reason as `game-art`.
    *
    * The engine loads `settings.assets.preloadBundles` before the launch scene but
    * offers no error surface, so this template loads these bundles itself between
@@ -27,7 +31,7 @@ System.register([], function (_export, _context) {
    * cocos/assets/scripts/world/InfiniteWorldManager.ts. The whole list is
    * asserted by scripts/test_boot_bundle_residency.mjs.
    */
-  var BOOT_BUNDLES = ['world-city', 'game-art'];
+  var BOOT_BUNDLES = ['world-city', 'game-art', 'art-machines'];
   var BOOT_BUNDLE_MAX_ATTEMPTS = 4;
   var BOOT_BUNDLE_RETRY_DELAY_MS = 300;
 

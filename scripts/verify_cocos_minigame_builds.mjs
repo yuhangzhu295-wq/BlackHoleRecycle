@@ -101,7 +101,7 @@ const REQUIRED_LAUNCH_SCENE_PATH = 'db://assets/scenes/Game.scene';
  * shows up at runtime as `Please load bundle <name> first`, after which the game
  * never reaches its first frame.
  */
-const REQUIRED_BOOT_BUNDLES = ['world-city', 'game-art'];
+const REQUIRED_BOOT_BUNDLES = ['world-city', 'game-art', 'art-machines'];
 
 /**
  * Mirrors the DevTools' own schema for `project.config.json` -> `libVersion`
