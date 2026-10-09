@@ -117,38 +117,33 @@ System.register([], function (_export, _context) {
    * `game.run()` — and therefore the launch scene — cannot start early.
    */
   function ensureBootBundles() {
-    var bundleIndex = 0;
-
-    function nextBundle() {
-      if (bundleIndex >= BOOT_BUNDLES.length) return Promise.resolve();
-      var name = BOOT_BUNDLES[bundleIndex];
+    // Every boot bundle is a separate subpackage download on a mini game, so a
+    // serial chain adds their latencies together in front of the first frame.
+    // These load in parallel instead, each with its own retry and the same
+    // failure prompt, so the wall clock is the slowest bundle rather than the sum.
+    function loadWithRetry(name) {
       var attempt = 0;
 
       function attemptLoad() {
         attempt += 1;
-        return loadBundle(name)
-          .then(function () {
-            bundleIndex += 1;
-            return nextBundle();
-          })
-          .catch(function (error) {
-            console.warn('[boot] bundle "' + name + '" failed on attempt ' + attempt + ':', error);
-            if (attempt < BOOT_BUNDLE_MAX_ATTEMPTS) {
-              return wait(BOOT_BUNDLE_RETRY_DELAY_MS * attempt).then(attemptLoad);
-            }
-            return new Promise(function (resolve) {
-              reportBootFailure('区域资源加载失败：' + name + '（已尝试 ' + attempt + ' 次）', function () {
-                attempt = 0;
-                resolve(attemptLoad());
-              });
+        return loadBundle(name).catch(function (error) {
+          console.warn('[boot] bundle "' + name + '" failed on attempt ' + attempt + ':', error);
+          if (attempt < BOOT_BUNDLE_MAX_ATTEMPTS) {
+            return wait(BOOT_BUNDLE_RETRY_DELAY_MS * attempt).then(attemptLoad);
+          }
+          return new Promise(function (resolve) {
+            reportBootFailure('区域资源加载失败：' + name + '（已尝试 ' + attempt + ' 次）', function () {
+              attempt = 0;
+              resolve(attemptLoad());
             });
           });
+        });
       }
 
       return attemptLoad();
     }
 
-    return nextBundle();
+    return Promise.all(BOOT_BUNDLES.map(loadWithRetry));
   }
 
   return {
