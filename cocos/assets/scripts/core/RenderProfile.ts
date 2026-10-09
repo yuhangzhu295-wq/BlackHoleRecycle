@@ -279,7 +279,20 @@ export const LIGHTING_PROFILE = {
   toneMapping: 0,
 } as const;
 
-/** The V6 visual language, as named roles rather than ad-hoc hex literals. */
+/**
+ * DEAD as of V9.5 — no role here is read by any code.
+ *
+ * All twelve roles have zero references outside this file (`grep -rn "UI_PALETTE\." cocos/assets/scripts`).
+ * This was the V6 menu palette, from when the pages drew their own fills; the
+ * pages are now baked v95 PNGs, so the runtime has nothing left to colour.
+ *
+ * Kept rather than deleted because `docs/design-reference/ui-v6-production/render-profile.md`
+ * and `V9_VISUAL_LOCK_PROGRESS.md` still cite it, and deleting it would imply the
+ * pages lost a live palette. **Do not "reconcile" these values with the v9.5 art:**
+ * nothing renders from them, so a change here is invisible. The live gameplay
+ * colours are `WORLD_PALETTE`, `HUD_SEMANTIC`, GameConfig's level and skin
+ * colours, and the baked PNGs -- see `cocos/docs/V9_6_GAMEPLAY_ART_UNIFICATION.md`.
+ */
 export const UI_PALETTE = {
   /** Primary call to action. */
   primary: '#ffbd1f',

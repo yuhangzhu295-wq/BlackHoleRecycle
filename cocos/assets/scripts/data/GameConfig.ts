@@ -49,6 +49,25 @@ export interface IRegionThemeConfig {
   readonly description: string;
 }
 
+/**
+ * A spawnable collectible.
+ *
+ * `color`, `shape`, `height` and `size` are DEAD: they have zero readers
+ * (`grep -rnE "template\.(color|shape|height|size)\b" cocos/assets/scripts`).
+ * They are leftovers from when a collectible was built from a primitive, and the
+ * appearance path no longer goes near them -- `CompressibleObject.applyTemplateArt`
+ * resolves `getObjectArtBinding(this.template.type)` and hands it to
+ * `WorldArtLibrary`, so what you see is authored GLB art. The comment there says
+ * primitive fallback is prohibited, which is why nothing reads `shape`.
+ *
+ * They are not deleted because six contract tests read `OBJECT_TEMPLATES`
+ * (`test_collectible_production_contract`, `test_suction_progression_contract`,
+ * `test_vehicle_art_contract`, `test_traffic_replenishment_contract`,
+ * `test_resource_replenishment_contract`, `v7_phase3_maps`); those tests only use
+ * the live fields, but removing fields is a gate-visible edit. **Do not treat the
+ * `color` values as a target palette to unify** -- the Material Design hexes in
+ * the list below render nothing. See `cocos/docs/V9_6_GAMEPLAY_ART_UNIFICATION.md`.
+ */
 export interface IObjectTemplate {
   readonly type: string;
   readonly name: string;
@@ -56,7 +75,9 @@ export interface IObjectTemplate {
   readonly mass: number;
   readonly value: number;
   readonly radius: number;
+  /** Dead. The object's colour comes from its authored art binding. */
   readonly color: string;
+  /** Dead. Retained for the six contract tests that parse this table. */
   readonly shape: ObjectShape;
   readonly height?: number;
   readonly size?: readonly [number, number, number];
