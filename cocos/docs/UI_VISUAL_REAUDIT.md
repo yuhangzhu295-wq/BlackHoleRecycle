@@ -80,6 +80,46 @@ Three real differences remain, in descending order of visual impact: **the spars
 card interiors**, **the flat vortex art**, and the session pill (arguably a product
 decision — this game has no timed session or energy, so it is listed, not queued).
 
+## Settlement — DIFFERENCES FOUND
+
+Reference `v2-05-settlement.png` (the Arena leaderboard variant) vs shipped
+`settlement-390x844.png` (the Endless variant). The two variants legitimately
+differ — Endless has no opponents, so no leaderboard — so only the comparable
+elements are judged.
+
+| Element | Reference | Shipped | Verdict |
+| --- | --- | --- | --- |
+| Crown ribbon + subtitle | purple banner, gold title, subtitle bar, gold horns and confetti | purple banner, gold title, subtitle line | **matches** (the horns and confetti are decoration this page has no art for) |
+| Leaderboard table | rank medals, per-row avatar, name, count, time, trophy, highlighted local row | **absent** | correct: Endless has no opponents |
+| Stat cards | **icon-led**: coin, skull, stopwatch, each above its caption and value | text-only captions and values | **difference — FIXED, see below** |
+| Reward row | "获得奖励" heading plus three reward tiles | a single gold coin bar | **difference — not yet done** |
+| Actions | 继续 (yellow) + 返回首页 (blue) | 再来一局 (yellow) + 返回首页 (purple) | **matches** in role; the secondary is purple per this product's language |
+| Lower half | filled by the reward row | a visible void between the coin bar and the buttons | **difference — same cause as the reward row** |
+
+### Stat card icons: fixed
+
+The reference leads every stat card with an icon; ours were text-only, which is
+most of why the page reads as sparse beside it. Three icons were authored in the
+page's own language — bold shape, thick dark outline, one highlight — for this
+product's three roles: a weight for mass, a package for absorbed items, a medal
+star for level (`art-source/vector/generate_stat_icons.py`).
+
+Two traps worth recording, both of which produced a page that looked unchanged:
+
+1. **A PNG added outside the editor imports as `texture` only**, with no `f9941`
+   spriteFrame sub-asset, so a Sprite cannot reference it. The fix is to write the
+   meta by hand with `imported: false` at every level; the shape was copied from an
+   existing working v95 sprite meta rather than invented, because hand-writing the
+   sprite-frame `userData` risks a malformed import.
+2. **A cloned node inherits `_active` from its template.** The panels are authored
+   inactive (the controller activates the ones it wants), so the icon clones were
+   born inactive and nothing ever activated a child. They are now forced active.
+
+The panels also grow from 164x104 to 164x140 to hold icon + caption + value
+stacked, which is the reference's card shape, and the caption/value offsets move to
++2/-36 to sit below the icon. None of these nodes is pinned by
+`docs/design-contracts/settlement.json`.
+
 ## Other pages
 
 - **Home** — the canon states Home has no reference render of its own; its design is

@@ -84,10 +84,13 @@ export class SettlementPageController extends Component {
     // happened the first time this was written. The authored offsets are caption
     // +23 and value -15 from the panel's own y; a cluster moves as a unit.
     this.placeCluster(250, [['ArenaResult', 0, 0]]);
+    // Caption and value sit below the icon now that each card carries one: the
+    // panel is 140 tall, the icon occupies +17..+63, so +2/-36 keeps the three
+    // stacked without overlap.
     this.placeCluster(30, [
-      ['ArenaStatMassPanel', -184, 0], ['ArenaStatMassCaption', -184, 23], ['ArenaStatMassValue', -184, -15],
-      ['ArenaStatKillsPanel', 0, 0], ['ArenaStatKillsCaption', 0, 23], ['ArenaStatKillsValue', 0, -15],
-      ['ArenaStatTimePanel', 184, 0], ['ArenaStatTimeCaption', 184, 23], ['ArenaStatTimeValue', 184, -15],
+      ['ArenaStatMassPanel', -184, 0], ['ArenaStatMassCaption', -184, 2], ['ArenaStatMassValue', -184, -36],
+      ['ArenaStatKillsPanel', 0, 0], ['ArenaStatKillsCaption', 0, 2], ['ArenaStatKillsValue', 0, -36],
+      ['ArenaStatTimePanel', 184, 0], ['ArenaStatTimeCaption', 184, 2], ['ArenaStatTimeValue', 184, -36],
     ]);
     this.placeCluster(-190, [
       ['ArenaRewardPanel', 0, 0], ['ArenaRewardCaption', -150, 19], ['ArenaRewardValue', 164, 19],
