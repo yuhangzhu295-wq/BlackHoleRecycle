@@ -175,6 +175,24 @@ So Home's honest status is: **no defect found, two candidate gaps** (the tagline
 the one-line brand block). Neither is a visual break, and both would touch the Home
 layout contract, which is pinned — so they are recorded rather than changed blind.
 
+## Revive — DIFFERENCES FOUND
+
+Reference `v2-04-revive.png` vs shipped `revive-390x844.png`.
+
+| Element | Reference | Shipped | Verdict |
+| --- | --- | --- | --- |
+| Match HUD during revive | back button, coin counter, the big match timer, a kill counter and a pause button all stay on screen | **absent** — the page is a full-screen modal | **difference**: the reference keeps the match legible behind the decision; ours replaces it |
+| Leaderboard panel | 5 ranked rows, local row highlighted green | **absent**, but the status line carries the same facts as text (`对方 2590 / 你 240 · 已击败 0 名对手`) | **difference in form, not in content** |
+| Centre treatment | large teal disc with 3D 复活 / 继续 crossing orange, blue and yellow bars | navy ribbon plate 复活继续 | **difference in form** — the plate is the canon's ribbon language |
+| Countdown | dark pill 倒计时: 5 | a card 自动放弃倒计时 4s | **matches in role** |
+| Two actions | 我怂了，溜了 (yellow) + purple 免费复活 with a video glyph | 立即复活 (yellow) + 结束本局 (purple) | **matches in role**; there is no ad-funded revive, so no video glyph, which is the same honesty rule as the forbidden fake buttons |
+| Joystick | still visible, the world still live | not drawn; the modal takes the input | **difference**, and a real one — the reference lets the player keep moving while deciding |
+
+The substantive gaps are the first and last rows: the match HUD and the joystick
+stay live in the reference and ours is a full-screen modal. That is a composition
+change to a page whose layout is otherwise settled, so it is recorded rather than
+started.
+
 ## Other pages
 
 - **Home** — the canon states Home has no reference render of its own; its design is
