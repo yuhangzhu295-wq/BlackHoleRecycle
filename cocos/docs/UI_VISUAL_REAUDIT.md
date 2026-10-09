@@ -153,6 +153,28 @@ tiles, and the remaining empty space below it is still there: this narrows the v
 rather than closing it. Closing it properly means either more real content or a
 card that varies by mode, and the contract pins one card for both.
 
+## Home — DIFFERENCES FOUND, none of them defects
+
+Reference `v2-01-home.png` vs shipped `home-390x844.png`. This is the page where
+"difference from the reference" and "wrong" come apart most sharply, so each row
+says which it is.
+
+| Element | Reference | Shipped | Verdict |
+| --- | --- | --- | --- |
+| Coin counter, level chip | coin counter and an energy counter along the top | gold coin pill (left) and a machine-level chip (right) | **matches in role**; there is no energy system to show |
+| Left / right icon rails | leaderboard, lucky wheel, first recharge, mail, tasks, daily reward | **absent** | **correct** — every one is on the manifest's `forbiddenElements` list |
+| Bottom tab bar | 成就 / 称号 / 主页 / 好友 / 设置 | **absent** | **correct** — friends and titles are forbidden, and a tab bar for a single screen is fake navigation |
+| Brand block | huge 3D gold title with a crown and a black hole in the glyph, on a purple ribbon | navy plate, gold outline, gold text, planet glyph, sparkles | **deliberate adoption** — canon §4 defines this brand block; this reference predates it |
+| Primary action | large gold capsule 开始吞噬 | large gold capsule 开始吞噬 | **matches** |
+| Hero | the game world with the black hole and four named competitors carrying arrow markers | the black hole on a road and city scene, no competitors | **deliberate**: Arena is a mode here, and naming opponents on Home would advertise a screen this one does not open |
+| Three entries | compact **rounded-square** icon buttons | **wide white-framed cards** with an icon interior | **difference in form** — but the card form is what canon §4 adopts, so this is the same kind of adoption as the brand block |
+| Tagline | 吞噬一切·成为最强黑洞! under the title | absent | **real gap**, small |
+| Brand block lines | two lines: a small brand line above a large page title | one line | **candidate gap** — canon §4 describes two lines; on Home the brand and the title may legitimately be the same string, which is worth confirming rather than assuming |
+
+So Home's honest status is: **no defect found, two candidate gaps** (the tagline and
+the one-line brand block). Neither is a visual break, and both would touch the Home
+layout contract, which is pinned — so they are recorded rather than changed blind.
+
 ## Other pages
 
 - **Home** — the canon states Home has no reference render of its own; its design is
