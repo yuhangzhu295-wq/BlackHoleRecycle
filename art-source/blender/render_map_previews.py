@@ -42,6 +42,10 @@ from mathutils import Vector  # noqa: E402
 import render_v95_assets as kit  # noqa: E402
 
 TEXTURES = os.path.join(kit.REPO, 'cocos', 'assets', 'game_art', 'ui', 'textures')
+# Where the finished 1x PNG lands. Overridable so an A/B candidate can be
+# rendered without touching the shipped asset -- an experiment that overwrites
+# what ships is not an experiment, it is a deployment.
+OUT_DIR = os.environ.get('BHR_PREVIEW_OUT') or TEXTURES
 
 # Matches the existing asset and the node size MODE_READY_LAYOUT pins, so the
 # sprite is neither stretched nor re-imported at a different aspect.
@@ -70,6 +74,14 @@ HOLE_RADIUS = 4.2
 # Small breathing room around the fitted extents. The reference is a full-bleed
 # illustration, so this stays near 1: any larger and sky reappears at the edges.
 FRAME_MARGIN = 1.04
+
+# Lower than the shared harness's 35 degrees, and deliberately so. For an
+# orthographic camera at elevation theta the ratio of projected width to height
+# is bounded by 1/sin(theta): 1.74 at 35 degrees, which cannot fill this 2.15:1
+# card no matter how the block is composed. At 28 degrees the bound is 2.13, so
+# the block can fill the card instead of floating in ground. This is a per-asset
+# camera choice for a preview illustration, not a change to the game's own view.
+PREVIEW_ELEVATION = math.radians(28.0)
 
 # Textured props only. `recyclables/industrial/crate.glb` and every
 # `recyclables/props/*` GLB reference texture files that are not on disk, so the
@@ -120,9 +132,9 @@ def fit_isometric_camera(bounds, width, height, margin=FRAME_MARGIN):
 
     distance = max((high - low).length, 1.0) * 4.0
     camera.location = (
-        centre.x + distance * math.cos(kit.ELEVATION) * math.sin(kit.AZIMUTH),
-        centre.y - distance * math.cos(kit.ELEVATION) * math.cos(kit.AZIMUTH),
-        centre.z + distance * math.sin(kit.ELEVATION),
+        centre.x + distance * math.cos(PREVIEW_ELEVATION) * math.sin(kit.AZIMUTH),
+        centre.y - distance * math.cos(PREVIEW_ELEVATION) * math.cos(kit.AZIMUTH),
+        centre.z + distance * math.sin(PREVIEW_ELEVATION),
     )
     direction = centre - Vector(camera.location)
     camera.rotation_euler = direction.to_track_quat('-Z', 'Y').to_euler()
@@ -161,7 +173,11 @@ def render_preview(name, ground_tiles, props, holes, plane_colour, sky):
         added = kit.import_glb(relative)
         kit.place(added, x, y, z, rotation, scale)
         if len(entry) > 6 and entry[6] is not None:
-            kit.tint_objects(added, entry[6])
+            # Flat, not multiplied. The shared building texture is dark, so a
+            # multiply tint darkened every colour the recipe asked for; the
+            # reference's buildings are flat low-poly, so dropping the texture is
+            # both closer to the target and what makes the street readable.
+            kit.flatten_base_colour(added, entry[6])
         everything += added
     for x, y, radius, colour in holes:
         everything += kit.add_black_hole(x, y, radius, colour)
@@ -174,16 +190,20 @@ def render_preview(name, ground_tiles, props, holes, plane_colour, sky):
     if bounds is None:
         raise SystemExit(f'{name}: nothing imported, refusing to render a blank asset')
     fit_isometric_camera(bounds, WIDTH, HEIGHT)
-    kit.light_scene(sky)
+    # Less light than the ornament recipes use. At the shared 1.25/3.2 a flat
+    # base colour is washed to pastel and the ground plane comes back brighter
+    # than the sky, which is what made the first candidate read as a thin street
+    # floating on white.
+    kit.light_scene(sky, strength=0.55, sun_energy=2.1)
 
-    os.makedirs(TEXTURES, exist_ok=True)
-    scratch = os.path.join(TEXTURES, '_supersample')
+    os.makedirs(OUT_DIR, exist_ok=True)
+    scratch = os.path.join(OUT_DIR, '_supersample')
     os.makedirs(scratch, exist_ok=True)
     kit.OUT = scratch
     kit.render(name, WIDTH, HEIGHT, transparent=False)
 
     source = os.path.join(scratch, name)
-    target = os.path.join(TEXTURES, name)
+    target = os.path.join(OUT_DIR, name)
     # Blender's bundled Python has no PIL, so the reduce uses Blender's own
     # scaler. `save()` rather than `save_render()`: the render already carries
     # the Standard view transform, and `save_render` would apply it a second
@@ -217,27 +237,40 @@ def city():
             (kit.ROAD, -GROUND, 0.0, 0.0, GROUND),
             (kit.ROAD, GROUND * 2, 0.0, 0.0, GROUND),
             (kit.ROAD, -GROUND * 2, 0.0, 0.0, GROUND),
+            # A cross street, so the block is an intersection rather than one
+            # diagonal strip on a field. This is what fills the frame: with a
+            # single street the content's projected width covered about 68% of the
+            # card and the rest was bare ground.
+            (kit.ROAD, 0.0, GROUND, math.pi / 2, GROUND),
+            (kit.ROAD, 0.0, -GROUND, math.pi / 2, GROUND),
+            (kit.ROAD, 0.0, GROUND * 2, math.pi / 2, GROUND),
+            (kit.ROAD, 0.0, -GROUND * 2, math.pi / 2, GROUND),
         ],
         props=[
-            # Buildings on the far kerb, close enough to read as a street wall.
-            # The kit shares one grey-blue glass texture, so each shop is tinted
-            # separately -- the reference street is colourful, and four identical
-            # grey boxes would read as one building.
-            (kit.SKYSCRAPER, -19.0, 8.4, 0.0, BUILDING_SCALE, 0.0, (0.62, 0.74, 0.92)),
-            (kit.SHOP, -12.0, 8.0, math.pi, BUILDING_SCALE, 0.0, (0.58, 0.86, 0.55)),
-            (kit.SHOP, -4.2, 8.2, math.pi, BUILDING_SCALE, 0.0, (0.98, 0.72, 0.42)),
-            (kit.SHOP, 4.4, 8.0, math.pi, BUILDING_SCALE, 0.0, (0.95, 0.52, 0.48)),
-            (kit.SHOP, 12.4, 8.2, math.pi, BUILDING_SCALE, 0.0, (0.78, 0.64, 0.95)),
-            (kit.SKYSCRAPER, 19.4, 8.4, 0.0, BUILDING_SCALE, 0.0, (0.55, 0.80, 0.90)),
-            # Street trees on the near kerb and at the ends.
-            (kit.TREE_L, -8.2, -7.6, 0.0, TREE_SCALE, 0.0),
-            (kit.TREE_L, 8.6, -7.8, 0.0, TREE_SCALE, 0.0),
+            # Buildings on the far kerbs. Flat-coloured, not tinted: the kit shares
+            # one dark grey-blue glass texture, so a multiply tint only darkened
+            # every colour asked for. Saturated values, because the reduced
+            # lighting that keeps flat colours readable also keeps them muted.
+            (kit.SKYSCRAPER, -19.0, 13.4, 0.0, BUILDING_SCALE, 0.0, (0.36, 0.58, 0.92)),
+            (kit.SHOP, -12.0, 13.0, math.pi, BUILDING_SCALE, 0.0, (0.30, 0.78, 0.36)),
+            (kit.SHOP, -4.2, 13.2, math.pi, BUILDING_SCALE, 0.0, (0.98, 0.62, 0.18)),
+            (kit.SHOP, 4.4, 13.0, math.pi, BUILDING_SCALE, 0.0, (0.94, 0.34, 0.32)),
+            (kit.SHOP, 12.4, 13.2, math.pi, BUILDING_SCALE, 0.0, (0.62, 0.42, 0.94)),
+            (kit.SKYSCRAPER, 19.4, 13.4, 0.0, BUILDING_SCALE, 0.0, (0.24, 0.70, 0.86)),
+            # A second row behind, so the skyline is a block rather than one line.
+            (kit.SHOP, -15.4, 20.0, math.pi, BUILDING_SCALE, 0.0, (0.90, 0.74, 0.24)),
+            (kit.SHOP, 15.6, 20.2, math.pi, BUILDING_SCALE, 0.0, (0.44, 0.62, 0.96)),
+            # Corner trees, so the frame's edges are not bare ground.
+            (kit.TREE_L, -8.2, -12.6, 0.0, TREE_SCALE, 0.0),
+            (kit.TREE_L, 8.6, -12.8, 0.0, TREE_SCALE, 0.0),
             (kit.TREE_S, -15.6, -7.4, 0.0, TREE_SCALE, 0.0),
             (kit.TREE_S, 16.0, -7.2, 0.0, TREE_SCALE, 0.0),
             (kit.TREE_S, -22.4, 6.6, 0.0, TREE_SCALE, 0.0),
             (kit.TREE_S, 22.6, 6.8, 0.0, TREE_SCALE, 0.0),
-            (kit.LIGHT, -2.4, 6.6, 0.0, PROP, 0.0),
-            (kit.LIGHT, 2.6, -6.6, 0.0, PROP, 0.0),
+            (kit.TREE_S, -22.0, -12.4, 0.0, TREE_SCALE, 0.0),
+            (kit.TREE_S, 22.2, -12.2, 0.0, TREE_SCALE, 0.0),
+            (kit.LIGHT, -2.4, 11.6, 0.0, PROP, 0.0),
+            (kit.LIGHT, 2.6, -11.6, 0.0, PROP, 0.0),
             (kit.FENCE, -24.0, -7.8, 0.0, PROP, 0.0),
             # Traffic on the lanes either side of the hole.
             (kit.TRUCK, -13.4, -2.2, math.pi / 2, PROP, 0.0),
@@ -256,7 +289,7 @@ def city():
             (kit.CONE, 9.4, -6.6, 0.0, CONE_SCALE, 0.0),
         ],
         holes=[(0.0, 0.0, HOLE_RADIUS, (0.44, 0.20, 1.0))],
-        plane_colour=(0.70, 0.68, 0.62),
+        plane_colour=(0.46, 0.52, 0.44),
         sky=(0.36, 0.68, 0.98),
     )
 

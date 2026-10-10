@@ -262,6 +262,49 @@ The two scripts, the glow-ring and tint primitives they added to the harness,
 and the two probes are all kept: they are reproducible and they are what a
 colour-correct building set or a card-aspect decision would be built on.
 
+## Mode-card preview — controlled A/B (V11.1-C)
+
+Three candidates, compared at the size the player actually sees them
+(`artifacts/qa/v111/ab-thumbnail.png`, `ab-compare.png`):
+
+- **A — shipped flat vector.** Bold shapes, saturated, fills the frame. Reads as a
+  diagram: no perspective, no depth, and it is not the world.
+- **B — isometric render of the game's own kit.** A real intersection with
+  vehicles, trees, and the game's own hole identity. But at 296x137 px it reads as
+  a *small model in a large field*: the hole is a dark dot and the detail is lost.
+- **Reference.** A close-up: its buildings run off the frame edges and the hole is
+  ~21% of the panel width.
+
+**Verdict: keep A.** B is closer to the reference in kind but worse at the size
+that matters, and swapping a readable asset for a less readable one is a
+regression.
+
+The earlier note in this document said the 2.15:1 card "cannot be filled at the
+art's camera angle". That is true and now has a number, but it was **not** the
+reason B looked weak, and the recipe was improved rather than abandoned. Four
+things were found and are in `art-source/blender/render_map_previews.py`:
+
+1. **Flat colour, not tint.** The kit shares one dark grey-blue glass texture, so
+   `tint_objects`'s multiply only darkened every colour asked for. `flatten_base_colour`
+   drops the texture instead, which is also closer to the reference's flat low-poly
+   buildings.
+2. **Less light.** At the ornament recipes' 1.25/3.2 a flat base colour washes to
+   pastel and the ground plane comes back brighter than the sky. `light_scene` now
+   takes `strength` and `sun_energy`; the previews use 0.55/2.1.
+3. **A cross street.** With one street the content covered 68% of the card width;
+   as an intersection it covers 74.5%, because the fill is bounded by the projected
+   extents, not by how much is placed.
+4. **The aspect bound, measured.** For an orthographic camera at elevation θ the
+   ratio of projected width to height is bounded by `1/sin θ`: **1.74 at 35°**,
+   **2.13 at 28°**. The card is **2.15:1**, so no isometric block fills it at any
+   sane elevation. The reference's panel is ~1.65:1, which is why it can.
+
+So the viable next step is the composite option, not a better recipe: render the
+3D close-up (buildings bleeding off the edges, as the reference does) and composite
+it over an authored 2D background at the card's aspect. That breaks the aspect
+constraint legitimately, because the frame is filled by the background rather than
+by the 3D content's bounding box.
+
 ## Other pages
 
 - **Home** — the canon states Home has no reference render of its own; its design is

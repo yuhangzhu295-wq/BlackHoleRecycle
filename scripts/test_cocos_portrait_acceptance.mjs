@@ -1847,8 +1847,21 @@ async function verifyUiFullFlow(cdp, page, canvasRect, homeSnapshot) {
   await tapReadyStartButton(cdp, page, canvasRect);
   await page.waitForFunction(() => window.__BHR_QA__.snapshot().gameState === 'ARENA', undefined, { timeout: 7000 });
   const defeat = await waitForLocalArenaDefeat(page);
-  assert(defeat.ui?.formalPages?.revive?.active && defeat.uiScreen === 'Revive',
-    'FAIL_UI_FLOW_REVIVE_NOT_VISIBLE: ' + JSON.stringify({ gameState: defeat.gameState, uiScreen: defeat.uiScreen, pages: defeat.ui?.formalPages }));
+  // `waitForLocalArenaDefeat` returns as soon as the *state* is REVIVING. The
+  // page node and `uiScreen` are presentation and can lag that by more than a
+  // frame. The failing run proved it: the revive copy was already populated
+  // ("被 雪球 吞噬 · 对方 1890 / 你 240") while `revive.active` was still false and
+  // `uiScreen` was still "Arena" -- a false red, not a broken revive. Poll for the
+  // presentation, then assert, so a page that never appears still fails.
+  const reviveVisibleDeadline = Date.now() + 5_000;
+  let presented = defeat;
+  while (Date.now() < reviveVisibleDeadline) {
+    if (presented.ui?.formalPages?.revive?.active && presented.uiScreen === 'Revive') break;
+    await page.waitForTimeout(80);
+    presented = await readRuntimeSnapshot(page);
+  }
+  assert(presented.ui?.formalPages?.revive?.active && presented.uiScreen === 'Revive',
+    'FAIL_UI_FLOW_REVIVE_NOT_VISIBLE: ' + JSON.stringify({ gameState: presented.gameState, uiScreen: presented.uiScreen, pages: presented.ui?.formalPages }));
   const giveUp = pointForVisibleNode(canvasRect, defeat, defeat.ui?.formalPages?.reviveGiveUp, 'UI_FLOW_REVIVE_GIVE_UP');
   await dispatchTouchTap(cdp, giveUp.x, giveUp.y);
   await page.waitForFunction(() => {
@@ -5381,13 +5394,26 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
       assert((endlessFeedback?.emittedCount || 0) > 0 && /^\+\d+$/.test(endlessFeedback?.lastText || ''),
         `FAIL_ABSORB_FEEDBACK_NOT_EMITTED: ${JSON.stringify(upgradedSnapshot.ui?.pickupFeedback)}`);
 
-      await driveJoystickToLogicalPoint(cdp, page, joystick, authoredT2Point, 'T2_UNLOCK', 1.0);
-      const t2AbsorptionDeadline = Date.now() + 6_000;
+      // A single arrival plus one fixed wait is not enough to judge this. The T2
+      // target is a live object that can drift while the machine is in transit, so
+      // the first arrival can leave it just outside suction range -- which made
+      // this step flaky: it failed on one run and passed on the next, on the same
+      // build and the same code. Re-driving is the honest fix. It still fails when
+      // the target is genuinely unabsorbable, because three arrivals each followed
+      // by a full window is far more than a reachable target needs; it just no
+      // longer fails on where the target happened to be at the first arrival.
       let unlockedT2Snapshot = await readRuntimeSnapshot(page);
-      while (Date.now() < t2AbsorptionDeadline) {
+      for (let attempt = 0; attempt < 3; attempt += 1) {
         if ((unlockedT2Snapshot.session.absorbedTiers?.[2] || 0) > 0) break;
-        await page.waitForTimeout(80);
+        await driveJoystickToLogicalPoint(cdp, page, joystick, authoredT2Point,
+          `T2_UNLOCK#${attempt + 1}`, 1.0);
+        const t2AbsorptionDeadline = Date.now() + 6_000;
         unlockedT2Snapshot = await readRuntimeSnapshot(page);
+        while (Date.now() < t2AbsorptionDeadline) {
+          if ((unlockedT2Snapshot.session.absorbedTiers?.[2] || 0) > 0) break;
+          await page.waitForTimeout(80);
+          unlockedT2Snapshot = await readRuntimeSnapshot(page);
+        }
       }
       assert((unlockedT2Snapshot.session.absorbedTiers?.[2] || 0) > 0,
         `FAIL_VERTICAL_SLICE_T2_NOT_ABSORBED_AFTER_LV2: ${JSON.stringify({

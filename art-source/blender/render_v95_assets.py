@@ -165,6 +165,32 @@ def tint_objects(objects, colour):
     return len(tinted)
 
 
+def flatten_base_colour(objects, colour):
+    """Replace each material's textured base colour with a flat one.
+
+    `tint_objects` multiplies, which is the right move for a subtle shift but
+    cannot *add* colour: the city kit shares one dark grey-blue glass texture, so
+    multiplying by a bright green still yields a dark green. The reference
+    preview's buildings are flat-shaded low-poly with no texture detail at all,
+    so dropping the texture is closer to the target than tinting it.
+    """
+    changed = 0
+    seen = set()
+    for obj in objects:
+        if obj.type != 'MESH':
+            continue
+        for material in obj.data.materials:
+            if material is None or material.name in seen or not material.use_nodes:
+                continue
+            seen.add(material.name)
+            socket = principled_of(material).inputs['Base Color']
+            for link in list(socket.links):
+                material.node_tree.links.remove(link)
+            socket.default_value = (*colour, 1.0)
+            changed += 1
+    return changed
+
+
 def add_glow_ring(x, y, radius, colour, emission=1.6):
     """A wide, thin emissive pool of light around a hole.
 
@@ -229,9 +255,13 @@ def frame_camera(target, width, height, margin=1.28):
     return camera
 
 
-def light_scene(sky_colour=(0.62, 0.82, 1.0)):
+def light_scene(sky_colour=(0.62, 0.82, 1.0), strength=1.25, sun_energy=3.2):
+    """Light the scene. `strength`/`sun_energy` are exposed because a flat-shaded
+    diorama and a small ornament want different amounts of light: at the
+    ornament's 1.25/3.2 a flat base colour is washed to pastel and a ground plane
+    reads as more sky."""
     sun_data = bpy.data.lights.new('sun', type='SUN')
-    sun_data.energy = 3.2
+    sun_data.energy = sun_energy
     sun_data.angle = math.radians(12)
     sun = bpy.data.objects.new('sun', sun_data)
     bpy.context.scene.collection.objects.link(sun)
@@ -241,7 +271,7 @@ def light_scene(sky_colour=(0.62, 0.82, 1.0)):
     world.use_nodes = True
     background = next(node for node in world.node_tree.nodes if node.type == 'BACKGROUND')
     background.inputs[0].default_value = (*sky_colour, 1.0)
-    background.inputs[1].default_value = 1.25
+    background.inputs[1].default_value = strength
     bpy.context.scene.world = world
 
 
