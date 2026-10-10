@@ -438,6 +438,16 @@ export const PAGE_SEMANTIC = {
  */
 export const PAGE_TEXT_ROLES: Readonly<Record<string, keyof typeof PAGE_SEMANTIC>> = {
   Title: 'ribbonTitle',
+  /**
+   * Machine Info draws its progression readout *on top of* the authored
+   * progress bar -- the page has no vertical room for a separate row, so the bar
+   * is mounted behind the label with a translucent fill. The serialized colour
+   * is `accentValue` (#723fc1), which is the right token for a value on a light
+   * card and illegible on the bar's dark track. Measured on the 390x844 capture:
+   * violet on the navy track, unreadable at 1x. `onButtonText` is the token that
+   * already means "text drawn on a filled element".
+   */
+  ProgressValue: 'onButtonText',
 };
 
 /**

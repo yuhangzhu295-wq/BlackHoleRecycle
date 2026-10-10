@@ -44,7 +44,20 @@ export const MODE_READY_LAYOUT = {
   Background:     [720, 1280,    0,    0],
   BtnBack:        [ 80,   80, -245,  568],
   Header:         [430,  100,    0,  534],
-  HeaderTitle:    [500,   64,    0,  534],
+  // The page title is the element that tells the player which mode they are
+  // about to start, so it has to outrank the brand watermark. `RegistrationBranding`
+  // (GameManager) draws 黑洞回收站 at Canvas level, design y 553..607, fontSize 30,
+  // on every non-Home screen; the serialized HeaderTitle was 19px, i.e. the
+  // watermark was the loudest thing on the page. Measured against the adopted
+  // reference (`ui-v9.5-adopted/03-endless-ready.png`), the title runs ~2.4x the
+  // brand line, which at this design width is ~66px.
+  //
+  // The title's band is bounded by MapPreview's top (design 470) and the
+  // watermark's bottom (design 553), so it is 74 tall at design 512 and the
+  // preview does NOT move: the UICard's own caption strip sits 152 design units
+  // *below* the preview origin, so lowering the preview by 24 pushed that caption
+  // 20.5 units into StatPanelTop. Measured on the 390x844 capture.
+  HeaderTitle:    [520,   74,    0,  512],
   // V7: the preview keeps the 560x260 authored-art aspect and leaves room for
   // the UICard's own caption strip directly under it.
   MapPreview:     [560,  260,    0,  340],
@@ -321,6 +334,19 @@ export class ModeReadyPageController extends Component {
     if (label) label.horizontalAlign = align;
   }
 
+  /**
+   * Size the page title as the dominant line. `MODE_READY_LAYOUT` owns the box;
+   * the serialized label's own 19px is too small to outrank the brand watermark,
+   * and a Label's font size is not something the layout table can express.
+   */
+  private configureHeaderTitle(): void {
+    const label = this.findNode('HeaderTitle')?.getComponent(Label);
+    if (!label) return;
+    label.fontSize = 66;
+    label.lineHeight = 74;
+    label.overflow = Label.Overflow.SHRINK;
+  }
+
   private configureIntroText(align: number, fontSize: number, lineHeight: number): void {
     const label = this.findNode('IntroText')?.getComponent(Label);
     if (!label) return;
@@ -376,6 +402,7 @@ export class ModeReadyPageController extends Component {
     const machineLevel = Math.max(1, Math.min(MACHINE_EVOLUTION_CONFIG.length, saveService.data.machineLevel || 1));
     const machine = MACHINE_EVOLUTION_CONFIG[machineLevel - 1];
     this.applyIntroPanelVisibility();
+    this.configureHeaderTitle();
     if (this.mode === ModeReadyKind.ENDLESS) {
       this.setLabel('HeaderTitle', '无尽探索');
       this.setLabelAlign('IntroText', Label.HorizontalAlign.CENTER);

@@ -30,6 +30,9 @@ export const PAGES = {
   home: 'HomePage',
   mode: 'ModeSelectPage',
   ready: 'EndlessReadyPage',
+  // Arena Ready shares ModeReadyPageController with Endless Ready but is a
+  // separate page node, so it needs its own key to be captured at all.
+  arenaReady: 'ArenaReadyPage',
   machine: 'MachineInfoPage',
   skin: 'SkinSelectionPage',
   pause: 'PausePage',
@@ -146,12 +149,12 @@ export async function navigateToPage(page, cdp, canvasRect, pageKey) {
 
   if (pageKey === 'machine' || pageKey === 'skin' || pageKey === 'mode') {
     await tapUi(pageKey);
-  } else if (pageKey === 'ready' || pageKey === 'pause' || pageKey === 'settlement') {
+  } else if (pageKey === 'ready' || pageKey === 'pause' || pageKey === 'settlement' || pageKey === 'arenaReady') {
     await tapUi('start');
     await waitState('MODE_SELECT');
-    await tapUi('modeEndless');
+    await tapUi(pageKey === 'arenaReady' ? 'modeArena' : 'modeEndless');
     await waitState('MODE_READY');
-    if (pageKey !== 'ready') {
+    if (pageKey !== 'ready' && pageKey !== 'arenaReady') {
       // `ui.endlessReady` is a composite; the tappable node is its `start` child.
       await tapPoint(snapshot.ui?.endlessReady?.start, 'endlessReady.start');
       await waitState('PLAYING');
