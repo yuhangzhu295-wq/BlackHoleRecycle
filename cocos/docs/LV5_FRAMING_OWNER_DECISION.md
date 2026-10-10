@@ -88,3 +88,54 @@ then re-measure. The LV1 band is [0.22, 0.30] and the framing gate is only
 asserted at LV1, so a slightly larger LV5 ratio is measurable without weakening
 that gate. But this changes how much world the player can see while playing, so
 it should be the owner's call rather than mine.
+
+
+---
+
+## RESOLVED (2026-10-10) — it was framing, and the metric could not see it
+
+**Status:** closed. The decision this document was waiting for was a camera one.
+
+### What was actually wrong
+
+The LV5 frame showed the camera clear colour as a flat neutral-grey band across
+the top. Measured on the 390x844 capture: the top 96 px had **zero channel
+saturation** at (60,60,60) and (174,174,174) -- matching
+`RenderProfile.cameraClearColor = "#333333"` and unlike every other frame in the
+level series, all of which are saturated from row 0.
+
+Cause: the frustum's far edge landed outside the streamed cells. At 3.60x the
+frustum covered ground from z -206.68 to -44.10 (162.58 m deep) while the player
+sat at z -88.9, putting the far edge 117.8 m out against a 3x3 neighbourhood
+reach of at most 103.1 m. The band of screen rows whose ground-plane z fell past
+the resident cells showed the clear colour.
+
+### The fix
+
+`endless.levelOffsets[4]` 3.60x -> **2.95x** (`new Vec3(0, 63.0, 58.3)`,
+85.8 m). The far edge now lands at ~103 m, inside the reach at the positions
+where the old value was outside it. Verified: the LV5 capture's first saturated
+row is now **0**, and `--scope=progression` passes.
+
+It cannot be removed outright by framing. The reach varies from 64 m to 128 m
+depending on where the player sits inside its cell, so a guaranteed-clear frame
+would need a ~53 m camera and a hole filling two thirds of the width. Closing it
+completely is a streaming-reach or far-field-ground change, and this document
+still does not propose changing streaming behaviour.
+
+### Why nothing caught it, and the correction that did NOT work
+
+`largeEmptyGroundRatio` is `emptyGroundSamples / groundSamples`, i.e. **1 minus
+prop coverage of visible ground** -- not a measure of large empty regions,
+whatever the name suggests. It also skips the top 16% of the frame as "HUD" and
+silently drops any sample no ground tile covers. A frame whose top was clear
+colour therefore still reported 100% ground coverage of the rest.
+
+The first correction attempt added a `voidRatio` (samples no ground tile covers,
+over the whole frame) to `WorldCompositionProbe`. **It was reverted.** The LV1
+control returned `voidRatio = 0.4766` where there is demonstrably no void -- LV1's
+top row is grass. The GROUND category does not tile all rendered ground, so
+"no GROUND entry" is not "clear colour visible". A metric that reports a 48%
+void on a clean frame is worse than one that reports none. The correct form is a
+geometric test -- frustum far edge against the resident cell extent, both of
+which the probe already computes -- not a sample count.

@@ -266,10 +266,33 @@ export const CAMERA_PROFILE = {
       // 99.4% at LV1: the upper third of the frame was a flat brown void.
       //
       // 3.60x keeps the pullback, so the world still shrinks as the machine grows,
-      // but brings the visible footprint back inside the streamed radius instead
-      // of past it. The cost is a larger player on screen, which is the direction
-      // the "growth must be visible by eye" requirement wants anyway.
-      new Vec3(0, 72.0, 66.6),   // LV5: distance 98.06m (3.60x) -> playerWidthRatio ~0.365
+      // and reduces the excess rather than removing it. Measured on the live tree
+      // at 390x844: the frustum covers ground from z -206.68 to -44.10 (162.58 m
+      // deep) while the player sits at z -88.9, so the far edge lands 14.7 m
+      // *past* the 3x3 neighbourhood's reach of -192. The upper ~96 px of the
+      // frame is therefore camera clear colour -- visible as a flat neutral-grey
+      // slab in the LV5 capture, and confirmed as the clear colour because the
+      // sampled pixels are (60,60,60), i.e. unsaturated, unlike every other frame
+      // in the level series.
+      //
+      // This comment previously claimed the footprint was back "inside the
+      // streamed radius". It is not, and that claim was never measured; the
+      // metric could not have caught it either, because it dropped samples that
+      // no ground tile covered and skipped the top 16% of the frame. Both are
+      // fixed in WorldCompositionProbe (`voidRatio`).
+      //
+      // 2.95x is the correction. The far-edge excess scales with the camera
+      // distance: at 3.60x the frustum's far edge sat 117.8 m from the player
+      // against a resident reach of at most 103.1 m toward -z, so the band of
+      // screen rows whose ground-plane z fell past the resident cells showed the
+      // clear colour. 85.8 m brings that edge to ~103 m, i.e. inside the reach
+      // at the positions where the previous value was outside it. It cannot be
+      // removed outright by framing: the reach varies from 64 m to 128 m
+      // depending on where the player sits inside its cell, so a guaranteed-clear
+      // frame would need a 53 m camera and a hole filling two thirds of the
+      // width. Closing it completely is a streaming-reach or far-field-ground
+      // change, not a camera one.
+      new Vec3(0, 63.0, 58.3),   // LV5: distance 85.8m (2.95x) -> playerWidthRatio ~0.42
     ],
   },
   arena: { offset: new Vec3(0, 44.0, 27.0), pitchDegrees: -55 },

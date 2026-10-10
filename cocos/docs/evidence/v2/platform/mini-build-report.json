@@ -1,42 +1,12 @@
 {
-  "status": "PASS",
+  "status": "FAIL",
   "creatorExe": "C:\\ProgramData\\cocos\\editors\\Creator\\3.8.3\\CocosCreator.exe",
-  "requestedPlatform": "bytedance-mini-game",
+  "requestedPlatform": "web-mobile",
   "requireReleaseIds": false,
-  "startedAt": "2026-10-10T03:52:57.538Z",
-  "builds": [
-    {
-      "platform": "bytedance-mini-game",
-      "outputDirectory": "C:\\Users\\zyu33\\Documents\\Codex\\2026-09-29\\BlackHoleRecycle\\cocos\\build\\bytedance-mini-game",
-      "fileCount": 321,
-      "requiredFiles": [
-        "game.json",
-        "project.config.json",
-        "application.js",
-        "src/system.bundle.js"
-      ],
-      "releaseIdStatus": "placeholder",
-      "launchScene": "db://assets/scenes/Game.scene",
-      "preloadBundles": [
-        "resources",
-        "main"
-      ],
-      "bootBundles": [
-        "world-city",
-        "game-art",
-        "art-machines"
-      ],
-      "subpackages": [
-        "game-art",
-        "world-construction",
-        "art-machines",
-        "world-city"
-      ],
-      "appId": "testappId",
-      "libVersion": "widelyUsed",
-      "launcherExitCode": 36
-    }
+  "startedAt": "2026-10-10T17:55:34.980Z",
+  "builds": [],
+  "failures": [
+    "FAIL_BUILD_SLOT_LOCKED: Cocos Creator build slot is currently held by active process PID 880 [state: FROZEN] (purpose: \"acceptance:v2 --scope=progression\", age: 538.5s, acquired at: 2026-10-10T17:46:36.442Z). A concurrent build or acceptance run is already in progress.\nTo resolve:\n  1. Wait for PID 880 to finish.\n  2. If PID 880 is stalled or orphaned, terminate it or remove:\n     \"C:\\Users\\zyu33\\Documents\\Codex\\2026-09-29\\BlackHoleRecycle\\artifacts\\locks\\cocos-build.lock\"\n  3. Alternatively, set BHR_FORCE_BUILD_LOCK=1 to force-reclaim the slot."
   ],
-  "failures": [],
-  "finishedAt": "2026-10-10T03:53:54.690Z"
+  "finishedAt": "2026-10-10T17:55:34.988Z"
 }
