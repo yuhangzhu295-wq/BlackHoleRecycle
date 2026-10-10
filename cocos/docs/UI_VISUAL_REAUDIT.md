@@ -256,7 +256,7 @@ colours. Replacing an accepted asset with a weaker one would be a regression, so
 **the originals were restored byte-identical** (sha256
 `0c1f521f…5524a` for `map_preview_city.png`, `e7b86024…7ee7e` for
 `map_preview_arena.png`) and the candidate render is kept out of the build at
-`artifacts/qa/map_preview_backup/map_preview_city.isometric-candidate.png`.
+`cocos/docs/evidence/v11.1/map-preview-city.isometric-candidate.png`.
 
 The two scripts, the glow-ring and tint primitives they added to the harness,
 and the two probes are all kept: they are reproducible and they are what a
@@ -265,7 +265,7 @@ colour-correct building set or a card-aspect decision would be built on.
 ## Mode-card preview — controlled A/B (V11.1-C)
 
 Three candidates, compared at the size the player actually sees them
-(`artifacts/qa/v111/ab-thumbnail.png`, `ab-compare.png`):
+(`cocos/docs/evidence/v11.1/ab-thumbnail.png`, `ab-compare.png`):
 
 - **A — shipped flat vector.** Bold shapes, saturated, fills the frame. Reads as a
   diagram: no perspective, no depth, and it is not the world.

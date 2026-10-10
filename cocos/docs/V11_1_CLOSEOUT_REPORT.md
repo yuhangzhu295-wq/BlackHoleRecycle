@@ -19,7 +19,7 @@
 GitHub 同步：上一轮的推送被 `github.com:443` 超时挡住。本轮用有限退避重试
 （30s/60s/120s/240s，共 4 次）在**第 4 次成功**，远端从 `9945d7b` 快进到
 `c93bc9f`，随后两次提交也正常推送。全程普通 push，无 force、无 merge main。
-日志：`artifacts/qa/v111/push-retry.log`。
+日志：`cocos/docs/evidence/v11.1/push-retry.log`。
 
 ## 2. 分平台发布结论
 

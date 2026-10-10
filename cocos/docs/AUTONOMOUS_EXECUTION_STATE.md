@@ -35,7 +35,7 @@
 | 22 | Home compared against its reference; adoption separated from defect | `cocos/docs/UI_VISUAL_REAUDIT.md` §Home, commit `f82a788` |
 | 23 | Revive compared against its reference | `cocos/docs/UI_VISUAL_REAUDIT.md` §Revive, commit `18293c9` |
 | 24 | Endless Ready compared; three named differences recorded | `cocos/docs/UI_VISUAL_REAUDIT.md` §Endless Ready |
-| 25 | Map preview investigated with a real Blender recipe, then **deliberately not swapped** | `art-source/blender/render_map_previews.py` renders; candidate kept at `artifacts/qa/map_preview_backup/map_preview_city.isometric-candidate.png`; originals restored byte-identical (sha256 `0c1f521f…5524a`, `e7b86024…7ee7e`) |
+| 25 | Map preview investigated with a real Blender recipe, then **deliberately not swapped** | `art-source/blender/render_map_previews.py` renders; candidate kept at `cocos/docs/evidence/v11.1/map-preview-city.isometric-candidate.png`; originals restored byte-identical (sha256 `0c1f521f…5524a`, `e7b86024…7ee7e`) |
 | 26 | Two reusable probes for art work | `probe_glb_textures.py` (imports to find textureless GLBs), `probe_glb_sizes.py` (measured world sizes) |
 | 27 | GitHub synced: 23 unpushed commits pushed after bounded backoff | retry 4/4 succeeded; `9945d7b..c93bc9f` then `44169af`; `0 0` ahead/behind |
 | 28 | Machine Info progress readout was illegible (violet on the dark bar) | `PAGE_TEXT_ROLES.ProgressValue -> onButtonText`; verified on capture |
