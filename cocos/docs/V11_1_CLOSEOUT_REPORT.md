@@ -136,7 +136,8 @@ canonical 文档 §3 也把这三页写成「`ui-v4-expanded` renders + 本文�
 | 5 | **V11.2-A Arena 完整流程** | 同上（含 Revive 段） |
 | 6 | **V11.2-C 微信开发者工具** | 工具已安装（`C:\Program Files (x86)\Tencent\微信web开发者工具`），当前**未运行**。需要的是有权打开该 AppID 的账号 |
 | 7 | **V11.2-D 抖音** | IDE 已安装（`AppData\Local\Programs\@bytedminiprogram-ide`），当前**未运行**。需要扫码登录后读取真实 AppID |
-| 8 | `acceptance:v2` 的 flaky 步骤 | 建议给 `FAIL_VERTICAL_SLICE_T2_NOT_ABSORBED_AFTER_LV2` 的 6 秒窗口加失败重试或提高采样，否则每次全量验收都有假红风险 |
+| 8 | `acceptance:v2` 的假红 | 已修两个（`T2` 单次到达 + 固定 6 秒 → 重驾 3 次；`REVIVE_NOT_VISIBLE` / `ARENA_AI_REVIVE_NOW` → 有界轮询表现层）。**但 `--scope=ui-full-flow` 仍红**，见下 |
+| 9 | **`FAIL_VISIBLE_NODE_INACTIVE_UI_FLOW_REVIVE_GIVE_UP` —— 已确认不是假红** | 同一段共享代码在 `--scope=revive` 通过、在 `--scope=ui-full-flow` 失败；此时复活页 `revive.active` 已为真、复活数据已填好，只有「放弃」按钮 `active === false`。我按假红假设加过 5 秒有界轮询，**仍然红**，所以**已回退该轮询**，避免把被证据否掉的原因写进注释。下一步应查 ui-full-flow 这条路径上「放弃」按钮为何不激活（是流程差异，不是时序） |
 
 **真机 / 设备**：`DEVICE_BLOCKED_EXTERNAL`。本机没有真机链路，也没有该小游戏的开发者权限。
 

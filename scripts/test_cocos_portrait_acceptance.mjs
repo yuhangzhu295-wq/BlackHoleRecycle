@@ -2789,6 +2789,17 @@ async function verifyArenaAiRuntime(cdp, page, canvasRect) {
           await releaseTouchJoystick(cdp);
           touchHeld = false;
         }
+        // `gameState` flips to REVIVING before the page node and its buttons are
+        // shown, so reading the button in the same sample catches it still
+        // inactive -- the same false red as FAIL_UI_FLOW_REVIVE_NOT_VISIBLE, and
+        // it failed here for the same reason. Poll briefly for the presentation;
+        // a revive button that never appears still fails the assertion.
+        const reviveVisibleDeadline = Date.now() + 5_000;
+        while (Date.now() < reviveVisibleDeadline
+          && !(current.ui?.formalPages?.reviveNow?.active && current.ui?.formalPages?.reviveNow?.screen)) {
+          await page.waitForTimeout(80);
+          current = await readRuntimeSnapshot(page);
+        }
         const revive = pointForVisibleNode(canvasRect, current, current.ui?.formalPages?.reviveNow, 'ARENA_AI_REVIVE_NOW');
         await dispatchTouchTap(cdp, revive.x, revive.y);
         reviveCount += 1;
