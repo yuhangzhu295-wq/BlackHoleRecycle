@@ -896,7 +896,14 @@ async function verifyNetworkProbe(cdp, page, canvasRect, transportAttribution) {
 function pointForVisibleNode(canvasRect, snapshot, node, name) {
   const ui = snapshot?.ui;
   assert(node?.active && node?.screen,
-    `FAIL_VISIBLE_NODE_INACTIVE_${name}: ${JSON.stringify(node)}`);
+    // The revive page's buttons are reported inactive while the page itself is
+    // active, and the run's own screenshot draws a button at the same screen
+    // position. The node's own state therefore cannot explain it. Dump the whole
+    // formalPages group so the next failure says whether the siblings agree,
+    // instead of costing another run to find out.
+    `FAIL_VISIBLE_NODE_INACTIVE_${name}: ${JSON.stringify(node)}`
+    + ` uiScreen=${JSON.stringify(snapshot?.uiScreen)}`
+    + ` formalPages=${JSON.stringify(ui?.formalPages)}`);
   assert(Number.isFinite(node.screen.x) && Number.isFinite(node.screen.y),
     `FAIL_VISIBLE_NODE_LAYOUT_${name}: ${JSON.stringify({ ui, node })}`);
 
@@ -1862,7 +1869,15 @@ async function verifyUiFullFlow(cdp, page, canvasRect, homeSnapshot) {
   }
   assert(presented.ui?.formalPages?.revive?.active && presented.uiScreen === 'Revive',
     'FAIL_UI_FLOW_REVIVE_NOT_VISIBLE: ' + JSON.stringify({ gameState: presented.gameState, uiScreen: presented.uiScreen, pages: presented.ui?.formalPages }));
-  const giveUp = pointForVisibleNode(canvasRect, defeat, defeat.ui?.formalPages?.reviveGiveUp, 'UI_FLOW_REVIVE_GIVE_UP');
+  // Tap from `presented`, not `defeat`. `defeat` is the snapshot taken the moment
+  // the *state* turned REVIVING, before the page was shown -- its `uiScreen` is
+  // still "Arena" and its `reviveGiveUp` is still inactive, so tapping from it
+  // fails the very check this poll was added to satisfy. The first version of
+  // this fix polled into `presented`, asserted on it, and then left this line
+  // reading `defeat`: the assertion passed and the tap still failed, which is
+  // how `FAIL_VISIBLE_NODE_INACTIVE_UI_FLOW_REVIVE_GIVE_UP` appeared while the
+  // revive page was demonstrably on screen.
+  const giveUp = pointForVisibleNode(canvasRect, presented, presented.ui?.formalPages?.reviveGiveUp, 'UI_FLOW_REVIVE_GIVE_UP');
   await dispatchTouchTap(cdp, giveUp.x, giveUp.y);
   await page.waitForFunction(() => {
     const snapshot = window.__BHR_QA__.snapshot();
@@ -2536,6 +2551,17 @@ async function verifyArenaTimerExpiry(cdp, page, canvasRect) {
         if (touchHeld) {
           await releaseTouchJoystick(cdp);
           touchHeld = false;
+        }
+        // `gameState` turns REVIVING before the page node and its buttons are
+        // shown, so reading the button in the same sample catches it inactive.
+        // The arena-ai loop got this poll and this one did not, which is why only
+        // arena-timer kept failing on ARENA_TIMER_REVIVE_NOW. Poll for the
+        // presentation; a button that never appears still fails the assertion.
+        const reviveVisibleDeadline = Date.now() + 5_000;
+        while (Date.now() < reviveVisibleDeadline
+          && !(current.ui?.formalPages?.reviveNow?.active && current.ui?.formalPages?.reviveNow?.screen)) {
+          await page.waitForTimeout(80);
+          current = await readRuntimeSnapshot(page);
         }
         const revive = pointForVisibleNode(canvasRect, current, current.ui?.formalPages?.reviveNow, 'ARENA_TIMER_REVIVE_NOW');
         await dispatchTouchTap(cdp, revive.x, revive.y);
