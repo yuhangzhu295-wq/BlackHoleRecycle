@@ -147,3 +147,41 @@ canonical 文档 §3 也把这三页写成「`ui-v4-expanded` renders + 本文�
 - 不主张 `acceptance:v2` 通过：它在同一构建上失败过一次。
 - 不主张微信或抖音可以提交：两者的缺口都是账号凭据，不是工程。
 - 不主张性能达标：预算未定义，真机指标 `NOT_MEASURABLE`。
+
+### 追加（2026-10-10 夜）：复活按钮"不可见"是同一类，已缩小但未定论
+
+把余下 6 个 scope 跑完后，这个症状出现在 **3 个** scope 上，都是复活页的按钮：
+
+| scope | 失败项 |
+| --- | --- |
+| `ui-full-flow` | `FAIL_VISIBLE_NODE_INACTIVE_UI_FLOW_REVIVE_GIVE_UP` |
+| `arena-ai` | `FAIL_VISIBLE_NODE_INACTIVE_ARENA_AI_REVIVE_NOW` |
+| `arena-timer` | `FAIL_VISIBLE_NODE_INACTIVE_ARENA_TIMER_REVIVE_NOW` |
+
+其余 scope 结果：`pages`、`network`、`regions`、`progression`、`arena`、`revive`、
+`settlement`、`save-resume`、`skins`、`skin-unlock` 全 PASS。
+
+**已排除的**：
+
+- 不是预制体覆盖。`RevivePage` 与 `BtnGiveUp` 的 `_prefab` 都是 null，
+  全场景没有引用它们的 `cc.PrefabInstance`。
+- 不是"查错了节点"。`BtnGiveUp` 是 `RevivePage` 在 y=-378 处**唯一**带
+  Sprite+Button 的子节点，失败负载里的 `y:-378`、`width:340`、`height:78` 与它一致。
+- 不是快照缓存。`readRuntimeSnapshot` 每次都调 `window.__BHR_QA__.snapshot()`，
+  所以 5 秒轮询本应看到状态变化——但它没有，这也是那次轮询被回退的原因。
+- 不是布局。节点有有效的 `world`/`screen`，`interactable: true`，只有
+  `activeInHierarchy` 是 false。
+
+**未定论的矛盾**：`describe()` 报的是 `node.activeInHierarchy`。而同一轮里保存的
+`portrait-390x844-revive-hold.png` **画出了**那个位置的按钮（"结束本局"）。两者不能同时为真。
+
+两种解释，需要一次干净的重跑来分辨：
+
+1. 那个截图不属于失败的那一轮（文件 mtime 无法唯一归属，因为同一路径被多个 scope 覆写）。
+2. 节点确实"渲染着但 activeInHierarchy 为 false"。若如此，`RuntimePageInputRouter`
+   的 `hitVisibleButton('RevivePage','BtnGiveUp')` 很可能同样判定不可见，
+   于是按钮**看得见但点不动**——那是一个真实的用户可见缺陷。
+
+**下一步（一条命令即可分辨）**：单独跑 `--scope=ui-full-flow`，在同一个失败时刻同时
+（a）截图，（b）把 `RevivePage` 每个子节点的 `active` 与 `activeInHierarchy` 一起 dump。
+若截图有按钮而 dump 说 false，走解释 2，去查 `hitVisibleButton` 的可见性判据。
