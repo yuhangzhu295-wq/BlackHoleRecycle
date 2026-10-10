@@ -183,6 +183,22 @@ function declaredClipKeys() {
     note(Number(run.audio?.plays ?? 0) > 0, `absorption played sounds (${run.audio?.plays} plays)`);
     note(Number(run.audio?.missingPlays ?? -1) === 0,
       `no play request had a missing clip (${run.audio?.missingPlays})`);
+
+    // Per-cue, not just "some plays". `audio.plays` counts everything, so a run
+    // in which only the button cue fired would satisfy the check above and still
+    // leave the match silent. The cues a short Endless run must produce are
+    // asserted; the conditional ones are reported and not asserted, because
+    // whether they occur depends on how far that particular run got.
+    const counts = run.audio?.playCounts || {};
+    const requiredCues = ['button', 'absorb', 'swallow'];
+    const conditionalCues = ['upgrade', 'kill', 'death', 'reward'];
+    console.log('[audio] per-cue counts: ' + JSON.stringify(counts));
+    for (const key of requiredCues) {
+      note(Number(counts[key] ?? 0) > 0,
+        `the '${key}' cue really played (count ${counts[key] ?? 0})`);
+    }
+    console.log('[audio] conditional cues this run: '
+      + conditionalCues.map((key) => `${key}=${counts[key] ?? 0}`).join(', '));
     await context.close();
   }
 
