@@ -185,3 +185,19 @@ canonical 文档 §3 也把这三页写成「`ui-v4-expanded` renders + 本文�
 **下一步（一条命令即可分辨）**：单独跑 `--scope=ui-full-flow`，在同一个失败时刻同时
 （a）截图，（b）把 `RevivePage` 每个子节点的 `active` 与 `activeInHierarchy` 一起 dump。
 若截图有按钮而 dump 说 false，走解释 2，去查 `hitVisibleButton` 的可见性判据。
+
+### 全部 16 个 scope 的最终清单（含两次非产品失败）
+
+| 结果 | scope |
+| --- | --- |
+| PASS | `arena`、`cell-lifecycle`、`golden-city`、`network`、`pages`、`progression`（3 次运行中的 3 次）、`regions`、`revive`、`save-resume`、`settlement`、`skin-unlock`、`skins` |
+| FAIL（复活按钮同类） | `ui-full-flow`、`arena-ai`、`arena-timer` |
+| FAIL（**非产品**） | `progression-void2` = `FAIL_TRAFFIC_REPLENISHMENT`；`progression-lv5fix` = `FAIL_BUILD_SLOT_LOCKED` |
+
+两个非产品失败要分开说，不能混进 PASS 清单：
+
+- `FAIL_BUILD_SLOT_LOCKED` 是**我自己的操作错误**：我在上一个 acceptance run 还在跑的时候又起了一个，
+  构建锁正确地拦住了。那条运行没有执行，它的结论无效。
+- `FAIL_TRAFFIC_REPLENISHMENT` 出现在 `progression` 的 4 次运行中的 1 次（另外 3 次 PASS），
+  且那一次跑的是**已被回退**的 voidRatio 改动。看起来是又一个时序型断言，
+  但**我没有单独复现或证伪它**，所以这里只报告"出现过一次"，不声称它是 flaky。
