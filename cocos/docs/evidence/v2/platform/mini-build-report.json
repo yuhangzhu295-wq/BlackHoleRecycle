@@ -1,20 +1,21 @@
 {
   "status": "PASS",
   "creatorExe": "C:\\ProgramData\\cocos\\editors\\Creator\\3.8.3\\CocosCreator.exe",
-  "requestedPlatform": "web-mobile",
+  "requestedPlatform": "bytedance-mini-game",
   "requireReleaseIds": false,
-  "startedAt": "2026-10-10T03:31:43.652Z",
+  "startedAt": "2026-10-10T03:52:57.538Z",
   "builds": [
     {
-      "platform": "web-mobile",
-      "outputDirectory": "C:\\Users\\zyu33\\Documents\\Codex\\2026-09-29\\BlackHoleRecycle\\cocos\\build\\web-mobile",
-      "fileCount": 318,
+      "platform": "bytedance-mini-game",
+      "outputDirectory": "C:\\Users\\zyu33\\Documents\\Codex\\2026-09-29\\BlackHoleRecycle\\cocos\\build\\bytedance-mini-game",
+      "fileCount": 321,
       "requiredFiles": [
-        "index.html",
+        "game.json",
+        "project.config.json",
         "application.js",
-        "src/settings.json"
+        "src/system.bundle.js"
       ],
-      "releaseIdStatus": "not-applicable",
+      "releaseIdStatus": "placeholder",
       "launchScene": "db://assets/scenes/Game.scene",
       "preloadBundles": [
         "resources",
@@ -25,10 +26,17 @@
         "game-art",
         "art-machines"
       ],
-      "subpackages": [],
+      "subpackages": [
+        "game-art",
+        "world-construction",
+        "art-machines",
+        "world-city"
+      ],
+      "appId": "testappId",
+      "libVersion": "widelyUsed",
       "launcherExitCode": 36
     }
   ],
   "failures": [],
-  "finishedAt": "2026-10-10T03:33:21.170Z"
+  "finishedAt": "2026-10-10T03:53:54.690Z"
 }
