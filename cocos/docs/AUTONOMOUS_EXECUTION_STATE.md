@@ -1,8 +1,8 @@
 # AUTONOMOUS EXECUTION STATE
 
-- CURRENT_HEAD: `0cf88fb` (tree additionally carries the Endless Ready comparison + the map-preview investigation; 22 commits ahead of `origin/dev/product-finalization-20260929`, **none pushed**)
+- CURRENT_HEAD: `44169af` — tree clean, **0 commits ahead of `origin/dev/product-finalization-20260929`** (V11.1 round pushed)
 - CURRENT_PHASE: `RELEASE_BLOCKERS_AND_PRODUCT_CLOSEOUT`
-- CURRENT_SCOPE: remaining UI page comparisons (Pause / Machine / Skin / Endless HUD / Arena Ready / Arena HUD); the two recorded Endless Ready differences (title hierarchy, stat pair); the map-preview aspect decision; LV5 far field; performance + full two-mode playthrough
+- CURRENT_SCOPE: V11.1 done (Machine bar, Ready title, Ready stat cards). Next in order: mode-card preview A/B, LV5 far-field judgement, audio+settings manual regression, full Endless and Arena playthroughs. See `V11_1_CLOSEOUT_REPORT.md` §8 for the ordered breakpoint.
 - LAST_UPDATED: 2026-10-10
 
 ---
@@ -37,6 +37,12 @@
 | 24 | Endless Ready compared; three named differences recorded | `cocos/docs/UI_VISUAL_REAUDIT.md` §Endless Ready |
 | 25 | Map preview investigated with a real Blender recipe, then **deliberately not swapped** | `art-source/blender/render_map_previews.py` renders; candidate kept at `artifacts/qa/map_preview_backup/map_preview_city.isometric-candidate.png`; originals restored byte-identical (sha256 `0c1f521f…5524a`, `e7b86024…7ee7e`) |
 | 26 | Two reusable probes for art work | `probe_glb_textures.py` (imports to find textureless GLBs), `probe_glb_sizes.py` (measured world sizes) |
+| 27 | GitHub synced: 23 unpushed commits pushed after bounded backoff | retry 4/4 succeeded; `9945d7b..c93bc9f` then `44169af`; `0 0` ahead/behind |
+| 28 | Machine Info progress readout was illegible (violet on the dark bar) | `PAGE_TEXT_ROLES.ProgressValue -> onButtonText`; verified on capture |
+| 29 | Ready title made to outrank the brand watermark; the watermark identified as Canvas-level `RegistrationBranding`, not page art | `MODE_READY_LAYOUT.HeaderTitle` 19px -> 66px; gaps measured on the live tree |
+| 30 | Ready stat pair rebuilt as two side-by-side icon cards | `mountStatCards`; icons `icon_stat_best` / `icon_stat_machine`; Settlement icons verified unregressed |
+| 31 | `probe_scene_tree.mjs` (live node tree with world positions), `montage_pages.py`, `crop_zoom.py`, `arenaReady` page key | these are what found #29 and caught the caption regression |
+| 32 | V11.1 full gate re-run | `test:full` 567 PASS / 0 FAIL; layout, gameplay-visuals, ui-kit, audio PASS; web/wx/tt builds PASS; main package 3.57 MB PASS; `acceptance:v2` **flaky** (1 FAIL then PASS on the same build) |
 
 ## 2. VALIDATED_GATES (all on the current tree)
 
