@@ -14,9 +14,22 @@
 
 | # | 阻塞 | 性质 |
 | --- | --- | --- |
-| B1 | **微信首包 7,394 KB，上限 4,096 KB（1.81×）；把 `assets/main` 载荷全部搬空后下界仍有 5,488 KB（1.34×）** | **产品决策**（`main` 包分包 or 远程 CDN），二者都改变首屏下载行为 |
+| ~~B1~~ | ~~微信首包 7,394 KB，上限 4,096 KB（1.81×）~~ **已解决，见下方更新块** | 曾是**产品决策**；实际是测量口径错误 |
 | B2 | **抖音 AppID 仍是 `testappId`** | 业主提供 AppID；`preflight:release` 因此失败 |
 | B3 | **微信侧权威体积实测与真机验证不可得** | 外部：本机登录账号不是该小游戏的开发者 |
+
+### 更新（2026-10-10）：B1 已解决，本报告 §1 的结论已收窄
+
+B1 的 7,394 KB / 5,488 KB 两个数字**都不是首包**：它们把 `cocos/` 引擎插件目录
+算了进去，而微信 DevTools 自己的规则表写的是
+`主包尺寸（不包含插件）`（`resources/app.asar` 的 `PACKAGE_SIZE_LIMIT`，附
+`PLUGIN_SIZE_IN_PACKAGE`）。按 DevTools 口径重测后，`art/machines` 作为独立分包
+搬出主包，**主包 3.57 MB ≤ 4.00 MB，PASS**
+（`scripts/measure_wechat_package.py`，同时打印两种口径以免再次混淆）。
+
+因此本报告 §1 的 `READY_FOR_STORE = NO` **仍然成立，但只剩两个阻塞**，且两者
+都是外部/业主侧，不是工程侧：B2（抖音 AppID 仍是占位 `testappId`）与 B3（微信侧
+权威实测与真机验证不可得）。§4 的 B1 小节保留为当时的记录，不再代表当前状态。
 
 本轮另外修掉了 §5 的两项：一个**会被玩家看到的真实缺陷**（Arena 排行榜面板被裁切）与一处**门禁自身不稳定**（升级横幅覆盖断言 12 跑 6 败）。两者都不是发布阻塞项。
 
@@ -58,7 +71,7 @@
 | `npm run test:perf`（S11 证据完整性） | **PASS** | `performanceBudgetVerdict = NOT_EVALUATED`（仓库未定义预算） |
 | `node scripts/test_cocos_p0b_runtime.mjs` | **PASS** | `status: PASS`，`consoleErrors: []` |
 | `npm run build:web` | **PASS** | 297 文件；`boot=world-city+game-art` |
-| `npm run build:wx` | **PASS**（构建） | 371 文件；分包 `game-art,world-construction,world-city`；**但包体超限，见 B1** |
+| `npm run build:wx` | **PASS**（构建） | 371 文件；分包 `game-art,world-construction,world-city`；包体**已解决**，见 §1 更新块（主包 3.57 MB ≤ 4.00 MB） |
 | `npm run build:tt` | **PASS**（构建） | 300 文件；`boot=world-city+game-art`；分包 `game-art,world-construction,world-city`；AppID 为占位 `testappId` ⇒ 见 B2 |
 | `npm run preflight:release` | **FAIL** | 因 B2（`found testappId`） |
 
@@ -66,7 +79,7 @@
 
 ## 4. 阻塞项
 
-### B1 微信首包上限（产品决策）
+### B1 微信首包上限（历史记录 — 已于 2026-10-10 解决，见 §1 更新块）
 
 实测口径＝**未被声明为分包的全部文件**（含引擎插件本地镜像）。Cocos 官方 FAQ 原文：
 *"After the engine plugin is enabled, will the engine code still be counted into the first package?

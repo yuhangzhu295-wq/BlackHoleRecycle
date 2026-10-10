@@ -193,19 +193,93 @@ stay live in the reference and ours is a full-screen modal. That is a compositio
 change to a page whose layout is otherwise settled, so it is recorded rather than
 started.
 
+## Endless Ready — DIFFERENCES FOUND
+
+Reference `ui-v9.5-adopted/03-endless-ready.png` vs shipped `ready-390x844.png`.
+
+| Element | Reference | Shipped | Verdict |
+| --- | --- | --- | --- |
+| Title hierarchy | 无尽探索 is the dominant element: large display type with a dark outline, gold sparkles either side and a blue ellipse shadow behind | the **brand plate** is the prominent element and 无尽探索 is a small line beneath it | **difference** — the two are inverted |
+| Stat pair | two side-by-side blue cards, each icon-led: a gold trophy over 历史最高纪录 / 12,580, and a black-hole glyph over 当前机器 / LV.2 磁力黑洞 | two full-width dark rows, caption left and value right, no icons | **difference** |
+| Map preview | a rendered isometric street block — the hole on the intersection pulling crates, cones and cars in, colour-blocked buildings and trees behind | a flat 2D vector thumbnail: a sky band, a ground band, five rectangles for buildings, a dashed centre line, five circles for trees, a black disc with a cyan rim | **difference**, investigated; see below |
+| Tagline | 不断吞噬 · 不断成长 / 解锁更大目标 with yellow accent strokes | the same two lines, centred | matches in copy; the accent strokes are absent |
+| CTA | gold capsule 开始探索 with a play triangle | gold capsule 开始探索 ▶ | matches in role |
+
+### The map preview: what was investigated, and why nothing shipped
+
+The shipped `map_preview_city.png` is 560×260 of flat vector shapes. It is not a
+degradation-path artefact — `MapPreviewGraphic` resolves the authored
+`mapPreviewCity` frame and draws it; the *art itself* is the flat one, which is
+why the page reads as a diagram rather than as the world.
+
+A Blender recipe was written to re-render both previews from the game's own GLBs
+(`art-source/blender/render_map_previews.py`, reusing the `render_v95_assets`
+harness). It renders, and three measurements came out of it that the next
+attempt should start from rather than rediscover:
+
+- **The card's aspect cannot be filled at the art's camera angle.** The V9.5
+  pipeline shoots at 35° elevation. For an orthographic camera at elevation θ
+  the ratio of projected width to projected height is bounded by `1 / sin θ`,
+  i.e. **1.74 at 35°**. The `MapPreview` node is 560×260 = **2.15:1**
+  (`MODE_READY_LAYOUT`), so no 35° isometric block can fill it — the best
+  achievable width fill is ~81%, with ground showing either side. The reference
+  panel is ~1.65:1, which 35° *can* fill. Matching the reference therefore means
+  either widening the card's aspect (a layout change: at 560×330 the preview
+  would collide with `Header` at y 484–584) or dropping the preview camera to
+  ~20° while the rest of the art stays at 35°.
+- **Most of the recyclable kit has no texture data.** Measured by import, not by
+  reading the directory (`art-source/blender/probe_glb_textures.py`):
+  `recyclables/industrial/crate.glb`, `recyclables/industrial/shipping-container.glb`,
+  every `recyclables/food/*` GLB and `world/residential/building-type-b.glb`
+  import with a zero-size image and are dropped by the harness guard; every
+  `recyclables/props/*` GLB is absent from disk. `recyclables/furniture/cardboard-box.glb`
+  is the one usable crate.
+- **Prop sizes are real, and small.** Measured (`probe_glb_sizes.py`): a ground
+  tile GLB is 1.0 unit, a sedan 2.55 long, a skyscraper 2.88 tall, `tree-small`
+  0.57, a cardboard box 0.28 — and the world places them at exactly these sizes,
+  because `ObjectArtRegistry` binds every object with `unitScale() = (1,1,1)`.
+  The contract gate then fixes the ground: `GroundTile_1` is placed at
+  `[32, 1, 32]` and `MainCrossroad` at `[16, 1, 16]`. So in the real game a car
+  is **1/6 of a crossroad width and 1/12.5 of a district block**, and a skyscraper
+  is 2.88 against a 32-unit block. The recipe used the Home band's delivered
+  9-unit ground tile, which gets the car-to-road ratio into the reference's
+  range but leaves the buildings and trees far smaller against the road than the
+  reference draws them, so it applies presentation multipliers (buildings ×3,
+  trees ×5, cargo ×3) — recorded as presentation scales for that one image, not
+  as gameplay proportions.
+
+The render that came out of this is a real isometric diorama with a correctly
+scaled hole, but it is **not better than what is shipped**: the city kit shares
+one dark grey-blue building texture, so a street of them reads as a single
+colour, and the multiply tint needed to colour them darkens rather than
+colours. Replacing an accepted asset with a weaker one would be a regression, so
+**the originals were restored byte-identical** (sha256
+`0c1f521f…5524a` for `map_preview_city.png`, `e7b86024…7ee7e` for
+`map_preview_arena.png`) and the candidate render is kept out of the build at
+`artifacts/qa/map_preview_backup/map_preview_city.isometric-candidate.png`.
+
+The two scripts, the glow-ring and tint primitives they added to the harness,
+and the two probes are all kept: they are reproducible and they are what a
+colour-correct building set or a card-aspect decision would be built on.
+
 ## Other pages
 
 - **Home** — the canon states Home has no reference render of its own; its design is
   *derived* from the mode-select language. Any Home judgement is therefore against
   the language, not against an image, and is recorded as such.
-- **Settlement / EndlessReady / Pause / Revive / Machine / Skin / Gameplay HUD** —
+- **Pause / Machine / Skin / Gameplay HUD / Arena Ready / Arena HUD** —
   not yet compared in this pass. The same side-by-side method applies; the adopted
   reference per page is listed in
   `cocos/docs/design-reference/UI_ART_DIRECTION_CANONICAL.md` §3.
 
 ## What this document does NOT claim
 
-It does not claim the UI is finished. It records that **one page has been compared
-and has three named differences**, and that the rest have not been compared yet in
-this pass. A page that passes the functional gates is not thereby visually
-accepted.
+It does not claim the UI is finished. It records that **six pages have been
+compared** (Mode Select, Settlement, Home, Revive, Endless Ready, and the Arena
+HUD clip) and that the rest have not been compared yet in this pass. A page that
+passes the functional gates is not thereby visually accepted.
+
+It also does not claim the two Endless Ready differences above are *fixed*. The
+title hierarchy and the stat pair are recorded with the same evidence as the
+others; the map preview is recorded as investigated-and-deliberately-not-shipped,
+with the reason and the measurements that constrain the next attempt.

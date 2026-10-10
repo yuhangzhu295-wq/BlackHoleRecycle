@@ -133,6 +133,61 @@ def add_black_hole(x, y, radius=0.9, ring_colour=(0.42, 0.24, 1.0), name='hole')
     return [sphere, ring]
 
 
+def tint_objects(objects, colour):
+    """Multiply a tint into every textured base colour under `objects`.
+
+    The city kit's buildings all share one grey-blue glass texture, so a street
+    of them reads as a single colour. Setting the Principled `Base Color` alone
+    does nothing here -- the texture link overrides it -- so the tint is
+    inserted as a multiply node between the texture and the socket.
+    """
+    tinted = set()
+    for obj in objects:
+        if obj.type != 'MESH':
+            continue
+        for material in obj.data.materials:
+            if material is None or material.name in tinted or not material.use_nodes:
+                continue
+            tinted.add(material.name)
+            principled = principled_of(material)
+            socket = principled.inputs['Base Color']
+            if not socket.is_linked:
+                continue
+            source = socket.links[0].from_socket
+            mix = material.node_tree.nodes.new('ShaderNodeMix')
+            mix.data_type = 'RGBA'
+            mix.blend_type = 'MULTIPLY'
+            mix.inputs['Factor'].default_value = 1.0
+            # RGBA sockets: A is 6, B is 7, and the colour Result is output 2.
+            material.node_tree.links.new(source, mix.inputs[6])
+            mix.inputs[7].default_value = (*colour, 1.0)
+            material.node_tree.links.new(mix.outputs[2], socket)
+    return len(tinted)
+
+
+def add_glow_ring(x, y, radius, colour, emission=1.6):
+    """A wide, thin emissive pool of light around a hole.
+
+    `add_black_hole`'s own rim is a hairline; on asphalt the reference reads as a
+    broad purple pool instead. Emission stays near 1.5 for the same reason the
+    rim does: at 3.5 under the Standard view transform every channel clipped and
+    the ring rendered white.
+    """
+    bpy.ops.mesh.primitive_torus_add(location=(x, y, 0.045),
+                                     major_radius=radius * 1.42, minor_radius=radius * 0.10,
+                                     major_segments=64, minor_segments=12)
+    ring = bpy.context.active_object
+    ring.name = 'hole-glow'
+    shader = bpy.data.materials.new('hole-glow-mat')
+    shader.use_nodes = True
+    principled = principled_of(shader)
+    principled.inputs['Base Color'].default_value = (*colour, 1.0)
+    principled.inputs['Emission Color'].default_value = (*colour, 1.0)
+    principled.inputs['Emission Strength'].default_value = emission
+    ring.data.materials.append(shader)
+    return [ring]
+
+
 def world_bounds(objects):
     low = Vector((math.inf,) * 3)
     high = Vector((-math.inf,) * 3)
@@ -190,12 +245,18 @@ def light_scene(sky_colour=(0.62, 0.82, 1.0)):
     bpy.context.scene.world = world
 
 
-def render(name, width, height):
+def render(name, width, height, transparent=True):
+    """Render one frame. `transparent=False` paints the world colour as sky.
+
+    Every V9.5 UI asset wants a transparent film because it is composited over
+    an authored panel. The Mode-Ready map previews are the exception: they are
+    the whole card interior, so they need an opaque sky behind them.
+    """
     scene = bpy.context.scene
     scene.render.engine = 'BLENDER_EEVEE_NEXT'
     scene.render.resolution_x = width * SUPERSAMPLE
     scene.render.resolution_y = height * SUPERSAMPLE
-    scene.render.film_transparent = True
+    scene.render.film_transparent = transparent
     scene.render.image_settings.file_format = 'PNG'
     scene.render.image_settings.color_mode = 'RGBA'
     scene.view_settings.view_transform = 'Standard'
@@ -205,7 +266,8 @@ def render(name, width, height):
     report('rendered', name)
 
 
-def render_recipe(name, width, height, ground_tiles, props, holes=(), sky=(0.62, 0.82, 1.0)):
+def render_recipe(name, width, height, ground_tiles, props, holes=(), sky=(0.62, 0.82, 1.0),
+                  glow_rings=()):
     """Every entry in a recipe carries the same scale, so the diorama is coherent."""
     """Build one asset: ground tiles, then props, then holes, then frame and render."""
     clear_scene()
@@ -214,12 +276,22 @@ def render_recipe(name, width, height, ground_tiles, props, holes=(), sky=(0.62,
         added = import_glb(relative)
         place(added, x, y, 0.0, rotation, scale)
         everything += added
-    for relative, x, y, rotation, scale, z in props:
+    for entry in props:
+        relative, x, y, rotation, scale, z = entry[:6]
         added = import_glb(relative)
         place(added, x, y, z, rotation, scale)
+        # An optional 7th element tints the prop, so one shared grey-blue
+        # building texture can dress a whole street. Existing 6-tuples are
+        # unaffected.
+        if len(entry) > 6 and entry[6] is not None:
+            tint_objects(added, entry[6])
         everything += added
     for x, y, radius, colour in holes:
         everything += add_black_hole(x, y, radius, colour)
+    # Optional pool of light under a hole: `(x, y, radius, colour, emission)`.
+    # Defaults to empty, so every existing recipe renders exactly as before.
+    for x, y, radius, colour, emission in glow_rings:
+        everything += add_glow_ring(x, y, radius, colour, emission)
 
     bpy.context.view_layer.update()
     bounds = world_bounds(everything)

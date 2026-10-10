@@ -1,9 +1,9 @@
 # AUTONOMOUS EXECUTION STATE
 
-- CURRENT_HEAD: pending commit (clean tree; 18 commits ahead of `origin/dev/product-finalization-20260929`)
+- CURRENT_HEAD: `0cf88fb` (tree additionally carries the Endless Ready comparison + the map-preview investigation; 22 commits ahead of `origin/dev/product-finalization-20260929`, **none pushed**)
 - CURRENT_PHASE: `RELEASE_BLOCKERS_AND_PRODUCT_CLOSEOUT`
-- CURRENT_SCOPE: Mode Select plinth + Settlement stat icons (done); next the Mode Select card interiors and vortex art, the Endless settlement breakdown, LV5 far field, performance
-- LAST_UPDATED: 2026-10-09
+- CURRENT_SCOPE: remaining UI page comparisons (Pause / Machine / Skin / Endless HUD / Arena Ready / Arena HUD); the two recorded Endless Ready differences (title hierarchy, stat pair); the map-preview aspect decision; LV5 far field; performance + full two-mode playthrough
+- LAST_UPDATED: 2026-10-10
 
 ---
 
@@ -32,6 +32,11 @@
 | 19 | Settlement stat cards compared against their reference | `cocos/docs/UI_VISUAL_REAUDIT.md` §Settlement |
 | 20 | Stat card icons authored and wired | `art-source/vector/generate_stat_icons.py`, `scripts/add_settlement_stat_icons.py` |
 | 21 | Endless settlement itemises the run by tier (real data, not invented reward tiles) | `scripts/probe_settlement_breakdown.mjs` PASS: `absorbedTiers {1:57,2:2}` → `T1 ×59 · T2 ×3` |
+| 22 | Home compared against its reference; adoption separated from defect | `cocos/docs/UI_VISUAL_REAUDIT.md` §Home, commit `f82a788` |
+| 23 | Revive compared against its reference | `cocos/docs/UI_VISUAL_REAUDIT.md` §Revive, commit `18293c9` |
+| 24 | Endless Ready compared; three named differences recorded | `cocos/docs/UI_VISUAL_REAUDIT.md` §Endless Ready |
+| 25 | Map preview investigated with a real Blender recipe, then **deliberately not swapped** | `art-source/blender/render_map_previews.py` renders; candidate kept at `artifacts/qa/map_preview_backup/map_preview_city.isometric-candidate.png`; originals restored byte-identical (sha256 `0c1f521f…5524a`, `e7b86024…7ee7e`) |
+| 26 | Two reusable probes for art work | `probe_glb_textures.py` (imports to find textureless GLBs), `probe_glb_sizes.py` (measured world sizes) |
 
 ## 2. VALIDATED_GATES (all on the current tree)
 
