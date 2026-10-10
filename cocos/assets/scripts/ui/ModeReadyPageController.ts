@@ -29,7 +29,7 @@ import { eventBus } from '../core/EventBus';
 import { MACHINE_EVOLUTION_CONFIG } from '../data/GameConfig';
 import { saveService } from '../data/SaveService';
 import { MapPreviewGraphic, MapPreviewKind } from './MapPreviewGraphic';
-import { UIAssetLibrary } from './UIAssetLibrary';
+import { UIAssetLibrary, type UIFrameKey } from './UIAssetLibrary';
 
 const { ccclass, property } = _decorator;
 
@@ -63,12 +63,22 @@ export const MODE_READY_LAYOUT = {
   MapPreview:     [560,  260,    0,  340],
   // V7: two UIHudBar rows, caption flush left / value flush right, matching the
   // reference's stat panels (06) and "当前机器 | LV.3 重力黑洞" row (07).
-  StatPanelTop:   [580,   76,    0,  126],
-  StatPanelBottom:[580,   76,    0,   42],
-  StatCaption:    [260,   40, -125,  126],
-  StatValue:      [260,   40,  125,  126],
-  MachineCaption: [260,   40, -125,   42],
-  MachineValue:   [260,   40,  125,   42],
+  //
+  // V11.1: the reference leads each stat with an *icon* and sets the pair side by
+  // side, not stacked. The same authored UIHudBar carries them -- no new surface
+  // -- narrowed to 284 and moved to x -146/+146, which is inside the 295.7
+  // usable half-width at 390x844 so `fitToVisibleDesignSpace` has nothing to do.
+  // The band is capped at design 163 by the preview card's caption strip
+  // (design 167.5..208.5), which is why the cards are 130 tall at y 98.
+  StatPanelTop:   [284,  130, -146,   98],
+  StatPanelBottom:[284,  130,  146,   98],
+  // The page-level pair is the fallback used when the authored UIHudBar prefab
+  // is unavailable; it is hidden whenever the bar carries its own Caption/Value.
+  // It follows the card layout so that path is not left behind.
+  StatCaption:    [200,   36, -116,  116],
+  StatValue:      [200,   44, -116,   80],
+  MachineCaption: [200,   36,  116,  116],
+  MachineValue:   [200,   44,  116,   80],
   // V7: the arena rule list sits on a UIPanel (reference 07); Endless keeps the
   // bare two-line copy from reference 06.
   IntroPanel:     [580,  180,    0, -106],
@@ -82,6 +92,18 @@ const STAT_PANEL_TOP = 'StatPanelTop';
 const STAT_PANEL_BOTTOM = 'StatPanelBottom';
 const INTRO_PANEL = 'IntroPanel';
 const START_ART = 'BtnStartArt';
+
+/** Child node each stat card grows for its icon. */
+const STAT_ICON_NODE = 'StatIcon';
+/**
+ * Card node -> icon frame key, in card order. The two cards answer different
+ * questions ("best score" vs "what am I driving"), so they get different
+ * glyphs rather than one repeated decorative mark.
+ */
+const STAT_CARD_ICONS: ReadonlyArray<readonly [string, UIFrameKey]> = [
+  [STAT_PANEL_TOP, 'statBest'],
+  [STAT_PANEL_BOTTOM, 'statMachine'],
+];
 
 
 /** Sliced stat panels authored wider than a 20:9 frame can show. */
@@ -147,6 +169,7 @@ export class ModeReadyPageController extends Component {
     this.mountPanelBehind(INTRO_PANEL, 'panel', 'IntroText');
     this.mountStartArt();
     this.applyIntroPanelVisibility();
+    this.mountStatCards();
 
     if (top && bottom) return;
     if (this.waitingForPanels) return;
@@ -156,6 +179,7 @@ export class ModeReadyPageController extends Component {
       if (!this.node?.isValid || !this.node.activeInHierarchy) return;
       this.mountAuthoredPanels();
       this.applyLayout();
+      this.mountStatCards();
       this.applyStartButton();
       this.refreshProfile();
     });
@@ -177,6 +201,52 @@ export class ModeReadyPageController extends Component {
     const reference = this.findNode(referenceName);
     if (reference) panel.setSiblingIndex(reference.getSiblingIndex());
     return panel;
+  }
+
+  /**
+   * V11.1. Give each stat card the icon the reference leads with, and stack its
+   * caption over its value instead of pushing them to opposite ends.
+   *
+   * Idempotent, and a no-op when the icon frame has not arrived: the card keeps
+   * the authored bar layout rather than showing an empty icon slot. The icon is
+   * added as a child of the mounted UIHudBar, so it cannot outlive the card.
+   */
+  private mountStatCards(): void {
+    for (const [cardName, iconKey] of STAT_CARD_ICONS) {
+      const card = this.node.getChildByName(cardName);
+      if (!card?.isValid) continue;
+      const frame = UIAssetLibrary.getFrame(iconKey);
+      if (!frame) continue;
+
+      let icon = card.getChildByName(STAT_ICON_NODE);
+      if (!icon) {
+        icon = new Node(STAT_ICON_NODE);
+        icon.layer = card.layer;
+        card.addChild(icon);
+      }
+      const transform = icon.getComponent(UITransform) || icon.addComponent(UITransform);
+      transform.setContentSize(56, 56);
+      const sprite = icon.getComponent(Sprite) || icon.addComponent(Sprite);
+      sprite.type = Sprite.Type.SIMPLE;
+      sprite.sizeMode = Sprite.SizeMode.CUSTOM;
+      if (sprite.spriteFrame !== frame) sprite.spriteFrame = frame;
+      icon.setPosition(-96, 0, 0);
+
+      // Both lines move right of the icon and share one left edge, so the card
+      // reads as "icon, then its two facts". Sharing that edge needs `anchorX = 0`
+      // as well as a common position: the prefab's labels are centre-anchored and
+      // auto-sized, so positioning them at the same x left their text starting at
+      // different places (measured on the 390x844 capture).
+      for (const [name, y] of [['Caption', 22], ['Value', -22]] as const) {
+        const line = card.getChildByName(name);
+        if (!line) continue;
+        const lineTransform = line.getComponent(UITransform);
+        if (lineTransform) lineTransform.anchorX = 0;
+        line.setPosition(-64, y, 0);
+        const label = line.getComponent(Label);
+        if (label) label.horizontalAlign = Label.HorizontalAlign.LEFT;
+      }
+    }
   }
 
   /** V7: the CTA visual is the authored UIButton; its label carries the copy. */

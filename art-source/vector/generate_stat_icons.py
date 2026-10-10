@@ -88,12 +88,61 @@ def level_icon():
     return image
 
 
+def trophy_icon():
+    """A gold cup with two handles: the "best score" role.
+
+    The handles are arcs rather than shapes, so they get the outline/fill
+    treatment by drawing a thick dark arc and a thinner gold one over it. A
+    single `outline` pass would stroke inward and eat the handle, the same trap
+    the module header records for the filled shapes.
+    """
+    s = SS
+    image, draw = canvas()
+    gold = (254, 195, 3)
+    for box, start, end in (
+        ((4 * s, 16 * s, 30 * s, 42 * s), 90, 270),
+        ((42 * s, 16 * s, 68 * s, 42 * s), 270, 90),
+    ):
+        draw.arc(box, start, end, fill=OUTLINE, width=7 * s)
+        draw.arc(box, start, end, fill=gold, width=3 * s)
+    polygon_sticker(draw, [(15 * s, 10 * s), (57 * s, 10 * s), (48 * s, 42 * s), (24 * s, 42 * s)],
+                    gold, shrink=0.88)
+    sticker(draw, (32 * s, 42 * s, 40 * s, 53 * s), 3 * s, gold)
+    sticker(draw, (21 * s, 53 * s, 51 * s, 63 * s), 5 * s, gold)
+    # A star on the bowl, so it reads as a trophy and not a bucket.
+    points = []
+    for i in range(10):
+        radius = 12 * s if i % 2 == 0 else 5 * s
+        angle = -math.pi / 2 + i * math.pi / 5
+        points.append((36 * s + radius * math.cos(angle), 24 * s + radius * math.sin(angle)))
+    draw.polygon(points, fill=(255, 245, 184, 255))
+    return image
+
+
+def blackhole_icon():
+    """A violet ring around a dark disc: the "current machine" role.
+
+    This is the game's own hole identity (a near-black core inside a coloured
+    rim), not a generic gear, so the card cannot disagree with the world.
+    """
+    s = SS
+    image, draw = canvas()
+    draw.ellipse((5 * s, 5 * s, 67 * s, 67 * s), fill=OUTLINE)
+    draw.ellipse((9 * s, 9 * s, 63 * s, 63 * s), fill=(88, 52, 232, 255))
+    draw.ellipse((15 * s, 15 * s, 57 * s, 57 * s), fill=OUTLINE)
+    draw.ellipse((18 * s, 18 * s, 54 * s, 54 * s), fill=(10, 8, 26, 255))
+    draw.arc((24 * s, 24 * s, 48 * s, 48 * s), 200, 340, fill=(214, 198, 255, 255), width=3 * s)
+    return image
+
+
 def main():
     os.makedirs(OUT_DIR, exist_ok=True)
     for name, factory in (
         ('icon_stat_mass.png', mass_icon),
         ('icon_stat_items.png', items_icon),
         ('icon_stat_level.png', level_icon),
+        ('icon_stat_best.png', trophy_icon),
+        ('icon_stat_machine.png', blackhole_icon),
     ):
         path = os.path.join(OUT_DIR, name)
         factory().resize((SIZE, SIZE), Image.LANCZOS).save(path)

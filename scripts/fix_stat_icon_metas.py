@@ -20,7 +20,8 @@ import uuid as uuidlib
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 V95 = os.path.join(ROOT, 'cocos', 'assets', 'game_art', 'ui', 'v95')
 TEMPLATE = os.path.join(V95, 'badge_gold.png.meta')
-ICONS = ('icon_stat_mass.png', 'icon_stat_items.png', 'icon_stat_level.png')
+ICONS = ('icon_stat_mass.png', 'icon_stat_items.png', 'icon_stat_level.png',
+         'icon_stat_best.png', 'icon_stat_machine.png')
 SIZE = 72
 
 
@@ -32,6 +33,16 @@ def main():
         meta_path = os.path.join(V95, icon + '.meta')
         if not os.path.exists(meta_path):
             print('skip (no meta):', icon)
+            continue
+        # Never re-key an icon that already imports correctly. Assigning a fresh
+        # uuid to a meta a scene already references leaves that reference
+        # dangling: an earlier run of this script rewrote the three Settlement
+        # icons and silently broke their SpriteFrames in Game.scene. Only a meta
+        # that is genuinely missing its spriteFrame sub-asset gets a new uuid.
+        existing = json.load(open(meta_path, encoding='utf-8'))
+        importers = {sub.get('importer') for sub in (existing.get('subMetas') or {}).values()}
+        if 'sprite-frame' in importers:
+            print('skip (already imports):', icon)
             continue
         fresh = uuidlib.uuid4().hex
         fresh = '-'.join([fresh[:8], fresh[8:12], fresh[12:16], fresh[16:20], fresh[20:32]])
