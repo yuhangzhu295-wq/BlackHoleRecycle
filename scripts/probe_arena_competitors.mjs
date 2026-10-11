@@ -74,6 +74,19 @@ try {
     for (const node of container.children) {
       if (!node.name.startsWith('ArenaBot_')) continue;
       const core = node.getChildByName('VisualRoot')?.getChildByName('CoreNode') || null;
+      // PHASE A #3: the identity colour must be readable off the live material,
+      // not inferred from the tint string that was requested. A shared material
+      // instance would make seven bots share one colour, and that is exactly the
+      // failure this reads for.
+      const ringColour = (() => {
+        const ring = find(node, 'HoleRing');
+        const renderer = ring?.getComponent('cc.MeshRenderer') || null;
+        const material = renderer?.material || renderer?.getMaterial?.(0) || null;
+        const colour = material?.getProperty?.('mainColor') || null;
+        if (!colour) return null;
+        const hex = (value) => Math.round(Math.max(0, Math.min(255, value))).toString(16).padStart(2, '0');
+        return `#${hex(colour.r)}${hex(colour.g)}${hex(colour.b)}`;
+      })();
       const children = [];
       // Activity, not presence. The machine's level assemblies (MachineVisual_LV*)
       // are always children of VisualRoot; for a bot they are simply inactive. A
@@ -97,6 +110,7 @@ try {
         // Reported as the pair (mass, coreScaleXZ) so the two can be compared
         // across the seven rivals rather than eyeballed from a screenshot.
         coreScaleXZ: core ? Number(core.scale.x.toFixed(3)) : null,
+        ringColour,
         worldPos: { x: Number(node.worldPosition.x.toFixed(1)), z: Number(node.worldPosition.z.toFixed(1)) },
         // PHASE A #4/#5: the name must belong to a real body, and a body that is
         // off screen must not leave a name behind.
@@ -112,12 +126,22 @@ try {
     console.log(`[arena] container=${report.container} competitors=${report.bots.length}`);
     for (const bot of report.bots) {
       console.log(`  ${bot.name}: core=${bot.coreActive} crawler=${bot.hasBulldozer}`
-        + ` coreScale=${bot.coreScaleXZ} pos=(${bot.worldPos.x},${bot.worldPos.z}) visible=${bot.visible}`);
+        + ` coreScale=${bot.coreScaleXZ} ring=${bot.ringColour}`
+        + ` pos=(${bot.worldPos.x},${bot.worldPos.z}) visible=${bot.visible}`);
       if (bot.coreActive !== true) failures.push(`${bot.name}: black-hole core is NOT active`);
       if (bot.hasBulldozer) failures.push(`${bot.name}: still mounts an active crawler`);
       if (bot.visible !== true) failures.push(`${bot.name}: node is not active in hierarchy`);
+      if (!bot.ringColour) failures.push(`${bot.name}: HoleRing has no readable material colour`);
     }
     if (report.bots.length !== 7) failures.push(`expected 7 bots, found ${report.bots.length}`);
+    // PHASE A #3: seven rivals must be seven colours. A shared material would make
+    // this list one entry long, which is the defect this asserts against.
+    const colours = report.bots.map((b) => b.ringColour);
+    console.log(`[arena] distinct rival rim colours: ${new Set(colours).size} of ${colours.length}`
+      + ` -> ${JSON.stringify([...new Set(colours)])}`);
+    if (new Set(colours).size !== report.bots.length) {
+      failures.push(`rivals share rim colours: ${JSON.stringify(colours)}`);
+    }
     // PHASE A #1: distinct core scales across rivals would mean size is not
     // tracking the shared start mass. All seven start at START_MASS, so a spread
     // here is a real defect rather than a design choice.
