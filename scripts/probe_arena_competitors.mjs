@@ -124,6 +124,85 @@ try {
     const scales = [...new Set(report.bots.map((b) => b.coreScaleXZ))];
     console.log(`[arena] distinct core scales at match start: ${JSON.stringify(scales)}`);
   }
+  // PHASE A: the single dump above says where the bots are, not whether two of
+  // them STAY together. A pair 0.1 apart in one sample is an incidental crossing;
+  // the same pair under 1.5 apart for most of ten seconds is a body that reads as
+  // one opponent. Measure before changing the AI.
+  const SAMPLES = 40;
+  const INTERVAL_MS = 250;
+  const pairs = new Map();
+  const positionsBySample = [];
+  let behaviourBySample = [];
+  for (let index = 0; index < SAMPLES; index += 1) {
+    const frame = await page.evaluate(() => {
+      const cc = window.cc;
+      const scene = cc.director.getScene();
+      const find = (node, name) => {
+        if (!node) return null;
+        if (node.name === name) return node;
+        for (const child of node.children) {
+          const hit = find(child, name);
+          if (hit) return hit;
+        }
+        return null;
+      };
+      const first = find(scene, 'ArenaBot_1');
+      const container = first ? first.parent : null;
+      const out = [];
+      if (container) {
+        for (const node of container.children) {
+          if (!node.name.startsWith('ArenaBot_') || !node.activeInHierarchy) continue;
+          out.push({ name: node.name, x: node.worldPosition.x, z: node.worldPosition.z });
+        }
+      }
+      const snapshot = window.__BHR_QA__.snapshot();
+      return { bots: out, arena: snapshot.arena || null, gameState: snapshot.gameState };
+    });
+    if (frame.gameState !== 'ARENA') break;
+    positionsBySample.push(frame.bots);
+    const states = frame.arena?.botStates || {};
+    behaviourBySample.push(states);
+    for (let a = 0; a < frame.bots.length; a += 1) {
+      for (let b = a + 1; b < frame.bots.length; b += 1) {
+        const left = frame.bots[a];
+        const right = frame.bots[b];
+        const key = `${left.name}|${right.name}`;
+        const gap = Math.hypot(left.x - right.x, left.z - right.z);
+        const entry = pairs.get(key) || { min: Infinity, close: 0, total: 0, states: new Set() };
+        entry.min = Math.min(entry.min, gap);
+        entry.total += 1;
+        if (gap < 1.5) {
+          entry.close += 1;
+          const leftState = states[left.name.replace('ArenaBot_', 'bot-')];
+          const rightState = states[right.name.replace('ArenaBot_', 'bot-')];
+          if (leftState) entry.states.add(leftState);
+          if (rightState) entry.states.add(rightState);
+        }
+        pairs.set(key, entry);
+      }
+    }
+    await sleep(INTERVAL_MS);
+  }
+
+  if (positionsBySample.length >= 3) {
+    const ranked = [...pairs.entries()].sort((left, right) => left[1].min - right[1].min).slice(0, 5);
+    console.log(`\n[overlap] ${positionsBySample.length} samples over ${(SAMPLES * INTERVAL_MS) / 1000}s`);
+    console.log('[overlap] closest pairs (min gap / samples under 1.5 / samples seen):');
+    for (const [key, entry] of ranked) {
+      console.log(`  ${key}: min=${entry.min.toFixed(2)} close=${entry.close}/${entry.total}`
+        + ` behaviours=${JSON.stringify([...entry.states])}`);
+    }
+    const persistent = ranked.filter(([, entry]) => entry.close / entry.total > 0.5);
+    if (persistent.length) {
+      // Report, do not fail: the fix decision belongs to the next step, and the
+      // arena-ai contract is the thing that must not regress.
+      console.log(`[overlap] PERSISTENT: ${persistent.length} pair(s) under 1.5 units for`
+        + ' more than half the samples -- these read as one opponent.');
+    } else {
+      console.log('[overlap] no pair stayed under 1.5 units for more than half the samples.');
+    }
+  }
+
   await context.close();
 } finally {
   await browser.close();

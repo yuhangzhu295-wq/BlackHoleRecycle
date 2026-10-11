@@ -164,6 +164,21 @@ const SHIELD_SECONDS = 3;
 // can pull them into combat. This is a rules-level preparation window, not a
 // visual invulnerability substitute: collection and movement remain live.
 const COMBAT_WARMUP_SECONDS = 15;
+/**
+ * Short-range push between non-combat bots.
+ *
+ * Measured before adding it (40 samples over 10 s, 390x844): ArenaBot_5 and
+ * ArenaBot_6 stayed under 1.5 world units apart for 33 of 40 samples, minimum gap
+ * 0.14, with ArenaBot_4 close to both for 26 of 40. `COLLECT` picks the nearest
+ * IDLE pickup and nothing stopped two bots choosing the same one, and no bot had
+ * any reason to move off another. At that range the two black holes overlap and
+ * read as a single opponent, which is the same class of defect as the hidden
+ * core: eight competitors exist and fewer than eight are visible.
+ *
+ * Deliberately not applied to CHASE or FLEE -- see `applySeparation`.
+ */
+const SEPARATION_RADIUS = 3.2;
+const SEPARATION_STRENGTH = 0.9;
 const START_MASS = 240;
 const ARENA_RADIUS = 44;
 const GRAVITY_RANGE = 4.8;
@@ -598,6 +613,7 @@ export class ArenaMatchManager extends Component {
       bot.behavior = 'COLLECT';
       bot.targetId = pickup.runtimeId;
       directionXZ(position, pickup.getPosition(), this.steering);
+      this.applySeparation(bot, this.steering);
       bot.machine.setMovementDirection(this.steering, 0.82);
       return;
     }
@@ -609,6 +625,7 @@ export class ArenaMatchManager extends Component {
     const phase = this.elapsedSeconds * 0.22 + bot.slot * 0.81;
     const target = new Vec3(Math.cos(phase) * 24, 0, Math.sin(phase) * 24);
     directionXZ(position, target, this.steering);
+    this.applySeparation(bot, this.steering);
     bot.machine.setMovementDirection(this.steering, 0.5);
   }
 
@@ -894,6 +911,41 @@ export class ArenaMatchManager extends Component {
 
   private getLocalCompetitor(): ArenaCompetitor | null {
     return this.competitors.find((competitor) => competitor.isLocal) || null;
+  }
+
+  /**
+   * Lean a bot's heading away from rivals that are too close, in place.
+   *
+   * Applied only in the non-combat states (COLLECT, ROAM, EVENT_HUNT, RECOVER).
+   * CHASE and FLEE keep their exact headings on purpose: real pursuit and real
+   * escape must not be softened, and a low-mass bot must not gain distance it did
+   * not earn. Nothing here teleports a body, forbids contact, changes the
+   * mass-difference rule, or adds a physics system -- it is a heading blend on
+   * the steering vector the bot was already writing.
+   */
+  private applySeparation(bot: ArenaCompetitor, steering: Vec3): void {
+    const position = bot.node.position;
+    let pushX = 0;
+    let pushZ = 0;
+    for (const other of this.competitors) {
+      if (other === bot || !other.alive) continue;
+      const dx = position.x - other.node.position.x;
+      const dz = position.z - other.node.position.z;
+      const gap = Math.hypot(dx, dz);
+      if (gap >= SEPARATION_RADIUS || gap < 1e-4) continue;
+      const weight = (SEPARATION_RADIUS - gap) / SEPARATION_RADIUS;
+      pushX += (dx / gap) * weight;
+      pushZ += (dz / gap) * weight;
+    }
+    const length = Math.hypot(pushX, pushZ);
+    if (length < 1e-4) return;
+    steering.x += (pushX / length) * SEPARATION_STRENGTH;
+    steering.z += (pushZ / length) * SEPARATION_STRENGTH;
+    const blended = Math.hypot(steering.x, steering.z);
+    if (blended > 1e-4) {
+      steering.x /= blended;
+      steering.z /= blended;
+    }
   }
 
   private spawnPosition(slot: number): Vec3 {
