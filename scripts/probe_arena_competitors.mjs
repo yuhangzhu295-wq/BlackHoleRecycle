@@ -337,6 +337,31 @@ try {
       + '; the rest gained mass without levelling, which is correct.');
   }
 
+  // PHASE B: the opening composition declares authored names (POI_CentralSquare,
+  // ParkTreeSmall_1, ...) and the runtime warns it cannot find eight of them. The
+  // prefab demonstrably contains all of them as real node names, so the question
+  // is whether they survive to the live tree. Ask the scene directly.
+  const compositionProbe = await page.evaluate(() => {
+    const cc = window.cc;
+    const scene = cc.director.getScene();
+    const wanted = ['POI_CentralSquare', 'POI_ParkFountain', 'ParkTreeSmall_1',
+      'FlowerbedWest', 'ParkHedgeNorth', 'ParkTreeLarge_3'];
+    const found = {};
+    for (const name of wanted) found[name] = 0;
+    let cells = 0;
+    const walk = (node) => {
+      if (/^WorldCell_/.test(node.name)) cells += 1;
+      if (found[node.name] !== undefined) found[node.name] += 1;
+      for (const child of node.children) walk(child);
+    };
+    walk(scene);
+    return { cells, found };
+  });
+  console.log(`\n[opening] WorldCell_* nodes in the live tree: ${compositionProbe.cells}`);
+  for (const [name, count] of Object.entries(compositionProbe.found)) {
+    console.log(`  ${name}: ${count === 0 ? 'ABSENT from the live tree' : `present x${count}`}`);
+  }
+
   await context.close();
 } finally {
   await browser.close();

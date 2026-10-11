@@ -108,6 +108,31 @@
 **这一步的判据很明确**：跑 `test:full`，看 `Opening composition entry not found` 是否归零；
 再看 `artifacts/qa/v12/arena/` 三张截图是否出现广场/喷泉/花坛。
 
+### ⚠️ 上面这段推断是错的，已实测推翻（同日）
+
+`instantiateAuthoredCell` 第 50 行是 `const prefab = prefabOverride || this.resolve(district, coord);`
+—— 传进来的 `goldenCityCellPrefab` **非空，直接胜出**，`district.kind` 不参与选择。
+第 52-53 行只重命名**根节点**，子节点保留预制体原名。
+
+然后用探针直接问场景（`probe_arena_competitors.mjs` 新增 `[opening]` 段）：
+
+```
+[opening] WorldCell_* nodes in the live tree: 9
+  POI_CentralSquare: present x1     POI_ParkFountain: present x1
+  ParkTreeSmall_1:   present x1     FlowerbedWest:    present x1
+  ParkHedgeNorth:    present x1     ParkTreeLarge_3:  present x1
+```
+
+**六个全都在，各一个。开场构图是真的落地了。**
+
+所以 `test:full` 里那几百行 `Opening composition entry not found` 来自**无头测试环境**
+（golden-city 契约测试），**不是真实竞技场**。
+
+**因此 PHASE B 的判断要改**：竞技场不是"缺内容"——广场、喷泉、花坛、公园树都在场上。
+画面显得空，是因为**这些东西在相机里的尺寸和对比度太小**，以及大片平灰路面的视觉占比过大。
+这是**取景与尺度**问题，不是内容缺失。修法方向随之改变：
+不是"补内容"，而是让已有的内容在画面里读得出来（尺度、对比、路面占比）。
+
 **为什么不能直接改这一行**：紧邻的 `GameManager.ts:618` 把玩家也钉在
 `this.machine.node.setPosition(0, 0, 0)`。只改 `resetSession` 的入参会**让世界原点与玩家错位**，
 玩家会掉进另一个 cell。要做得对，必须同时决定"世界原点"与"玩家落点"，
