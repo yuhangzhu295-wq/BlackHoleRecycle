@@ -13,9 +13,19 @@
  *
  * Usage: node scripts/probe_arena_competitors.mjs [WxH]
  */
+import { mkdirSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { launchBrowser, openPage, serve, sleep } from './lib/page_layout_geometry.mjs';
 
 const [width, height] = (process.argv[2] || '390x844').split('x').map(Number);
+// PHASE B/I evidence: the arena frame at a given size. PHASE B needs a before/after
+// pair and PHASE I needs all three sizes, and both were previously only obtainable
+// by driving a full acceptance scope.
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const shotDir = path.join(repoRoot, 'artifacts', 'qa', 'v12', 'arena');
+mkdirSync(shotDir, { recursive: true });
+const shotPath = path.join(shotDir, `arena-${width}x${height}.png`);
 
 const { server, port } = await serve('cocos/build/web-mobile');
 const browser = await launchBrowser();
@@ -47,6 +57,8 @@ try {
     canvasRect.top + canvasRect.height * ready.ui.arenaReady.start.screen.y);
   await waitState('ARENA');
   await sleep(2500);
+  await page.screenshot({ path: shotPath });
+  console.log(`[arena] capture -> ${path.relative(repoRoot, shotPath)}`);
 
   const report = await page.evaluate(() => {
     const cc = window.cc;
