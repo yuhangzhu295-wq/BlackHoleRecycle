@@ -93,6 +93,14 @@ try {
         hasBulldozer: Boolean(activeCrawler),
         activeCrawler,
         activeRenderers: children.filter((n) => /HoleRing|ShimmerSwirl|HoleInner|AbyssBase/i.test(n)).length,
+        // PHASE A #1: the black hole's on-screen size must track its real mass.
+        // Reported as the pair (mass, coreScaleXZ) so the two can be compared
+        // across the seven rivals rather than eyeballed from a screenshot.
+        coreScaleXZ: core ? Number(core.scale.x.toFixed(3)) : null,
+        worldPos: { x: Number(node.worldPosition.x.toFixed(1)), z: Number(node.worldPosition.z.toFixed(1)) },
+        // PHASE A #4/#5: the name must belong to a real body, and a body that is
+        // off screen must not leave a name behind.
+        visible: node.activeInHierarchy,
       });
     }
     return { container: container.name, bots };
@@ -103,11 +111,18 @@ try {
   } else {
     console.log(`[arena] container=${report.container} competitors=${report.bots.length}`);
     for (const bot of report.bots) {
-      console.log(`  ${bot.name}: core=${bot.coreActive} bulldozer=${bot.hasBulldozer} coreParts=${bot.activeRenderers}`);
+      console.log(`  ${bot.name}: core=${bot.coreActive} crawler=${bot.hasBulldozer}`
+        + ` coreScale=${bot.coreScaleXZ} pos=(${bot.worldPos.x},${bot.worldPos.z}) visible=${bot.visible}`);
       if (bot.coreActive !== true) failures.push(`${bot.name}: black-hole core is NOT active`);
-      if (bot.hasBulldozer) failures.push(`${bot.name}: still mounts a crawler/bulldozer`);
+      if (bot.hasBulldozer) failures.push(`${bot.name}: still mounts an active crawler`);
+      if (bot.visible !== true) failures.push(`${bot.name}: node is not active in hierarchy`);
     }
     if (report.bots.length !== 7) failures.push(`expected 7 bots, found ${report.bots.length}`);
+    // PHASE A #1: distinct core scales across rivals would mean size is not
+    // tracking the shared start mass. All seven start at START_MASS, so a spread
+    // here is a real defect rather than a design choice.
+    const scales = [...new Set(report.bots.map((b) => b.coreScaleXZ))];
+    console.log(`[arena] distinct core scales at match start: ${JSON.stringify(scales)}`);
   }
   await context.close();
 } finally {
