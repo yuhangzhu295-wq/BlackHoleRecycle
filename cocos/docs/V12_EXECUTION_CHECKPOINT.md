@@ -77,6 +77,37 @@
 **六套已授权的街区**（住宅/公园/超市/仓库/停车场/工地），每套都有 4 个设计好的资源簇
 （`center` 在 ±12~14，正好落在相机可见的 ±20 内）。**内容存在，只是竞技场没去用。**
 
+### 追到更深一层：开场构图根本没落地（这是竞技场显得空白的直接原因）
+
+`test:full` 的日志里刷了几百行同一条警告：
+
+```
+[InfiniteWorldManager] Opening composition entry not found: ParkTreeSmall_1
+  ... ParkTreeLarge_3 / FlowerbedWest / ParkPathStonesWest / ParkPathStonesEast
+  ... ParkHedgeNorth / POI_CentralSquare / POI_ParkFountain
+```
+
+`RenderProfile.OPENING_CELL_COMPOSITION` 声明了一份**授权好的开场构图**
+（要隐藏哪些树、把中央广场挪到 (-9,-9)、放喷泉等）——
+这正是 DESIGN_07 要的"设计过的开场区域"。它**有 8 条找不到目标**。
+
+已排除的：
+
+| 检查 | 结果 |
+| --- | --- |
+| 这些节点是否存在？ | **存在**，在 `cocos/assets/prefabs/world/GoldenCityCell.prefab` 里（场景里 0 个） |
+| 预制体有没有接上？ | **接上了**。`InfiniteWorldRoot` 的 `goldenCityCellPrefab` = `2cf2305d-…`，与 `GoldenCityCell.prefab.meta` 的 uuid **完全一致** |
+| 构图在哪跑？ | `InfiniteWorldCell` 构造函数 `:386`，`byName` 搜的是 **`this.node`（cell 自己的节点）** |
+| cell 节点从哪来？ | `InfiniteWorldManager.ts:1913` → `worldCellFactory.instantiateAuthoredCell(coord, district.kind, goldenCityCellPrefab, undefined, logicalOrigin)` |
+
+**下一个要看的就是 `WorldCellFactory.instantiateAuthoredCell`**：
+它带了 `district.kind` 参数，很可能是**按街区种类挑了变体**，于是实例出来的节点树
+不是 `GoldenCityCell.prefab` 原树，`byName` 自然找不到那 8 个名字。
+修好它 = 开场构图真正落地 = 竞技场开场不再是空路口。
+
+**这一步的判据很明确**：跑 `test:full`，看 `Opening composition entry not found` 是否归零；
+再看 `artifacts/qa/v12/arena/` 三张截图是否出现广场/喷泉/花坛。
+
 **为什么不能直接改这一行**：紧邻的 `GameManager.ts:618` 把玩家也钉在
 `this.machine.node.setPosition(0, 0, 0)`。只改 `resetSession` 的入参会**让世界原点与玩家错位**，
 玩家会掉进另一个 cell。要做得对，必须同时决定"世界原点"与"玩家落点"，

@@ -1,12 +1,34 @@
 {
-  "status": "FAIL",
+  "status": "PASS",
   "creatorExe": "C:\\ProgramData\\cocos\\editors\\Creator\\3.8.3\\CocosCreator.exe",
   "requestedPlatform": "web-mobile",
   "requireReleaseIds": false,
-  "startedAt": "2026-10-10T17:55:34.980Z",
-  "builds": [],
-  "failures": [
-    "FAIL_BUILD_SLOT_LOCKED: Cocos Creator build slot is currently held by active process PID 880 [state: FROZEN] (purpose: \"acceptance:v2 --scope=progression\", age: 538.5s, acquired at: 2026-10-10T17:46:36.442Z). A concurrent build or acceptance run is already in progress.\nTo resolve:\n  1. Wait for PID 880 to finish.\n  2. If PID 880 is stalled or orphaned, terminate it or remove:\n     \"C:\\Users\\zyu33\\Documents\\Codex\\2026-09-29\\BlackHoleRecycle\\artifacts\\locks\\cocos-build.lock\"\n  3. Alternatively, set BHR_FORCE_BUILD_LOCK=1 to force-reclaim the slot."
+  "startedAt": "2026-10-11T16:08:44.801Z",
+  "builds": [
+    {
+      "platform": "web-mobile",
+      "outputDirectory": "C:\\Users\\zyu33\\Documents\\Codex\\2026-09-29\\BlackHoleRecycle\\cocos\\build\\web-mobile",
+      "fileCount": 318,
+      "requiredFiles": [
+        "index.html",
+        "application.js",
+        "src/settings.json"
+      ],
+      "releaseIdStatus": "not-applicable",
+      "launchScene": "db://assets/scenes/Game.scene",
+      "preloadBundles": [
+        "resources",
+        "main"
+      ],
+      "bootBundles": [
+        "world-city",
+        "game-art",
+        "art-machines"
+      ],
+      "subpackages": [],
+      "launcherExitCode": 36
+    }
   ],
-  "finishedAt": "2026-10-10T17:55:34.988Z"
+  "failures": [],
+  "finishedAt": "2026-10-11T16:10:56.049Z"
 }
