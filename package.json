@@ -4,6 +4,7 @@
   "description": "Cross-platform WeChat and Douyin MiniGame Project",
   "type": "module",
   "scripts": {
+    "start": "node scripts/serve_web.mjs",
     "build": "npm run build:all",
     "build:web": "node scripts/verify_cocos_minigame_builds.mjs --platform=web-mobile",
     "build:wx": "node scripts/verify_cocos_minigame_builds.mjs --platform=wechatgame",
