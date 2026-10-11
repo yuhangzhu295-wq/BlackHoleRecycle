@@ -205,6 +205,7 @@ try {
   const SAMPLES = 40;
   const INTERVAL_MS = 250;
   const pairs = new Map();
+  const growth = new Map();
   const positionsBySample = [];
   let behaviourBySample = [];
   for (let index = 0; index < SAMPLES; index += 1) {
@@ -226,14 +227,34 @@ try {
       if (container) {
         for (const node of container.children) {
           if (!node.name.startsWith('ArenaBot_') || !node.activeInHierarchy) continue;
-          out.push({ name: node.name, x: node.worldPosition.x, z: node.worldPosition.z });
+          // PHASE A #1: growth must be measured on the machine node's own scale,
+          // not on the core's. `coreScale` is a binary (1.92 for SINGULARITY, 1.32
+          // otherwise) and does not move with level, so reading it would report
+          // "size does not track mass" no matter what the game actually does.
+          out.push({
+            name: node.name,
+            x: node.worldPosition.x,
+            z: node.worldPosition.z,
+            nodeScale: Number(node.scale.x.toFixed(3)),
+          });
         }
       }
       const snapshot = window.__BHR_QA__.snapshot();
-      return { bots: out, arena: snapshot.arena || null, gameState: snapshot.gameState };
+      const masses = {};
+      for (const entry of snapshot.arena?.leaderboard || []) masses[entry.id] = entry.mass;
+      return { bots: out, arena: snapshot.arena || null, masses, gameState: snapshot.gameState };
     });
     if (frame.gameState !== 'ARENA') break;
     positionsBySample.push(frame.bots);
+    for (const bot of frame.bots) {
+      const id = bot.name.replace('ArenaBot_', 'bot-');
+      const mass = frame.masses?.[id];
+      if (typeof mass !== 'number') continue;
+      const entry = growth.get(id) || { minMass: Infinity, maxMass: -Infinity, scaleAtMin: null, scaleAtMax: null };
+      if (mass < entry.minMass) { entry.minMass = mass; entry.scaleAtMin = bot.nodeScale; }
+      if (mass > entry.maxMass) { entry.maxMass = mass; entry.scaleAtMax = bot.nodeScale; }
+      growth.set(id, entry);
+    }
     const states = frame.arena?.botStates || {};
     behaviourBySample.push(states);
     for (let a = 0; a < frame.bots.length; a += 1) {
@@ -275,6 +296,33 @@ try {
     } else {
       console.log('[overlap] no pair stayed under 1.5 units for more than half the samples.');
     }
+  }
+
+  // PHASE A #1: size must track real mass. Reported as (mass at smallest scale,
+  // mass at largest scale) per rival.
+  //
+  // The assertion is monotonicity, NOT "every mass gain resizes the body". Growth
+  // here is discrete: the node scale comes from the level's `config.scale`, and a
+  // level only advances when mass crosses a MACHINE_EVOLUTION_CONFIG threshold. A
+  // bot that gains 65 mass without crossing one is behaving correctly by not
+  // resizing. The first version of this check asserted the continuous rule and
+  // reported three false failures (bot-1, bot-2, bot-5) -- the detector was wrong,
+  // not the game.
+  if (growth.size) {
+    console.log('\n[growth] node scale against real mass (PHASE A #1)');
+    for (const [id, entry] of growth) {
+      const grew = entry.maxMass > entry.minMass;
+      const resized = entry.scaleAtMax !== entry.scaleAtMin;
+      console.log(`  ${id}: mass ${entry.minMass} -> ${entry.maxMass}`
+        + ` (grew=${grew}) scale ${entry.scaleAtMin} -> ${entry.scaleAtMax} (resized=${resized})`);
+      if (entry.scaleAtMax < entry.scaleAtMin) {
+        failures.push(`${id}: the body SHRANK while gaining mass`
+          + ` (${entry.minMass}@${entry.scaleAtMin} -> ${entry.maxMass}@${entry.scaleAtMax})`);
+      }
+    }
+    const resized = [...growth.values()].filter((e) => e.scaleAtMax !== e.scaleAtMin).length;
+    console.log(`[growth] ${resized} of ${growth.size} rivals crossed a level threshold and resized`
+      + '; the rest gained mass without levelling, which is correct.');
   }
 
   await context.close();
