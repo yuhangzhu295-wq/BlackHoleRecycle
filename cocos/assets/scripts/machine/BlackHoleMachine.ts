@@ -752,7 +752,13 @@ export class BlackHoleMachine extends Component {
     });
     this.applyLevelAppearance();
     if (this.coreNode) {
-      this.coreNode.active = this.presentation !== 'MACHINE' && this.presentation !== 'BOT';
+      // V12: every arena competitor is a black hole. `BOT` used to hide the core
+      // here and show a tinted bulldozer instead, which is what produced the
+      // reported "the name is on screen but there is no opponent under it" --
+      // seven crawler machines at 0.88 scale read as scenery, not as rivals.
+      // DESIGN_04 is explicit: all players are black holes, distinguished by
+      // colour, and 推土机/工程机械 return to being scenery and edible objects.
+      this.coreNode.active = this.presentation !== 'MACHINE';
       // Arena's local player is intentionally a singularity rather than a
       // crawler. Make that real play target visually dominant without
       // changing the suction radius or collision/gameplay calculations.
@@ -782,8 +788,12 @@ export class BlackHoleMachine extends Component {
       const coreScale = this.presentation === 'SINGULARITY' ? 1.92 : 1.32;
       this.coreNode.setScale(coreScale, 1.0, coreScale);
     }
-    if (this.presentation === 'BOT') this.ensureArenaBotVisual();
-    if (this.arenaBotVisual) this.arenaBotVisual.active = this.presentation === 'BOT';
+    // V12: bots no longer mount a bulldozer. The crawler visual is gone from the
+    // arena entirely -- competitors are black holes, and the vehicle models go
+    // back to being world scenery and edible targets. `arenaBotVisual` is left in
+    // place but never spawned, so anything that still queries it reads null
+    // rather than a hidden machine.
+    if (this.arenaBotVisual) this.arenaBotVisual.active = false;
 
     // 缩放整体底盘
     const s = this.currentConfig.scale;
@@ -851,6 +861,11 @@ export class BlackHoleMachine extends Component {
     this.tintCorePart('ShimmerSwirl', this.levelAppearance.rimColor);
     this.effects?.applyLevel(this.levelAppearance);
     this.applyCoreSkinToCore();
+    // A bot's identity colour is applied last, for the same reason the skin is:
+    // the level palette above rewrites the same two parts, so without this a bot
+    // that levelled up would silently take the shared level colour and become
+    // indistinguishable from its rivals.
+    if (this.presentation === 'BOT') this.applyArenaBotTint();
   }
 
   /**
@@ -923,11 +938,19 @@ export class BlackHoleMachine extends Component {
     this.applyArenaBotTint();
   }
 
+  /**
+   * V12: a competitor's identity is its black hole rim colour.
+   *
+   * This used to tint the bot's bulldozer. DESIGN_04 draws every competitor as a
+   * black hole distinguished by colour (我紫 / 风暴蓝 / 矿石黄 / 暗影红 / 流光绿),
+   * so the tint now recolours the same two core parts the level palette uses --
+   * `HoleRing` and `ShimmerSwirl` -- leaving the core body dark so the hole still
+   * reads as a hole. No mass, radius, speed or combat value is touched.
+   */
   private applyArenaBotTint(): void {
-    if (!this.arenaBotVisual) return;
-    const library = director.getScene()?.getComponentInChildren(WorldArtLibrary) || null;
-    if (!library) throw new Error('[BlackHoleMachine] Missing editor-saved WorldArtLibrary for Arena bot material.');
-    library.applyTintedMaterial('bulldozer', this.arenaBotVisual, this.arenaBotTint);
+    if (this.presentation !== 'BOT') return;
+    this.tintCorePart('HoleRing', this.arenaBotTint);
+    this.tintCorePart('ShimmerSwirl', this.arenaBotTint);
   }
 
   public triggerMagnetStorm(duration: number = 6.0): void {
