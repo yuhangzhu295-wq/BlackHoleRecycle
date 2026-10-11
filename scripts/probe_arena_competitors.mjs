@@ -148,6 +148,56 @@ try {
     const scales = [...new Set(report.bots.map((b) => b.coreScaleXZ))];
     console.log(`[arena] distinct core scales at match start: ${JSON.stringify(scales)}`);
   }
+  // PHASE A #4/#5: the nameplate must belong to a body that is on screen, and a
+  // body off screen must not leave a name behind. This is the contract the
+  // original symptom broke, so it is asserted rather than eyeballed.
+  const nameplateReport = await page.evaluate(() => {
+    const cc = window.cc;
+    const scene = cc.director.getScene();
+    const camera = scene.getChildByName('Main Camera')?.getComponent('cc.Camera') || null;
+    const canvas = scene.getChildByName('Canvas');
+    const hud = canvas?.getChildByName('ArenaHUD') || null;
+    const snapshot = window.__BHR_QA__.snapshot();
+    const viewport = cc.view.getViewportRect();
+    if (!camera || !hud) return { error: 'missing camera or ArenaHUD' };
+    const rows = [];
+    for (const entry of snapshot.arena?.leaderboard || []) {
+      const plate = hud.getChildByName(`ArenaCompetitorNameplate_${entry.id}`) || null;
+      const screen = camera.worldToScreen(
+        new cc.Vec3(entry.position.x, 1.35, entry.position.z), new cc.Vec3());
+      const nx = (screen.x - viewport.x) / viewport.width;
+      const ny = (screen.y - viewport.y) / viewport.height;
+      // Same bounds ArenaHUDController uses for `inside`.
+      const modelOnScreen = nx >= 0.15 && nx <= 0.85 && ny >= 0.04 && ny <= 0.94;
+      rows.push({
+        id: entry.id,
+        alive: entry.alive,
+        plateExists: Boolean(plate),
+        plateActive: plate ? plate.activeInHierarchy : null,
+        modelOnScreen,
+        nx: Number(nx.toFixed(3)),
+        ny: Number(ny.toFixed(3)),
+      });
+    }
+    return { rows };
+  });
+
+  if (nameplateReport.error) {
+    failures.push(nameplateReport.error);
+  } else {
+    console.log('\n[plate] nameplate vs model (PHASE A #4/#5)');
+    for (const row of nameplateReport.rows) {
+      const expected = row.alive && row.modelOnScreen;
+      const ok = row.plateActive === expected;
+      console.log(`  ${row.id}: alive=${row.alive} onScreen=${row.modelOnScreen}`
+        + ` (${row.nx},${row.ny}) plate=${row.plateActive} ${ok ? 'ok' : 'MISMATCH'}`);
+      if (!ok) {
+        failures.push(`${row.id}: nameplate active=${row.plateActive} but model`
+          + ` alive=${row.alive} onScreen=${row.modelOnScreen} -- an orphan name or a missing one`);
+      }
+    }
+  }
+
   // PHASE A: the single dump above says where the bots are, not whether two of
   // them STAY together. A pair 0.1 apart in one sample is an incidental crossing;
   // the same pair under 1.5 apart for most of ten seconds is a body that reads as
