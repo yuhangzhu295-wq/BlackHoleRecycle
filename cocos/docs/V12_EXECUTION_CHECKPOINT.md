@@ -375,3 +375,40 @@ CompressibleObject 维护 IDLE → ATTRACTED → SUCKING → ABSORBED → RECYCL
 各状态用 registerState 注册了进入/退出表现；并且已经有**可吞脉冲**
 （pulse = 1.0 + sin(t*5)*0.08 作用于 visualNode）——即 DESIGN_03 的「可吞物体高亮」。
 逐状态表现细节未逐项读，但**不是从零开始**。
+
+---
+
+## PHASE H 审计结果：**结构、材质、密度已经是统一的**
+
+对 `cocos/assets/game_art/maps/` 下全部七张街区 prefab 做了三项核对。
+
+**一、顶层结构完全一致**——七张图的根节点子节点集合**逐一相同**：
+
+```
+(Buildings, CollectibleSpawnPoints, Ground, Park, Props, Roads, TrafficRoutes)
+-> CityCenter, Construction, Park, Parking, Residential, Supermarket, Warehouse
+```
+
+**二、材质是同一族**——除 Park 外六张图用的是**完全相同的 6 个材质 uuid**
+（`3741ee22 / 5031a894 / 71f7d10e / 75891bac / dd4e65bf / ffc92b80`）；
+Park 用其中 4 个（它没有建筑，所以少了 2 个）。
+
+**三、密度可比**：
+
+| 地图 | 节点 | 建筑 | 树/灌木 | 道路 | 道具 |
+| --- | --- | --- | --- | --- | --- |
+| CityCenter | 123 | 23 | 18 | 11 | 8 |
+| Construction | 128 | 9 | 14 | 11 | 28 |
+| **Park** | 189 | **1** | **71** | 15 | 26 |
+| Parking | 137 | 17 | 22 | 13 | 11 |
+| Residential | 132 | 21 | 22 | 14 | 13 |
+| Supermarket | 153 | 25 | 18 | 11 | 16 |
+| Warehouse | 135 | 9 | 14 | 11 | 22 |
+
+**Park 的 1 建筑 / 71 树是它的主题，不是缺陷**——DESIGN_07 明确把「公园广场」
+列为竞技场的三个功能区之一，也明确要求「不同地区有主题区别，
+但**共享道路风格、材质、黑洞身份、阴影和美术语言**」。三项核对下来，
+**共享的那部分已经共享，该有区别的那部分有区别**。
+
+**结论：PHASE H 无需改动。** 这是审计结果，不是回避——判据是上面三张表，
+不是"我觉得统一了"。
