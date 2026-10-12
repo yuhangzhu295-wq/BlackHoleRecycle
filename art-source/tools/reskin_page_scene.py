@@ -82,7 +82,12 @@ RESKIN = {
     'revive': ('RevivePage', {
         'ReviveCard': ('board_settlement', True),
         'ReviveRibbon': ('ribbon_settlement', False),
-        'ReviveBlackHoleHero': ('home_hero_blackhole', False),
+        # V12: DESIGN_05 puts the hole taking a city block in here, not a lone
+        # hole. Rendered as a cut-out: transparent film AND no ground plane, since
+        # an opaque film showed as a grey square on the white card. See
+        # render_map_previews.revive_hero.
+        'ReviveBlackHoleHero': ('revive_hero_absorbing', False),
+
         'ReviveAccentPurple': ('panel_white', True),
         'ReviveAccentOrange': ('panel_white', True),
         'ReviveAccentBlue': ('panel_white', True),

@@ -156,13 +156,17 @@ def fit_isometric_camera(bounds, width, height, margin=FRAME_MARGIN):
 
 
 def render_preview(name, ground_tiles, props, holes, plane_colour, sky,
-                   width=WIDTH, height=HEIGHT):
+                   width=WIDTH, height=HEIGHT, transparent=False, plane=True):
     """Assemble, frame on the props, then render at 2x and reduce to 1x."""
     kit.clear_scene()
 
     # The plane is built first but framed out: it exists to fill the frame, not
     # to define it.
-    base = add_ground_plane(240.0, plane_colour)
+    # A hero on a card wants the city block and nothing else: a full-bleed plane
+    # fills every pixel, so a transparent film would still have no background to
+    # make transparent.  is what actually produces a cut-out.
+    if plane:
+        add_ground_plane(240.0, plane_colour)
 
     everything = []
     for relative, x, y, rotation, scale in ground_tiles:
@@ -201,7 +205,7 @@ def render_preview(name, ground_tiles, props, holes, plane_colour, sky,
     scratch = os.path.join(OUT_DIR, '_supersample')
     os.makedirs(scratch, exist_ok=True)
     kit.OUT = scratch
-    kit.render(name, width, height, transparent=False)
+    kit.render(name, width, height, transparent=transparent)
 
     source = os.path.join(scratch, name)
     target = os.path.join(OUT_DIR, name)
@@ -379,6 +383,11 @@ def revive_hero():
         sky=(0.36, 0.68, 0.98),
         width=480,
         height=480,
+        # Transparent, unlike the map previews. Those are card interiors and want
+        # the opaque field; this is a hero sitting on the revive page's white card,
+        # and an opaque film showed as a grey square behind the city.
+        transparent=True,
+        plane=False,
     )
 
 
