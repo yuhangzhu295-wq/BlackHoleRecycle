@@ -18,6 +18,21 @@ const INNER_PANEL_NODES: readonly string[] = ['StatRow_223', 'StatRow_143', 'Sta
 /** Simple-sprite corner badges that follow the card's narrowing. */
 const CARD_SATELLITE_NODES: readonly string[] = ['SettlementCoinLeft', 'SettlementCoinRight'];
 
+/**
+ * The 称号 DESIGN_06 prints under each leaderboard row's name.
+ *
+ * Derived from the row's own rank and kill count, never invented: a row cannot
+ * claim a title its record does not support. Rank wins over kills so the winner
+ * always reads as the winner, and the remaining bands step down by kills.
+ */
+function rankTitle(rank: number, kills: number): string {
+  if (rank === 1) return '黑洞之王';
+  if (kills >= 8) return '吞噬达人';
+  if (kills >= 4) return '城市清道夫';
+  if (kills >= 1) return '稳健发育';
+  return '萌新黑洞';
+}
+
 @ccclass('SettlementPageController')
 export class SettlementPageController extends Component {
   private bindings: Array<[Button, () => void]> = [];
@@ -167,7 +182,11 @@ export class SettlementPageController extends Component {
       if (!entry) continue;
       const rank = snapshot.leaderboard.findIndex((candidate) => candidate.id === entry.id) + 1;
       this.setLabel(`ArenaRankBadge_${index + 1}`, `${rank}`);
-      this.setLabel(`ArenaRankName_${index + 1}`, entry.name);
+      // V12: DESIGN_06 gives each leaderboard row a 称号 under the name. The
+      // titles are DERIVED from the row's real rank and kill count rather than
+      // invented, so a row cannot claim a title its record does not support --
+      // the same rule that keeps the stat cards off the design's sample numbers.
+      this.setLabel(`ArenaRankName_${index + 1}`, `${entry.name} · ${rankTitle(rank, entry.kills)}`);
       this.setLabel(`ArenaRankScore_${index + 1}`, `${Math.round(entry.mass)} kg · ${entry.kills} 淘汰`);
     }
 

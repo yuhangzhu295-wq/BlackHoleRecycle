@@ -1,0 +1,13 @@
+
+> minigame-wx-tt-crossplatform@1.0.0 acceptance:v2
+> node scripts/test_cocos_portrait_acceptance.mjs --scope=arena-timer
+
+[build-lock] Acquired build lock for PID 32112 ("acceptance:v2 --scope=arena-timer").
+[acceptance:v2] Building Web Mobile with Cocos Creator 3.8.3...
+[build-lock] Re-entrant lock acquired by PID 32112 (depth: 2, purpose: "Cocos Creator build (web-mobile)").
+[build-lock] Bundle frozen by PID 32112 (digest: 7a578fb2, files: 321) for "acceptance:v2 --scope=arena-timer".
+[acceptance:v2] Verifying 390x844...
+[acceptance:v2] PASS: real portrait Cocos runtime and CDP touch verified.
+[acceptance:v2] Report: C:\Users\zyu33\Documents\Codex\2026-09-29\BlackHoleRecycle\artifacts\qa\portrait\acceptance-report.json
+[acceptance:v2] Scoped report: C:\Users\zyu33\Documents\Codex\2026-09-29\BlackHoleRecycle\artifacts\qa\portrait\acceptance-report-arena-timer.json
+[build-lock] Released build lock for PID 32112 ("acceptance:v2 --scope=arena-timer").
