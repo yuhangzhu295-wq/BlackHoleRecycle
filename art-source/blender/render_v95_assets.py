@@ -111,7 +111,18 @@ def add_black_hole(x, y, radius=0.9, ring_colour=(0.42, 0.24, 1.0), name='hole')
     core.use_nodes = True
     principled = principled_of(core)
     principled.inputs['Base Color'].default_value = (0.02, 0.01, 0.05, 1.0)
-    principled.inputs['Roughness'].default_value = 0.25
+    # V12: was 0.25, which rendered the core as a LIT grey-blue coin -- a broad
+    # specular picked up the sky and the squashed sphere read as a shiny disc
+    # lying at an angle, not as a hole. Every design sheet draws the opposite: a
+    # near-black void inside a bright energy ring. Roughness is the whole
+    # difference, so it goes to 0.95 and the core absorbs instead of reflecting.
+    #
+    # This one value is shared: `render_home_assets.build_hero` and the map
+    # previews and the card vignettes all call this function, and
+    # `home_hero_blackhole.png` alone is bound to HeroBlackHole on Home,
+    # ReviveBlackHoleHero on Revive and PreviewBlackHole on Skin. So this is the
+    # unification point for the three different ways the hole was being drawn.
+    principled.inputs['Roughness'].default_value = 0.95
     sphere.data.materials.append(core)
     # Squash it so it reads as a disc seen from above, like the reference.
     sphere.scale = (1.0, 1.0, 0.30)
