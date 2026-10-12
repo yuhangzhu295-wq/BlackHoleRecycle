@@ -341,3 +341,37 @@ node scripts/probe_arena_competitors.mjs   # PHASE A 运行时判据
 npm run build:web                          # 改完先构建再跑探针
 npm run acceptance:v2 -- --scope=arena-ai  # 竞技 AI 回归
 ```
+
+
+---
+
+## PHASE C / F 审计结果（2026-10-12）
+
+### PHASE C Arena HUD：**已经基本符合 DESIGN_04 的元素清单**
+
+逐项核对（节点尺寸/位置取自 Game.scene 的 ArenaHUD 子树）：
+
+| DESIGN_04 要求 | 现状 |
+| --- | --- |
+| 排行榜 Top3 + 我 | ✅ 4 行（Top1..4 激活，Top5 未激活），LeaderboardPanel 236x195 |
+| 倒计时 | ✅ TimerPanel 160x62 @ (0,492) |
+| 排名 + 质量 | ✅ StatusPanel 208x54（RankValue / MassValue / KillCaption+KillValue） |
+| 暂停 | ✅ BtnPause 58x58 @ (274,492) |
+| 虚拟摇杆 | ✅ 196x196 @ (232,-470) —— **在右侧**，设计图在左下 |
+| 危险 / 可追 标签 | ✅ 名牌上的文字标签 |
+| 屏外方向提示 | ✅ BotArrowLeft/Right/Top/Bottom |
+| **不要永久显示巨大 Logo** | ✅ **已经满足**：ArenaTitle 停 2.0s 后 0.8s 淡出并 deactivate（TITLE_HOLD_SECONDS / TITLE_FADE_SECONDS） |
+
+**我差点改错一处**：本来准备按「不要永久显示巨大 Logo」把  隐藏。先查了一下，发现**它本来就是临时标题**（2 秒后淡出），所以那条规则**已经被满足**——改了反而是错的。
+
+**剩下两个缺口都是产品决定，不是视觉保真**：
+
+1. **摇杆在右，设计图在左**。两个模式（Endless / Arena）**一致**都是 x=+232，所以这不是不一致，是**操作手感的既有选择**。改它是改操控，不是修视觉。
+2. **技能按钮**（吸收加速）：查证  **从未被任何地方调用**——机制是**死代码**，没有输入、没有充能/冷却。给它加按钮 = **新增一个玩法技能**，会改变比赛规则（违反「不得为视觉还原破坏正式两模式规则」）。
+
+### PHASE F 吸附状态：**已有实现**
+
+ 维护 ，
+各状态用  注册了进入/退出表现；并且已经有**可吞脉冲**
+（ 作用于 visualNode）——即 DESIGN_03 的「可吞物体高亮」。
+逐状态表现细节未逐项读，但**不是从零开始**。
