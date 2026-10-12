@@ -194,6 +194,74 @@ PLAYER_WIDTH_RATIO_MAX  actual=0.22577  required=0.30  pass=true
 （以及出生环与相机的联合设计：把对手铺开会让更多对手出屏，两者必须一起解）。
 这条约束在动任何相机参数之前必须先解掉，否则就是用可见性换画面密度。
 
+### ★ PHASE B 的真正根因：**竞技场打的是一张公园图，而设计图要的是城市街区**
+
+上面几轮都在"怎么让画面变密"里找办法，方向都不对。真正的原因是**场地本身选错了**。
+
+直接数 `cocos/assets/prefabs/world/GoldenCityCell.prefab` 的节点（144 个）：
+
+| 类别 | 数量 |
+| --- | --- |
+| `Park*` 前缀（ParkTreeSmall ×6、ParkTreeLarge ×6、长椅、垃圾桶、花坛） | **27** |
+| tree | 12 |
+| fountain | 4 |
+| bench / trashcan / flower | 各 4 |
+| **building 类** | **只有 3** |
+| road | 5 |
+| SpawnPoint / CompetitorSpawn | 20 / **3** |
+
+**这是一张公园。** 而 DESIGN_07 要的是：连续街道、建筑做边界、T1–T3 分层、
+功能分区（商业/公园/施工）的**紧凑城市街区竞技场**。
+
+所以：
+
+- "大面积单色地面" = 公园的广场与步道，**不是渲染问题**
+- "道具零散" = 12 棵树摊在 64×64 m 里，**这是公园该有的样子**
+- 前面四次施工里我量的那些数（平路面 27%、小道具挪不动画面）**都对，但都不是病根**
+
+**顺带发现**：这张 cell 里授权了 **3 个 `CompetitorSpawn` 点**，而
+`ArenaMatchManager.spawnPosition()` 自己算圆环、**完全没用它们**。授权好的出生点一直闲置。
+
+**因此 PHASE B 的正解有两条**，都不是调参：
+
+1. **让竞技场不开在开场公园 cell 上**——即改掉 `resetSession(Vec3.ZERO)` 那个硬编码原点，
+   并且**同时**移动 `GameManager:618` 钉住的玩家落点（两者必须一起动，否则玩家掉进另一个 cell）。
+   街区归属由 `getDistrictTemplateForRegion(regionId, cellX, cellZ)` 决定，
+   取决于**区域**，所以换 cell 是否会换到城市街区，要先读 `PROGRESSION_DISTRICT_BY_REGION` 确认。
+2. **为竞技场授权一张专门的 cell**（Creator 场景工作），并复用那 3 个闲置的 `CompetitorSpawn`。
+
+在选之前必须先确认方案 1 能否真的换到城市街区——否则就是又一次盲改。
+
+### 已确认：方案 1 **能**换到城市街区（DOWNTOWN）
+
+`DistrictTemplates.ts:115` 的区域→街区映射：
+
+| region | district |
+| --- | --- |
+| bedroom | RESIDENTIAL |
+| warehouse | WAREHOUSE |
+| supermarket | SUPERMARKET |
+| parking | PARKING |
+| construction | CONSTRUCTION |
+| **city** | **DOWNTOWN** |
+
+`city → DOWNTOWN`，正是 DESIGN_07 要的紧凑城市街区。街区由 `getDistrictTemplateForRegion`
+按**区域**决定（`:141`），所以竞技场只要开在 **`city` 区域**的 cell 上，
+拿到的就是 DOWNTOWN，而不是现在这张公园。
+
+**所以 PHASE B 的下一步是明确的三步**：
+
+1. 找到 `city` 区域在世界里的位置（`GameConfig.ts:259` 定义了 `id: 'city'` 的区域，
+   还需要读区域如何按坐标推进，才能选出一个落在 city 区域的 cell 坐标）。
+2. 把竞技场的会话原点从 `Vec3.ZERO` 改到该 cell，
+   **同时**改 `GameManager:618` 钉住的玩家落点——两者必须一起动。
+3. 判据：竞技场开局 cell 的节点构成应从"27 个 Park* + 3 个 building"
+   变成 DOWNTOWN 街区的内容；三档截图对照，并跑 `acceptance:v2 --scope=arena-ai` 回归。
+
+**注意**：开场公园 cell 是**特判**的（`isOpeningCell`），换坐标后它不再被选中，
+这正是我们要的；但要确认流式加载、相机、出生环（现在是 14）、
+边界（`ARENA_RADIUS = 44`）在新区块上仍然成立。
+
 **为什么不能直接改这一行**：紧邻的 `GameManager.ts:618` 把玩家也钉在
 `this.machine.node.setPosition(0, 0, 0)`。只改 `resetSession` 的入参会**让世界原点与玩家错位**，
 玩家会掉进另一个 cell。要做得对，必须同时决定"世界原点"与"玩家落点"，
