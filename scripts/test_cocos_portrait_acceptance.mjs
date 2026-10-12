@@ -2538,7 +2538,12 @@ async function verifyArenaTimerExpiry(cdp, page, canvasRect) {
   let reviveCount = 0;
   let settledSnapshot = null;
   let lastObserved = started;
-  const timerDeadline = Date.now() + 210_000;
+  // 180 s match plus startup, the same arithmetic as the arena-ai deadline below.
+  // This was 210_000, i.e. 30 s of slack, and the failure it produced was not a
+  // product fault: the payload read elapsedSeconds 178.68 of durationSeconds 180,
+  // so the match was 1.3 s short of its natural end when the wait expired. The
+  // assertion is untouched -- a match that genuinely never settles still fails.
+  const timerDeadline = Date.now() + 300_000;
   try {
     while (Date.now() < timerDeadline) {
       lastObserved = current;

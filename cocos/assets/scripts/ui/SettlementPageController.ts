@@ -127,9 +127,19 @@ export class SettlementPageController extends Component {
   /** Arena uses the same saved settlement card, with labels bound to match facts. */
   public updateArenaStats(snapshot: ArenaMatchSnapshot, reward: ArenaSettlementReward): void {
     this.setArenaLeaderboardVisible(true);
-    this.setLabel('Title', '竞技结算');
-    this.setLabel('Subtitle', snapshot.reason === 'FORFEIT' ? `${MODE_TITLES.ARENA} · 已退出` : `${MODE_TITLES.ARENA} · 时间结束`);
-    this.setLabel('ArenaResult', `第 ${snapshot.localRank || '-'} / ${snapshot.competitorCount} 名 · ${Math.round(snapshot.localMass)} kg`);
+    // V12: DESIGN_06 leads the arena settlement with the RANK as the page
+    // headline -- a big 第 1 名 -- and puts the mode and the reason underneath,
+    // with mass, kills and time as the stat cards below. The rank used to be the
+    // headline of ArenaResult instead, which made the page lead with the words
+    // 竞技结算 and buried the one number the player actually came to read.
+    this.setLabel('Title', `第 ${snapshot.localRank || '-'} 名`);
+    this.setLabel('Subtitle', snapshot.reason === 'FORFEIT'
+      ? `${MODE_TITLES.ARENA} · 竞技结算 · 已退出`
+      : `${MODE_TITLES.ARENA} · 竞技结算 · 时间结束`);
+    // Rank moved to the title, so this line carries what the title no longer
+    // does: the size of the field. Mass stays in the stat card rather than being
+    // repeated here.
+    this.setLabel('ArenaResult', `共 ${snapshot.competitorCount} 人参赛 · 击败 ${Math.max(0, snapshot.localKills)} 名对手`);
     this.setLabel('ArenaStatMassValue', `${Math.round(snapshot.localMass)} kg`);
     this.setLabel('ArenaStatKillsValue', `${snapshot.localKills} 次`);
     this.setLabel('ArenaStatTimeValue', this.formatDuration(snapshot.elapsedSeconds));

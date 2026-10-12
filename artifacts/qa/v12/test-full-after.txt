@@ -1,0 +1,792 @@
+
+> minigame-wx-tt-crossplatform@1.0.0 test:full
+> npm run test:cocos && npm run test:contracts && npm run test:authoring
+
+
+> minigame-wx-tt-crossplatform@1.0.0 test:cocos
+> node scripts/test_cocos_vertical_slice.js && node scripts/test_machine_progression_compression_contract.mjs && node scripts/test_resource_replenishment_contract.mjs && node scripts/test_traffic_replenishment_contract.mjs && node scripts/test_cell_lifecycle_contract.mjs && node scripts/test_collectible_production_contract.mjs && node scripts/test_suction_progression_contract.mjs && node scripts/test_vehicle_art_contract.mjs
+
+====================================================
+Cocos vertical-slice source-contract regression (non-runtime)
+====================================================
+
+[PASS] CHECK_SCENE_AND_PREFABS: Current Game.scene, machine, LV2 assembly and recyclable prefabs exist.
+[PASS] CHECK_LV1_INITIAL_STATE: Current GameConfig LV1 radius=2.4m, maxTier=T1.
+[PASS] CHECK_AUTHORED_OPENING_RECYCLABLE_LAYOUT: Golden City tutorial placement is consumed from Creator spawn groups; procedural fallback carries no opening coordinate table.
+[PASS] CHECK_LV1_TIER_LOCK: Current CompressibleObject blocks over-tier idle objects and displays a lock warning.
+[PASS] CHECK_LV1_TO_LV2_EVOLUTION: Current GameConfig LV2 threshold=900, radius=3.4m, T2 enabled with saved turbine assembly.
+[PASS] CHECK_LV2_SUCTION_T2_OBJECT: Current T2 templates and the real lower-or-equal-tier absorption path exist.
+
+[PASS] 6/6 current Cocos source contracts passed (non-runtime).
+[NOTE] Runtime evidence remains npm run acceptance:v2 -- --scope=full.
+
+[PASS] FIVE_AUTHORED_LEVELS: LV1-LV5 are present in the production evolution table.
+[PASS] STRUCTURAL_EVOLUTION_NAMES: Each level has its own authored machine assembly name.
+[PASS] REAL_SUCTION_AND_TIER_PROGRESSION: Suction radius and max tier advance per level.
+[PASS] DISTINCT_PULL_AND_COMPRESSION_FEEDBACK: Every level has distinct suction and compression feedback parameters.
+[PASS] MASS_TO_UPGRADE_CHAIN: Collected mass is the existing authority that triggers evolution.
+[PASS] SUCTION_TO_COMPRESSION_CHAIN: The real suction FSM feeds the existing compression system and then machine mass.
+[PASS] BLOCK_REWARD_COINS_CHAIN: Compression emits a real resource block and settles its reward into coins.
+[PASS] LEVEL_SPECIFIC_COMPRESSION_FEEDBACK: Compression timing, shake and ejection feedback come from the active machine level.
+[PASS] SAVE_RESUME_MASS: Machine mass and level are persisted and restored through SaveService.
+[PASS] PULL_MULTIPLIER_REACHES_RUNTIME: The level-specific pull multiplier reaches the production suction calculator.
+[PASS] S5 machine evolution/compression contract (implementation-level, non-renderer).
+[NOTE] Browser runtime evidence remains acceptance:p0b; no QA setter was used.
+[InfiniteWorldManager] Opening composition entry not found: ParkTreeSmall_1
+[InfiniteWorldManager] Opening composition entry not found: ParkTreeLarge_3
+[InfiniteWorldManager] Opening composition entry not found: FlowerbedWest
+[InfiniteWorldManager] Opening composition entry not found: ParkPathStonesWest
+[InfiniteWorldManager] Opening composition entry not found: ParkPathStonesEast
+[InfiniteWorldManager] Opening composition entry not found: ParkHedgeNorth
+[InfiniteWorldManager] Opening composition entry not found: POI_CentralSquare
+[InfiniteWorldManager] Opening composition entry not found: POI_ParkFountain
+[PASS] ABSORB_REMOVES_FROM_CELL: remove returned true
+[PASS] ABSORB_RECORDS_FSM_ORDER: the authored slot keeps the ordered FSM sequence that produced the absorption
+[PASS] ABSORB_REMOVES_AND_RETURNS_TO_POOL: cell=0, pool.active=0
+[PASS] COOLDOWN_BLOCKS_RESPAWN: no respawn before four seconds
+[PASS] COOLDOWN_RESPAWNS_SLOT: one procedural slot respawned
+[PASS] RESPAWN_REUSES_RUNTIME_ID: original slot id reused
+[InfiniteWorldManager] Opening composition entry not found: ParkTreeSmall_1
+[InfiniteWorldManager] Opening composition entry not found: ParkTreeLarge_3
+[InfiniteWorldManager] Opening composition entry not found: FlowerbedWest
+[InfiniteWorldManager] Opening composition entry not found: ParkPathStonesWest
+[InfiniteWorldManager] Opening composition entry not found: ParkPathStonesEast
+[InfiniteWorldManager] Opening composition entry not found: ParkHedgeNorth
+[InfiniteWorldManager] Opening composition entry not found: POI_CentralSquare
+[InfiniteWorldManager] Opening composition entry not found: POI_ParkFountain
+[PASS] TUTORIAL_STARTER_REGISTERED_AS_T1_SLOT: TutorialStarter spawn point became a T1 respawn slot at its authored position
+[PASS] CLUSTER_GROUPS_REGISTERED_AS_T1_SLOTS: Cluster_Park and Cluster_CitySquare use T1 templates
+[PASS] TUTORIAL_T2_TARGET_USES_AUTHORED_POINT: TutorialT2Target uses its authored spawn point with a T2 template
+[PASS] OPENING_EDIBLE_SPREAD_REGISTERED: every one of the 14 declared opening edible entries is registered at its authored tier and position, tier mix {"1":6,"2":4,"3":4}
+[PASS] AUTHORED_SLOTS_RESPAWN: TutorialStarter and TutorialT2Target reuse regular authored respawn slots
+[PASS] UNLOAD_CLEARS_OBJECTS_AND_SLOTS: unload releases active objects and clears slot state
+[PASS] AUTHORED_CELL_EXPOSES_T4_T5_ASPIRATIONAL: authored opening cell exposes exactly one T4 and one T5 aspirational target
+[PASS] AUTHORED_ASPIRATIONAL_STAYS_OUTSIDE_TUTORIAL_RING: aspirational targets sit on the outer band, clear of the authored tutorial ring (radius <= 6m)
+[PASS] RELOAD_DOES_NOT_DUPLICATE: reload recreates each slot once and re-registers the real spread (4 authored + 2 aspirational + 14 spread = 20), ids unique
+[InfiniteWorldManager] Opening composition entry not found: ParkTreeSmall_1
+[InfiniteWorldManager] Opening composition entry not found: ParkTreeLarge_3
+[InfiniteWorldManager] Opening composition entry not found: FlowerbedWest
+[InfiniteWorldManager] Opening composition entry not found: ParkPathStonesWest
+[InfiniteWorldManager] Opening composition entry not found: ParkPathStonesEast
+[InfiniteWorldManager] Opening composition entry not found: ParkHedgeNorth
+[InfiniteWorldManager] Opening composition entry not found: POI_CentralSquare
+[InfiniteWorldManager] Opening composition entry not found: POI_ParkFountain
+[PASS] TUTORIAL_T2_DEFERRED_AUTHORING_FALLBACK: missing TutorialT2Target explicitly falls back to the named authored recycling-square anchor
+[PASS] NO_RUNTIME_GOLDEN_CITY_COORDINATE_TABLE: authored collectible placement has no legacy IDs or numeric position table
+[InfiniteWorldManager] Opening composition entry not found: ParkTreeSmall_1
+[InfiniteWorldManager] Opening composition entry not found: ParkTreeLarge_3
+[InfiniteWorldManager] Opening composition entry not found: FlowerbedWest
+[InfiniteWorldManager] Opening composition entry not found: ParkPathStonesWest
+[InfiniteWorldManager] Opening composition entry not found: ParkPathStonesEast
+[InfiniteWorldManager] Opening composition entry not found: ParkHedgeNorth
+[InfiniteWorldManager] Opening composition entry not found: POI_CentralSquare
+[InfiniteWorldManager] Opening composition entry not found: POI_ParkFountain
+[PASS] GLOBAL_CAP_LIMITS_RESPAWN: one slot fills the final available global capacity
+[PASS] GLOBAL_CAP_PREVENTS_OVERFLOW: second slot remains pending at cap
+[PASS] S1 deterministic resource replenishment contract (implementation-level, non-renderer).
+[NOTE] Cocos scene/runtime, visual density, and console-error evidence require acceptance:v2 and are not claimed here.
+[InfiniteWorldManager] Opening composition entry not found: ParkTreeSmall_1
+[InfiniteWorldManager] Opening composition entry not found: ParkTreeLarge_3
+[InfiniteWorldManager] Opening composition entry not found: FlowerbedWest
+[InfiniteWorldManager] Opening composition entry not found: ParkPathStonesWest
+[InfiniteWorldManager] Opening composition entry not found: ParkPathStonesEast
+[InfiniteWorldManager] Opening composition entry not found: ParkHedgeNorth
+[InfiniteWorldManager] Opening composition entry not found: POI_CentralSquare
+[InfiniteWorldManager] Opening composition entry not found: POI_ParkFountain
+[PASS] PROCEDURAL_VEHICLE_INITIALIZED: 1 vehicle spawned into objects and dynamicVehicles
+[PASS] VEHICLE_MOVES_ALONG_ROUTE: pos shifted from (-4,-14) to (-2,-14)
+[PASS] VEHICLE_TURNS_AT_CORNER: vehicle transitioned to TURN state at road waypoint
+[PASS] VEHICLE_ABSORB_REMOVES_FROM_CELL_AND_TRAFFIC: removed from both cell.objects and cell.dynamicVehicles
+[PASS] VEHICLE_ABSORB_RELEASES_TO_SAME_POOL: vehicle object returned to same FakePool
+[PASS] TRAFFIC_COOLDOWN_BLOCKS_PREMATURE_RESPAWN: no vehicle respawn before 4s cooldown expires
+[PASS] TRAFFIC_COOLDOWN_RESPAWNS_VEHICLE: vehicle respawned after cooldown expired
+[PASS] RESPAWN_RE_REGISTERS_ARRAYS_AND_POOL: respawned vehicle present in objects, dynamicVehicles, and active pool
+[InfiniteWorldManager] Opening composition entry not found: ParkTreeSmall_1
+[InfiniteWorldManager] Opening composition entry not found: ParkTreeLarge_3
+[InfiniteWorldManager] Opening composition entry not found: FlowerbedWest
+[InfiniteWorldManager] Opening composition entry not found: ParkPathStonesWest
+[InfiniteWorldManager] Opening composition entry not found: ParkPathStonesEast
+[InfiniteWorldManager] Opening composition entry not found: ParkHedgeNorth
+[InfiniteWorldManager] Opening composition entry not found: POI_CentralSquare
+[InfiniteWorldManager] Opening composition entry not found: POI_ParkFountain
+[PASS] TRAFFIC_CAP_BLOCKS_WHEN_FULL: replenishTraffic returns 0 when activeVehicleCount >= MAX_ACTIVE_VEHICLES
+[PASS] TRAFFIC_CAP_ALLOWS_WHEN_UNDER_LIMIT: replenishTraffic spawns when below cap
+[InfiniteWorldManager] Opening composition entry not found: ParkTreeSmall_1
+[InfiniteWorldManager] Opening composition entry not found: ParkTreeLarge_3
+[InfiniteWorldManager] Opening composition entry not found: FlowerbedWest
+[InfiniteWorldManager] Opening composition entry not found: ParkPathStonesWest
+[InfiniteWorldManager] Opening composition entry not found: ParkPathStonesEast
+[InfiniteWorldManager] Opening composition entry not found: ParkHedgeNorth
+[InfiniteWorldManager] Opening composition entry not found: POI_CentralSquare
+[InfiniteWorldManager] Opening composition entry not found: POI_ParkFountain
+[PASS] AUTHORED_TRAFFIC_REGISTERED: 3 authored vehicles spawned
+[PASS] AUTHORED_VEHICLES_ABSORBED_ALL: all 3 authored vehicles removed and released to pool
+[PASS] AUTHORED_VEHICLES_COOLDOWN_REPLENISHED: all 3 authored slots replenished after cooldown
+[InfiniteWorldManager] Opening composition entry not found: ParkTreeSmall_1
+[InfiniteWorldManager] Opening composition entry not found: ParkTreeLarge_3
+[InfiniteWorldManager] Opening composition entry not found: FlowerbedWest
+[InfiniteWorldManager] Opening composition entry not found: ParkPathStonesWest
+[InfiniteWorldManager] Opening composition entry not found: ParkPathStonesEast
+[InfiniteWorldManager] Opening composition entry not found: ParkHedgeNorth
+[InfiniteWorldManager] Opening composition entry not found: POI_CentralSquare
+[InfiniteWorldManager] Opening composition entry not found: POI_ParkFountain
+[PASS] RESPAWN_CLOCK_FIXTURE_INITIALIZED: one collectible and one traffic slot are active
+[PASS] RESPAWN_CLOCK_SINGLE_ADVANCE: 60 frames at 1/60 advance the shared cell clock to 1.0s, not 2.0s, without crossing the 4s cooldown
+[PASS] SHARED_CLOCK_PRESERVES_FOUR_SECOND_COOLDOWNS: collectible and traffic slots both remain unavailable before their configured 4s cooldown
+[PASS] SHARED_CLOCK_REPLENISHES_BOTH_AFTER_CONFIGURED_DELAY: both slots replenish when the shared clock reaches the existing 4s delay
+[PASS] UNLOAD_CLEARS_VEHICLES_AND_SLOTS: recycle cleared all objects, dynamicVehicles, and slots
+[PASS] RELOAD_DOES_NOT_DUPLICATE_TRAFFIC: reload recreates exactly 3 authored vehicles without duplicates
+[PASS] S2 deterministic traffic replenishment contract (implementation-level, non-renderer).
+[NOTE] Cocos scene/runtime, visual density, and console-error evidence require acceptance:v2 and are not claimed here.
+[PASS] OPENING_LOADS_EXACT_3X3
+[PASS] OPENING_CELL_PRESENT
+[PASS] EAST_STREAM_KEEPS_3X3
+[PASS] EAST_UNLOADS_ONLY_EXITING_COLUMN
+[PASS] EAST_HAS_NO_STALE_CELLS
+[PASS] WEST_RELOADS_OPENING_3X3
+[PASS] NORTH_STREAM_KEEPS_3X3
+[PASS] SOUTH_STREAM_KEEPS_3X3
+[PASS] REBASE_TRIGGERED_PAST_THRESHOLD
+[PASS] REBASE_SHIFTS_BY_WHOLE_CELLS
+[PASS] REBASE_STAYS_QUIET_WITHIN_THRESHOLD
+[PASS] MANAGER_UNLOAD_RECYCLES_CELL_CONTENT
+[PASS] MANAGER_REBASES_CELL_CONTENT
+[PASS] TRAFFIC_ROUTE_AND_ENTRY_REBASE_TOGETHER
+[PASS] RECYCLE_CLEARS_RESPAWN_SLOTS
+[PASS] S3 deterministic cell lifecycle/rebase contract (implementation-level, non-renderer).
+[NOTE] Renderer traversal and console-error evidence require acceptance:v2 and are not claimed here.
+[PASS] T1_TO_T5_REAL_TEMPLATES: five distinct production templates cover T1, T2, T3, T4 and T5 with positive mass/value.
+[PASS] ART_REGISTRY_COVERS_T1_TO_T5: each selected production template has an ObjectArtRegistry binding.
+[PASS] MASS_AND_TIER_GATE: mass remains template-owned and the existing tier gate preserves the threshold.
+[PASS] HIGHER_TIER_DISPLAYS_REQUIRED_LEVEL: over-tier lock feedback exposes the required 需要 LV.X.
+[InfiniteWorldManager] Opening composition entry not found: ParkTreeSmall_1
+[InfiniteWorldManager] Opening composition entry not found: ParkTreeLarge_3
+[InfiniteWorldManager] Opening composition entry not found: FlowerbedWest
+[InfiniteWorldManager] Opening composition entry not found: ParkPathStonesWest
+[InfiniteWorldManager] Opening composition entry not found: ParkPathStonesEast
+[InfiniteWorldManager] Opening composition entry not found: ParkHedgeNorth
+[InfiniteWorldManager] Opening composition entry not found: POI_CentralSquare
+[InfiniteWorldManager] Opening composition entry not found: POI_ParkFountain
+[PASS] AUTHORED_SPAWN_USES_POOL_AND_REAL_OBJECTS: authored points allocate pooled CompressibleObject instances; the real spread adds 14 (total 19).
+[PASS] OPENING_EDIBLE_SPREAD_REGISTERED: the real 14-entry opening edible spread is registered at its authored tiers and positions, tier mix {"1":6,"2":4,"3":4}
+[PASS] ABSORB_REMOVES_AND_RETURNS_TO_SAME_POOL: absorption removes the object from the cell and releases it to the same pool.
+[PASS] RESPAWN_REUSES_SLOT_AND_POOL: cooldown respawn takes the same slot and restores the pool active count.
+[PASS] TEMPLATE_MASS_STAYS_AUTHORED: mass, radius and identity remain authored template data.
+[PASS] PROCEDURAL_ID_FIELD_ORDER: procedural collectible ids keep the district as the second field, which the progression checks depend on.
+[PASS] NO_DISTRICT_USED_AS_CLUSTER_PREFIX: no caller assumes the district is the first field of a cluster id.
+[PASS] PROGRESSION_STAGE_BUDGET_TRACKS_PROGRESS: the progression stage loop ends on a mass stall, not on a fixed wall clock the world can outgrow.
+[PASS] S4 collectible productionization contract (implementation-level, non-renderer).
+[NOTE] Renderer and browser console evidence remain covered by acceptance:p0b.
+[PASS] T1_FAST_FULL_CHAIN: chain=IDLE>ATTRACTED>SUCKING>ABSORBED absorbed in 0.43s
+[PASS] T5_LOCKED_NEVER_ABSORBED: state=IDLE after 3.00s inside radius
+[PASS] T5_LOCKED_SHOWS_LV_FEEDBACK: lock alert raised with LV requirement text
+[PASS] T5_LOCKED_ONLY_SLIGHT_PULL: target crept from 2.3m to 1.75m and held at the standoff ring (no capture)
+[PASS] T5_SUSTAINED_CHAIN: chain=IDLE>ATTRACTED>SUCKING>ABSORBED
+[PASS] T5_NOT_INSTANT: T5 absorb took 4.48s of sustained suction (not same-frame)
+[PASS] T5_ATTRACTED_FIRST: state=ATTRACTED
+[PASS] T5_ESCAPE_TO_IDLE: target escaped back to IDLE after machine left the influence ring
+[PASS] TIER_PROFILE_PROGRESSION: resistance 1/2/3.6, duration 0.35/1.4/3.2
+[PASS] suction progression contract (implementation-level, non-renderer).
+[NOTE] Visual/runtime evidence still requires acceptance:v2 and is not claimed here.
+[PASS] SOURCE_NO_CONE_IN_LOCK_INDICATOR: CompressibleObject.ts contains no constructionCone reference
+[PASS] SOURCE_LOCK_INDICATOR_SPAWNS_NO_ART: TierLockWarning block creates no art instances
+[PASS] REGISTRY_CAR_IS_SEDAN: car: { kind: 'sedan', scale: unitScale(), yOffset: 0, yaw: 0 },
+[PASS] REGISTRY_VAN_IS_DELIVERYVAN: delivery_van: { kind: 'deliveryVan', scale: unitScale(), yOffset: 0, yaw: 0 },
+[PASS] REGISTRY_TRUCK_IS_GARBAGETRUCK: garbage_truck: { kind: 'garbageTruck', scale: unitScale(), yOffset: 0, yaw: 0 },
+[PASS] REGISTRY_NO_DEBUG_FALLBACK: ObjectArtRegistry contains no debug/marker bindings
+[PASS] VEHICLE_TREE_HAS_NO_CONE: tree: TrafficVehicle, Visual, Art_car, TierLockWarning, TierLockLabel
+[PASS] VEHICLE_TREE_HAS_NO_MARKER_OR_DEBUG: no marker/debug/fallback nodes
+[PASS] VEHICLE_BODY_ART_IS_SEDAN: spawned art: sedan@Visual
+[PASS] LOCK_INDICATOR_IS_TEXT_ONLY: no art spawned under TierLockWarning
+[PASS] LOCK_FEEDBACK_ACTIVE_ON_LOW_LEVEL: lock indicator visible while tier-insufficient
+[PASS] LOCK_FEEDBACK_TEXT: label text: 需要 LV.5
+[PASS] LOCK_FEEDBACK_STILL_NO_CONE: still no cone node while the lock feedback is visible
+[PASS] VEHICLE_SWALLOW_AT_LV5: vehicle absorbed after 4.48s of sustained suction
+[PASS] VEHICLE_SPIN_DURING_SUCTION: visual yaw/roll rotated while being pulled in
+[PASS] VEHICLE_ART_CONTAMINATION_NONE: post-swallow tree remains clean
+[PASS] vehicle art contract: VEHICLE_ART_CONTAMINATION = NONE.
+[NOTE] On-screen pixel evidence still requires acceptance:v2 and is not claimed here.
+
+> minigame-wx-tt-crossplatform@1.0.0 test:contracts
+> node scripts/test_machine_progression_compression_contract.mjs && node scripts/test_resource_replenishment_contract.mjs && node scripts/test_traffic_replenishment_contract.mjs && node scripts/test_cell_lifecycle_contract.mjs && node scripts/test_collectible_production_contract.mjs && node scripts/test_suction_progression_contract.mjs && node scripts/test_vehicle_art_contract.mjs && node scripts/test_singularity_visuals_contract.mjs && node scripts/test_build_ownership_protocol.mjs && node scripts/test_boot_bundle_residency.mjs && node scripts/test_absorb_feedback_contract.mjs && node scripts/test_mode_ready_flow_contract.mjs && node scripts/test_arena_ai_contract.mjs && node scripts/test_s10_save_reward_ads_platform_contract.mjs && node scripts/test_s11_performance_contract.mjs && node scripts/test_design_overlay_bounds.mjs && node scripts/test_design_overlay_panel.mjs && node scripts/test_home_layout_contract.mjs && node scripts/test_mode_select_layout_contract.mjs && node scripts/test_endless_hud_layout_contract.mjs && node scripts/test_arena_hud_layout_contract.mjs && node scripts/test_revive_layout_contract.mjs && node scripts/test_settlement_layout_contract.mjs && node scripts/test_ui_v4_design_contract.mjs && node scripts/test_open_ground_instrument_divergence_contract.mjs && node scripts/test_region_bundle_contract.mjs && node scripts/test_ui_prefab_library_contract.mjs && node scripts/test_district_map_ground_contract.mjs && node scripts/test_audio_asset_contract.mjs
+
+[PASS] FIVE_AUTHORED_LEVELS: LV1-LV5 are present in the production evolution table.
+[PASS] STRUCTURAL_EVOLUTION_NAMES: Each level has its own authored machine assembly name.
+[PASS] REAL_SUCTION_AND_TIER_PROGRESSION: Suction radius and max tier advance per level.
+[PASS] DISTINCT_PULL_AND_COMPRESSION_FEEDBACK: Every level has distinct suction and compression feedback parameters.
+[PASS] MASS_TO_UPGRADE_CHAIN: Collected mass is the existing authority that triggers evolution.
+[PASS] SUCTION_TO_COMPRESSION_CHAIN: The real suction FSM feeds the existing compression system and then machine mass.
+[PASS] BLOCK_REWARD_COINS_CHAIN: Compression emits a real resource block and settles its reward into coins.
+[PASS] LEVEL_SPECIFIC_COMPRESSION_FEEDBACK: Compression timing, shake and ejection feedback come from the active machine level.
+[PASS] SAVE_RESUME_MASS: Machine mass and level are persisted and restored through SaveService.
+[PASS] PULL_MULTIPLIER_REACHES_RUNTIME: The level-specific pull multiplier reaches the production suction calculator.
+[PASS] S5 machine evolution/compression contract (implementation-level, non-renderer).
+[NOTE] Browser runtime evidence remains acceptance:p0b; no QA setter was used.
+[InfiniteWorldManager] Opening composition entry not found: ParkTreeSmall_1
+[InfiniteWorldManager] Opening composition entry not found: ParkTreeLarge_3
+[InfiniteWorldManager] Opening composition entry not found: FlowerbedWest
+[InfiniteWorldManager] Opening composition entry not found: ParkPathStonesWest
+[InfiniteWorldManager] Opening composition entry not found: ParkPathStonesEast
+[InfiniteWorldManager] Opening composition entry not found: ParkHedgeNorth
+[InfiniteWorldManager] Opening composition entry not found: POI_CentralSquare
+[InfiniteWorldManager] Opening composition entry not found: POI_ParkFountain
+[PASS] ABSORB_REMOVES_FROM_CELL: remove returned true
+[PASS] ABSORB_RECORDS_FSM_ORDER: the authored slot keeps the ordered FSM sequence that produced the absorption
+[PASS] ABSORB_REMOVES_AND_RETURNS_TO_POOL: cell=0, pool.active=0
+[PASS] COOLDOWN_BLOCKS_RESPAWN: no respawn before four seconds
+[PASS] COOLDOWN_RESPAWNS_SLOT: one procedural slot respawned
+[PASS] RESPAWN_REUSES_RUNTIME_ID: original slot id reused
+[InfiniteWorldManager] Opening composition entry not found: ParkTreeSmall_1
+[InfiniteWorldManager] Opening composition entry not found: ParkTreeLarge_3
+[InfiniteWorldManager] Opening composition entry not found: FlowerbedWest
+[InfiniteWorldManager] Opening composition entry not found: ParkPathStonesWest
+[InfiniteWorldManager] Opening composition entry not found: ParkPathStonesEast
+[InfiniteWorldManager] Opening composition entry not found: ParkHedgeNorth
+[InfiniteWorldManager] Opening composition entry not found: POI_CentralSquare
+[InfiniteWorldManager] Opening composition entry not found: POI_ParkFountain
+[PASS] TUTORIAL_STARTER_REGISTERED_AS_T1_SLOT: TutorialStarter spawn point became a T1 respawn slot at its authored position
+[PASS] CLUSTER_GROUPS_REGISTERED_AS_T1_SLOTS: Cluster_Park and Cluster_CitySquare use T1 templates
+[PASS] TUTORIAL_T2_TARGET_USES_AUTHORED_POINT: TutorialT2Target uses its authored spawn point with a T2 template
+[PASS] OPENING_EDIBLE_SPREAD_REGISTERED: every one of the 14 declared opening edible entries is registered at its authored tier and position, tier mix {"1":6,"2":4,"3":4}
+[PASS] AUTHORED_SLOTS_RESPAWN: TutorialStarter and TutorialT2Target reuse regular authored respawn slots
+[PASS] UNLOAD_CLEARS_OBJECTS_AND_SLOTS: unload releases active objects and clears slot state
+[PASS] AUTHORED_CELL_EXPOSES_T4_T5_ASPIRATIONAL: authored opening cell exposes exactly one T4 and one T5 aspirational target
+[PASS] AUTHORED_ASPIRATIONAL_STAYS_OUTSIDE_TUTORIAL_RING: aspirational targets sit on the outer band, clear of the authored tutorial ring (radius <= 6m)
+[PASS] RELOAD_DOES_NOT_DUPLICATE: reload recreates each slot once and re-registers the real spread (4 authored + 2 aspirational + 14 spread = 20), ids unique
+[InfiniteWorldManager] Opening composition entry not found: ParkTreeSmall_1
+[InfiniteWorldManager] Opening composition entry not found: ParkTreeLarge_3
+[InfiniteWorldManager] Opening composition entry not found: FlowerbedWest
+[InfiniteWorldManager] Opening composition entry not found: ParkPathStonesWest
+[InfiniteWorldManager] Opening composition entry not found: ParkPathStonesEast
+[InfiniteWorldManager] Opening composition entry not found: ParkHedgeNorth
+[InfiniteWorldManager] Opening composition entry not found: POI_CentralSquare
+[InfiniteWorldManager] Opening composition entry not found: POI_ParkFountain
+[PASS] TUTORIAL_T2_DEFERRED_AUTHORING_FALLBACK: missing TutorialT2Target explicitly falls back to the named authored recycling-square anchor
+[PASS] NO_RUNTIME_GOLDEN_CITY_COORDINATE_TABLE: authored collectible placement has no legacy IDs or numeric position table
+[InfiniteWorldManager] Opening composition entry not found: ParkTreeSmall_1
+[InfiniteWorldManager] Opening composition entry not found: ParkTreeLarge_3
+[InfiniteWorldManager] Opening composition entry not found: FlowerbedWest
+[InfiniteWorldManager] Opening composition entry not found: ParkPathStonesWest
+[InfiniteWorldManager] Opening composition entry not found: ParkPathStonesEast
+[InfiniteWorldManager] Opening composition entry not found: ParkHedgeNorth
+[InfiniteWorldManager] Opening composition entry not found: POI_CentralSquare
+[InfiniteWorldManager] Opening composition entry not found: POI_ParkFountain
+[PASS] GLOBAL_CAP_LIMITS_RESPAWN: one slot fills the final available global capacity
+[PASS] GLOBAL_CAP_PREVENTS_OVERFLOW: second slot remains pending at cap
+[PASS] S1 deterministic resource replenishment contract (implementation-level, non-renderer).
+[NOTE] Cocos scene/runtime, visual density, and console-error evidence require acceptance:v2 and are not claimed here.
+[InfiniteWorldManager] Opening composition entry not found: ParkTreeSmall_1
+[InfiniteWorldManager] Opening composition entry not found: ParkTreeLarge_3
+[InfiniteWorldManager] Opening composition entry not found: FlowerbedWest
+[InfiniteWorldManager] Opening composition entry not found: ParkPathStonesWest
+[InfiniteWorldManager] Opening composition entry not found: ParkPathStonesEast
+[InfiniteWorldManager] Opening composition entry not found: ParkHedgeNorth
+[InfiniteWorldManager] Opening composition entry not found: POI_CentralSquare
+[InfiniteWorldManager] Opening composition entry not found: POI_ParkFountain
+[PASS] PROCEDURAL_VEHICLE_INITIALIZED: 1 vehicle spawned into objects and dynamicVehicles
+[PASS] VEHICLE_MOVES_ALONG_ROUTE: pos shifted from (-4,-14) to (-2,-14)
+[PASS] VEHICLE_TURNS_AT_CORNER: vehicle transitioned to TURN state at road waypoint
+[PASS] VEHICLE_ABSORB_REMOVES_FROM_CELL_AND_TRAFFIC: removed from both cell.objects and cell.dynamicVehicles
+[PASS] VEHICLE_ABSORB_RELEASES_TO_SAME_POOL: vehicle object returned to same FakePool
+[PASS] TRAFFIC_COOLDOWN_BLOCKS_PREMATURE_RESPAWN: no vehicle respawn before 4s cooldown expires
+[PASS] TRAFFIC_COOLDOWN_RESPAWNS_VEHICLE: vehicle respawned after cooldown expired
+[PASS] RESPAWN_RE_REGISTERS_ARRAYS_AND_POOL: respawned vehicle present in objects, dynamicVehicles, and active pool
+[InfiniteWorldManager] Opening composition entry not found: ParkTreeSmall_1
+[InfiniteWorldManager] Opening composition entry not found: ParkTreeLarge_3
+[InfiniteWorldManager] Opening composition entry not found: FlowerbedWest
+[InfiniteWorldManager] Opening composition entry not found: ParkPathStonesWest
+[InfiniteWorldManager] Opening composition entry not found: ParkPathStonesEast
+[InfiniteWorldManager] Opening composition entry not found: ParkHedgeNorth
+[InfiniteWorldManager] Opening composition entry not found: POI_CentralSquare
+[InfiniteWorldManager] Opening composition entry not found: POI_ParkFountain
+[PASS] TRAFFIC_CAP_BLOCKS_WHEN_FULL: replenishTraffic returns 0 when activeVehicleCount >= MAX_ACTIVE_VEHICLES
+[PASS] TRAFFIC_CAP_ALLOWS_WHEN_UNDER_LIMIT: replenishTraffic spawns when below cap
+[InfiniteWorldManager] Opening composition entry not found: ParkTreeSmall_1
+[InfiniteWorldManager] Opening composition entry not found: ParkTreeLarge_3
+[InfiniteWorldManager] Opening composition entry not found: FlowerbedWest
+[InfiniteWorldManager] Opening composition entry not found: ParkPathStonesWest
+[InfiniteWorldManager] Opening composition entry not found: ParkPathStonesEast
+[InfiniteWorldManager] Opening composition entry not found: ParkHedgeNorth
+[InfiniteWorldManager] Opening composition entry not found: POI_CentralSquare
+[InfiniteWorldManager] Opening composition entry not found: POI_ParkFountain
+[PASS] AUTHORED_TRAFFIC_REGISTERED: 3 authored vehicles spawned
+[PASS] AUTHORED_VEHICLES_ABSORBED_ALL: all 3 authored vehicles removed and released to pool
+[PASS] AUTHORED_VEHICLES_COOLDOWN_REPLENISHED: all 3 authored slots replenished after cooldown
+[InfiniteWorldManager] Opening composition entry not found: ParkTreeSmall_1
+[InfiniteWorldManager] Opening composition entry not found: ParkTreeLarge_3
+[InfiniteWorldManager] Opening composition entry not found: FlowerbedWest
+[InfiniteWorldManager] Opening composition entry not found: ParkPathStonesWest
+[InfiniteWorldManager] Opening composition entry not found: ParkPathStonesEast
+[InfiniteWorldManager] Opening composition entry not found: ParkHedgeNorth
+[InfiniteWorldManager] Opening composition entry not found: POI_CentralSquare
+[InfiniteWorldManager] Opening composition entry not found: POI_ParkFountain
+[PASS] RESPAWN_CLOCK_FIXTURE_INITIALIZED: one collectible and one traffic slot are active
+[PASS] RESPAWN_CLOCK_SINGLE_ADVANCE: 60 frames at 1/60 advance the shared cell clock to 1.0s, not 2.0s, without crossing the 4s cooldown
+[PASS] SHARED_CLOCK_PRESERVES_FOUR_SECOND_COOLDOWNS: collectible and traffic slots both remain unavailable before their configured 4s cooldown
+[PASS] SHARED_CLOCK_REPLENISHES_BOTH_AFTER_CONFIGURED_DELAY: both slots replenish when the shared clock reaches the existing 4s delay
+[PASS] UNLOAD_CLEARS_VEHICLES_AND_SLOTS: recycle cleared all objects, dynamicVehicles, and slots
+[PASS] RELOAD_DOES_NOT_DUPLICATE_TRAFFIC: reload recreates exactly 3 authored vehicles without duplicates
+[PASS] S2 deterministic traffic replenishment contract (implementation-level, non-renderer).
+[NOTE] Cocos scene/runtime, visual density, and console-error evidence require acceptance:v2 and are not claimed here.
+[PASS] OPENING_LOADS_EXACT_3X3
+[PASS] OPENING_CELL_PRESENT
+[PASS] EAST_STREAM_KEEPS_3X3
+[PASS] EAST_UNLOADS_ONLY_EXITING_COLUMN
+[PASS] EAST_HAS_NO_STALE_CELLS
+[PASS] WEST_RELOADS_OPENING_3X3
+[PASS] NORTH_STREAM_KEEPS_3X3
+[PASS] SOUTH_STREAM_KEEPS_3X3
+[PASS] REBASE_TRIGGERED_PAST_THRESHOLD
+[PASS] REBASE_SHIFTS_BY_WHOLE_CELLS
+[PASS] REBASE_STAYS_QUIET_WITHIN_THRESHOLD
+[PASS] MANAGER_UNLOAD_RECYCLES_CELL_CONTENT
+[PASS] MANAGER_REBASES_CELL_CONTENT
+[PASS] TRAFFIC_ROUTE_AND_ENTRY_REBASE_TOGETHER
+[PASS] RECYCLE_CLEARS_RESPAWN_SLOTS
+[PASS] S3 deterministic cell lifecycle/rebase contract (implementation-level, non-renderer).
+[NOTE] Renderer traversal and console-error evidence require acceptance:v2 and are not claimed here.
+[PASS] T1_TO_T5_REAL_TEMPLATES: five distinct production templates cover T1, T2, T3, T4 and T5 with positive mass/value.
+[PASS] ART_REGISTRY_COVERS_T1_TO_T5: each selected production template has an ObjectArtRegistry binding.
+[PASS] MASS_AND_TIER_GATE: mass remains template-owned and the existing tier gate preserves the threshold.
+[PASS] HIGHER_TIER_DISPLAYS_REQUIRED_LEVEL: over-tier lock feedback exposes the required 需要 LV.X.
+[InfiniteWorldManager] Opening composition entry not found: ParkTreeSmall_1
+[InfiniteWorldManager] Opening composition entry not found: ParkTreeLarge_3
+[InfiniteWorldManager] Opening composition entry not found: FlowerbedWest
+[InfiniteWorldManager] Opening composition entry not found: ParkPathStonesWest
+[InfiniteWorldManager] Opening composition entry not found: ParkPathStonesEast
+[InfiniteWorldManager] Opening composition entry not found: ParkHedgeNorth
+[InfiniteWorldManager] Opening composition entry not found: POI_CentralSquare
+[InfiniteWorldManager] Opening composition entry not found: POI_ParkFountain
+[PASS] AUTHORED_SPAWN_USES_POOL_AND_REAL_OBJECTS: authored points allocate pooled CompressibleObject instances; the real spread adds 14 (total 19).
+[PASS] OPENING_EDIBLE_SPREAD_REGISTERED: the real 14-entry opening edible spread is registered at its authored tiers and positions, tier mix {"1":6,"2":4,"3":4}
+[PASS] ABSORB_REMOVES_AND_RETURNS_TO_SAME_POOL: absorption removes the object from the cell and releases it to the same pool.
+[PASS] RESPAWN_REUSES_SLOT_AND_POOL: cooldown respawn takes the same slot and restores the pool active count.
+[PASS] TEMPLATE_MASS_STAYS_AUTHORED: mass, radius and identity remain authored template data.
+[PASS] PROCEDURAL_ID_FIELD_ORDER: procedural collectible ids keep the district as the second field, which the progression checks depend on.
+[PASS] NO_DISTRICT_USED_AS_CLUSTER_PREFIX: no caller assumes the district is the first field of a cluster id.
+[PASS] PROGRESSION_STAGE_BUDGET_TRACKS_PROGRESS: the progression stage loop ends on a mass stall, not on a fixed wall clock the world can outgrow.
+[PASS] S4 collectible productionization contract (implementation-level, non-renderer).
+[NOTE] Renderer and browser console evidence remain covered by acceptance:p0b.
+[PASS] T1_FAST_FULL_CHAIN: chain=IDLE>ATTRACTED>SUCKING>ABSORBED absorbed in 0.43s
+[PASS] T5_LOCKED_NEVER_ABSORBED: state=IDLE after 3.00s inside radius
+[PASS] T5_LOCKED_SHOWS_LV_FEEDBACK: lock alert raised with LV requirement text
+[PASS] T5_LOCKED_ONLY_SLIGHT_PULL: target crept from 2.3m to 1.75m and held at the standoff ring (no capture)
+[PASS] T5_SUSTAINED_CHAIN: chain=IDLE>ATTRACTED>SUCKING>ABSORBED
+[PASS] T5_NOT_INSTANT: T5 absorb took 4.48s of sustained suction (not same-frame)
+[PASS] T5_ATTRACTED_FIRST: state=ATTRACTED
+[PASS] T5_ESCAPE_TO_IDLE: target escaped back to IDLE after machine left the influence ring
+[PASS] TIER_PROFILE_PROGRESSION: resistance 1/2/3.6, duration 0.35/1.4/3.2
+[PASS] suction progression contract (implementation-level, non-renderer).
+[NOTE] Visual/runtime evidence still requires acceptance:v2 and is not claimed here.
+[PASS] SOURCE_NO_CONE_IN_LOCK_INDICATOR: CompressibleObject.ts contains no constructionCone reference
+[PASS] SOURCE_LOCK_INDICATOR_SPAWNS_NO_ART: TierLockWarning block creates no art instances
+[PASS] REGISTRY_CAR_IS_SEDAN: car: { kind: 'sedan', scale: unitScale(), yOffset: 0, yaw: 0 },
+[PASS] REGISTRY_VAN_IS_DELIVERYVAN: delivery_van: { kind: 'deliveryVan', scale: unitScale(), yOffset: 0, yaw: 0 },
+[PASS] REGISTRY_TRUCK_IS_GARBAGETRUCK: garbage_truck: { kind: 'garbageTruck', scale: unitScale(), yOffset: 0, yaw: 0 },
+[PASS] REGISTRY_NO_DEBUG_FALLBACK: ObjectArtRegistry contains no debug/marker bindings
+[PASS] VEHICLE_TREE_HAS_NO_CONE: tree: TrafficVehicle, Visual, Art_car, TierLockWarning, TierLockLabel
+[PASS] VEHICLE_TREE_HAS_NO_MARKER_OR_DEBUG: no marker/debug/fallback nodes
+[PASS] VEHICLE_BODY_ART_IS_SEDAN: spawned art: sedan@Visual
+[PASS] LOCK_INDICATOR_IS_TEXT_ONLY: no art spawned under TierLockWarning
+[PASS] LOCK_FEEDBACK_ACTIVE_ON_LOW_LEVEL: lock indicator visible while tier-insufficient
+[PASS] LOCK_FEEDBACK_TEXT: label text: 需要 LV.5
+[PASS] LOCK_FEEDBACK_STILL_NO_CONE: still no cone node while the lock feedback is visible
+[PASS] VEHICLE_SWALLOW_AT_LV5: vehicle absorbed after 4.48s of sustained suction
+[PASS] VEHICLE_SPIN_DURING_SUCTION: visual yaw/roll rotated while being pulled in
+[PASS] VEHICLE_ART_CONTAMINATION_NONE: post-swallow tree remains clean
+[PASS] vehicle art contract: VEHICLE_ART_CONTAMINATION = NONE.
+[NOTE] On-screen pixel evidence still requires acceptance:v2 and is not claimed here.
+[PASS] PROFILE_MODULE_IS_PURE_AND_EXECUTES: VORTEX_LAYERS=5, exports=12
+[PASS] VORTEX_LAYERS_TILTED_OFF_SYMMETRY_AXIS: tilts=InnerSwirl:16/10 MidSwirl:-20/-22 OuterSwirl:24/18 ShimmerSwirl:-28/34
+[PASS] VORTEX_RIM_IS_STABLE_HORIZON: HoleRing tilt 0/0 so the rim reads as a fixed outline, not a wobbling one
+[PASS] VORTEX_LAYERS_COUNTER_ROTATE: directions=InnerSwirl:1 MidSwirl:-1 OuterSwirl:-1 ShimmerSwirl:1 HoleRing:1
+[PASS] VORTEX_LAYERS_ARE_SPREAD_INTO_A_FUNNEL: y=0.1 < 0.145 < 0.19 < 0.235 < 0.268
+[PASS] VORTEX_LAYERS_DECLARE_THE_EXCLUSION_SET: excluded=InnerSwirl, MidSwirl, OuterSwirl, ShimmerSwirl, HoleRing, RimEnergy
+[PASS] VORTEX_EULER_CARRIES_TILT_AND_SIGNED_SPIN: {"x":16,"y":90,"z":10}
+[PASS] VORTEX_NEIGHBOURS_SPIN_OPPOSITE: InnerSwirl.y=90 vs MidSwirl.y=-90
+[PASS] VORTEX_SPIN_STEP_SCALES_WITH_LEVEL_AND_LOAD: slow=45 fast=90 loaded=72
+[PASS] LEVEL_PALETTE_SOURCE_PARSED: LV1:#00e5ff LV2:#70ff00 LV3:#ffd600 LV4:#ff2d55 LV5:#ffffff
+[PASS] LEVEL_APPEARANCE_DIFFERS_ACROSS_ALL_FIVE: rim=5 rate=5 spin=5 funnel=5
+[PASS] LEVEL_APPEARANCE_IS_MONOTONIC_IN_INTENSITY: LV1:rate18/spin1/funnel1 LV2:rate23/spin1.15/funnel1.08 LV3:rate28/spin1.3/funnel1.16 LV4:rate34/spin1.48/funnel1.24 LV5:rate40/spin1.7/funnel1.32
+[PASS] LEVEL_APPEARANCE_FOLLOWS_THE_LEVEL_CONFIG: every level rim hue is the level config's own rimColor
+[PASS] LEVEL_NORMALISATION_CLAMPS_OUT_OF_RANGE: out-of-range levels resolve to a real profile
+[PASS] SUCTION_PARTICLES_SILENT_AT_REST: zero load and zero devour pulse emits exactly 0 particles/second
+[PASS] SUCTION_PARTICLES_EMIT_UNDER_LOAD: 0.5->10.8, 1.0->18
+[PASS] SUCTION_PARTICLES_RESPOND_TO_A_DEVOUR_EVENT: a single absorption emits even if the instantaneous load reads zero
+[PASS] SUCTION_PARTICLES_ARE_LEVEL_SCALED: LV5 emits more than LV1 at the same load
+[PASS] DEVOUR_SCALE_AT_REST_IS_ONE: no load and no pulse means no scale response
+[PASS] DEVOUR_SCALE_RESPONDS_TO_LOAD_AND_EVENT: load=1.1 pulse=1.16 both=1.26
+[PASS] DEVOUR_PULSE_DECAYS_AND_SETTLES: half=0.5
+[PASS] RIM_ENERGY_PULSES_WITH_LOAD: rest=1.12 loaded=1.2320000000000002
+[PASS] MACHINE_USES_THE_PROFILE_FOR_THE_VORTEX: the vortex animation is profile-driven, not a second hardcoded table
+[PASS] MACHINE_HAS_ONE_ANIMATION_PASS: the two overlapping animation blocks were consolidated into one
+[PASS] MACHINE_STRUCTURAL_BODY_IS_NEVER_SCALED: no setScale call reaches AbyssBase/HoleInner, the gated silhouette body
+[PASS] MACHINE_EXCLUDES_RIM_ENERGY_FROM_THE_SILHOUETTE: the frame-animated authored rim ring is excluded from the gated silhouette
+[PASS] MACHINE_APPLIES_THE_LEVEL_APPEARANCE: the level drives the rim hue, the rim energy and the particles
+[PASS] SKIN_STILL_WINS_OVER_THE_LEVEL: applyLevelAppearance re-applies the skin last, so a chosen skin overrides the level palette
+[PASS] DEVOUR_PULSE_IS_DRIVEN_BY_A_REAL_ABSORPTION: GameManager raises the pulse from its real absorb callback
+[PASS] EFFECTS_DEGRADE_AND_NEVER_DRAW_AN_UNRESOLVED_MATERIAL: adoption is gated on a valid material and a bounded retry, then abandoned
+[PASS] EFFECTS_ARE_REQUESTED_NON_BLOCKING: both effects are requested by art id through ArtLoader
+[PASS] AUTHORED_ASSETS_EXIST: MAT_BLACKHOLE_RIM.mtl:ok MAT_BLACKHOLE_PARTICLE.mtl:ok RimEnergyRing.glb:ok RimEnergy.prefab:ok SuctionParticles.prefab:ok
+[PASS] ART_REGISTRY_DECLARES_THE_EFFECTS: both effect prefabs are addressable by art id
+[PASS] RIM_PREFAB_BINDS_THE_AUTHORED_MESH_AND_MATERIAL: renderers=2, material=1be71a84-5d9f-4313-b6f3-01ff374e09bb, meshes=9f58268a-9704-4e0d-a0e4-b36bae922e61@84f25,9f58268a-9704-4e0d-a0e4-b36bae922e61@c868c
+[PASS] RIM_MATERIAL_IS_ADDITIVE_UNLIT: technique 2 = builtin-unlit `add`
+[PASS] PARTICLE_PREFAB_IS_A_REAL_PARTICLE_SYSTEM: material=844becc9-3516-47a7-a24e-00e329de5569
+[PASS] PARTICLE_EMITTER_PLANE_IS_THE_GROUND_PLANE: euler.x=90 simulationSpace=1 (1 = Local)
+[PASS] PARTICLE_RATE_DEFAULTS_TO_SILENCE: the asset itself emits nothing; the runtime drives the rate from real suction
+[PASS] PARTICLE_SHAPE_PULLS_INWARD: shapeType=1 (1 = Circle, edge only) startSpeed=-0.95
+[PASS] PARTICLE_SIZE_IS_LEGIBLE_AT_PHONE_SCALE: startSize=0.3 (>= 0.2 m world-equivalent)
+[PASS] PARTICLE_PLANE_CLEARS_THE_OPAQUE_BODY: PARTICLE_PLANE_HEIGHT=0.30
+[PASS] PARTICLE_MATERIAL_BINDS_THE_PARTICLE_EFFECT_AND_TEXTURE: the renderer and the material both name the Default-Particle texture
+
+[PASS] singularity visual contract: 42 checks passed.
+[NOTE] On-screen pixel evidence still requires npm run acceptance:v2 -- --scope=full.
+====================================================
+Build Ownership Protocol Contract Verification
+====================================================
+[PASS] PID_LIVENESS_ACCURACY: Current PID is alive; nonexistent PID 999999 is dead
+[build-lock] Acquired build lock for PID 16060 ("test-normal-lifecycle").
+[PASS] LOCK_FILE_CREATED_ON_DISK: lock file was created
+[PASS] LOCK_PAYLOAD_VALIDITY: all expected fields present in lock file
+[build-lock] Released build lock for PID 16060 ("test-normal-lifecycle").
+[PASS] LOCK_FILE_REMOVED_ON_RELEASE: lock file unlinked on release
+[build-lock] Acquired build lock for PID 16060 ("test-outer").
+[build-lock] Re-entrant lock acquired by PID 16060 (depth: 2, purpose: "test-inner").
+[PASS] REENTRANT_LOCK_SHARING: same instance and depth 2
+[PASS] INNER_RELEASE_KEEPS_DISK_LOCK: depth decremented to 1 and file stays
+[build-lock] Released build lock for PID 16060 ("test-outer").
+[PASS] OUTER_RELEASE_UNLINKS_DISK_LOCK: depth 0 cleans up lock file
+[build-lock] Acquired build lock for PID 16060 ("test-freeze").
+[build-lock] Bundle frozen by PID 16060 (digest: abcd1234, files: 150) for "test-freeze".
+[PASS] BUNDLE_FREEZE_UPDATES_STATE: state is FROZEN
+[PASS] BUNDLE_FREEZE_WRITTEN_TO_DISK: frozen state and identity written to disk
+[PASS] BUNDLE_VERIFY_STABLE: matching digest returns BUNDLE_STABLE
+[PASS] BUNDLE_VERIFY_CLOBBERED: mismatched digest returns BUNDLE_CLOBBERED
+[build-lock] Released build lock for PID 16060 ("test-freeze").
+[PASS] INSPECT_STALE_LOCK: inspectBuildLock detects dead holder
+[build-lock] RECLAIMING STALE LOCK: Previous holder PID 999999 (purpose: "abandoned-crash-run", state: "FROZEN", acquired: 60.0s ago at 2026-10-11T16:35:31.196Z) is no longer alive (process terminated abnormally). Loudly reclaiming lock for PID 16060 ("fresh-reclaiming-run").
+[build-lock] Acquired build lock for PID 16060 ("fresh-reclaiming-run").
+[PASS] STALE_LOCK_RECLAIMED: reclaimed lock successfully written
+[PASS] RECLAIMED_LOCK_HAS_CURRENT_PID: disk lock now owned by current PID
+[build-lock] Released build lock for PID 16060 ("fresh-reclaiming-run").
+[PASS] RECLAIMED_LOCK_CLEANED_UP: cleaned up after reclaim test
+[build-lock] RECLAIMING CORRUPT LOCK: Lock file at "C:\Users\zyu33\Documents\Codex\2026-09-29\BlackHoleRecycle\artifacts\locks\test\test-corrupt.lock" is corrupt or invalid. Reclaiming lock loudly for PID 16060 ("reclaim-corrupt").
+[build-lock] Acquired build lock for PID 16060 ("reclaim-corrupt").
+[PASS] CORRUPT_LOCK_RECLAIMED: corrupt lock reclaimed and overwritten
+[build-lock] Released build lock for PID 16060 ("reclaim-corrupt").
+[build-lock] Acquired build lock for PID 16060 ("acceptance-active-holder").
+[PASS] CONTENTION_FAILS_FAST: child process exited with code 1
+[PASS] CONTENTION_DIAGNOSTIC_MESSAGE: child error message identifies active PID and purpose
+[build-lock] Released build lock for PID 16060 ("acceptance-active-holder").
+[build-lock] Acquired build lock for PID 16060 ("test-throw").
+[build-lock] Released build lock for PID 16060 ("test-throw").
+[PASS] EXCEPTION_THROWN_AND_CAUGHT: error was propagated
+[PASS] EXCEPTION_SAFETY_RELEASES_LOCK: lock unlinked after exception in callback
+[build-lock] Acquired build lock for PID 16060 ("holder-to-be-forced").
+[PASS] FORCE_RECLAIM_OVERWRITES: force reclaim succeeded
+====================================================
+PASS: All 21 build ownership protocol contracts passed.
+====================================================
+[boot-bundles] 109 assets reachable from 2 scene(s)
+[boot-bundles] 5 declared bundle(s): art-machines(mini-game-subpackage), world-city(mini-game-subpackage), world-construction(mini-game-subpackage), game-art(mini-game-subpackage), resources(default)
+[boot-bundles] boot bundles: world-city, game-art, art-machines
+[boot-bundles]   scene-referenced: game-art -> 23 asset(s)
+[boot-bundles]   scene-referenced: art-machines -> 1 asset(s)
+[boot-bundles]   scene-referenced: world-city -> 8 asset(s)
+[boot-bundles] PASS: every bundle the launch scenes reference is resident before the launch scene.
+[PASS] ABSORB_POOL_IS_FIXED_AND_SMALL: poolSize=6
+[PASS] ABSORB_BURST_IS_SHORT_LIVED: burst=0.6s particleLifetime=0.55s
+[PASS] ABSORB_COLLAPSE_IS_MONOTONIC_FROM_ONE_TO_ZERO: scale=1.000 > 1.000 > 1.000 > 0.918 > 0.587 > 0.265 > 0.000
+[PASS] ABSORB_COLLAPSE_EASES_IN: mid=0.918 > linear 0.500
+[PASS] ABSORB_PROGRESS_CLAMPS_AND_COMPLETES: elapsed clamps to a completed burst
+[PASS] ABSORB_ORIGIN_CLEARS_THE_GROUND_PLANE: heightAboveGround=0.34 (object Y is below ground at absorption)
+[PASS] RESOURCE_DROP_WINDOW_IS_UNCHANGED: durationSeconds=0.45
+[PASS] RESOURCE_DROP_POPS_UP_AND_RETURNS: h(0)=0 h(0.5)=0.550 h(1)=6.735557395310444e-17
+[PASS] RESOURCE_DROP_TRAVELS_FORWARD_MONOTONICALLY: forward(0.5)=0.450 forward(1)=0.900
+[PASS] RESOURCE_DROP_SCALE_STARTS_SMALL_AND_OVERSHOOTS: s(0)=0.05000000000000021 s(0.75)=1.061 s(1)=1
+[PASS] RESOURCE_DROP_SPINS_AND_SCALES_WITH_LEVEL: yaw(1)=220 height@LV5=1.414 @LV1=0.550
+[PASS] AUTHORED_BURST_ASSET_EXISTS: assets/game_art/prefabs/blackhole/AbsorbBurst.prefab:ok
+[PASS] BURST_PREFAB_IS_A_REAL_PARTICLE_SYSTEM: material=e3074521-e97c-42c9-b256-849dc8c33602
+[PASS] BURST_BINDS_THE_PARTICLE_EFFECT_AND_TEXTURE: the renderer and the material both name the Default-Particle texture
+[PASS] BURST_MATERIAL_IS_ALWAYS_ON_TOP: particles/builtin-particle technique 0 (add), depthTest/depthWrite false
+[PASS] BURST_IS_ONE_SHOT_AND_SILENT_UNTIL_TRIGGERED: loop=false playOnAwake=false duration=0.4
+[PASS] BURST_EMITS_AND_CANNOT_OVERFLOW_ITS_CAPACITY: rate=140/s capacity=128 window=0.4s
+[PASS] BURST_FLIES_OUTWARD_UNLIKE_THE_INWARD_SUCTION_STREAM: startSpeed=2.4 (PHASE 4 suction uses a negative value)
+[PASS] BURST_CULLING_IS_OFF: enableCulling=false (PHASE 4 measured a depth/cull defect on this build)
+[PASS] BURST_IS_LOCAL_SPACE_FOR_THE_ROOT_COLLAPSE: _simulationSpace=1 (1 = Local)
+[PASS] ART_REGISTRY_DECLARES_THE_BURST: the burst prefab is addressable by art id
+[PASS] BURST_IS_DRIVEN_BY_THE_REAL_ABSORB_EVENT: GameManager.onObjectAbsorbed emits the burst at the object position
+[PASS] BURST_IS_NEVER_ON_A_TIMER: the pool has no timer and no emit site outside the absorb callback
+[PASS] EMIT_ALLOCATES_NOTHING: AbsorbFeedbackPool.emit only reuses a pre-built slot
+[PASS] POOL_IS_BUILT_ONCE_AT_ADOPTION: the fixed pool is cloned once when the authored prefab adopts
+[PASS] POOL_DEGRADES_WITHOUT_BREAKING_PLAY: a missing asset or unresolved material leaves the effect absent after a bounded retry
+[PASS] COMPRESSION_USES_THE_AUTHORED_DROP_PROFILE: the resource block ejects along the authored arc
+[PASS] COMPRESSION_KEEPS_THE_LEVEL_DRIVEN_EJECT_FEEDBACK: the live machine level still scales the eject travel
+
+[PASS] absorb feedback contract: 28 checks passed.
+[NOTE] On-screen pixel evidence still requires npm run acceptance:v2 -- --scope=full.
+[PASS] SCENE_ENDLESS_READY_PAGE: children=[Background,BtnBack,Header,HeaderTitle,MapPreview,StatCaption,StatValue,MachineCaption,MachineValue,IntroText,BtnStart,BtnStartLabel] buttons=[BtnBack,BtnStart]
+[PASS] SCENE_ARENA_READY_PAGE: children=[Background,BtnBack,Header,HeaderTitle,MapPreview,StatCaption,StatValue,MachineCaption,MachineValue,IntroText,BtnStart,BtnStartLabel] buttons=[BtnBack,BtnStart]
+[PASS] MODE_CARD_OPENS_READY_NOT_GAMEPLAY: MODE_*_REQUESTED handlers open the ready page and contain no direct start call
+[PASS] READY_START_GATED_AND_ROUTED: READY_START_REQUESTED requires MODE_READY state and routes by pendingReadyMode
+[PASS] READY_BACK_RETURNS_TO_MODE_SELECT: READY_BACK_REQUESTED returns to the mode select page
+[PASS] READY_CONTROLLER_BINDS_START_AND_BACK: BtnStart/BtnBack emit the explicit ready events
+[PASS] READY_LAYOUT_NODE_BTNBACK: MODE_READY_LAYOUT contains BtnBack
+[PASS] READY_LAYOUT_NODE_HEADER: MODE_READY_LAYOUT contains Header
+[PASS] READY_LAYOUT_NODE_HEADERTITLE: MODE_READY_LAYOUT contains HeaderTitle
+[PASS] READY_LAYOUT_NODE_MAPPREVIEW: MODE_READY_LAYOUT contains MapPreview
+[PASS] READY_LAYOUT_NODE_STATCAPTION: MODE_READY_LAYOUT contains StatCaption
+[PASS] READY_LAYOUT_NODE_STATVALUE: MODE_READY_LAYOUT contains StatValue
+[PASS] READY_LAYOUT_NODE_MACHINECAPTION: MODE_READY_LAYOUT contains MachineCaption
+[PASS] READY_LAYOUT_NODE_MACHINEVALUE: MODE_READY_LAYOUT contains MachineValue
+[PASS] READY_LAYOUT_NODE_INTROTEXT: MODE_READY_LAYOUT contains IntroText
+[PASS] READY_LAYOUT_NODE_BTNSTART: MODE_READY_LAYOUT contains BtnStart
+[PASS] READY_LAYOUT_NODE_BTNSTARTLABEL: MODE_READY_LAYOUT contains BtnStartLabel
+[PASS] READY_CONTROLLER_NO_DIRECT_START: controller itself never starts a match
+[PASS] FLOW_HOME_TO_MODE_SELECT: MODE_SELECT
+[PASS] FLOW_MODE_SELECT_TO_READY: MODE_READY
+[PASS] FLOW_READY_STARTS_ARENA: ARENA
+[PASS] FLOW_READY_BACK_TO_MODE_SELECT: ready page back action returns to MODE_SELECT
+[PASS] FLOW_READY_STARTS_ENDLESS: PLAYING
+[PASS] FLOW_READY_IS_REQUIRED_INTERMEDIATE: trace=HOME>MODE_SELECT | MODE_SELECT>MODE_READY | MODE_READY>ARENA
+[PASS] mode ready flow contract (implementation-level, non-renderer).
+[NOTE] On-device click-through evidence requires acceptance:v2 and is not claimed here.
+====================================================
+S8 Arena AI Contract & Headless Simulation
+====================================================
+
+[PASS] ARENA_BOT_STATES_DEFINED: ArenaBotState union covers ROAM, COLLECT, CHASE, FLEE, EVENT_HUNT, RECOVER.
+[PASS] ARENA_BOT_FLEE_LOGIC: Bot flees when stronger competitor is within 13m threat distance.
+[PASS] ARENA_BOT_EVENT_HUNT_LOGIC: Bot targets arena_mass_fragment within 32m during EVENT_HUNT.
+[PASS] ARENA_BOT_CHASE_LOGIC: Bot chases consumable prey competitor within 15m.
+[PASS] ARENA_BOT_COLLECT_LOGIC: Bot collects idle recyclable objects within 28m up to its max tier.
+[PASS] ARENA_BOT_ROAM_DETERMINISTIC: Bot roams deterministically along orbital phase sector, preventing random-walk.
+[PASS] ARENA_BOT_RECOVER_ON_RESPAWN: Bot receives RECOVER state and shield upon respawn.
+[PASS] ARENA_BOT_CONSUMPTION_CONFIRMED: Bot consumption awards actual template mass and increments consumed counter.
+[PASS] ARENA_BOT_MASS_DROPS_ON_DEFEAT: Defeated competitor spawns arena_mass_fragment entities for dynamic recycling.
+
+--- 180s Headless Simulation Telemetry ---
+State Transition Occurrences: {
+  ROAM: 329,
+  COLLECT: 1734,
+  CHASE: 5523,
+  FLEE: 5003,
+  EVENT_HUNT: 18,
+  RECOVER: 0
+}
+Total Pickups Consumed: 204
+Total Competitor Eliminations: 13
+Final Competitor Roster: [
+  { id: 'local-player', mass: 0, consumed: 9, kills: 0 },
+  { id: 'bot-1', mass: 285, consumed: 3, kills: 0 },
+  { id: 'bot-2', mass: 300, consumed: 4, kills: 0 },
+  { id: 'bot-3', mass: 330, consumed: 6, kills: 0 },
+  { id: 'bot-4', mass: 3791, consumed: 161, kills: 13 },
+  { id: 'bot-5', mass: 345, consumed: 7, kills: 0 },
+  { id: 'bot-6', mass: 300, consumed: 4, kills: 0 },
+  { id: 'bot-7', mass: 390, consumed: 10, kills: 0 }
+]
+[PASS] SIM_ACTIVE_TRANSITIONS: All 5 active bot states (COLLECT, CHASE, FLEE, EVENT_HUNT, ROAM) observed during 180s run.
+[PASS] SIM_MASS_GROWTH_OBSERVED: Bots actively grew mass by consuming world entities.
+[PASS] SIM_BOT_COLLECTIONS_OCCURRED: Bots achieved real item pickups over the match duration.
+[PASS] SIM_COMBAT_ELIMINATIONS_OCCURRED: Competitor eliminations occurred following warmup and triggered mass drop.
+
+[PASS] S8 Arena AI Contract & 180s Headless Simulation passed successfully.
+[PASS] SAVE_HAS_MACHINE_PROGRESSION: SaveService defines mass and level persistence
+[PASS] SAVE_HAS_SETTLEMENT_IDEMPOTENCY: SaveService defines settlement idempotency tracking
+[PASS] SAVE_HAS_COIN_MANAGEMENT: SaveService handles coin increment/deduction
+[PASS] SAVE_DATA_PERSISTED: Coins, mass, level persisted
+[PASS] RAW_STORAGE_EXISTS: Underlying storage contains JSON
+[PASS] RESUME_RESTORES_STATE: State correctly resumed
+[PASS] SETTLEMENT_FIRST_CLAIM_SUCCESS: First settlement claim succeeds
+[PASS] SETTLEMENT_IDEMPOTENCY_PREVENTS_DUPLICATE: Duplicate settlement claim rejected with no coin change
+[PASS] ALLOWED_REWARD_PLACEMENT_REGION_DOUBLE_REWARD: REGION_DOUBLE_REWARD is a valid enum value
+[PASS] ALLOWED_REWARD_PLACEMENT_UPGRADE_REFRESH: UPGRADE_REFRESH is a valid enum value
+[PASS] ALLOWED_REWARD_PLACEMENT_MAGNET_RECHARGE: MAGNET_RECHARGE is a valid enum value
+[PASS] ALLOWED_REWARD_PLACEMENT_OFFLINE_DOUBLE: OFFLINE_DOUBLE is a valid enum value
+[PASS] ALLOWED_REWARD_PLACEMENT_MILESTONE_DOUBLE: MILESTONE_DOUBLE is a valid enum value
+[PASS] UNCONFIGURED_AD_UNAVAILABLE: Ad is unavailable when ad unit is missing
+[AdService] Ad unit for REGION_DOUBLE_REWARD is UNAVAILABLE / NOT_CONFIGURED
+[PASS] UNCONFIGURED_AD_DOES_NOT_GRANT_REWARD: No reward granted for unconfigured ad
+[PASS] TRANSACTION_GENERATED: Transaction ID format correct
+[PASS] TRANSACTION_FIRST_COMMIT: First commit succeeds
+[RewardLedger] Prevented duplicate reward for: tx_REGION_DOUBLE_REWARD_1791736592556_hloqdf
+[PASS] TRANSACTION_DUPLICATE_COMMIT_BLOCKED: Duplicate commit blocked by ledger
+[PASS] CONFIGURED_AD_AVAILABLE: Configured ad unit reports available
+[PASS] CANCELLED_AD_NO_REWARD: Cancelled ad does not grant reward
+[PASS] COMPLETED_AD_GRANTS_REWARD: Completed callback grants reward exactly once
+[PASS] PLATFORM_ADAPTER_EXPORTS: All three platform adapters defined
+[PASS] PLATFORM_STORAGE_AND_VIBRATE: Storage, vibration and toast methods implemented across adapters
+[PASS] EXTERNAL_CONFIG_PREFLIGHT_AUDITED: BLOCKED_EXTERNAL_CONFIG confirmed (missing production AppID/AdUnit)
+
+[PASS] All S10 Save, Reward, Ads, and Platform contracts passed.
+====================================================
+S11 Performance Architecture & Contract Validation
+====================================================
+
+[PASS] OBJECT_POOL_CLASS_EXISTS: ObjectPool class is defined
+[PASS] OBJECT_POOL_REUSE_AND_CAP: ObjectPool manages capacity and item release
+[PASS] COLLECTIBLE_BUDGET_CAPPED: Collectible budget is capped at 240
+[PASS] VEHICLE_BUDGET_CAPPED: Vehicle budget is capped at 24
+[PASS] DYNAMIC_RECYCLE_TO_POOL: Cell unload / recycle returns objects to pool
+[PASS] ACTIVE_CELLS_GRID_MANAGED: Active cells are tracked via bounded 2D grid
+[PASS] PROCEDURAL_SUCTION_KINEMATICS: Suction movement is driven via procedural motion calculator instead of hundreds of active rigidbodies
+
+[PASS] S11 Performance static contract verification complete.
+[PASS] 12 design-overlay numeric/matching assertions (NON_RUNTIME; native corner transforms require Creator verification).
+[PASS] 8 panel DOM assertions: reference decode, opacity, toggle, page isolation, stale-report rejection (NOT_CREATOR_RUNTIME).
+[PASS] 8 Home layout contract assertions (NON_RUNTIME; runtime acceptance remains required).
+[PASS] Mode Select layout and real route contract assertions (NON_RUNTIME; runtime acceptance remains required).
+[PASS] Endless HUD authoring and live-data contract assertions (NON_RUNTIME; portrait CDP acceptance remains required).
+[PASS] Arena HUD authoring and live-data contract assertions (NON_RUNTIME; portrait CDP acceptance remains required).
+[PASS] P5 Revive page design contract assertions (NON_RUNTIME; portrait CDP acceptance remains required).
+[PASS] P6 Settlement design contract and data-binding assertions passed.
+[PASS] V4_REFERENCE_SET_PRESENT: 10 files, one page each
+[PASS] V4_INHERITS_V3_01-ARENA-GAMEPLAY: sha256 001609aef3ce matches ui-v3/arena-hud-reference.png
+[PASS] V4_INHERITS_V3_02-REVIVE: sha256 7893895d86d3 matches ui-v3/revive-reference.png
+[PASS] V4_INHERITS_V3_03-MODE-SELECT: sha256 d9dadb61cb97 matches ui-v3/mode-select-reference.png
+[PASS] V4_INHERITS_V3_04-SETTLEMENT: sha256 c11e14b061e4 matches ui-v3/settlement-reference.png
+[PASS] V4_CANVAS_05-HOME: 720x1280
+[PASS] V4_CANVAS_06-ENDLESS-READY: 720x1280
+[PASS] V4_CANVAS_07-ARENA-READY: 720x1280
+[PASS] V4_CANVAS_08-ENDLESS-GAMEPLAY: 720x1280
+[PASS] V4_CANVAS_09-LARGE-TARGET-SUCTION: 720x1280
+[PASS] V4_CANVAS_10-TIER-UPGRADE-FEEDBACK: 720x1280
+[PASS] V4_MANIFEST_TEN_ENTRIES: 10 entries, imageGenerationModel=NONE
+[PASS] V4_MANIFEST_PROVENANCE_SPLIT: 4 inherited masters + 6 deterministic layout renders
+[PASS] V4_NO_GENERATED_ART_CLAIM: no image-generation model is claimed for this set
+[PASS] V4_MANIFEST_MATCHES_ARTIFACTS: all 10 recorded sha256 + byte counts match the files on disk
+[PASS] V4_MASTER_COPY_SOURCE_INTACT: every V3_MASTER_COPY entry still byte-matches its ui-v3 source
+[PASS] V4_REFERENCE_08_SPACE_BUDGET_IN_BAND: open 64.5% / environment 19.3% / static 10.4% / dynamic 5.8%
+[PASS] V4_DOC_DESIGN_LOCK: 34966 chars
+[PASS] V4_DOC_DESIGN_LINEAGE: 7535 chars
+[PASS] V4_DOC_UI_GAP_AUDIT: 7035 chars
+[PASS] V4_DOC_GAMEPLAY_COMPOSITION_CONTRACT: 16870 chars
+[PASS] V4_DOC_IMPLEMENTATION_MAP: 17208 chars
+[PASS] V4_READY_ENDLESS_COPY: 06 Endless Ready shows the two locked lines
+[PASS] V4_READY_ARENA_RULES: 07 Arena Ready shows all five rules: • 8 人 / • 3:00 / • 吞噬成长 / • 淘汰弱小玩家 / • 躲避更大玩家
+[PASS] V4_READY_REAL_MAP_PREVIEW: MapPreview is a real drawn preview, not the mode-card artwork
+[PASS] V4_READY_SINGLE_START_ROUTE: only BtnStart starts a run; BtnBack returns
+[PASS] V4_ENDLESS_HUD_MINIMAL: no leaderboard / quest / shop / elimination chrome
+[PASS] V4_ENDLESS_HUD_UPGRADE_WIRED: the upgrade banner is wired into the Endless HUD
+[PASS] V4_ARENA_HUD_UPGRADE_WIRED: the upgrade banner is wired into the Arena HUD
+[PASS] V4_TIER_LOCK_TEXT: lock feedback still reads 需要 LV.X
+[PASS] V4_TIER_LOCK_NO_CONE_HAT: lock feedback is the TierLockWarning Label node, never a cone/hat mesh
+[PASS] V4_TIER_LOCK_NEVER_SWALLOWS: a locked target still cannot enter the formal swallow chain
+[PASS] V4_SUCTION_PHASE_EXPOSED: the real phase chain is readable for runtime evidence
+[PASS] V4_LARGE_TARGET_STRAIN: reference 09 legibility: tier 4/5 visibly fights the pull
+[PASS] V4_UPGRADE_BANNER_COPY: banner shows 升级！ / LV.X <title> / 解锁更大型目标
+[PASS] V4_UPGRADE_BANNER_TRANSIENT: lifetime 2s (lock requires <= 2s, no full-screen page)
+[PASS] V4_UPGRADE_IGNORES_BOTS: a 1v7 match never announces an opponent upgrade
+[PASS] V4_UPGRADE_REUSES_HUD_GLYPH: clones an editor-saved Label instead of building a new glyph path
+[PASS] V4_BOT_IDENTITY_ACCESSOR: presentation-layer listeners can distinguish a bot without private access
+[PASS] V4_HOTSPOT_BAND: hotspot share 0.15 inside 0.10-0.15
+[PASS] V4_SMALL_GROUP_BAND: small-group share 0.3 inside 0.25-0.35
+[PASS] V4_SINGLE_BAND: single share 0.55 inside 0.50-0.60
+[PASS] V4_SPACING_FLOORS: T1 >= 2.5m, T2/T3 >= 4m, T4/T5 >= 8m
+[PASS] V4_TIER_WEIGHTS_DESCENDING: T1 50 / T2 25 / T3 15 / T4 8 / T5 2
+[PASS] V4_ASPIRATIONAL_VISIBLE_TARGETS: a low-level player always sees a T4/T5 it cannot yet swallow
+[PASS] V4_ASPIRATIONAL_LADDER_WEIGHTED: aspirational sampling is weighted T3 4 / T4 3 / T5 1 so the ladder reads T3 > T4 > T5
+[PASS] V4_ASPIRATIONAL_T5_CAPPED: at most one T5 aspirational target per cell
+[PASS] V4_COMPOSITION_DIAGNOSTIC: opening-cell buckets (singles / smallGroups / hotspots) are exposed at runtime
+[PASS] V4_AUTHORED_OPENING_CELL_MEASURED: committed evidence carries the authored opening cell spacing block
+[PASS] V4_AUTHORED_OPENING_CELL_NOT_A_PILE: dense-disc 9 <= 12, nn-median 1 >= 0.5
+[PASS] V4_AUTHORED_CELL_EXCEPTION_DECLARED: contract §4.2 declares the authored opening cell exception by name
+[PASS] V4_AUTHORED_CELL_EXPOSES_T4_T5: the authored opening cell runs the aspirational pass and exposes a T4 and a T5 target
+[PASS] V4_COMPOSITION_MEASUREMENT_DECLARED: both the generator-tag and the proximity measurement are reported
+[PASS] V4_HUD_SAFE_AREA_INSET: both HUDs clamp their edge chrome using the UI camera visible width, not view.getVisibleSize()
+[PASS] V4_MASS_LABEL_NO_BRIDGED_SPACE: neither HUD mass readout contains a space the outline can bridge into a hyphen
+[PASS] V4_NO_ES5_UNSAFE_ITERATOR_SPREAD: no [...x.values()] / [...new Set()] spread that Cocos lowers to a broken [].concat
+[PASS] V4_NO_PARALLEL_SUBSYSTEMS: no UIRouterV2 / HUDV2 / VehicleV2 / SuctionV2 / WorldV2
+[PASS] UI V4 expanded design contract (implementation-level, non-renderer).
+[NOTE] 08 space budget and the ten references still require a real 390x844 runtime capture and a visual review; this test does not claim either.
+[PASS] BOTH_INSTRUMENTS_EXECUTED: probe and budget both returned a measurement
+[PASS] SHARED_GROUND_SAMPLES: probe 2560 === budget 2560
+[PASS] SHARED_SAMPLING_FRAME: grid {"columns":40,"rows":64} and HUD band {"topRatio":0.16,"bottomRatio":0.18} must match, got grid {"columns":40,"rows":64} / band {"topRatio":0.16,"bottomRatio":0.18}
+[PASS] PROBE_COUNTS_ROAD_AS_OCCUPANT: largeEmptyGroundRatio must keep road covered, saw 480 road samples
+[PASS] BUDGET_COUNTS_ROAD_AS_OPEN: road samples must land in the open bucket, probe 480 vs budget 480
+[PASS] ROAD_IS_THE_ONLY_DIVERGENCE: openSamples(2560) - emptyGroundSamples(2080) must equal road samples(480)
+[PASS] DIVERGENCE_DIRECTION: the crowding ratio stays strictly more conservative than the openness budget
+[PASS] BUCKETS_SUM_TO_GROUND: 2560 must equal groundSamples 2560
+[PASS] PROBE_EXCLUDES_RESOURCE_CLUSTERS: clusters must not count as ground coverage, saw occupied 0 and categories {}
+[PASS] BUDGET_COUNTS_RESOURCE_CLUSTERS_AS_STATIC: saw static 20
+[PASS] CLUSTER_DIVERGENCE_IDENTITY: emptyGroundSamples(2560) - openSamples(2540) must equal the static bucket(20)
+[PASS] open-ground instrument divergence contract holds
+[PASS] BOOT_TEMPLATE_WECHATGAME: BOOT_BUNDLES=[world-city,game-art,art-machines]
+[PASS] BOOT_TEMPLATE_BYTEDANCE_MINI_GAME: BOOT_BUNDLES=[world-city,game-art,art-machines]
+[PASS] BOOT_TEMPLATE_WEB_MOBILE: BOOT_BUNDLES=[world-city,game-art,art-machines]
+[PASS] BOOT_TEMPLATES_AGREE: distinct BOOT_BUNDLES sets: world-city+game-art+art-machines
+[PASS] BOOT_AND_RUNTIME_BUNDLES_AGREE: runtime=[world-city] boot=[world-city,game-art,art-machines]
+[PASS] BUNDLE_ROOTS_ENUMERATED: cocos/assets/art/machines=art-machines(mini-game-subpackage) | cocos/assets/art/world/city=world-city(mini-game-subpackage) | cocos/assets/bundles/world-construction=world-construction(mini-game-subpackage) | cocos/assets/game_art=game-art(mini-game-subpackage) | cocos/assets/resources=resources(default)
+[PASS] NO_NESTED_BUNDLE_ROOTS: none nested
+[PASS] CONSTRUCTION_BUNDLE_META_EXISTS: cocos/assets/bundles/world-construction.meta
+[PASS] CONSTRUCTION_BUNDLE_IS_SUBPACKAGE: {"isBundle":true,"bundleConfigID":"mini-game-subpackage","bundleName":"world-construction","priority":10}
+[PASS] CONSTRUCTION_BUNDLE_OWNS_ITS_ASSET: non-meta entries: [majadroid-construction-site.fbx]
+[PASS] CONSTRUCTION_BUNDLE_NOT_IN_BOOT: boot=[world-city,game-art,art-machines]
+[PASS] CONSTRUCTION_LOADER_USES_BUNDLE: landmark loads from its own bundle; no resources.load remains
+[PASS] BOOT_PRELOAD_PRECEDES_RUN: ensureBootBundles() is awaited before cc.game.run()
+[PASS] BOOT_FAILURE_HAS_RETRY: mini-game modal and web overlay both offer Retry
+[PASS] BUILD_PASSES_START_SCENE: headless build writes startScene into the platform config and passes it via configPath
+[PASS] BUILD_ASSERTS_LAUNCH_SCENE: built settings.json launch scene is asserted, not assumed
+[PASS] WECHAT_TEMPLATE_OVERRIDES_LIB_VERSION: build-templates libVersion="widelyUsed"
+[PASS] BUILD_ASSERTS_LIB_VERSION: built project.config.json libVersion is asserted against the DevTools schema
+[PASS] PLATFORM_ADAPTER_EXPOSES_RETRY: 3 implementations (web, WeChat, Douyin)
+[PASS] GAME_MANAGER_SURFACES_REGION_FAILURE: GameManager turns the region-art failure event into a Retry dialog
+[PASS] SERVICE_LOADS_BUNDLE: state=LOADED calls=1
+[PASS] SERVICE_DEDUPES_IN_FLIGHT: loadBundle calls=1
+[PASS] SERVICE_RETRIES_THEN_FAILS: attempts=3 calls=3 state=FAILED
+[PASS] SERVICE_FAILURE_IS_PLAYER_READABLE: 区域资源加载失败：world-city（已尝试 3 次）
+[PASS] SERVICE_FAILED_IS_TERMINAL: calls before=3 after=3
+[PASS] SERVICE_RETRY_RECOVERS: state=LOADED
+[PASS] SERVICE_PRELOAD_REPORTS_WAITING: state=FAILED waiting=1
+[PASS] SERVICE_RELEASE_CLEARS_WAITING: waiting=0
+
+[region-bundle-contract] all checks passed.
+[PASS] UI prefab library contract: 12 real prefabs, 9 textures, 21 declared asset paths, 3 converted cc.Graphics surfaces (NON_RUNTIME; portrait acceptance and the before/after screenshots remain required).
+[PASS] OPENING_CELL_FLAT_TILES_PRESENT: 3 flat tiles in GoldenCityCell.prefab
+[PASS] OPENING_CELL_FLAT_TILES_KEEP_Y_AT_ONE: GroundTile_1=(32,1,32) GroundTile_2=(32,1,32) MainCrossroad=(16,1,16)
+[PASS] DISTRICT_MAPS_PRESENT: 7 district map prefabs
+[PASS] DISTRICT_MAP_CITYCENTER_FLAT_TILES_PRESENT: 5 flat tiles
+[PASS] DISTRICT_MAP_CITYCENTER_NO_GROUND_SLAB: all flat tiles keep Y=1
+[PASS] DISTRICT_MAP_CITYCENTER_MATCHES_OPENING_FOOTPRINT: ground GroundTile_1=(32,1,32) vs reference (32,1,32); crossroad MainCrossroad=(16,1,16) vs reference (16,1,16)
+[PASS] DISTRICT_MAP_CONSTRUCTION_FLAT_TILES_PRESENT: 5 flat tiles
+[PASS] DISTRICT_MAP_CONSTRUCTION_NO_GROUND_SLAB: all flat tiles keep Y=1
+[PASS] DISTRICT_MAP_CONSTRUCTION_MATCHES_OPENING_FOOTPRINT: ground GroundTile_1=(32,1,32) vs reference (32,1,32); crossroad MainCrossroad=(16,1,16) vs reference (16,1,16)
+[PASS] DISTRICT_MAP_PARK_FLAT_TILES_PRESENT: 5 flat tiles
+[PASS] DISTRICT_MAP_PARK_NO_GROUND_SLAB: all flat tiles keep Y=1
+[PASS] DISTRICT_MAP_PARK_MATCHES_OPENING_FOOTPRINT: ground GroundTile_1=(32,1,32) vs reference (32,1,32); crossroad MainCrossroad=(16,1,16) vs reference (16,1,16)
+[PASS] DISTRICT_MAP_PARKING_FLAT_TILES_PRESENT: 5 flat tiles
+[PASS] DISTRICT_MAP_PARKING_NO_GROUND_SLAB: all flat tiles keep Y=1
+[PASS] DISTRICT_MAP_PARKING_MATCHES_OPENING_FOOTPRINT: ground GroundTile_1=(32,1,32) vs reference (32,1,32); crossroad MainCrossroad=(16,1,16) vs reference (16,1,16)
+[PASS] DISTRICT_MAP_RESIDENTIAL_FLAT_TILES_PRESENT: 5 flat tiles
+[PASS] DISTRICT_MAP_RESIDENTIAL_NO_GROUND_SLAB: all flat tiles keep Y=1
+[PASS] DISTRICT_MAP_RESIDENTIAL_MATCHES_OPENING_FOOTPRINT: ground GroundTile_1=(32,1,32) vs reference (32,1,32); crossroad MainCrossroad=(16,1,16) vs reference (16,1,16)
+[PASS] DISTRICT_MAP_SUPERMARKET_FLAT_TILES_PRESENT: 5 flat tiles
+[PASS] DISTRICT_MAP_SUPERMARKET_NO_GROUND_SLAB: all flat tiles keep Y=1
+[PASS] DISTRICT_MAP_SUPERMARKET_MATCHES_OPENING_FOOTPRINT: ground GroundTile_1=(32,1,32) vs reference (32,1,32); crossroad MainCrossroad=(16,1,16) vs reference (16,1,16)
+[PASS] DISTRICT_MAP_WAREHOUSE_FLAT_TILES_PRESENT: 5 flat tiles
+[PASS] DISTRICT_MAP_WAREHOUSE_NO_GROUND_SLAB: all flat tiles keep Y=1
+[PASS] DISTRICT_MAP_WAREHOUSE_MATCHES_OPENING_FOOTPRINT: ground GroundTile_1=(32,1,32) vs reference (32,1,32); crossroad MainCrossroad=(16,1,16) vs reference (16,1,16)
+[PASS] GENERATOR_GROUND_USES_EXPLICIT_Y_ONE: GroundTile_1 is placed with an explicit [32, 1, 32]
+[PASS] GENERATOR_CROSSROAD_USES_EXPLICIT_Y_ONE: MainCrossroad is placed with an explicit [16, 1, 16]
+
+[PASS] District map ground contract holds (26 checks).
+[PASS] sfx_absorb: 180 ms, peak 13762, shape rise
+[PASS] sfx_swallow: 260 ms, peak 13762, shape fall
+[PASS] sfx_upgrade: 700 ms, peak 13762, shape rise
+[PASS] sfx_kill: 320 ms, peak 13762, shape fall
+[PASS] sfx_death: 600 ms, peak 13762, shape fall
+[PASS] sfx_button: 90 ms, peak 13762, shape fall
+[PASS] sfx_reward: 539 ms, peak 13762, shape rise
+[PASS] audio asset contract: 7 real, audible, correctly shaped cues (NON_RUNTIME; the runtime play path is covered by verify:audio).
+
+> minigame-wx-tt-crossplatform@1.0.0 test:authoring
+> node scripts/test_author_golden_city_process_selection.mjs && node scripts/test_authoring_job_routing.mjs && node scripts/test_golden_city_builder_recipe_contract.mjs
+
+author_golden_city process selection: PASS
+[authoring] ignoring pending job test-job: creator-pid-mismatch
+[authoring] TOCTOU: jobId mismatch after rename - restoring pending
+[authoring] claimed job failed post-claim target check: creator-pid-mismatch
+[authoring] TOCTOU: jobId mismatch after rename - restoring pending
+authoring job routing: PASS
+[PASS] Golden City builder recipe semantic coverage (NON_RUNTIME; Creator writeback and portrait acceptance remain required).

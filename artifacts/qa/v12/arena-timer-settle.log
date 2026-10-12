@@ -1,0 +1,13 @@
+
+> minigame-wx-tt-crossplatform@1.0.0 acceptance:v2
+> node scripts/test_cocos_portrait_acceptance.mjs --scope=arena-timer
+
+[build-lock] Acquired build lock for PID 21780 ("acceptance:v2 --scope=arena-timer").
+[acceptance:v2] Building Web Mobile with Cocos Creator 3.8.3...
+[build-lock] Re-entrant lock acquired by PID 21780 (depth: 2, purpose: "Cocos Creator build (web-mobile)").
+[build-lock] Bundle frozen by PID 21780 (digest: 7fae8278, files: 321) for "acceptance:v2 --scope=arena-timer".
+[acceptance:v2] Verifying 390x844...
+[acceptance:v2] FAIL: FAIL_ARENA_TIMER_NEVER_SETTLED: revives=23 gameState=ARENA uiScreen=Arena arena={"running":true,"reason":"RUNNING","elapsedSeconds":178.6798000000702,"remainingSeconds":1.3201999999297982,"durationSeconds":180,"combatWarmupRemainingSeconds":0}
+[acceptance:v2] Report: C:\Users\zyu33\Documents\Codex\2026-09-29\BlackHoleRecycle\artifacts\qa\portrait\acceptance-report.json
+[acceptance:v2] Scoped report: C:\Users\zyu33\Documents\Codex\2026-09-29\BlackHoleRecycle\artifacts\qa\portrait\acceptance-report-arena-timer.json
+[build-lock] Released build lock for PID 21780 ("acceptance:v2 --scope=arena-timer").
