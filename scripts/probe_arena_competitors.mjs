@@ -344,8 +344,9 @@ try {
   const compositionProbe = await page.evaluate(() => {
     const cc = window.cc;
     const scene = cc.director.getScene();
-    const wanted = ['POI_CentralSquare', 'POI_ParkFountain', 'ParkTreeSmall_1',
-      'FlowerbedWest', 'ParkHedgeNorth', 'ParkTreeLarge_3'];
+    const wanted = ['POI_CentralSquare', 'ParkTreeSmall_1',
+      'SupermarketBuilding', 'SupermarketBuildingSouth1', 'SupermarketBuildingSouth5',
+      'SupermarketTreeFarNW', 'SupermarketBoundaryFence'];
     const found = {};
     for (const name of wanted) found[name] = 0;
     let cells = 0;
@@ -354,10 +355,45 @@ try {
       if (found[node.name] !== undefined) found[node.name] += 1;
       for (const child of node.children) walk(child);
     };
+    const placements = [];
+    const collect = (node) => {
+      if (node.name === 'SupermarketBuilding' || node.name.startsWith('SupermarketBuildingSouth')) {
+        const wp = node.worldPosition;
+        placements.push({ name: node.name, active: node.activeInHierarchy,
+          x: Number(wp.x.toFixed(1)), z: Number(wp.z.toFixed(1)) });
+      }
+      for (const child of node.children) collect(child);
+    };
+    collect(scene);
+    const arenaRoot = find(scene, 'ArenaMatchRoot') || null;
+    const competitors = [];
+    if (arenaRoot) {
+      for (const c of arenaRoot.children) {
+        const wp = c.worldPosition;
+        competitors.push({ name: c.name, x: Number(wp.x.toFixed(1)), z: Number(wp.z.toFixed(1)) });
+      }
+    }
+    const playerPos = competitors.find((c) => !c.name.startsWith('ArenaBot_')) || competitors[0] || null;
     walk(scene);
-    return { cells, found };
+    const snapshot = window.__BHR_QA__.snapshot();
+    return {
+      cells,
+      found,
+      // Which source the arena's own cell came from. A prefab edit to a district
+      // map changes nothing if the cell fell back to procedural generation.
+      cellSource: snapshot.world?.currentCellSource ?? null,
+      region: snapshot.world?.currentRegion ?? null,
+      placements: placements.slice(0, 14),
+      player: playerPos,
+      competitors: competitors.slice(0, 3),
+    };
   });
-  console.log(`\n[opening] WorldCell_* nodes in the live tree: ${compositionProbe.cells}`);
+  console.log(`\n[opening] WorldCell_* nodes in the live tree: ${compositionProbe.cells}`
+    + ` | cellSource=${compositionProbe.cellSource} | region=${compositionProbe.region}`);
+  console.log('[opening] player world =', JSON.stringify(compositionProbe.player));
+  for (const p of compositionProbe.placements || []) {
+    console.log('  building', p.name, 'active=' + p.active, 'world=(' + p.x + ',' + p.z + ')');
+  }
   for (const [name, count] of Object.entries(compositionProbe.found)) {
     console.log(`  ${name}: ${count === 0 ? 'ABSENT from the live tree' : `present x${count}`}`);
   }
