@@ -619,6 +619,30 @@ export class GameManager extends Component {
     this.machine.resetMovement();
     // Likewise, every arena's eight competitors begin against a freshly
     // generated resource field instead of a partially consumed endless run.
+    //
+    // V12 PHASE B: starting the arena in the city region was TRIED AND REVERTED.
+    //
+    // The diagnosis stands and is the important part. The world origin is the
+    // special-cased opening cell, and that cell is a PARK -- 27 Park-prefixed
+    // nodes, twelve trees, four fountains, three buildings. DESIGN_07 asks for a
+    // compact city street arena, so the arena was playing the wrong kind of place,
+    // which is why four rounds of tuning its camera and its props never helped.
+    // Which district a cell gets is decided by REGION: themeFor takes
+    // ring = max(|x|,|z|) and returns REGION_THEMES[floor(ring/3)]; city is index
+    // 5, so ring 15..17, and DistrictTemplates maps city to DOWNTOWN. Cell (15,0)
+    // is the nearest cell in it.
+    //
+    // Moving there did produce a street: lane markings, kerbs, crosswalks, brick
+    // buildings and a tower, and every park node left the tree. It also broke the
+    // match. All eight competitors sat at START_MASS for the whole sample -- the
+    // leaderboard read 240kg across the board -- so nothing in that cell was
+    // edible. A cell whose region art and object content are not resident gives a
+    // better-looking arena that cannot be played, and the gameplay loop is P0, so
+    // the origin goes back.
+    //
+    // The next attempt has to land the city region's content as well as its
+    // geometry: confirm the region bundle is resident for that coordinate and that
+    // the cell actually populates, before moving the origin again.
     this.infiniteWorldManager.resetSession(Vec3.ZERO);
     this.setPlayerSimulationPaused(false);
     this.hud?.showScreen('Arena');
