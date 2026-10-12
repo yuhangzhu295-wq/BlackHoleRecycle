@@ -139,14 +139,18 @@ export const BLOB_SHADOW_PROFILE = {
 export const OPENING_CELL_COMPOSITION = {
   /** Nodes deactivated in the instantiated cell. */
   suppress: [
-    // 22x31 px, 1.7 m from the player, overlapping the cluster ring's top edge.
+    // ParkTreeSmall_1 stays suppressed: at 22x31 px AND 1.7 m from the player it
+    // is the one entry whose problem is the player's own silhouette, not its
+    // position in the cell. Moving it would move the overlap.
     'ParkTreeSmall_1',
-    // Sits between the player and the fountain and its foliage reaches the
-    // player's north edge; the single worst readability offender in the audit.
+    // V12 PHASE B: ParkTreeLarge_3 and FlowerbedWest were moved to `relocate` to
+    // test whether the field could be re-filled by rescuing props that were
+    // suppressed for position rather than for being wrong. It was measured and
+    // reverted -- see the note in `relocate`.
     'ParkTreeLarge_3',
-    // 24x45 px about 2 m from the player, and its z overlaps ParkTreeLarge_2.
     'FlowerbedWest',
-    // About 3x12 px at this camera distance: not a readable path.
+    // About 3x12 px at this camera distance: not a readable path. Kept off rather
+    // than scaled because a path read at 3x width is a stripe, not a path.
     'ParkPathStonesWest',
     'ParkPathStonesEast',
     // 4.0m x 1.5m hedge authored at (0, 0, 10.0) directly on the north road
@@ -188,6 +192,22 @@ export const OPENING_CELL_COMPOSITION = {
     // on screen than the original 4 m at 11.5 m. It makes the fountain legible
     // without returning to the overlap that 0.8 was protecting against.
     { name: 'POI_ParkFountain', x: 0, z: -11, scale: 1.3 },
+    // V12 PHASE B tried rescuing ParkTreeLarge_3 and FlowerbedWest here -- both
+    // were suppressed for POSITION rather than for being wrong, so relocating
+    // them at a readable scale looked like the cheap way to put content back.
+    //
+    // MEASURED, THEN REVERTED. Two placements were tried, (7,-14)/(-6,-14) and
+    // (8,-6)/(-8,-6). Neither moved the flat-road share at any of the three sizes
+    // (24.1/27.2/26.1 -> 24.1/27.2/27.5, i.e. inside noise) and neither could be
+    // picked out in the frame. The arithmetic says why: two props of about a
+    // metre in a view covering roughly 40 x 20 m are under 1% of the area, so no
+    // arrangement of individual small props can move that number.
+    //
+    // That is the useful result, and it bounds PHASE B: the field cannot be
+    // re-filled by relocating or rescaling what the cell already contains. It
+    // needs added content at a scale that reads -- building groups and resource
+    // hotspots authored for the arena -- which is Creator scene work, not
+    // composition tuning.
   ],
 } as const;
 
