@@ -155,7 +155,8 @@ def fit_isometric_camera(bounds, width, height, margin=FRAME_MARGIN):
                          f'ortho_scale {camera_data.ortho_scale:.1f}')
 
 
-def render_preview(name, ground_tiles, props, holes, plane_colour, sky):
+def render_preview(name, ground_tiles, props, holes, plane_colour, sky,
+                   width=WIDTH, height=HEIGHT):
     """Assemble, frame on the props, then render at 2x and reduce to 1x."""
     kit.clear_scene()
 
@@ -189,7 +190,7 @@ def render_preview(name, ground_tiles, props, holes, plane_colour, sky):
     bounds = kit.world_bounds(everything)
     if bounds is None:
         raise SystemExit(f'{name}: nothing imported, refusing to render a blank asset')
-    fit_isometric_camera(bounds, WIDTH, HEIGHT)
+    fit_isometric_camera(bounds, width, height)
     # Less light than the ornament recipes use. At the shared 1.25/3.2 a flat
     # base colour is washed to pastel and the ground plane comes back brighter
     # than the sky, which is what made the first candidate read as a thin street
@@ -200,7 +201,7 @@ def render_preview(name, ground_tiles, props, holes, plane_colour, sky):
     scratch = os.path.join(OUT_DIR, '_supersample')
     os.makedirs(scratch, exist_ok=True)
     kit.OUT = scratch
-    kit.render(name, WIDTH, HEIGHT, transparent=False)
+    kit.render(name, width, height, transparent=False)
 
     source = os.path.join(scratch, name)
     target = os.path.join(OUT_DIR, name)
@@ -209,7 +210,7 @@ def render_preview(name, ground_tiles, props, holes, plane_colour, sky):
     # the Standard view transform, and `save_render` would apply it a second
     # time and wash the colours out.
     image = bpy.data.images.load(source)
-    image.scale(WIDTH, HEIGHT)
+    image.scale(width, height)
     image.filepath_raw = target
     image.file_format = 'PNG'
     image.save()
@@ -329,6 +330,58 @@ def arena():
     )
 
 
+def revive_hero():
+    """The revive page's centre: the hole mid-absorb, seen close.
+
+    DESIGN_05 puts an illustration here -- the hole taking a city block in, with
+    buildings and boxes tumbling towards it -- where the page previously reused
+    `home_hero_blackhole.png`, a lone hole on a clear frame. Same city kit and the
+    same `add_black_hole` as everything else, framed square at 480 so it matches
+    the 246x246 ReviveBlackHoleHero node's aspect.
+
+    The cargo is raised and tilted on purpose: a hole in an intact street reads as
+    a hole in a street, while cargo caught mid-fall is what makes it read as
+    absorbing.
+    """
+    render_preview(
+        'revive_hero_absorbing.png',
+        ground_tiles=[
+            (kit.CROSS, 0.0, 0.0, 0.0, GROUND),
+            (kit.ROAD, GROUND, 0.0, 0.0, GROUND),
+            (kit.ROAD, -GROUND, 0.0, 0.0, GROUND),
+            (kit.ROAD, 0.0, GROUND, math.pi / 2, GROUND),
+            (kit.ROAD, 0.0, -GROUND, math.pi / 2, GROUND),
+        ],
+        props=[
+            (kit.SHOP, -11.0, 8.6, math.pi, BUILDING_SCALE, 0.0, (0.36, 0.58, 0.92)),
+            (kit.SHOP, 0.0, 10.4, math.pi, BUILDING_SCALE, 0.0, (0.94, 0.34, 0.32)),
+            (kit.SHOP, 11.4, 8.4, math.pi, BUILDING_SCALE, 0.0, (0.30, 0.78, 0.36)),
+            (kit.SKYSCRAPER, -9.6, -1.0, 0.0, BUILDING_SCALE, 0.0, (0.24, 0.70, 0.86)),
+            (kit.SKYSCRAPER, 9.8, -0.6, 0.0, BUILDING_SCALE, 0.0, (0.62, 0.42, 0.94)),
+            (kit.TREE_L, -8.0, -7.4, 0.0, TREE_SCALE, 0.0),
+            (kit.TREE_L, 8.4, -7.6, 0.0, TREE_SCALE, 0.0),
+            (kit.TREE_S, -13.4, 4.6, 0.0, TREE_SCALE, 0.0),
+            (kit.TREE_S, 13.6, 4.4, 0.0, TREE_SCALE, 0.0),
+            (kit.TRUCK, -9.4, -2.4, math.pi / 2, PROP, 0.0),
+            (kit.VAN, 9.6, 2.4, -math.pi / 2, PROP, 0.0),
+            (kit.SEDAN, 5.4, -5.0, math.pi / 2, PROP, 0.0),
+            (CARGO_BOX, 3.6, 2.6, 0.55, CARGO_SCALE, 1.30),
+            (CARGO_BOX, -3.8, -2.8, -0.45, CARGO_SCALE, 1.15),
+            (CARGO_BOX, 1.2, 5.4, 0.20, CARGO_SCALE, 1.70),
+            (CARGO_BOX, -5.2, 3.4, 0.30, CARGO_SCALE, 0.95),
+            (CARGO_BOOKS, -1.8, 4.2, 0.30, CARGO_SCALE, 1.45),
+            (CARGO_MONITOR, 4.8, -3.8, -0.35, CARGO_SCALE, 1.05),
+            (kit.CONE, 5.6, 4.6, 0.0, CONE_SCALE, 0.0),
+            (kit.CONE, -6.2, -4.4, 0.0, CONE_SCALE, 0.0),
+        ],
+        holes=[(0.0, 0.0, 5.6, (0.44, 0.20, 1.0))],
+        plane_colour=(0.46, 0.52, 0.44),
+        sky=(0.36, 0.68, 0.98),
+        width=480,
+        height=480,
+    )
+
+
 def main():
     argv = sys.argv
     selection = argv[argv.index('--') + 1] if '--' in argv else 'all'
@@ -336,6 +389,8 @@ def main():
         city()
     if selection in ('arena', 'all'):
         arena()
+    if selection in ('revive', 'all'):
+        revive_hero()
 
 
 if __name__ == '__main__':
