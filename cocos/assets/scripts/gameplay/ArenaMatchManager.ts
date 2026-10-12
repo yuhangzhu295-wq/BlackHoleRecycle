@@ -181,6 +181,15 @@ const SEPARATION_RADIUS = 3.2;
 const SEPARATION_STRENGTH = 0.9;
 const START_MASS = 240;
 const ARENA_RADIUS = 44;
+/**
+ * How far from the centre the seven rivals start. See `spawnPosition`.
+ *
+ * 14 units puts adjacent rivals about 12 apart -- far enough that the separation
+ * steering never has to fight the spawn ring, and close enough that most of the
+ * field's authored content (the square, fountain and flowerbeds sit at +-9 to
+ * +-14) is between or beside competitors rather than beyond them.
+ */
+const ARENA_SPAWN_RADIUS = 14;
 const GRAVITY_RANGE = 4.8;
 /** How far from the local player the DEV candidate trace bothers to record. */
 const TRACE_RADIUS = 15;
@@ -951,10 +960,20 @@ export class ArenaMatchManager extends Component {
   private spawnPosition(slot: number): Vec3 {
     if (slot === 0) return new Vec3(0, 0, 0);
     const angle = (Math.PI * 2 * (slot - 1)) / 7 + Math.PI * 0.13;
-    // Start within the portrait play corridor so the actual seven-bot roster
-    // is visible in the opening frame.  Spawn shields still prevent an
-    // immediate combat outcome, and movement/resource rules are unchanged.
-    return new Vec3(Math.cos(angle) * 5.8, 0, Math.sin(angle) * 5.8);
+    // V12 PHASE B. This was 5.8, chosen so the whole seven-bot roster fit the
+    // opening frame. Measured, that put all eight competitors inside a 12-unit
+    // circle in the middle of an arena whose play radius is 44, which is why the
+    // opening frame read as a knot of holes on an empty plane: the competitors
+    // occupied about 3% of the play area and the rest of the field was bare.
+    //
+    // The roster-fits-the-frame rule was also already failing at 5.8: three of
+    // the seven (bot-1 at nx 1.069, bot-2 at 0.918, bot-7 at 0.862) projected off
+    // screen anyway. Since the constraint was not being met, it is not worth
+    // holding the composition to it. ARENA_SPAWN_RADIUS spreads the field so the
+    // opening frame shows a competition across an arena rather than a pile, which
+    // is what DESIGN_07's distributed AI spawn points ask for. Anything the
+    // camera does not cover keeps its off-screen direction arrow.
+    return new Vec3(Math.cos(angle) * ARENA_SPAWN_RADIUS, 0, Math.sin(angle) * ARENA_SPAWN_RADIUS);
   }
 
   private levelForMass(mass: number): number {
