@@ -12,30 +12,51 @@ import it without importing each other.
 # rounded corners and outlines clean edges without a vector rasteriser.
 SS = 4
 
-# --- palette, sampled from the adopted references ---------------------------
-# field: 01-modesel-and-home-language.png, vertical ramp at x = centre
+# --- palette ----------------------------------------------------------------
+# V12: the base roles below now come from the SEVEN NEW DESIGN SHEETS, which the
+# user named as the current visual target, rather than from the V9.5 adopted
+# renders this file originally sampled. The new sheets print their bases as
+# labelled swatches, so these are read, not eyeballed:
+#
+#   DESIGN_01 色彩与风格: 天空蓝 #4EC5FF, 道路灰 #8A9BA8, 草地绿 #7ED957,
+#                         主角色 #9B5CFF, 亮暖黄 #FFD60A, 深蓝 UI #1F2A44
+#   DESIGN_02 色彩方案:   天空蓝 #6EC5FF, 能量紫 #8B5CFF, 活力黄 #FFD44D,
+#                         深蓝灰 #172A4A, 浅背景 #EAF2FF
+#
+# The two sheets disagree on five of six roles. Per V12_DESIGN_REFERENCE_MANIFEST
+# section 2 the resolution is DESIGN_01 as the spec sheet, with DESIGN_02's
+# #EAF2FF taken as the panel base because 01 does not give one.
+#
+# ONLY the roles the sheets state outright are changed here. The derived partners
+# (SKY_TOP/BOTTOM, NAVY_DEEP/LIFT, YELLOW_HI/EDGE, PURPLE_RIBBON/DEEP/HI,
+# BOARD_CYAN) are left alone on purpose: the sheets do not give them, and shifting
+# them by the base's raw RGB delta was tried on paper and distorts hue -- PURPLE's
+# delta applied to PURPLE_DEEP turns a deep purple into a grey-navy, because the
+# delta is dominated by the base's saturation, which the deep shade does not have.
+# Deriving them properly means sampling the new sheets for each partner the way
+# the original values were sampled, which is a separate pass.
 SKY_TOP = '#b3eefd'
-SKY_MID = '#52d0fe'
+SKY_MID = '#4ec5ff'
 SKY_BOTTOM = '#1aa4f5'
-# brand plate and display type: 01-modesel..., brand band
-NAVY_PLATE = '#031d4d'
+# brand plate and display type: DESIGN_01 深蓝 UI
+NAVY_PLATE = '#1f2a44'
 NAVY_DEEP = '#04235c'
 NAVY_LIFT = '#123a7d'
 GOLD = '#fbe572'
 GOLD_LIGHT = '#fcf3bb'
-# primary capsule: 01-modesel..., primary capsule region
-YELLOW = '#fec303'
+# primary capsule: DESIGN_01 亮暖黄
+YELLOW = '#ffd60a'
 YELLOW_HI = '#fcf8d9'
 YELLOW_EDGE = '#fee88e'
 BROWN_LABEL = '#58351a'
-# secondary capsule and ribbon: 02-settlement.png
-PURPLE = '#8a2cf7'
+# secondary capsule and ribbon: DESIGN_01 主角色 / 能量紫
+PURPLE = '#9b5cff'
 PURPLE_RIBBON = '#8f48cd'
 PURPLE_DEEP = '#220982'
 PURPLE_HI = '#c9a4ff'
-# settlement board: 02-settlement.png
+# settlement board: DESIGN_02 浅背景
 BOARD_CYAN = '#39bafa'
-BOARD_PANEL = '#e8f6fb'
+BOARD_PANEL = '#eaf2ff'
 ROW_LOCAL = '#d8fcd5'
 REWARD_GOLD = '#fef0a5'
 REWARD_EDGE = '#cc7d12'
