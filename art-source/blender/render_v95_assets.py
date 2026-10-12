@@ -135,11 +135,21 @@ def add_black_hole(x, y, radius=0.9, ring_colour=(0.42, 0.24, 1.0), name='hole')
     emission = bpy.data.materials.new(f'{name}-ring-mat')
     emission.use_nodes = True
     ring_shader = principled_of(emission)
-    ring_shader.inputs['Base Color'].default_value = (*ring_colour, 1.0)
+    # The rim is emissive-dominant on purpose. With the full-strength colour as
+    # Base Color the scene lights it too, and the lit contribution is nearly
+    # white, so the band rendered (209,170,255) -- a pale lilac -- from a base of
+    # (92,46,250). Measured: dropping emission alone only moved saturation from 73
+    # to 85, because the wash comes from the base, not the emission. A tenth of
+    # the colour as base keeps the scene's contribution small so the emission
+    # carries the hue, which is what the design sheets show.
+    ring_shader.inputs['Base Color'].default_value = (ring_colour[0] * 0.1, ring_colour[1] * 0.1, ring_colour[2] * 0.1, 1.0)
     ring_shader.inputs['Emission Color'].default_value = (*ring_colour, 1.0)
-    # Low enough that the ring keeps its colour: at 3.5 under the Standard
-    # view transform every channel clipped and the ring rendered white.
-    ring_shader.inputs['Emission Strength'].default_value = 1.30
+    # V12: was 1.30, which kept the ring visible but washed its colour -- at that
+    # strength the blue channel reaches 1.0 and clips, so the design's saturated
+    # violet rendered as pale lilac. The earlier note is still the right warning
+    # in the other direction: 3.5 clipped every channel and the ring went white.
+    # 0.95 sits under the clip for this hue and keeps it a violet band.
+    ring_shader.inputs['Emission Strength'].default_value = 0.95
     ring.data.materials.append(emission)
     return [sphere, ring]
 
