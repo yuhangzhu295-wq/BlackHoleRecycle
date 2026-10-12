@@ -295,6 +295,21 @@ export const CAMERA_PROFILE = {
       new Vec3(0, 63.0, 58.3),   // LV5: distance 85.8m (2.95x) -> playerWidthRatio ~0.42
     ],
   },
+  // V12 PHASE B: tightening this was tried and MEASURED, then reverted.
+  //
+  // (0, 36, 22) -- 42.2 m, everything about 22% larger -- looked like the obvious
+  // fix for props that were too small to read and a play view that was 27% one
+  // flat road colour. It failed on the measurement, in both directions:
+  //
+  //   flat-road share, three sizes: 23.7/28.1/27.8 -> 30.7/30.7/31.5
+  //   rivals on screen: 7 spread across the field -> 2, the other 5 arrowed off
+  //
+  // Zooming in aims the camera at the empty near field and pushes the authored
+  // props (square, fountain, flowerbeds at plus or minus 9 to 14) off the edges,
+  // so the flat share goes UP, not down; and five of seven opponents leave the
+  // frame. It trades both the composition and the P0 requirement of seeing the
+  // opponents for larger props. So the distance stays, and PHASE B's lever is the
+  // field's content and scale, not the camera.
   arena: { offset: new Vec3(0, 44.0, 27.0), pitchDegrees: -55 },
 } as const;
 
