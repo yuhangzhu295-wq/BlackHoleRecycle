@@ -57,6 +57,21 @@ const DISTRICTS: Readonly<Record<DistrictKind, DistrictTemplate>> = {
       { id: 'cart-return-litter', label: '入口散落物', center: [13, -12], preferredTypes: ['water_bottle', 'soda_can', 'book_stack', 'chair'] },
       { id: 'produce-discard', label: '生鲜遗留物', center: [-13, 13], preferredTypes: ['apple', 'apple', 'trash_bag', 'monitor'] },
       { id: 'parking-recycling', label: '停车区回收物', center: [14, 14], preferredTypes: ['battery', 'water_bottle', 'cardboard_box', 'small_table'] },
+      // V12 PHASE B. The four authored clusters above all sit at the cell's
+      // corners, +-13 to +-14, and the arena camera shows roughly +-20 of ground.
+      // That puts every one of them at the frame's edge and leaves the middle --
+      // where the player and the seven rivals spawn -- bare, which is what the
+      // opening frame actually showed: a road plane with props only around the
+      // border.
+      //
+      // These four sit at +-7, so DESIGN_07's "出生点附近必有可吞目标" holds: a
+      // competitor that spawns and drives outward meets food well before the
+      // corners. They are added to this district only; the corner clusters and
+      // every other district are untouched.
+      { id: 'trolley-litter', label: '购物车散落物', center: [-7, -7], preferredTypes: ['soda_can', 'paper_ball', 'cardboard_box'] },
+      { id: 'basket-spill', label: '购物篮翻倒', center: [7, -7], preferredTypes: ['water_bottle', 'apple', 'trash_bag'] },
+      { id: 'checkout-discard', label: '收银台遗留物', center: [-7, 7], preferredTypes: ['paper_ball', 'book_stack', 'soda_can'] },
+      { id: 'entrance-litter', label: '正门散落物', center: [7, 7], preferredTypes: ['cardboard_box', 'paint_bucket', 'battery'] },
     ],
   },
   WAREHOUSE: {
