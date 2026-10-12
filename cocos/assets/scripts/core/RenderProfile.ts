@@ -175,7 +175,19 @@ export const OPENING_CELL_COMPOSITION = {
    */
   relocate: [
     { name: 'POI_CentralSquare', x: -9, z: -9, scale: 1.6 },
-    { name: 'POI_ParkFountain', x: 0, z: -11, scale: 0.8 },
+    // V12 PHASE B. This was 0.8, and the two values pull in opposite directions
+    // once you read why. The 0.8 came from the fountain's ORIGINAL position at
+    // (0, 0, 7), about 11.5 m from the camera, where its authored 4 m spanned the
+    // lower frame and covered the joystick. The relocate below already fixes that
+    // by distance: at (0, -11) it is roughly 29.5 m from the camera, about 2.5x
+    // further, so it lands far smaller on screen than the shape that caused the
+    // complaint -- and then 0.8 shrank it again, leaving the park's centrepiece
+    // too small to read in the one area DESIGN_07 calls the north park.
+    //
+    // 1.3 is 5.2 m across at 2.5x the distance, so it is still markedly smaller
+    // on screen than the original 4 m at 11.5 m. It makes the fountain legible
+    // without returning to the overlap that 0.8 was protecting against.
+    { name: 'POI_ParkFountain', x: 0, z: -11, scale: 1.3 },
   ],
 } as const;
 
