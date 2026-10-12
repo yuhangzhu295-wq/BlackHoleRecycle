@@ -2806,7 +2806,16 @@ async function verifyArenaAiRuntime(cdp, page, canvasRect) {
   let joystick = pointForVisibleNode(canvasRect, current, current.ui?.arenaHUD?.joystick, 'ARENA_AI_JOYSTICK');
   let touchHeld = false;
   let reviveCount = 0;
-  const deadline = Date.now() + 210000;
+  // 180 s match plus startup. The budget was 210000, i.e. 30 s of slack, and the
+  // failure it produced is worth reading carefully because it is not a product
+  // fault: the payload showed elapsedSeconds 173.6 of durationSeconds 180 with
+  // running still true, so the match was six seconds short of its natural end
+  // when the wait expired. The arena was working; the budget was wrong. 180 s of
+  // match plus roughly 36 s of build, navigation and load needs more than 210 s,
+  // so this is 300000. The assertion itself is untouched -- it still requires
+  // SETTLEMENT with reason TIME, so a match that genuinely fails to end still
+  // fails here.
+  const deadline = Date.now() + 300000;
   try {
     while (Date.now() < deadline) {
       if (current.gameState === 'SETTLEMENT' && current.arena?.reason === 'TIME') break;

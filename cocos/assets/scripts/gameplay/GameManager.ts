@@ -28,6 +28,25 @@ import { audioDirector, installAudioDirector } from '../audio/AudioDirector';
 
 const { ccclass, property } = _decorator;
 
+/**
+ * Where an Arena match is played. See the comment at the call site for the full
+ * reasoning; the short version is that the world origin's cell is a park, and
+ * DESIGN_07 asks for a commercial city block that a level-1 roster can actually
+ * eat.
+ *
+ * Cell (6, 0): ring = max(6,0) = 6, and InfiniteWorldManager.themeFor returns
+ * REGION_THEMES[floor(6/3)] = REGION_THEMES[2], which is 'supermarket'.
+ * DistrictTemplates maps it to SUPERMARKET -- DESIGN_07's commercial street --
+ * and its availableTiers are T1..T4, so a START_MASS/T1 roster has food.
+ *
+ * The neighbouring choice is recorded because it failed: cell (15,0) is the city
+ * region and renders a proper street, but the city region's tiers are T3..T5, so
+ * nothing in it is edible at level 1 and all eight competitors sat at START_MASS.
+ *
+ * CELL_SIZE is 64 m, so cell (6,0) is world (384, 0).
+ */
+const ARENA_WORLD_ORIGIN = new Vec3(384, 0, 0);
+
 @ccclass('GameManager')
 export class GameManager extends Component {
   @property(BlackHoleMachine)
@@ -615,35 +634,30 @@ export class GameManager extends Component {
     this.sessionStartCoins = this.currentCoins;
     this.machine.node.active = true;
     this.machine.tagExternalPositionWrite('ROUND_START');
-    this.machine.node.setPosition(0, 0, 0);
+    this.machine.node.setPosition(ARENA_WORLD_ORIGIN);
     this.machine.resetMovement();
     // Likewise, every arena's eight competitors begin against a freshly
     // generated resource field instead of a partially consumed endless run.
+    // V12 PHASE B: the same origin as the player, so the roster lands in the
+    // district rather than at the world origin.
     //
-    // V12 PHASE B: starting the arena in the city region was TRIED AND REVERTED.
+    // Why the origin had to move. The world origin is the special-cased opening
+    // cell, and that cell is a PARK -- 27 Park-prefixed nodes, twelve trees, four
+    // fountains and three buildings. DESIGN_07 asks for a commercial city block,
+    // so the arena was playing the wrong kind of place, which is why four rounds
+    // of tuning its camera and its props never moved the picture.
     //
-    // The diagnosis stands and is the important part. The world origin is the
-    // special-cased opening cell, and that cell is a PARK -- 27 Park-prefixed
-    // nodes, twelve trees, four fountains, three buildings. DESIGN_07 asks for a
-    // compact city street arena, so the arena was playing the wrong kind of place,
-    // which is why four rounds of tuning its camera and its props never helped.
-    // Which district a cell gets is decided by REGION: themeFor takes
-    // ring = max(|x|,|z|) and returns REGION_THEMES[floor(ring/3)]; city is index
-    // 5, so ring 15..17, and DistrictTemplates maps city to DOWNTOWN. Cell (15,0)
-    // is the nearest cell in it.
+    // Why the FIRST attempt failed, recorded so it is not repeated. Cell (15,0) is
+    // the city region and does render a street -- lane markings, kerbs, crosswalks,
+    // brick buildings, a tower, and every park node gone from the live tree. It
+    // also left all eight competitors at START_MASS for the whole sample, because
+    // the city region's availableTiers are T3..T5 and an arena roster starts at
+    // level 1 with maxTier T1. Nothing in that cell was edible. A better-looking
+    // arena that cannot be played is not progress.
     //
-    // Moving there did produce a street: lane markings, kerbs, crosswalks, brick
-    // buildings and a tower, and every park node left the tree. It also broke the
-    // match. All eight competitors sat at START_MASS for the whole sample -- the
-    // leaderboard read 240kg across the board -- so nothing in that cell was
-    // edible. A cell whose region art and object content are not resident gives a
-    // better-looking arena that cannot be played, and the gameplay loop is P0, so
-    // the origin goes back.
-    //
-    // The next attempt has to land the city region's content as well as its
-    // geometry: confirm the region bundle is resident for that coordinate and that
-    // the cell actually populates, before moving the origin again.
-    this.infiniteWorldManager.resetSession(Vec3.ZERO);
+    // Cell (6,0) resolves both: SUPERMARKET is DESIGN_07's commercial street, and
+    // T1..T4 means a level-1 roster has food.
+    this.infiniteWorldManager.resetSession(ARENA_WORLD_ORIGIN);
     this.setPlayerSimulationPaused(false);
     this.hud?.showScreen('Arena');
     // Disable save-write for the player machine during the entire arena match.
