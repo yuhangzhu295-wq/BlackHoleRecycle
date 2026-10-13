@@ -40,6 +40,15 @@ function rankTitle(rank: number, kills: number): string {
   return '萌新黑洞';
 }
 
+/**
+ * `ArenaResult` sits on two different surfaces. In Arena the leaderboard panel is
+ * visible and dark, and the line falls inside it; in Endless that panel is hidden
+ * and the line sits on the light card. Sampled from DESIGN_06 for the dark case
+ * and kept at the authored card colour for the light one.
+ */
+const RESULT_ON_DARK_BOARD: readonly [number, number, number] = [202, 215, 244];
+const RESULT_ON_LIGHT_CARD: readonly [number, number, number] = [77, 54, 109];
+
 @ccclass('SettlementPageController')
 export class SettlementPageController extends Component {
   private bindings: Array<[Button, () => void]> = [];
@@ -113,6 +122,7 @@ export class SettlementPageController extends Component {
     // composition choice rather than a contract change.
     // A summary line, not a restatement of one card.
     this.setLabel('ArenaResult', `吞噬 ${Math.max(0, absorbed)} 件 · 最终质量 ${Math.round(Math.max(0, mass))} kg`);
+    this.setLabelColour('ArenaResult', ...RESULT_ON_LIGHT_CARD);
     // A panel and its caption/value labels are siblings, not parent and children,
     // so moving a panel alone leaves its text behind -- which is exactly what
     // happened the first time this was written. The authored offsets are caption
@@ -162,6 +172,7 @@ export class SettlementPageController extends Component {
     // does: the size of the field. Mass stays in the stat card rather than being
     // repeated here.
     this.setLabel('ArenaResult', `共 ${snapshot.competitorCount} 人参赛 · 击败 ${Math.max(0, snapshot.localKills)} 名对手`);
+    this.setLabelColour('ArenaResult', ...RESULT_ON_DARK_BOARD);
     this.setLabel('ArenaStatMassValue', `${Math.round(snapshot.localMass)} kg`);
     this.setLabel('ArenaStatKillsValue', `${snapshot.localKills} 次`);
     this.setLabel('ArenaStatTimeValue', this.formatDuration(snapshot.elapsedSeconds));
@@ -260,6 +271,19 @@ export class SettlementPageController extends Component {
   private setLabel(name: string, value: string): void {
     const label = this.findNode(name)?.getComponent(Label);
     if (label) label.string = value;
+  }
+
+  /**
+   * Set a label's colour at runtime.
+   *
+   * `ArenaResult` is the one line that moves between surfaces: in Arena it sits
+   * INSIDE the dark leaderboard panel, and in Endless the panel is hidden and it
+   * sits on the light card. One serialized colour cannot be legible on both --
+   * dark on the dark panel was unreadable, which is how this was found.
+   */
+  private setLabelColour(name: string, r: number, g: number, b: number): void {
+    const label = this.findNode(name)?.getComponent(Label);
+    if (label) label.color = new Color(r, g, b, 255);
   }
 
   /**

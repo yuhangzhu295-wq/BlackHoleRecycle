@@ -41940,13 +41940,7 @@
     "_customMaterial": null,
     "_srcBlendFactor": 2,
     "_dstBlendFactor": 4,
-    "_color": {
-      "__type__": "cc.Color",
-      "r": 242,
-      "g": 237,
-      "b": 255,
-      "a": 255
-    },
+    "_color": {"__type__": "cc.Color", "r": 26, "g": 46, "b": 88, "a": 255},
     "_spriteFrame": {
       "__uuid__": "c627fa6b-2313-4904-87b4-b80f0837219a@f9941",
       "__expectedType__": "cc.SpriteFrame"
@@ -42181,13 +42175,7 @@
     "_customMaterial": null,
     "_srcBlendFactor": 2,
     "_dstBlendFactor": 4,
-    "_color": {
-      "__type__": "cc.Color",
-      "r": 255,
-      "g": 255,
-      "b": 255,
-      "a": 230
-    },
+    "_color": {"__type__": "cc.Color", "r": 25, "g": 44, "b": 83, "a": 255},
     "_spriteFrame": {
       "__uuid__": "c627fa6b-2313-4904-87b4-b80f0837219a@f9941",
       "__expectedType__": "cc.SpriteFrame"
@@ -42531,13 +42519,7 @@
     "_customMaterial": null,
     "_srcBlendFactor": 2,
     "_dstBlendFactor": 4,
-    "_color": {
-      "__type__": "cc.Color",
-      "r": 56,
-      "g": 42,
-      "b": 82,
-      "a": 255
-    },
+    "_color": {"__type__": "cc.Color", "r": 234, "g": 240, "b": 255, "a": 255},
     "_string": "选手 1",
     "_horizontalAlign": 0,
     "_verticalAlign": 1,
@@ -42663,13 +42645,7 @@
     "_customMaterial": null,
     "_srcBlendFactor": 2,
     "_dstBlendFactor": 4,
-    "_color": {
-      "__type__": "cc.Color",
-      "r": 101,
-      "g": 82,
-      "b": 125,
-      "a": 255
-    },
+    "_color": {"__type__": "cc.Color", "r": 234, "g": 240, "b": 255, "a": 255},
     "_string": "0 kg · 0 淘汰",
     "_horizontalAlign": 2,
     "_verticalAlign": 1,
@@ -42795,13 +42771,7 @@
     "_customMaterial": null,
     "_srcBlendFactor": 2,
     "_dstBlendFactor": 4,
-    "_color": {
-      "__type__": "cc.Color",
-      "r": 255,
-      "g": 255,
-      "b": 255,
-      "a": 230
-    },
+    "_color": {"__type__": "cc.Color", "r": 25, "g": 44, "b": 83, "a": 255},
     "_spriteFrame": {
       "__uuid__": "c627fa6b-2313-4904-87b4-b80f0837219a@f9941",
       "__expectedType__": "cc.SpriteFrame"
@@ -43145,13 +43115,7 @@
     "_customMaterial": null,
     "_srcBlendFactor": 2,
     "_dstBlendFactor": 4,
-    "_color": {
-      "__type__": "cc.Color",
-      "r": 56,
-      "g": 42,
-      "b": 82,
-      "a": 255
-    },
+    "_color": {"__type__": "cc.Color", "r": 234, "g": 240, "b": 255, "a": 255},
     "_string": "选手 2",
     "_horizontalAlign": 0,
     "_verticalAlign": 1,
@@ -43277,13 +43241,7 @@
     "_customMaterial": null,
     "_srcBlendFactor": 2,
     "_dstBlendFactor": 4,
-    "_color": {
-      "__type__": "cc.Color",
-      "r": 101,
-      "g": 82,
-      "b": 125,
-      "a": 255
-    },
+    "_color": {"__type__": "cc.Color", "r": 234, "g": 240, "b": 255, "a": 255},
     "_string": "0 kg · 0 淘汰",
     "_horizontalAlign": 2,
     "_verticalAlign": 1,
@@ -43409,13 +43367,7 @@
     "_customMaterial": null,
     "_srcBlendFactor": 2,
     "_dstBlendFactor": 4,
-    "_color": {
-      "__type__": "cc.Color",
-      "r": 255,
-      "g": 255,
-      "b": 255,
-      "a": 230
-    },
+    "_color": {"__type__": "cc.Color", "r": 25, "g": 44, "b": 83, "a": 255},
     "_spriteFrame": {
       "__uuid__": "c627fa6b-2313-4904-87b4-b80f0837219a@f9941",
       "__expectedType__": "cc.SpriteFrame"
@@ -43759,13 +43711,7 @@
     "_customMaterial": null,
     "_srcBlendFactor": 2,
     "_dstBlendFactor": 4,
-    "_color": {
-      "__type__": "cc.Color",
-      "r": 56,
-      "g": 42,
-      "b": 82,
-      "a": 255
-    },
+    "_color": {"__type__": "cc.Color", "r": 234, "g": 240, "b": 255, "a": 255},
     "_string": "选手 3",
     "_horizontalAlign": 0,
     "_verticalAlign": 1,
@@ -43891,13 +43837,7 @@
     "_customMaterial": null,
     "_srcBlendFactor": 2,
     "_dstBlendFactor": 4,
-    "_color": {
-      "__type__": "cc.Color",
-      "r": 101,
-      "g": 82,
-      "b": 125,
-      "a": 255
-    },
+    "_color": {"__type__": "cc.Color", "r": 234, "g": 240, "b": 255, "a": 255},
     "_string": "0 kg · 0 淘汰",
     "_horizontalAlign": 2,
     "_verticalAlign": 1,
@@ -44023,13 +43963,7 @@
     "_customMaterial": null,
     "_srcBlendFactor": 2,
     "_dstBlendFactor": 4,
-    "_color": {
-      "__type__": "cc.Color",
-      "r": 255,
-      "g": 255,
-      "b": 255,
-      "a": 230
-    },
+    "_color": {"__type__": "cc.Color", "r": 25, "g": 44, "b": 83, "a": 255},
     "_spriteFrame": {
       "__uuid__": "c627fa6b-2313-4904-87b4-b80f0837219a@f9941",
       "__expectedType__": "cc.SpriteFrame"
@@ -44373,13 +44307,7 @@
     "_customMaterial": null,
     "_srcBlendFactor": 2,
     "_dstBlendFactor": 4,
-    "_color": {
-      "__type__": "cc.Color",
-      "r": 56,
-      "g": 42,
-      "b": 82,
-      "a": 255
-    },
+    "_color": {"__type__": "cc.Color", "r": 234, "g": 240, "b": 255, "a": 255},
     "_string": "选手 4",
     "_horizontalAlign": 0,
     "_verticalAlign": 1,
@@ -44505,13 +44433,7 @@
     "_customMaterial": null,
     "_srcBlendFactor": 2,
     "_dstBlendFactor": 4,
-    "_color": {
-      "__type__": "cc.Color",
-      "r": 101,
-      "g": 82,
-      "b": 125,
-      "a": 255
-    },
+    "_color": {"__type__": "cc.Color", "r": 234, "g": 240, "b": 255, "a": 255},
     "_string": "0 kg · 0 淘汰",
     "_horizontalAlign": 2,
     "_verticalAlign": 1,
@@ -44637,13 +44559,7 @@
     "_customMaterial": null,
     "_srcBlendFactor": 2,
     "_dstBlendFactor": 4,
-    "_color": {
-      "__type__": "cc.Color",
-      "r": 255,
-      "g": 255,
-      "b": 255,
-      "a": 230
-    },
+    "_color": {"__type__": "cc.Color", "r": 25, "g": 44, "b": 83, "a": 255},
     "_spriteFrame": {
       "__uuid__": "c627fa6b-2313-4904-87b4-b80f0837219a@f9941",
       "__expectedType__": "cc.SpriteFrame"
@@ -44987,13 +44903,7 @@
     "_customMaterial": null,
     "_srcBlendFactor": 2,
     "_dstBlendFactor": 4,
-    "_color": {
-      "__type__": "cc.Color",
-      "r": 56,
-      "g": 42,
-      "b": 82,
-      "a": 255
-    },
+    "_color": {"__type__": "cc.Color", "r": 234, "g": 240, "b": 255, "a": 255},
     "_string": "选手 5",
     "_horizontalAlign": 0,
     "_verticalAlign": 1,
@@ -45119,13 +45029,7 @@
     "_customMaterial": null,
     "_srcBlendFactor": 2,
     "_dstBlendFactor": 4,
-    "_color": {
-      "__type__": "cc.Color",
-      "r": 101,
-      "g": 82,
-      "b": 125,
-      "a": 255
-    },
+    "_color": {"__type__": "cc.Color", "r": 234, "g": 240, "b": 255, "a": 255},
     "_string": "0 kg · 0 淘汰",
     "_horizontalAlign": 2,
     "_verticalAlign": 1,
@@ -46990,13 +46894,7 @@
     "_customMaterial": null,
     "_srcBlendFactor": 2,
     "_dstBlendFactor": 4,
-    "_color": {
-      "__type__": "cc.Color",
-      "r": 255,
-      "g": 244,
-      "b": 202,
-      "a": 255
-    },
+    "_color": {"__type__": "cc.Color", "r": 29, "g": 43, "b": 81, "a": 255},
     "_spriteFrame": {
       "__uuid__": "287ff5f1-a65f-45fb-ba4e-a518210186e3@f9941",
       "__expectedType__": "cc.SpriteFrame"
@@ -47099,13 +46997,7 @@
     "_customMaterial": null,
     "_srcBlendFactor": 2,
     "_dstBlendFactor": 4,
-    "_color": {
-      "__type__": "cc.Color",
-      "r": 120,
-      "g": 80,
-      "b": 31,
-      "a": 255
-    },
+    "_color": {"__type__": "cc.Color", "r": 206, "g": 220, "b": 246, "a": 255},
     "_string": "本局获得金币",
     "_horizontalAlign": 1,
     "_verticalAlign": 1,
@@ -47231,13 +47123,7 @@
     "_customMaterial": null,
     "_srcBlendFactor": 2,
     "_dstBlendFactor": 4,
-    "_color": {
-      "__type__": "cc.Color",
-      "r": 215,
-      "g": 139,
-      "b": 20,
-      "a": 255
-    },
+    "_color": {"__type__": "cc.Color", "r": 255, "g": 205, "b": 70, "a": 255},
     "_string": "+0",
     "_horizontalAlign": 1,
     "_verticalAlign": 1,
@@ -47363,13 +47249,7 @@
     "_customMaterial": null,
     "_srcBlendFactor": 2,
     "_dstBlendFactor": 4,
-    "_color": {
-      "__type__": "cc.Color",
-      "r": 137,
-      "g": 104,
-      "b": 58,
-      "a": 255
-    },
+    "_color": {"__type__": "cc.Color", "r": 159, "g": 178, "b": 216, "a": 255},
     "_string": "质量 0 · 收集 0 · 淘汰 0 · 生存 0 · 名次 0",
     "_horizontalAlign": 1,
     "_verticalAlign": 1,
@@ -53075,13 +52955,7 @@
       "_customMaterial": null,
       "_srcBlendFactor": 2,
       "_dstBlendFactor": 4,
-      "_color": {
-        "__type__": "cc.Color",
-        "r": 101,
-        "g": 82,
-        "b": 125,
-        "a": 255
-      },
+      "_color": {"__type__": "cc.Color", "r": 159, "g": 178, "b": 216, "a": 255},
       "_string": "",
       "_horizontalAlign": 0,
       "_verticalAlign": 1,
@@ -53316,13 +53190,7 @@
       "_customMaterial": null,
       "_srcBlendFactor": 2,
       "_dstBlendFactor": 4,
-      "_color": {
-        "__type__": "cc.Color",
-        "r": 101,
-        "g": 82,
-        "b": 125,
-        "a": 255
-      },
+      "_color": {"__type__": "cc.Color", "r": 159, "g": 178, "b": 216, "a": 255},
       "_string": "",
       "_horizontalAlign": 0,
       "_verticalAlign": 1,
@@ -53557,13 +53425,7 @@
       "_customMaterial": null,
       "_srcBlendFactor": 2,
       "_dstBlendFactor": 4,
-      "_color": {
-        "__type__": "cc.Color",
-        "r": 101,
-        "g": 82,
-        "b": 125,
-        "a": 255
-      },
+      "_color": {"__type__": "cc.Color", "r": 159, "g": 178, "b": 216, "a": 255},
       "_string": "",
       "_horizontalAlign": 0,
       "_verticalAlign": 1,
@@ -53798,13 +53660,7 @@
       "_customMaterial": null,
       "_srcBlendFactor": 2,
       "_dstBlendFactor": 4,
-      "_color": {
-        "__type__": "cc.Color",
-        "r": 101,
-        "g": 82,
-        "b": 125,
-        "a": 255
-      },
+      "_color": {"__type__": "cc.Color", "r": 159, "g": 178, "b": 216, "a": 255},
       "_string": "",
       "_horizontalAlign": 0,
       "_verticalAlign": 1,
@@ -54039,13 +53895,7 @@
       "_customMaterial": null,
       "_srcBlendFactor": 2,
       "_dstBlendFactor": 4,
-      "_color": {
-        "__type__": "cc.Color",
-        "r": 101,
-        "g": 82,
-        "b": 125,
-        "a": 255
-      },
+      "_color": {"__type__": "cc.Color", "r": 159, "g": 178, "b": 216, "a": 255},
       "_string": "",
       "_horizontalAlign": 0,
       "_verticalAlign": 1,

@@ -140,6 +140,10 @@ try {
         colour: label
           ? `${label.color.r},${label.color.g},${label.color.b}`
           : sprite ? `${sprite.color.r},${sprite.color.g},${sprite.color.b}` : null,
+        rgb: label
+          ? [label.color.r, label.color.g, label.color.b]
+          : sprite ? [sprite.color.r, sprite.color.g, sprite.color.b] : null,
+        alpha: label ? label.color.a : sprite ? sprite.color.a : null,
         spriteFrame: sprite?.spriteFrame?.name || null,
       };
     };
@@ -151,6 +155,7 @@ try {
     }
     names.push('ArenaPlayerRow', 'ArenaPlayerBadge', 'ArenaPlayerAvatar',
       'ArenaPlayerName', 'ArenaPlayerTitle', 'ArenaPlayerScore');
+    names.push('ArenaLeaderboardPanel', 'ArenaResult');
 
     const nodes = {};
     for (const name of names) {
@@ -226,6 +231,37 @@ try {
     }
     const frames = new Set(tints.map((t) => t.frame));
     if (frames.size !== 1) problems.push(`avatars do not share one asset: ${[...frames].join(', ')}`);
+
+    // Legibility: every label drawn ON the board has to be readable against the
+    // surface it sits on. Dark-on-dark is precisely the defect the dark-board
+    // retint introduced -- `ArenaResult` fell inside the panel and stayed dark --
+    // and no count of nodes or tints would have caught it.
+    const luma = (rgb) => 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
+    const contrast = (a, b) => {
+      const first = luma(a) / 255;
+      const second = luma(b) / 255;
+      const hi = Math.max(first, second);
+      const lo = Math.min(first, second);
+      return (hi + 0.05) / (lo + 0.05);
+    };
+    const MIN_CONTRAST = 3.0;
+    const surfaces = [
+      ['ArenaResult', nodes.ArenaLeaderboardPanel],
+      ...['Name', 'Title', 'Score'].flatMap((part) => [1, 2, 3, 4, 5]
+        .filter((rank) => nodes[`ArenaRankRow_${rank}`]?.active)
+        .map((rank) => [`ArenaRank${part}_${rank}`, nodes[`ArenaRankRow_${rank}`]])),
+    ];
+    console.log('=== board legibility (contrast against the surface behind) ===');
+    for (const [labelName, surface] of surfaces) {
+      const label = nodes[labelName];
+      if (!label?.active || !label.rgb || !surface?.rgb) continue;
+      const ratio = contrast(label.rgb, surface.rgb);
+      const verdict = ratio >= MIN_CONTRAST ? 'ok' : 'LOW';
+      console.log(`  ${labelName.padEnd(20)} ${label.colour} on ${surface.colour}  ratio ${ratio.toFixed(2)}  ${verdict}`);
+      if (ratio < MIN_CONTRAST) {
+        problems.push(`${labelName} contrast ${ratio.toFixed(2)} against its surface is below ${MIN_CONTRAST}`);
+      }
+    }
   }
 
   await page.screenshot({ path: shotPath });

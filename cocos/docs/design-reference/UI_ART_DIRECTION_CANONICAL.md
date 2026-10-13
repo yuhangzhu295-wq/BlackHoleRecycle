@@ -88,25 +88,44 @@ black hole with a matching ring, a name tag and a coloured arrow marker.
 board". The image shows a **light blue/cyan board with a white inner panel**. The image wins per
 §2.5. Recorded so the written lock is not cited as authority for cream.
 
-**5.2 The settlement row icon — corrected after checking the product.** The lock's §08 says
-ranked rows carry a "vehicle icon", and the image shows cars. An earlier revision of this document
-resolved that to "the competitor's coloured black hole", on the strength of the lock's §06. That
-resolution was **wrong**, and checking the code is what showed it:
+**Extended by V12 (2026-10-12).** The V12 sheets replace the v9.5 package as the current visual
+target, and DESIGN_06 draws the leaderboard as a **dark navy panel with light text**, the reward
+panel the same, and the three stat cards still light. That is now what the product renders:
+leaderboard panel `#1a2e58`, rows `#192c53`, reward panel `#1d2b51`, stat cards unchanged at
+`#edf4fd`. All four are medians sampled from the sheet's own pixels
+(`scripts/sample_settlement_reference.py`), not chosen by eye. The **page** stays light, which is
+what this section adjudicated and what DESIGN_06 also shows -- only the two panels the sheet draws
+dark became dark. The Endless settlement, which no V12 sheet covers, follows the same language so
+the two modes cannot drift apart.
 
-- `ArenaLeaderboardEntry` carries no colour field at all.
-- The Arena HUD colours a competitor's nameplate by **relationship**, not identity: local, threat,
-  killable, neutral (`ArenaHUDController` lines 222-225). There is no per-competitor colour
+**5.2 The settlement row icon — corrected twice.** The lock's §08 says ranked rows carry a
+"vehicle icon", and the image shows cars. An earlier revision resolved that to "the competitor's
+coloured black hole", on the strength of the lock's §06. That resolution was **wrong at the time**,
+and checking the code is what showed it:
+
+- `ArenaLeaderboardEntry` carried no colour field at all.
+- The Arena HUD coloured a competitor's nameplate by **relationship**, not identity: local, threat,
+  killable, neutral (`ArenaHUDController` lines 222-225). There was no per-competitor colour
   channel anywhere in the product.
 - The `rimColor` values in `GameConfig` belong to the player's *skins*, not to opponents.
 
-So "every competitor is a distinctly coloured black hole" describes an aspiration the product does
-not implement. Adding identity icons to the settlement would therefore **introduce a feature that
-does not exist**, which §2.1 forbids.
+So "every competitor is a distinctly coloured black hole" described an aspiration the product did
+not implement, and adding identity icons would have **introduced a feature that did not exist**,
+which §2.1 forbids.
 
-**Resolution: the settlement rows carry no identity icon.** Rank badge, name, mass and
-eliminations are all real; an icon would be decoration standing in for data the match never had.
-The vehicle silhouettes in the reference remain usable as *iconography* elsewhere, where a vehicle
-is genuinely the subject.
+**That premise is no longer true, so the resolution changes.** V12 PHASE A gave the arena's
+opponents real per-competitor colours (`ArenaMatchManager.BOT_TINTS`, applied to each bot's own
+`HoleRing` and `ShimmerSwirl`), and `ArenaLeaderboardEntry` now carries that colour as `tint`. The
+product *does* have a per-competitor colour channel, it is the colour the player actually chased
+around the arena, and DESIGN_06's row asks for exactly it.
+
+**Resolution: the settlement rows carry the competitor's own hole colour as an avatar**, bound from
+`entry.tint` so the board cannot disagree with the match that produced it. The vehicle silhouettes
+in the reference remain usable as *iconography* elsewhere, where a vehicle is genuinely the subject.
+
+Note the shape of this correction: the earlier reading was right for the code as it stood, and it
+became wrong when the code changed. A "the product cannot express this" argument has a shelf life,
+and it is worth re-reading whenever the thing it named gets built.
 
 **5.3 Two mode-select renders.** `黑洞回收站_模式选择.png` and `黑洞回收站模式选择界面.png` are
 not identical. Per §2.3 the second is adopted: it carries the planet glyph, a cleaner title
