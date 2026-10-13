@@ -34,6 +34,18 @@ export class ArenaHUDController extends Component {
    * portrait arena remains legible without static or invented opponent data.
    */
   private readonly competitorNameplates = new Map<string, Node>();
+  /**
+   * The threat and killable ids from the snapshot this HUD last rendered.
+   *
+   * `ArenaMatchManager` recomputes `localThreatIds` live whenever it is asked,
+   * while these nameplates are written once per frame from the snapshot handed
+   * to `updateMatch`. Reading the two together therefore pairs two different
+   * frames, and a QA check that did so reported a threat against a plate still
+   * carrying its previous text. Recording the ids actually used makes the pair
+   * exact: a nameplate can be compared against the input that produced it.
+   */
+  private lastThreatIds: readonly string[] = [];
+  private lastKillableIds: readonly string[] = [];
   private pickupFeedback: PickupFeedbackPresenter | null = null;
   /**
    * V4 reference 10 State B. Short, non-blocking upgrade banner driven by the
@@ -187,6 +199,13 @@ export class ArenaHUDController extends Component {
     // §24: the killable state comes from the SAME combat predicate as danger
     // (roles reversed), never a second mass-difference rule invented here.
     const killableIds = new Set(snapshot.localKillableIds || []);
+    // Taken from the snapshot's own arrays rather than spread out of the Sets
+    // above. The Cocos build transpiles `[...set]` to `[].concat(set)`, which
+    // appends the Set as ONE element instead of spreading it -- so the array
+    // arrived at the QA bridge as `[{}]` and made a correct check fail. This
+    // project has no downlevelIteration; spread only arrays here.
+    this.lastThreatIds = snapshot.localThreatIds || [];
+    this.lastKillableIds = snapshot.localKillableIds || [];
     const positionedNameplates: Array<{ node: Node; x: number; y: number }> = [];
 
     for (const competitor of snapshot.leaderboard) {
@@ -309,6 +328,19 @@ export class ArenaHUDController extends Component {
       x: node.position.x,
       y: node.position.y,
     }));
+  }
+
+  /**
+   * The threat/killable ids this HUD last rendered from, paired with the
+   * nameplates it produced from them. Both come from one `updateMatch`, so a
+   * reader can check "did it mark what it was told to mark" without racing the
+   * next frame.
+   */
+  public getThreatDiagnostics(): Readonly<Record<string, unknown>> {
+    return {
+      threatIds: this.lastThreatIds.slice(),
+      killableIds: this.lastKillableIds.slice(),
+    };
   }
 
   public showAbsorbFeedback(position: Readonly<Vec3>, score: number, tier: number): void {

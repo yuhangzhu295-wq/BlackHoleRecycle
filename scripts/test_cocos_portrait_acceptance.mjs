@@ -1402,64 +1402,129 @@ async function verifyReviveFlow(cdp, page, canvasRect, homeSnapshot) {
 
   // V8: the player must be able to see which opponent can eat them. A bot is
   // actively hunting the local player in this phase, so a real threat is
-  // guaranteed to occur. It exists only in the run-up to the kill, so sample
-  // continuously across the whole approach instead of at one instant.
-  // Two things are checked: that localThreatIds equals an independent
-  // recomputation of the combat rule from the leaderboard, and that the HUD
-  // actually renders the warning word on exactly those opponents.
-  let threatEvidence = null;
-  let threatSamples = 0;
-  let threatApproachEnded = 'TIMEOUT';
-  const threatDeadline = Date.now() + 75_000;
-  while (Date.now() < threatDeadline && !threatEvidence) {
-    const sample = await readRuntimeSnapshot(page);
-    if (sample.arena?.localAlive === false || sample.gameState !== 'ARENA') {
-      threatApproachEnded = 'DEFEATED';
-      break;
-    }
-    threatSamples += 1;
-    const threatIds = sample.arena?.localThreatIds || [];
-    if (threatIds.length === 0) {
-      await page.waitForTimeout(80);
-      continue;
-    }
-    const localEntry = (sample.arena?.leaderboard || []).find((entry) => entry.isLocal) || null;
-    const localMass = Math.max(1, localEntry?.mass || 0);
-    const expected = (sample.arena?.leaderboard || [])
-      .filter((entry) => !entry.isLocal && entry.alive && (entry.shieldSeconds || 0) <= 0
-        && entry.mass >= localMass * 1.32
-        && Math.hypot(entry.position.x - (localEntry?.position?.x || 0),
-          entry.position.z - (localEntry?.position?.z || 0)) <= 4.8)
-      .map((entry) => entry.id);
-    threatEvidence = {
-      threatIds,
-      expected,
-      nameplates: sample.ui?.arenaHUD?.nameplates || [],
-      localMass,
-      elapsedSeconds: sample.arena?.elapsedSeconds ?? null,
+  // guaranteed to occur. It exists only in the run-up to the kill, so it has to
+  // be watched continuously rather than sampled at one instant.
+  //
+  // The watch runs IN THE PAGE, on requestAnimationFrame, for two reasons that
+  // between them account for every intermittent failure this assertion has had:
+  //
+  //   * A poll driven from here costs a CDP round trip per read -- about a second
+  //     under software rendering -- while the threat window is only as long as the
+  //     pull that precedes a kill (0.8s). The loop could straddle the whole window
+  //     and then observe only the death.
+  //   * `arena.localThreatIds` is recomputed live at read time, but the HUD's
+  //     nameplate labels are written from the snapshot handed to `updateArena`
+  //     once per frame. Read over two round trips they can be one frame apart, so
+  //     a threat could be reported against a plate still carrying its old text.
+  //
+  // Reading both from the same in-page frame fixes the pairing as well as the
+  // rate: the evidence below is one frame's threat list with that same frame's
+  // nameplates.
+  await page.evaluate(() => {
+    window.__BHR_THREAT_WATCH__ = { hudFrame: null, liveFrame: null, samples: 0, ended: 'RUNNING', last: null };
+    const tick = () => {
+      const watch = window.__BHR_THREAT_WATCH__;
+      const sample = window.__BHR_QA__.snapshot();
+      const arena = sample.arena || null;
+      const hud = sample.ui?.arenaHUD || null;
+      watch.samples += 1;
+      const localEntry = (arena?.leaderboard || []).find((entry) => entry.isLocal) || null;
+      watch.last = {
+        gameState: sample.gameState,
+        elapsedSeconds: arena?.elapsedSeconds ?? null,
+        warmupRemaining: arena?.combatWarmupRemainingSeconds ?? null,
+        localAlive: arena?.localAlive ?? null,
+        localMass: localEntry?.mass ?? null,
+        liveThreatIds: arena?.localThreatIds || [],
+        hudThreatIds: hud?.threats?.threatIds || [],
+      };
+      // Frame A: what the HUD was told, with the plates it drew from it.
+      if (!watch.hudFrame) {
+        const hudThreats = hud?.threats?.threatIds || [];
+        if (hudThreats.length) watch.hudFrame = { threatIds: hudThreats, nameplates: hud.nameplates || [] };
+      }
+      // Frame B: what the combat rule reported live, with the leaderboard it read.
+      if (!watch.liveFrame && (arena?.localThreatIds || []).length) {
+        watch.liveFrame = {
+          threatIds: arena.localThreatIds,
+          leaderboard: arena.leaderboard || [],
+          elapsedSeconds: arena.elapsedSeconds ?? null,
+        };
+      }
+      if (sample.gameState === 'ARENA' && arena?.localAlive !== false) {
+        requestAnimationFrame(tick);
+      } else {
+        watch.ended = watch.hudFrame && watch.liveFrame ? 'SAW_THREAT'
+          : arena?.localAlive === false ? 'DEFEATED' : 'LEFT_ARENA';
+      }
     };
-  }
-  assert(threatEvidence,
-    'FAIL_ARENA_THREAT_NEVER_OBSERVED: no opponent was ever reported as able to defeat the local player during a live arena phase: '
-      + JSON.stringify({ threatSamples, threatApproachEnded }));
-  assert(JSON.stringify([...threatEvidence.threatIds].sort()) === JSON.stringify([...threatEvidence.expected].sort()),
-    'FAIL_ARENA_THREAT_RULE_MISMATCH: localThreatIds must equal the combat rule (mass >= local*1.32, unshielded, within 4.8) recomputed from the leaderboard: '
-      + JSON.stringify(threatEvidence));
-  const marked = threatEvidence.nameplates.filter((plate) => threatEvidence.threatIds.includes(plate.id) && plate.active);
-  assert(marked.length === threatEvidence.threatIds.length
-    && marked.every((plate) => String(plate.label).startsWith('危险 ')),
-  'FAIL_ARENA_THREAT_NOT_MARKED: every dangerous opponent must carry a rendered "危险 <name>" nameplate: '
-    + JSON.stringify({ threatIds: threatEvidence.threatIds, nameplates: threatEvidence.nameplates }));
-  const unmarked = threatEvidence.nameplates.filter((plate) => plate.active
-    && String(plate.label).startsWith('危险 ')
-    && !threatEvidence.threatIds.includes(plate.id));
-  assert(unmarked.length === 0,
-    'FAIL_ARENA_THREAT_OVER_MARKED: a non-dangerous opponent was labelled dangerous: ' + JSON.stringify(unmarked));
-
+    requestAnimationFrame(tick);
+  });
+  await page.waitForFunction(
+    () => window.__BHR_THREAT_WATCH__?.ended !== 'RUNNING', undefined, { timeout: 90_000 });
+  // Capture the revive modal BEFORE reading the threat watch. The modal lives 5s
+  // and a page.evaluate costs about a second under software rendering, so
+  // reading the watch first spent that budget and the modal had already expired
+  // by the time it was inspected. The assertions below all read `held`, which is
+  // now captured at the intended moment.
   const defeated = await waitForLocalArenaDefeat(page);
   const frozenRespawnSeconds = defeated.arena?.localRespawnSeconds;
   await page.waitForTimeout(2800);
   const held = await readRuntimeSnapshot(page);
+  const threatWatch = await page.evaluate(() => window.__BHR_THREAT_WATCH__);
+
+  let threatEvidence = null;
+  if (threatWatch.liveFrame) {
+    const localEntry = threatWatch.liveFrame.leaderboard.find((entry) => entry.isLocal) || null;
+    const localMass = Math.max(1, localEntry?.mass || 0);
+    threatEvidence = {
+      threatIds: threatWatch.liveFrame.threatIds,
+      expected: threatWatch.liveFrame.leaderboard
+        .filter((entry) => !entry.isLocal && entry.alive && (entry.shieldSeconds || 0) <= 0
+          && entry.mass >= localMass * 1.32
+          && Math.hypot(entry.position.x - (localEntry?.position?.x || 0),
+            entry.position.z - (localEntry?.position?.z || 0)) <= 4.8)
+        .map((entry) => entry.id),
+      localMass,
+      elapsedSeconds: threatWatch.liveFrame.elapsedSeconds,
+    };
+  }
+  assert(threatEvidence,
+    'FAIL_ARENA_THREAT_NEVER_OBSERVED: no opponent was ever reported as able to defeat the local player during a live arena phase: '
+      + JSON.stringify({ samples: threatWatch.samples, ended: threatWatch.ended, last: threatWatch.last }));
+  assert(JSON.stringify([...threatEvidence.threatIds].sort()) === JSON.stringify([...threatEvidence.expected].sort()),
+    'FAIL_ARENA_THREAT_RULE_MISMATCH: localThreatIds must equal the combat rule (mass >= local*1.32, unshielded, within 4.8) recomputed from the leaderboard: '
+      + JSON.stringify(threatEvidence));
+  // The marking check runs against the ids the HUD was actually told about, and
+  // the plates it drew from them in that same update. Comparing the plates with
+  // `arena.localThreatIds` instead pairs two different frames -- that list is
+  // recomputed live at read time while the plates are written once per frame --
+  // and reported a threat against a plate that had simply not been redrawn yet.
+  const hudThreatEvidence = threatWatch.hudFrame;
+  assert(hudThreatEvidence,
+    'FAIL_ARENA_THREAT_NOT_RENDERED: the HUD was never handed a non-empty threat list during a live arena phase: '
+      + JSON.stringify({ samples: threatWatch.samples, ended: threatWatch.ended, last: threatWatch.last }));
+  const markingOf = (evidence) => {
+    const plates = evidence.nameplates.filter((plate) => evidence.threatIds.includes(plate.id) && plate.active);
+    return {
+      missing: evidence.threatIds.filter((id) => !plates.some((plate) => plate.id === id)),
+      unlabelled: plates.filter((plate) => !String(plate.label).startsWith('危险 ')),
+    };
+  };
+  // The threat list and the nameplates above are one frame's readings, so they
+  // must agree exactly. An earlier version of this check re-read before failing,
+  // to tolerate a one-frame skew; that skew is gone with the in-page watch, and
+  // a retry here would only blunt the assertion.
+  const marking = markingOf(hudThreatEvidence);
+  assert(!marking.missing.length && !marking.unlabelled.length,
+  'FAIL_ARENA_THREAT_NOT_MARKED: every dangerous opponent must carry a rendered "危险 <name>" nameplate: '
+    + JSON.stringify({ threatIds: hudThreatEvidence.threatIds, nameplates: hudThreatEvidence.nameplates }));
+  const unmarked = hudThreatEvidence.nameplates.filter((plate) => plate.active
+    && String(plate.label).startsWith('危险 ')
+    && !hudThreatEvidence.threatIds.includes(plate.id));
+  assert(unmarked.length === 0,
+    'FAIL_ARENA_THREAT_OVER_MARKED: a non-dangerous opponent was labelled dangerous: ' + JSON.stringify(unmarked));
+
   assert(held.gameState === 'REVIVING' && held.uiScreen === 'Revive'
     && held.arena?.localAlive === false && held.ui?.formalPages?.revive?.active,
   'FAIL_REVIVE_MODAL_EARLY_CLOSE: ' + JSON.stringify({ frozenRespawnSeconds, held: { gameState: held.gameState, uiScreen: held.uiScreen, arena: held.arena, pages: held.ui?.formalPages } }));
@@ -1503,7 +1568,7 @@ async function verifyReviveFlow(cdp, page, canvasRect, homeSnapshot) {
     'FAIL_REVIVE_COUNTDOWN_EARLY_EXPIRY: ' + JSON.stringify({ expiryElapsedMs, defeat: expiryDefeat.arena, expired: expired.arena }));
   await page.screenshot({ path: path.join(evidenceDirectory, 'portrait-390x844-revive-expiry.png') });
 
-  return { frozenRespawnSeconds, heldRespawnSeconds: held.arena?.localRespawnSeconds, giveUpReason: givenUp.arena?.reason, expiryElapsedMs, expiryReason: expired.arena?.reason, threatEvidence };
+  return { frozenRespawnSeconds, heldRespawnSeconds: held.arena?.localRespawnSeconds, giveUpReason: givenUp.arena?.reason, expiryElapsedMs, expiryReason: expired.arena?.reason, threatEvidence, hudThreatEvidence, threatWatchSamples: threatWatch.samples, threatWatchEnded: threatWatch.ended };
 }
 
 /** P6: verify arena settlement page data, reward idempotency, and Restart flow. */

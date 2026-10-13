@@ -684,6 +684,11 @@ export class QABridge {
         joystick: describe(arenaHud?.getChildByName('Joystick') || null),
         timer: describe(arenaHud?.getChildByName('TimerValue') || null),
         nameplates: arenaHud?.getComponent(ArenaHUDController)?.getNameplateDiagnostics() || [],
+        // The ids those nameplates were rendered from. `arena` elsewhere in this
+        // snapshot is recomputed live, so pairing the two across frames is what
+        // made the threat-marking check report a threat against a plate that had
+        // not been redrawn yet.
+        threats: arenaHud?.getComponent(ArenaHUDController)?.getThreatDiagnostics() || null,
         /**
          * Mirrors `runtimeHUD.safeArea`, which was the only HUD exposing it.
          *
