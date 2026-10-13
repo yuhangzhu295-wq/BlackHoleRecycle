@@ -1,5 +1,5 @@
 /** 编辑器保存的结算页数据绑定与真实按钮事件。 */
-import { _decorator, Button, Component, Label } from 'cc';
+import { _decorator, Button, Color, Component, Label, Node, Sprite } from 'cc';
 import {
   INNER_PANEL_INSET_DESIGN_PX,
   fitSlicedPanelToSafeSpan,
@@ -9,6 +9,7 @@ import {
 import { eventBus } from '../core/EventBus';
 import { ArenaMatchSnapshot, ArenaSettlementReward } from '../gameplay/ArenaMatchManager';
 import { GameSessionMode, MODE_TITLES } from '../gameplay/session/GameSessionCoordinator';
+import { colorFromToken } from './UIStyleTokens';
 
 const { ccclass } = _decorator;
 
@@ -21,15 +22,21 @@ const CARD_SATELLITE_NODES: readonly string[] = ['SettlementCoinLeft', 'Settleme
 /**
  * The 称号 DESIGN_06 prints under each leaderboard row's name.
  *
- * Derived from the row's own rank and kill count, never invented: a row cannot
- * claim a title its record does not support. Rank wins over kills so the winner
- * always reads as the winner, and the remaining bands step down by kills.
+ * Derived from the row's own placement and kill count, never invented: a row
+ * cannot claim a title its record does not support.
+ *
+ * Placement is the BASE and kills PROMOTE. Both orderings are real match facts,
+ * but placement is what the board is sorted by, so keying the ladder off it is
+ * what makes the column read as a hierarchy -- keyed off kills alone, every row
+ * in a low-kill match carries the same 萌新黑洞 and the column says nothing. Kills
+ * still lift a high-scoring player out of the band their placement would give
+ * them, so nobody who fought their way up is labelled a beginner.
  */
 function rankTitle(rank: number, kills: number): string {
   if (rank === 1) return '黑洞之王';
-  if (kills >= 8) return '吞噬达人';
-  if (kills >= 4) return '城市清道夫';
-  if (kills >= 1) return '稳健发育';
+  if (rank === 2 || kills >= 8) return '吞噬达人';
+  if (rank === 3 || kills >= 4) return '城市清道夫';
+  if (rank === 4 || kills >= 1) return '稳健发育';
   return '萌新黑洞';
 }
 
@@ -177,29 +184,40 @@ export class SettlementPageController extends Component {
       row.active = Boolean(entry);
       this.setNodeActive(`ArenaRankBadgePanel_${index + 1}`, Boolean(entry));
       this.setNodeActive(`ArenaRankBadge_${index + 1}`, Boolean(entry));
+      this.setNodeActive(`ArenaRankAvatar_${index + 1}`, Boolean(entry));
       this.setNodeActive(`ArenaRankName_${index + 1}`, Boolean(entry));
+      this.setNodeActive(`ArenaRankTitle_${index + 1}`, Boolean(entry));
       this.setNodeActive(`ArenaRankScore_${index + 1}`, Boolean(entry));
       if (!entry) continue;
       const rank = snapshot.leaderboard.findIndex((candidate) => candidate.id === entry.id) + 1;
       this.setLabel(`ArenaRankBadge_${index + 1}`, `${rank}`);
-      // V12: DESIGN_06 gives each leaderboard row a 称号 under the name. The
-      // titles are DERIVED from the row's real rank and kill count rather than
-      // invented, so a row cannot claim a title its record does not support --
+      this.setAvatarTint(`ArenaRankAvatar_${index + 1}`, entry.tint);
+      // V12: DESIGN_06 gives each leaderboard row a 称号 on its own line under the
+      // name. The titles are DERIVED from the row's real rank and kill count rather
+      // than invented, so a row cannot claim a title its record does not support --
       // the same rule that keeps the stat cards off the design's sample numbers.
-      this.setLabel(`ArenaRankName_${index + 1}`, `${entry.name} · ${rankTitle(rank, entry.kills)}`);
-      this.setLabel(`ArenaRankScore_${index + 1}`, `${Math.round(entry.mass)} kg · ${entry.kills} 淘汰`);
+      this.setLabel(`ArenaRankName_${index + 1}`, entry.name);
+      this.setLabel(`ArenaRankTitle_${index + 1}`, rankTitle(rank, entry.kills));
+      // The reference's right-hand column is the row's mass and nothing else; the
+      // player's own eliminations are the 击败对手 stat card's job, and repeating
+      // them in every row is what made five rows read as one block of text.
+      this.setLabel(`ArenaRankScore_${index + 1}`, `${Math.round(entry.mass)} kg`);
     }
 
     const local = snapshot.leaderboard.find((entry) => entry.isLocal) || null;
     this.setNodeActive('ArenaPlayerRow', Boolean(local));
     this.setNodeActive('ArenaPlayerBadgePanel', Boolean(local));
     this.setNodeActive('ArenaPlayerBadge', Boolean(local));
+    this.setNodeActive('ArenaPlayerAvatar', Boolean(local));
     this.setNodeActive('ArenaPlayerName', Boolean(local));
+    this.setNodeActive('ArenaPlayerTitle', Boolean(local));
     this.setNodeActive('ArenaPlayerScore', Boolean(local));
     if (local) {
       this.setLabel('ArenaPlayerBadge', `${snapshot.localRank || '-'}`);
+      this.setAvatarTint('ArenaPlayerAvatar', local.tint);
       this.setLabel('ArenaPlayerName', '我');
-      this.setLabel('ArenaPlayerScore', `${Math.round(local.mass)} kg · ${local.kills} 淘汰`);
+      this.setLabel('ArenaPlayerTitle', rankTitle(snapshot.localRank, snapshot.localKills));
+      this.setLabel('ArenaPlayerScore', `${Math.round(local.mass)} kg`);
     }
   }
 
@@ -240,8 +258,45 @@ export class SettlementPageController extends Component {
   }
 
   private setLabel(name: string, value: string): void {
-    const label = this.node.getChildByName(name)?.getComponent(Label);
+    const label = this.findNode(name)?.getComponent(Label);
     if (label) label.string = value;
+  }
+
+  /**
+   * Find a node by name anywhere under this page.
+   *
+   * The leaderboard's avatar and 称号 are children of their ROW rather than of the
+   * page, so a direct-child lookup reports them missing and every binding to them
+   * silently does nothing -- which is what left the 称号 blank and all seven
+   * avatars untinted the first time this was wired. Names on this page are
+   * unique, so a search finds the same node the direct lookup would for the
+   * bindings that already worked.
+   */
+  private findNode(name: string): Node | null {
+    const walk = (node: Node): Node | null => {
+      if (node.name === name) return node;
+      for (const child of node.children) {
+        const hit = walk(child);
+        if (hit) return hit;
+      }
+      return null;
+    };
+    return walk(this.node);
+  }
+
+  /**
+   * Tint a row's avatar with that competitor's own hole colour.
+   *
+   * The disc ships as ONE white-ring image; the colour is the node's Sprite tint,
+   * which is what lets seven rows read as seven different holes from a single
+   * asset. `colorFromToken` hands out a shared cached instance, so a copy is made
+   * here rather than writing through it.
+   */
+  private setAvatarTint(name: string, hex: string): void {
+    const sprite = this.findNode(name)?.getComponent(Sprite);
+    if (!sprite) return;
+    const source = colorFromToken(hex);
+    sprite.color = new Color(source.r, source.g, source.b, 255);
   }
 
   private setArenaLeaderboardVisible(visible: boolean): void {
@@ -254,10 +309,15 @@ export class SettlementPageController extends Component {
       this.setNodeActive(`ArenaRankRow_${rank}`, visible);
       this.setNodeActive(`ArenaRankBadgePanel_${rank}`, visible);
       this.setNodeActive(`ArenaRankBadge_${rank}`, visible);
+      this.setNodeActive(`ArenaRankAvatar_${rank}`, visible);
       this.setNodeActive(`ArenaRankName_${rank}`, visible);
+      this.setNodeActive(`ArenaRankTitle_${rank}`, visible);
       this.setNodeActive(`ArenaRankScore_${rank}`, visible);
     }
-    for (const name of ['ArenaPlayerRow', 'ArenaPlayerBadgePanel', 'ArenaPlayerBadge', 'ArenaPlayerName', 'ArenaPlayerScore']) {
+    for (const name of [
+      'ArenaPlayerRow', 'ArenaPlayerBadgePanel', 'ArenaPlayerBadge', 'ArenaPlayerAvatar',
+      'ArenaPlayerName', 'ArenaPlayerTitle', 'ArenaPlayerScore',
+    ]) {
       this.setNodeActive(name, visible);
     }
     // The five equal-width rows are retired in both modes: the stat cards carry
@@ -297,7 +357,7 @@ export class SettlementPageController extends Component {
   }
 
   private setNodeActive(name: string, active: boolean): void {
-    const node = this.node.getChildByName(name);
+    const node = this.findNode(name);
     if (node) node.active = active;
   }
 }

@@ -13,7 +13,7 @@ import { UIAssetLibrary } from '../ui/UIAssetLibrary';
 import { CompressionSystem } from './CompressionSystem';
 import { AbsorbFeedbackPool } from './AbsorbFeedbackPool';
 import { PlayerController } from './PlayerController';
-import { ArenaMatchManager, ArenaMatchSnapshot } from './ArenaMatchManager';
+import { ArenaMatchManager, ArenaMatchSnapshot, arenaTintForFieldIndex } from './ArenaMatchManager';
 import { AuthoritativeArenaSnapshot, ColyseusArenaClient } from '../network/ColyseusArenaClient';
 import { NetworkArenaReplica } from '../network/NetworkArenaReplica';
 import { WorldArtLibrary } from '../world/WorldArtLibrary';
@@ -1145,10 +1145,11 @@ export class GameManager extends Component {
       localKills: local?.kills || 0,
       localConsumed: local?.collected || 0,
       localMass: local?.mass || 0,
-      leaderboard: ordered.map((player) => ({
+      leaderboard: ordered.map((player, fieldIndex) => ({
         id: player.id,
         name: player.displayName,
         isLocal: player.id === localId,
+        tint: arenaTintForFieldIndex(fieldIndex, player.id === localId),
         mass: player.mass,
         kills: player.kills,
         consumed: player.collected,

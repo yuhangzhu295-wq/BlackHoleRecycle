@@ -23,6 +23,13 @@ export interface ArenaLeaderboardEntry {
   readonly id: string;
   readonly name: string;
   readonly isLocal: boolean;
+  /**
+   * This competitor's own hole colour, as the hex its machine was tinted with.
+   * Carried on the entry so the settlement board's avatar cannot disagree with
+   * the hole the player just chased: deriving it in the page would be a second
+   * copy of the same mapping, and the two would drift apart.
+   */
+  readonly tint: string;
   readonly mass: number;
   readonly kills: number;
   readonly consumed: number;
@@ -156,6 +163,21 @@ const BOT_NAMES = ['蓝莓', '矿石', '风暴', '火花', '雪球', '流光', '
 // Visual identity only. Every bot still runs the same real BlackHoleMachine
 // and ArenaMatchManager rules; no palette changes mass, speed or combat.
 const BOT_TINTS = ['#4e9af1', '#54c985', '#e7a545', '#b26ae8', '#4bbfd2', '#f07171', '#d7bd53'];
+// The local hole's own colour, so its settlement avatar matches the hole the
+// player controlled. V12 energy purple, the same value the player's ring uses.
+const PLAYER_TINT = '#9b5cff';
+
+/**
+ * The colour to show for a competitor this device did not create.
+ *
+ * The authoritative-server path builds its board from remote players, which have
+ * no local machine and so no tint of their own. The local player keeps the player
+ * colour and everyone else takes the next bot colour in field order, so a board
+ * never renders two holes the same colour.
+ */
+export function arenaTintForFieldIndex(fieldIndex: number, isLocal: boolean): string {
+  return isLocal ? PLAYER_TINT : BOT_TINTS[fieldIndex % BOT_TINTS.length];
+}
 const PLAYER_ID = 'local-player';
 const MATCH_DURATION_SECONDS = 180;
 const RESPAWN_SECONDS = 2.5;
@@ -908,6 +930,8 @@ export class ArenaMatchManager extends Component {
         id: competitor.id,
         name: competitor.name,
         isLocal: competitor.isLocal,
+        // Slot 1..7 map to BOT_TINTS[0..6]; slot 0 is the local player.
+        tint: competitor.isLocal ? PLAYER_TINT : (BOT_TINTS[competitor.slot - 1] || BOT_TINTS[0]),
         mass: Math.round(competitor.machine.currentMass),
         kills: competitor.kills,
         consumed: competitor.consumed,
