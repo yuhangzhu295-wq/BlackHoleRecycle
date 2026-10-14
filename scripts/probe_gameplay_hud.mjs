@@ -209,6 +209,123 @@ try {
   await page.screenshot({ path: path.join(outDir, `endless-after-drive-${sizeArg}.png`) });
 
   const edibleVisibility = await page.evaluate(() => window.__BHR_EDIBLE_WATCH__);
+  // The drive left a large black void where the ground should be. Capture what
+  // happens next: if the ground arrives, the streamer is being outrun; if it stays
+  // black, it is a hole in the world rather than a lag.
+  let elapsedSeconds = 0;
+  for (const target of [0, 3, 8]) {
+    if (target > elapsedSeconds) {
+      await sleep((target - elapsedSeconds) * 1000);
+      elapsedSeconds = target;
+    }
+    await page.screenshot({ path: path.join(outDir, `endless-void-${target}s-${sizeArg}.png`) });
+  }
+  console.log('\n  [endless] void captures written: endless-void-{0,3,8}s.png');
+
+  // Which streamed cells actually have a ground under them, and where is the
+  // player relative to them. Dumped HERE, while the player is still standing in
+  // the void -- an earlier version ran it after the drive back and reported every
+  // ground healthy, which is the state with no void in it.
+  const cells = await page.evaluate(() => {
+    const scene = (globalThis.cc || globalThis.__cc__)?.director?.getScene?.() || null;
+    const player = (() => {
+      const walk = (node) => {
+        if (node.getComponent?.('BlackHoleMachine')) return node;
+        for (const child of node.children) { const hit = walk(child); if (hit) return hit; }
+        return null;
+      };
+      return walk(scene);
+    })();
+    const rows = [];
+    const visit = (node) => {
+      if (/^WorldCell/.test(node.name)) {
+        const ground = node.getChildByName('Ground');
+        const world = node.worldPosition;
+        rows.push({
+          name: node.name,
+          active: node.activeInHierarchy,
+          world: { x: Math.round(world.x), z: Math.round(world.z) },
+          ground: ground ? {
+            active: ground.activeInHierarchy,
+            children: ground.children.map((child) => ({
+              name: child.name,
+              active: child.activeInHierarchy,
+              y: Number(child.worldPosition.y.toFixed(3)),
+              z: Math.round(child.worldPosition.z),
+              x: Math.round(child.worldPosition.x),
+              scale: Number(child.worldScale.x.toFixed(2)),
+              // A cell can be present, active, and draw nothing: the ground art is
+              // loaded per region and a cell built before its art landed would have
+              // nodes with no mesh. "active" is not "visible".
+              mesh: (() => {
+                const renderer = child.getComponent('cc.MeshRenderer')
+                  || child.children.map((c) => c.getComponent('cc.MeshRenderer')).find(Boolean);
+                if (!renderer) return 'no-renderer';
+                return `${renderer.mesh ? 'mesh' : 'NO-MESH'}/${renderer.material ? 'mat' : 'NO-MAT'}`;
+              })(),
+            })),
+          } : null,
+        });
+      }
+      for (const child of node.children) visit(child);
+    };
+    visit(scene);
+    return { player: player ? { x: Math.round(player.worldPosition.x), z: Math.round(player.worldPosition.z) } : null, rows };
+  });
+  console.log(`  [endless] player at (${cells.player?.x},${cells.player?.z}); streamed cells: ${cells.rows.length}`);
+  for (const cell of cells.rows.slice(0, 12)) {
+    const ground = cell.ground;
+    console.log(`    ${cell.name.padEnd(20)} ${cell.active ? 'ON ' : 'off'} world=(${cell.world.x},${cell.world.z}) `
+      + `ground=${ground ? `${ground.active ? 'ON' : 'off'} x${ground.children.length}` : 'ABSENT'}`);
+    if (ground) {
+      for (const child of ground.children) {
+        console.log(`        ${child.name.padEnd(18)} ${child.active ? 'ON ' : 'off'} `
+          + `world=(${child.x},${child.y},${child.z}) scale=${child.scale} ${child.mesh}`);
+      }
+    }
+  }
+  // Project a grid of ground points to screen so the black region can be named in
+  // world coordinates. "The bottom of the screen is black" says nothing about
+  // which cell is missing; this says which ground the player is looking at when
+  // the pixels go dark.
+  const grid = await page.evaluate(() => {
+    const engine = globalThis.cc || globalThis.__cc__;
+    const scene = engine?.director?.getScene?.() || null;
+    const camera = scene?.getChildByName('Main Camera')?.getComponent('cc.Camera') || null;
+    if (!camera) return null;
+    const out = [];
+    for (let z = 32; z >= -160; z -= 32) {
+      const row = [];
+      for (let x = -64; x <= 64; x += 32) {
+        const screen = camera.worldToScreen(new engine.Vec3(x, 0, z), new engine.Vec3());
+        row.push({ x, z, sx: Math.round(screen.x), sy: Math.round(screen.y) });
+      }
+      out.push(row);
+    }
+    return out;
+  });
+  if (grid) {
+    const shot = await page.evaluate(() => {
+      const canvas = document.getElementById('GameCanvas');
+      return { w: canvas.width, h: canvas.height };
+    });
+    console.log(`\n  [endless] ground grid projected into ${shot.w}x${shot.h} canvas space (z down the rows):`);
+    for (const row of grid) {
+      console.log('    ' + row.map((cell) => `x${String(cell.x).padStart(4)},z${String(cell.z).padStart(5)}`
+        + `->(${String(cell.sx).padStart(4)},${String(cell.sy).padStart(4)})`).join('  '));
+    }
+  }
+
+  // Now drive back the other way. If the void follows the screen it is a camera or
+  // frustum artefact; if it clears, it is a hole in the world at that position.
+  // Run after the cell dump, which has to be taken while the player is standing in
+  // the void.
+  const back = await driveHold((await snapshot()).ui.runtimeHUD.joystick, 0, 90, 9000);
+  await sleep(3000);
+  await page.screenshot({ path: path.join(outDir, `endless-void-return-${sizeArg}.png`) });
+  console.log(`  [endless] drove back: (${Math.round(back.before.player.x)},${Math.round(back.before.player.z)})`
+    + ` -> (${Math.round(back.after.player.x)},${Math.round(back.after.player.z)})`);
+
   console.log('\n  [endless] edible-cue visibility:');
   console.log(`    cue observed on ${edibleVisibility.seen} object-frames over ${edibleVisibility.samples} frames`);
   if (edibleVisibility.max) {
