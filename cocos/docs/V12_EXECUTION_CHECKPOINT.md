@@ -777,6 +777,49 @@ DESIGN_03 要的是"可吞物体柔和高亮 + 描边"，清单允许简化为"�
    从仓库内核实**——需要所有者确认授权或替换。
 2. 11 个不贴地、11 个枢轴偏中心、1 个无 UV（`battery.glb`）。
 
+## V13 阶段（2026-10-14，ART-FIRST PRODUCTION PIPELINE）—— 进度总览
+
+工具链：Blender 4.5.14 ✓、Creator 3.8.3 ✓（已能启动并加载工程）、
+`black-hole-world-art-builder` 扩展 ✓ 已跑通、Inkscape/SVG 光栅化器 ✗（没有）。
+子代理实际跑 `glm-5.3` / `deepseek-v4.1-flash`，用户已确认"用这些也可以"。
+
+### 已完成
+
+| PHASE | 内容 | 提交 |
+| --- | --- | --- |
+| 0 | 黑地缺陷：根因=开场建造地标挡镜头；按距离 50 显隐；四方向复验 | `9859af2` |
+| B | 62 个 GLB 的 Blender 实测尺度表 + pivot/基准/UV | `86d5b6b` |
+| — | Creator job 队列验证可用（LEGACY_MANUAL） | `86d5b6b` |
+| C | 经 job 队列建 Golden Arena + 构图实测改进（框边建筑+路网+中段簇） | `f7bf1e5` `83e45dc` `dd4b481` |
+| — | 两张硬交付：`GoldenArena_390x844_RUNTIME.png` + `REFERENCE_COMPARISON.png` | `826167d` |
+| A | 美术方向规范 `V13_ART_DIRECTION.md` | `6ee7743` |
+
+**回归**：`test:full` 529 PASS、`verify:layout` PASS、`verify:gameplay-visuals` PASS。
+
+### 硬交付（文件名是交付约定，非改名冒充）
+
+- `artifacts/qa/v13/GoldenArena_390x844_RUNTIME.png` —— 真实 8 人竞技比赛截图
+- `artifacts/qa/v13/GoldenArena_REFERENCE_COMPARISON.png` —— 与 DESIGN_07 并排 + 各自量化
+
+### 尚未达到"成品级"的**实测**缺口（下一轮的目标，不是观感）
+
+| 量 | 运行帧 | 参考 |
+| --- | ---: | ---: |
+| 播放带色彩桶 | 343 | 818 |
+| 播放带主色占比 | 33% | 17% |
+| 近场纯路面 | 19.4% | — |
+
+**已证明无效的方向**：往画面**边缘**加小道具（加了 10 个，色桶 350→346）。
+**下一轮方向**：让结构站在**道路自己的空间**里（出生环 14 之外、车道 8 之外的中段带），
+并把地面材质从"整片单色"改成有车道/路缘/分区变化的贴图表现。
+
+### 三条要报给所有者
+
+1. `poly-google-bulldozer.glb` 占 12.85×17.68×11.52（普通建筑 1.2–4.5），**仍在服役**，
+   授权无法从仓库内核实。
+2. 技能按钮（`加速`/`磁吸`/`吸收加速`）：清单 §3 禁止因为图里有就加。
+3. 微信 AppID 权限 / 抖音真实 AppID（需扫码）。
+
 ## 仍未完成
 
 **已完成并验证**（2026-10-13）：
