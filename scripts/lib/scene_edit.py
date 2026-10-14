@@ -49,9 +49,29 @@ class Scene:
 
     # -- lookup ------------------------------------------------------------
     def find(self, name):
+        """First node with this name, ANYWHERE in the scene.
+
+        Node names are not unique across pages: `MassValue` appears three times
+        (Endless HUD, Arena HUD and the settlement board), `RankValue` twice and
+        `Joystick` once per HUD. Editing by bare name silently takes whichever
+        the array happens to list first, which is how a relayout script moved the
+        settlement's mass label instead of the Arena HUD's. Use `find_child`
+        whenever the node lives under a known page.
+        """
         for index, obj in enumerate(self.arr):
             if isinstance(obj, dict) and obj.get('__type__') == 'cc.Node' and obj.get('_name') == name:
                 return index
+        return None
+
+    def find_child(self, parent_name, child_name):
+        """A direct child of a named node -- the unambiguous form."""
+        parent = self.find(parent_name)
+        if parent is None:
+            raise SystemExit('parent node %s not found' % parent_name)
+        for ref in self.arr[parent]['_children']:
+            child = self.arr[ref['__id__']]
+            if child.get('_name') == child_name:
+                return ref['__id__']
         return None
 
     def component(self, node_id, type_name):

@@ -287,8 +287,8 @@
       "name": "StatusPanel",
       "role": "status_panel_bg",
       "lpos": {
-        "x": -226,
-        "y": 472,
+        "x": 226,
+        "y": 400,
         "z": 0
       },
       "size": {
@@ -305,8 +305,8 @@
       "name": "RankValue",
       "role": "rank_value",
       "lpos": {
-        "x": -266,
-        "y": 484,
+        "x": 186,
+        "y": 412,
         "z": 0
       },
       "size": {
@@ -324,8 +324,8 @@
       "name": "MassValue",
       "role": "mass_value",
       "lpos": {
-        "x": -176,
-        "y": 484,
+        "x": 276,
+        "y": 412,
         "z": 0
       },
       "size": {
@@ -343,8 +343,8 @@
       "name": "KillCaption",
       "role": "kill_caption",
       "lpos": {
-        "x": -282,
-        "y": 460,
+        "x": 170,
+        "y": 388,
         "z": 0
       },
       "size": {
@@ -362,8 +362,8 @@
       "name": "KillValue",
       "role": "kill_value",
       "lpos": {
-        "x": -242,
-        "y": 460,
+        "x": 210,
+        "y": 388,
         "z": 0
       },
       "size": {
@@ -505,7 +505,7 @@
       "name": "Joystick",
       "role": "virtual_joystick",
       "lpos": {
-        "x": 232,
+        "x": -148,
         "y": -470,
         "z": 0
       },
@@ -551,6 +551,8 @@
     "BotArrowLeft/Right/Top/Bottom have BotArrow*Label direct children and are inactive by default",
     "Joystick has JoystickBase and JoystickKnob as direct children and retains JoystickVisual component",
     "ArenaHUDController updates stats strictly from real ArenaMatchSnapshot without hardcoded values",
+    "The rank/mass block (StatusPanel, RankValue, MassValue, KillCaption, KillValue) sits on the RIGHT at y 373..427, which is where DESIGN_04 draws it. It previously sat stacked above the leaderboard on the left, so the whole top-left was two panels deep while the right side held only the pause button. Every x in the block moved by the same +452, which mirrors it about the centre while preserving its internal order (rank left of mass).",
+    "Joystick sits at x=-148, on the left, which is where DESIGN_03 and DESIGN_04 both draw it. The side is owned by JOYSTICK_ZONE in GameConfig, which also defines the touch zone PlayerController accepts -- the two are read from one constant because moving the visible control without moving the zone leaves a joystick the player cannot use.",
     "Projection for competitor nameplates and direction arrows must use the 3D gameplay camera (Main Camera)",
     "JoystickVisual reads input strictly from PlayerController.moveInput",
     "No HUD UI production script may depend on QA mutation APIs"

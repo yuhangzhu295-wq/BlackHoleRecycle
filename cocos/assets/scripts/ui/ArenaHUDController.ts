@@ -258,29 +258,81 @@ export class ArenaHUDController extends Component {
     // their nameplates can overlap. We relax overlapping nameplates along Y without hiding any.
     const MIN_NAMEPLATE_GAP_X = 140;
     const MIN_NAMEPLATE_GAP_Y = 32;
-    for (let iter = 0; iter < 4; iter += 1) {
-      for (let i = 0; i < positionedNameplates.length; i += 1) {
-        for (let j = i + 1; j < positionedNameplates.length; j += 1) {
-          const a = positionedNameplates[i];
-          const b = positionedNameplates[j];
-          const dx = Math.abs(a.x - b.x);
-          if (dx < MIN_NAMEPLATE_GAP_X) {
-            const dy = b.y - a.y;
-            if (Math.abs(dy) < MIN_NAMEPLATE_GAP_Y) {
-              const overlap = MIN_NAMEPLATE_GAP_Y - Math.abs(dy);
-              const shift = overlap * 0.5;
-              if (dy >= 0) {
-                b.y += shift;
-                a.y -= shift;
-              } else {
-                b.y -= shift;
-                a.y += shift;
+    const separatePlates = (): void => {
+      for (let iter = 0; iter < 4; iter += 1) {
+        for (let i = 0; i < positionedNameplates.length; i += 1) {
+          for (let j = i + 1; j < positionedNameplates.length; j += 1) {
+            const a = positionedNameplates[i];
+            const b = positionedNameplates[j];
+            const dx = Math.abs(a.x - b.x);
+            if (dx < MIN_NAMEPLATE_GAP_X) {
+              const dy = b.y - a.y;
+              if (Math.abs(dy) < MIN_NAMEPLATE_GAP_Y) {
+                const overlap = MIN_NAMEPLATE_GAP_Y - Math.abs(dy);
+                const shift = overlap * 0.5;
+                if (dy >= 0) {
+                  b.y += shift;
+                  a.y -= shift;
+                } else {
+                  b.y -= shift;
+                  a.y += shift;
+                }
               }
             }
           }
         }
       }
+    };
+
+    // Keep the world-space plates off the HUD panels.
+    //
+    // The plates are added last, so they draw OVER the panels, and a plate that
+    // lands on one writes a competitor's name straight across the rank, the
+    // timer or the leaderboard. This became visible the moment the rank/mass
+    // block moved to the right, which is where DESIGN_04 puts it: that is also
+    // where nameplates cluster, and the capture showed "第 4 / 8" with a bot's
+    // "雪球 240kg" printed through it. Plates are pushed clear downward, since
+    // pushing one up from the leaderboard would land it on the pause button.
+    const PANEL_NAMES = ['LeaderboardPanel', 'TimerPanel', 'StatusPanel', 'BtnPause'];
+    const PANEL_PADDING = 6;
+    const panelRects: Array<{ left: number; right: number; bottom: number; top: number }> = [];
+    for (const name of PANEL_NAMES) {
+      const panel = this.node.getChildByName(name);
+      if (!panel?.activeInHierarchy) continue;
+      const transform = panel.getComponent(UITransform);
+      if (!transform) continue;
+      panelRects.push({
+        left: panel.position.x - transform.width / 2 - PANEL_PADDING,
+        right: panel.position.x + transform.width / 2 + PANEL_PADDING,
+        bottom: panel.position.y - transform.height / 2 - PANEL_PADDING,
+        top: panel.position.y + transform.height / 2 + PANEL_PADDING,
+      });
     }
+    const pushOffPanels = (): void => {
+      for (const item of positionedNameplates) {
+        const transform = item.node.getComponent(UITransform);
+        const halfWidth = (transform?.width || 184) / 2;
+        const halfHeight = (transform?.height || 34) / 2;
+        for (let pass = 0; pass < 6; pass += 1) {
+          const hit = panelRects.find((rect) => item.x + halfWidth > rect.left && item.x - halfWidth < rect.right
+            && item.y + halfHeight > rect.bottom && item.y - halfHeight < rect.top);
+          if (!hit) break;
+          item.y = hit.bottom - halfHeight;
+        }
+      }
+    };
+
+    // Both constraints, relaxed together: clearing a panel can push two plates
+    // onto each other, and separating plates can push one back onto a panel.
+    // Running each once is not enough -- the first attempt left two bots stacked
+    // at the same y. Four alternating passes settle it, ending on separation,
+    // because two plates that crowd each other are still both readable while a
+    // plate over a panel hides real data.
+    for (let iter = 0; iter < 4; iter += 1) {
+      separatePlates();
+      pushOffPanels();
+    }
+    separatePlates();
 
     for (const item of positionedNameplates) {
       item.node.setPosition(item.x, item.y, 0);

@@ -71,7 +71,12 @@ const DISTRICTS: Readonly<Record<DistrictKind, DistrictTemplate>> = {
       { id: 'trolley-litter', label: '购物车散落物', center: [-7, -7], preferredTypes: ['soda_can', 'paper_ball', 'cardboard_box'] },
       { id: 'basket-spill', label: '购物篮翻倒', center: [7, -7], preferredTypes: ['water_bottle', 'apple', 'trash_bag'] },
       { id: 'checkout-discard', label: '收银台遗留物', center: [-7, 7], preferredTypes: ['paper_ball', 'book_stack', 'soda_can'] },
-      { id: 'entrance-litter', label: '正门散落物', center: [7, 7], preferredTypes: ['cardboard_box', 'paint_bucket', 'battery'] },
+      // Ordered so index 0 is the lowest tier. The authored spawn points take
+      // `preferredTypes[index % length]`, and the innermost one sits closest to
+      // the player's spawn -- where a T2 is inedible at LV1. This one led with a
+      // T2, so the object nearest the spawn was the one the starting player
+      // could not eat.
+      { id: 'entrance-litter', label: '正门散落物', center: [7, 7], preferredTypes: ['battery', 'cardboard_box', 'paint_bucket'] },
     ],
   },
   WAREHOUSE: {

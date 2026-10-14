@@ -362,3 +362,34 @@ export const PLAYER_FEEL_CONFIG: IPlayerFeelConfig = {
   cameraFollowSharpness: 18.0,
 };
 
+/**
+ * Which side the movement joystick sits on, and the touch zone it owns.
+ *
+ * DESIGN_03 and DESIGN_04 both draw the joystick at the BOTTOM-LEFT of the play
+ * area; the product drew it bottom-right. Moving it is not a one-line change,
+ * because the two halves lived in different files: `JoystickVisual` set the
+ * visible control's x from its own constant, while `PlayerController` decided
+ * which touches count as joystick input from a hardcoded right-hand fraction.
+ * Moved independently they drift, and a joystick drawn on one side would still
+ * only accept touches on the other -- leaving the player a control they cannot
+ * use. Both now read this.
+ */
+export const JOYSTICK_ZONE = {
+  side: 'left' as 'left' | 'right',
+  /**
+   * Design-x of the visible control, and the centre of its drag radius. The
+   * authored 232 left fewer than 45 physical pixels for a drag toward the near
+   * edge at 390px wide, so a player could not request full input that way.
+   */
+  anchorX: 148,
+  /** Fraction of the viewport WIDTH the touch zone spans, measured from `side`. */
+  widthFraction: 0.55,
+  /** Fraction of the viewport HEIGHT the touch zone spans, measured from the bottom. */
+  heightFraction: 0.52,
+} as const;
+
+/** Design-x of the joystick for the configured side. */
+export function joystickAnchorX(): number {
+  return JOYSTICK_ZONE.side === 'left' ? -JOYSTICK_ZONE.anchorX : JOYSTICK_ZONE.anchorX;
+}
+

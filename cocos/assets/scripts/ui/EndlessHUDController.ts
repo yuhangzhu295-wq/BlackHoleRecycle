@@ -116,8 +116,22 @@ export class EndlessHUDController extends Component {
     bar.layer = this.node.layer;
     this.node.addChild(bar);
     bar.setSiblingIndex(reference.getSiblingIndex());
-    // Directly under the level panel, which spans y 398..462 at 64 tall.
-    bar.setPosition(reference.position.x, 392, 0);
+    // Centred, and directly under the level panel, which spans y 398..462.
+    //
+    // Not aligned to the panel's own x: the panel sits at x=62 (it shares the top
+    // row with the coin pill), while the bar's Track child is 500 wide, so
+    // following the panel pushed the track 13.9 design px past the right edge --
+    // caught by verify:gameplay-visuals as `Track w500 R13.9`. Centred at 0 the
+    // track spans +-250, inside the 288.2 usable half-width of the tightest
+    // viewport. A constant x also removes the ordering dependence that made the
+    // bar land at 19 or 62 depending on whether the HUD safe-area clamp had run
+    // before it was mounted.
+    //
+    // Clearance is taken from the TRACK, not from this node: the bar is 26 tall
+    // but its Track child is 38 and it is the track that draws. At y=392 the
+    // track reached 411, so its top 13 units sat behind the level panel and
+    // behind the coin pill beside it. 372 leaves a 7-unit gap below 398.
+    bar.setPosition(0, 372, 0);
     bar.getComponent(UITransform)?.setContentSize(250, 26);
     this.progressBar = bar;
   }

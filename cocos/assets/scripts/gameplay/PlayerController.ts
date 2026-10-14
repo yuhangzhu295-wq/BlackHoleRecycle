@@ -2,7 +2,7 @@
  * 玩家触控与拖拽控制器 (PlayerController.ts)
  */
 import { _decorator, Component, input, Input, EventTouch, EventMouse, Camera, Node, Vec2, Vec3, director, view } from 'cc';
-import { PLAYER_FEEL_CONFIG } from '../data/GameConfig';
+import { JOYSTICK_ZONE, PLAYER_FEEL_CONFIG } from '../data/GameConfig';
 import { BlackHoleMachine } from '../machine/BlackHoleMachine';
 import { IMovementInput, MouseJoystickInput, TouchJoystickInput } from './MovementInput';
 
@@ -190,10 +190,15 @@ export class PlayerController extends Component {
 
   private isInJoystickArea(x: number, y: number): boolean {
     const viewport = view.getViewportRect();
-    return x >= viewport.x + viewport.width * 0.45 &&
-      x <= viewport.x + viewport.width &&
+    const span = viewport.width * JOYSTICK_ZONE.widthFraction;
+    // The zone is the bottom corner on whichever side the control is drawn, so
+    // the visible joystick and the touches it accepts cannot be moved apart.
+    const inSide = JOYSTICK_ZONE.side === 'left'
+      ? x >= viewport.x && x <= viewport.x + span
+      : x >= viewport.x + viewport.width - span && x <= viewport.x + viewport.width;
+    return inSide &&
       y >= viewport.y &&
-      y <= viewport.y + viewport.height * 0.52;
+      y <= viewport.y + viewport.height * JOYSTICK_ZONE.heightFraction;
   }
 
   private getActiveInput(): IMovementInput {
