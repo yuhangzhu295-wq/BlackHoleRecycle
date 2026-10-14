@@ -731,6 +731,52 @@ DESIGN_03 要的是"可吞物体柔和高亮 + 描边"，清单允许简化为"�
 （对应 [[feedback-my-own-detector-was-wrong]]。）最终定案用的是**逐组禁用**——这个判据不需要
 解码，骗不了。
 
+## V13 阶段（2026-10-14，ART-FIRST PRODUCTION PIPELINE）
+
+### 工具链实测
+
+| 工具 | 实测 | 结论 |
+| --- | --- | --- |
+| Blender **4.5.14 LTS** | 已装 | 走 `--background --python` 无头，用来审资产与批量处理 |
+| Cocos Creator 3.8.3 | 已装，已能启动并加载本工程 | 正式构建与**可视化美术生产** |
+| `cocos/extensions/black-hole-world-art-builder` | **已跑通** | Creator 负责建节点/建 Prefab/导 GLB/存场景 |
+| Inkscape / SVG 光栅化器 | **没有** | 矢量 UI 需另找渲法（Chromium 可渲 SVG） |
+| 多智能体 | 11 个模型可用；四个子代理实际配的是 `glm-5.3` / `deepseek-v4.1-flash` | 用户已确认"子代理用这些也可以" |
+
+### ★ PHASE 0 已修（提交 `9859af2`）—— 见上方"建造地标挡住镜头"条目
+
+### ★ 正式美术生产管线**已验证可用**（这是 V13 §3 的答案）
+
+`INSPECT_GOLDEN_CITY` 任务写入 `artifacts/authoring/pending-job.json`，
+**开着的 Creator 编辑器自己认领并执行**，3 秒后写回 `result.json`：
+
+- `openSceneResult`：用官方 IPC 打开 `db://assets/scenes/Game.scene`，UUID 由
+  **asset-db 解析**（不是手写）—— 正是 §3 要求的"由 Creator 负责"。
+- 场景脚本分阶段跑（`prepare/structure/park/content/persist`），Prefab 由
+  `bindGoldenCityCell()` 建，**序列化、UUID、meta 全在 Creator 内**。
+- **任务必须带 `mode: "LEGACY_MANUAL"`**，否则被 `creator-pid-mismatch` 拒绝——
+  扩展把 PID 归属当成安全边界（防止多个编辑器互相抢任务），而它不发布自己的 PID。
+  单编辑器下 `LEGACY_MANUAL` 是官方旁路。**这是可用的，不是绕过安全。**
+- 结论事实：`GoldenCityCell` **九个子分组全是 0** —— 一张空壳 Prefab。
+  PHASE C 有地方做，但也说明它目前**没有内容**。
+
+### PHASE B 已交付：世界尺度表
+
+`cocos/docs/v13-world-scale-table.md`（62 个资产全量）+ `glb-scale-audit.json`。
+**因为 `unitScale()` 恒为 (1,1,1)，GLB 单位就是世界单位**，所以这张表能直接判断
+"资产本身超没超"，不用靠调摄像机。
+
+**这个审计自己错过一次轴**：Blender 的 glTF 导入把 Y-up 转成 Z-up，第一版按 Y 读
+高度，把轿车报成「1.50 宽 × 2.55 高」——两米半的汽车。已用 `sedan` 的最小 z=0.0 /
+最大 z=1.3 交叉验证后修正。（又一次"自己的检测器出错过"，见
+[[feedback-my-own-detector-was-wrong]]。）
+
+**要报给所有者的两件事**：
+1. `poly-google-bulldozer.glb` 占 **12.85 × 17.68 × 11.52**，而普通建筑只有 1.2–4.5；
+   它**仍在服役**（`MachineVisual_LV2/3` 引用）。文件名自带外部来源标识，**授权无法
+   从仓库内核实**——需要所有者确认授权或替换。
+2. 11 个不贴地、11 个枢轴偏中心、1 个无 UV（`battery.glb`）。
+
 ## 仍未完成
 
 **已完成并验证**（2026-10-13）：
