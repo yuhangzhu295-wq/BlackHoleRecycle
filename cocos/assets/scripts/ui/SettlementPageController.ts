@@ -120,6 +120,12 @@ export class SettlementPageController extends Component {
     // docs/design-contracts/settlement.json (which pins only the overlay, the
     // card, the leaderboard, the breakdown, and the two buttons), so this is a
     // composition choice rather than a contract change.
+    //
+    // The three bands are spread evenly between the subtitle (bottom 347) and the
+    // buttons (top -433): content totals 286 units, so each of the four gaps gets
+    // about 123. Before this the reward panel stopped at -245 and left a 188-unit
+    // void above the buttons, which is the empty lower half the sheets show.
+    // Arena keeps its authored positions: its leaderboard occupies that band.
     // A summary line, not a restatement of one card.
     this.setLabel('ArenaResult', `吞噬 ${Math.max(0, absorbed)} 件 · 最终质量 ${Math.round(Math.max(0, mass))} kg`);
     this.setLabelColour('ArenaResult', ...RESULT_ON_LIGHT_CARD);
@@ -127,16 +133,16 @@ export class SettlementPageController extends Component {
     // so moving a panel alone leaves its text behind -- which is exactly what
     // happened the first time this was written. The authored offsets are caption
     // +23 and value -15 from the panel's own y; a cluster moves as a unit.
-    this.placeCluster(250, [['ArenaResult', 0, 0]]);
+    this.placeCluster(206, [['ArenaResult', 0, 0]]);
     // Caption and value sit below the icon now that each card carries one: the
     // panel is 140 tall, the icon occupies +17..+63, so +2/-36 keeps the three
     // stacked without overlap.
-    this.placeCluster(30, [
+    this.placeCluster(-5, [
       ['ArenaStatMassPanel', -184, 0], ['ArenaStatMassCaption', -184, 2], ['ArenaStatMassValue', -184, -36],
       ['ArenaStatKillsPanel', 0, 0], ['ArenaStatKillsCaption', 0, 2], ['ArenaStatKillsValue', 0, -36],
       ['ArenaStatTimePanel', 184, 0], ['ArenaStatTimeCaption', 184, 2], ['ArenaStatTimeValue', 184, -36],
     ]);
-    this.placeCluster(-190, [
+    this.placeCluster(-253, [
       ['ArenaRewardPanel', 0, 0], ['ArenaRewardCaption', -150, 19], ['ArenaRewardValue', 164, 19],
     ]);
   }
