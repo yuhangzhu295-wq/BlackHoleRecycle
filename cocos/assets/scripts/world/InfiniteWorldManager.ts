@@ -999,6 +999,11 @@ class InfiniteWorldCell {
     return Boolean(this.constructionLandmark?.isValid && this.constructionLandmark.activeInHierarchy);
   }
 
+  /** The landmark node, for the range check that decides whether it reads as skyline. */
+  public getConstructionLandmark(): Node | null {
+    return this.constructionLandmark?.isValid ? this.constructionLandmark : null;
+  }
+
   private spawn(
     kind: WorldArtKind,
     x: number,
@@ -1357,6 +1362,12 @@ export class InfiniteWorldManager extends Component {
   public static readonly TRAFFIC_RESPAWN_DELAY_SECONDS = 4;
   public static readonly REBASE_THRESHOLD = 192;
   /**
+   * How far the player must be from the opening cell's construction landmark for
+   * it to count as skyline. Inside this it is hidden; see
+   * `updateConstructionLandmarkVisibility` for the measurement that set it.
+   */
+  public static readonly LANDMARK_SKYLINE_RANGE = 50;
+  /**
    * Targets being pulled in that count as a full suction load. Six is where the
    * vortex visibly spins up in the opening without the rim swelling so far that
    * it reads as a bigger suction range than the machine actually has.
@@ -1494,6 +1505,7 @@ export class InfiniteWorldManager extends Component {
   /** Streams the 3×3 active grid for both X and Z; returns a rebase when needed. */
   public updateCells(renderPlayerPosition: Readonly<Vec3>): WorldRebase | null {
     if (!this.initialized || !this.objectPool || !this.artLibrary) return null;
+    this.updateConstructionLandmarkVisibility(renderPlayerPosition);
     this.streamer.stream(
       renderPlayerPosition,
       new Set(this.activeCells.keys()),
@@ -2111,6 +2123,35 @@ export class InfiniteWorldManager extends Component {
   private installConstructionLandmarkInOpeningCell(): void {
     if (!this.constructionSitePrefab) return;
     this.activeCells.get(cellKey({ x: 0, z: 0 }))?.addConstructionLandmark(this.constructionSitePrefab);
+  }
+
+  /**
+   * Show the opening cell's construction landmark only while the player is far
+   * enough away for it to read as skyline.
+   *
+   * It is a background prop: 15x10x15 units at 0.145 scale, ten units tall, and it
+   * was positioned at z = -56 specifically to sit below the HUD band. That put it
+   * over the NEAR half of the play field instead, and the Endless camera trails
+   * only 18 units behind the player at 20 units up, so driving north put the
+   * camera behind a ten-unit wall and the lower half of the frame rendered as a
+   * solid black mass -- measured at 84% of the lower half, unchanged after eight
+   * seconds, and 0.8% with the landmark hidden. The arena never showed it because
+   * its camera sits at y=44 and looks over the top.
+   *
+   * Hiding it past this range is the fix rather than moving it: the player can
+   * drive arbitrarily far, so any fixed position is eventually reached, and the
+   * prop only has a job while it is a distant skyline. The threshold is well
+   * inside the range at which it is still legible as skyline, so the pop happens
+   * while it is far and small.
+   */
+  private updateConstructionLandmarkVisibility(renderPlayerPosition: Readonly<Vec3>): void {
+    const landmark = this.activeCells.get(cellKey({ x: 0, z: 0 }))?.getConstructionLandmark() || null;
+    if (!landmark) return;
+    const dx = landmark.position.x - renderPlayerPosition.x;
+    const dz = landmark.position.z - renderPlayerPosition.z;
+    const shouldShow = dx * dx + dz * dz > InfiniteWorldManager.LANDMARK_SKYLINE_RANGE
+      * InfiniteWorldManager.LANDMARK_SKYLINE_RANGE;
+    if (landmark.active !== shouldShow) landmark.active = shouldShow;
   }
 
   private updateCurrentTheme(coord: WorldCellCoord): void {
