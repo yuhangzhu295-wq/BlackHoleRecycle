@@ -845,8 +845,7 @@
     "_parent": {
       "__id__": 1
     },
-    "_children": [
-      {
+    "_children": [{
         "__id__": 33
       },
       {
@@ -860,8 +859,31 @@
       },
       {
         "__id__": 61
-      }
-    ],
+      },
+      {
+        "__id__": 474
+      },
+      {
+        "__id__": 475
+      },
+      {
+        "__id__": 476
+      },
+      {
+        "__id__": 477
+      },
+      {
+        "__id__": 478
+      },
+      {
+        "__id__": 479
+      },
+      {
+        "__id__": 480
+      },
+      {
+        "__id__": 481
+      }],
     "_active": true,
     "_components": [],
     "_prefab": {
@@ -1789,8 +1811,7 @@
     "_parent": {
       "__id__": 1
     },
-    "_children": [
-      {
+    "_children": [{
         "__id__": 70
       },
       {
@@ -1828,8 +1849,25 @@
       },
       {
         "__id__": 389
-      }
-    ],
+      },
+      {
+        "__id__": 468
+      },
+      {
+        "__id__": 469
+      },
+      {
+        "__id__": 470
+      },
+      {
+        "__id__": 471
+      },
+      {
+        "__id__": 472
+      },
+      {
+        "__id__": 473
+      }],
     "_active": true,
     "_components": [],
     "_prefab": {
@@ -13126,5 +13164,607 @@
       "instance": null,
       "targetOverrides": null,
       "nestedPrefabInstanceRoots": null
+    },
+    {
+      "__type__": "cc.Node",
+      "_name": "ArenaFrameWestA",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "_parent": {
+        "__id__": 69
+      },
+      "_children": [],
+      "_active": true,
+      "_components": [],
+      "_prefab": {
+        "__id__": 83
+      },
+      "_lpos": {
+        "__type__": "cc.Vec3",
+        "x": -22.0,
+        "y": 0,
+        "z": 6.0
+      },
+      "_lrot": {
+        "__type__": "cc.Quat",
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "_lscale": {
+        "__type__": "cc.Vec3",
+        "x": 1.6,
+        "y": 1.6,
+        "z": 1.6
+      },
+      "_mobility": 0,
+      "_layer": 1073741824,
+      "_euler": {
+        "__type__": "cc.Vec3",
+        "x": 0,
+        "y": 90,
+        "z": 0
+      },
+      "_id": ""
+    },
+    {
+      "__type__": "cc.Node",
+      "_name": "ArenaFrameWestB",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "_parent": {
+        "__id__": 69
+      },
+      "_children": [],
+      "_active": true,
+      "_components": [],
+      "_prefab": {
+        "__id__": 83
+      },
+      "_lpos": {
+        "__type__": "cc.Vec3",
+        "x": -22.0,
+        "y": 0,
+        "z": -14.0
+      },
+      "_lrot": {
+        "__type__": "cc.Quat",
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "_lscale": {
+        "__type__": "cc.Vec3",
+        "x": 1.6,
+        "y": 1.6,
+        "z": 1.6
+      },
+      "_mobility": 0,
+      "_layer": 1073741824,
+      "_euler": {
+        "__type__": "cc.Vec3",
+        "x": 0,
+        "y": 90,
+        "z": 0
+      },
+      "_id": ""
+    },
+    {
+      "__type__": "cc.Node",
+      "_name": "ArenaFrameWestC",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "_parent": {
+        "__id__": 69
+      },
+      "_children": [],
+      "_active": true,
+      "_components": [],
+      "_prefab": {
+        "__id__": 83
+      },
+      "_lpos": {
+        "__type__": "cc.Vec3",
+        "x": -22.0,
+        "y": 0,
+        "z": -32.0
+      },
+      "_lrot": {
+        "__type__": "cc.Quat",
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "_lscale": {
+        "__type__": "cc.Vec3",
+        "x": 1.6,
+        "y": 1.6,
+        "z": 1.6
+      },
+      "_mobility": 0,
+      "_layer": 1073741824,
+      "_euler": {
+        "__type__": "cc.Vec3",
+        "x": 0,
+        "y": 90,
+        "z": 0
+      },
+      "_id": ""
+    },
+    {
+      "__type__": "cc.Node",
+      "_name": "ArenaFrameEastA",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "_parent": {
+        "__id__": 69
+      },
+      "_children": [],
+      "_active": true,
+      "_components": [],
+      "_prefab": {
+        "__id__": 83
+      },
+      "_lpos": {
+        "__type__": "cc.Vec3",
+        "x": 22.0,
+        "y": 0,
+        "z": 6.0
+      },
+      "_lrot": {
+        "__type__": "cc.Quat",
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "_lscale": {
+        "__type__": "cc.Vec3",
+        "x": 1.6,
+        "y": 1.6,
+        "z": 1.6
+      },
+      "_mobility": 0,
+      "_layer": 1073741824,
+      "_euler": {
+        "__type__": "cc.Vec3",
+        "x": 0,
+        "y": -90,
+        "z": 0
+      },
+      "_id": ""
+    },
+    {
+      "__type__": "cc.Node",
+      "_name": "ArenaFrameEastB",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "_parent": {
+        "__id__": 69
+      },
+      "_children": [],
+      "_active": true,
+      "_components": [],
+      "_prefab": {
+        "__id__": 83
+      },
+      "_lpos": {
+        "__type__": "cc.Vec3",
+        "x": 22.0,
+        "y": 0,
+        "z": -14.0
+      },
+      "_lrot": {
+        "__type__": "cc.Quat",
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "_lscale": {
+        "__type__": "cc.Vec3",
+        "x": 1.6,
+        "y": 1.6,
+        "z": 1.6
+      },
+      "_mobility": 0,
+      "_layer": 1073741824,
+      "_euler": {
+        "__type__": "cc.Vec3",
+        "x": 0,
+        "y": -90,
+        "z": 0
+      },
+      "_id": ""
+    },
+    {
+      "__type__": "cc.Node",
+      "_name": "ArenaFrameEastC",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "_parent": {
+        "__id__": 69
+      },
+      "_children": [],
+      "_active": true,
+      "_components": [],
+      "_prefab": {
+        "__id__": 83
+      },
+      "_lpos": {
+        "__type__": "cc.Vec3",
+        "x": 22.0,
+        "y": 0,
+        "z": -32.0
+      },
+      "_lrot": {
+        "__type__": "cc.Quat",
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "_lscale": {
+        "__type__": "cc.Vec3",
+        "x": 1.6,
+        "y": 1.6,
+        "z": 1.6
+      },
+      "_mobility": 0,
+      "_layer": 1073741824,
+      "_euler": {
+        "__type__": "cc.Vec3",
+        "x": 0,
+        "y": -90,
+        "z": 0
+      },
+      "_id": ""
+    },
+    {
+      "__type__": "cc.Node",
+      "_name": "ArenaRoadNorthInner",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "_parent": {
+        "__id__": 32
+      },
+      "_children": [],
+      "_active": true,
+      "_components": [],
+      "_prefab": {
+        "__id__": 39
+      },
+      "_lpos": {
+        "__type__": "cc.Vec3",
+        "x": 0.0,
+        "y": 0,
+        "z": 30.0
+      },
+      "_lrot": {
+        "__type__": "cc.Quat",
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "_lscale": {
+        "__type__": "cc.Vec3",
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "_mobility": 0,
+      "_layer": 1073741824,
+      "_euler": {
+        "__type__": "cc.Vec3",
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "_id": ""
+    },
+    {
+      "__type__": "cc.Node",
+      "_name": "ArenaRoadNorthOuter",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "_parent": {
+        "__id__": 32
+      },
+      "_children": [],
+      "_active": true,
+      "_components": [],
+      "_prefab": {
+        "__id__": 39
+      },
+      "_lpos": {
+        "__type__": "cc.Vec3",
+        "x": 0.0,
+        "y": 0,
+        "z": -30.0
+      },
+      "_lrot": {
+        "__type__": "cc.Quat",
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "_lscale": {
+        "__type__": "cc.Vec3",
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "_mobility": 0,
+      "_layer": 1073741824,
+      "_euler": {
+        "__type__": "cc.Vec3",
+        "x": 0,
+        "y": 180,
+        "z": 0
+      },
+      "_id": ""
+    },
+    {
+      "__type__": "cc.Node",
+      "_name": "ArenaRoadEastInner",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "_parent": {
+        "__id__": 32
+      },
+      "_children": [],
+      "_active": true,
+      "_components": [],
+      "_prefab": {
+        "__id__": 39
+      },
+      "_lpos": {
+        "__type__": "cc.Vec3",
+        "x": 30.0,
+        "y": 0,
+        "z": 0.0
+      },
+      "_lrot": {
+        "__type__": "cc.Quat",
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "_lscale": {
+        "__type__": "cc.Vec3",
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "_mobility": 0,
+      "_layer": 1073741824,
+      "_euler": {
+        "__type__": "cc.Vec3",
+        "x": 0,
+        "y": 90,
+        "z": 0
+      },
+      "_id": ""
+    },
+    {
+      "__type__": "cc.Node",
+      "_name": "ArenaRoadWestInner",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "_parent": {
+        "__id__": 32
+      },
+      "_children": [],
+      "_active": true,
+      "_components": [],
+      "_prefab": {
+        "__id__": 39
+      },
+      "_lpos": {
+        "__type__": "cc.Vec3",
+        "x": -30.0,
+        "y": 0,
+        "z": 0.0
+      },
+      "_lrot": {
+        "__type__": "cc.Quat",
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "_lscale": {
+        "__type__": "cc.Vec3",
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "_mobility": 0,
+      "_layer": 1073741824,
+      "_euler": {
+        "__type__": "cc.Vec3",
+        "x": 0,
+        "y": 90,
+        "z": 0
+      },
+      "_id": ""
+    },
+    {
+      "__type__": "cc.Node",
+      "_name": "ArenaRoadCapNE",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "_parent": {
+        "__id__": 32
+      },
+      "_children": [],
+      "_active": true,
+      "_components": [],
+      "_prefab": {
+        "__id__": 39
+      },
+      "_lpos": {
+        "__type__": "cc.Vec3",
+        "x": 30.0,
+        "y": 0,
+        "z": 30.0
+      },
+      "_lrot": {
+        "__type__": "cc.Quat",
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "_lscale": {
+        "__type__": "cc.Vec3",
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "_mobility": 0,
+      "_layer": 1073741824,
+      "_euler": {
+        "__type__": "cc.Vec3",
+        "x": 0,
+        "y": 90,
+        "z": 0
+      },
+      "_id": ""
+    },
+    {
+      "__type__": "cc.Node",
+      "_name": "ArenaRoadCapNW",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "_parent": {
+        "__id__": 32
+      },
+      "_children": [],
+      "_active": true,
+      "_components": [],
+      "_prefab": {
+        "__id__": 39
+      },
+      "_lpos": {
+        "__type__": "cc.Vec3",
+        "x": -30.0,
+        "y": 0,
+        "z": 30.0
+      },
+      "_lrot": {
+        "__type__": "cc.Quat",
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "_lscale": {
+        "__type__": "cc.Vec3",
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "_mobility": 0,
+      "_layer": 1073741824,
+      "_euler": {
+        "__type__": "cc.Vec3",
+        "x": 0,
+        "y": 90,
+        "z": 0
+      },
+      "_id": ""
+    },
+    {
+      "__type__": "cc.Node",
+      "_name": "ArenaRoadCapSE",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "_parent": {
+        "__id__": 32
+      },
+      "_children": [],
+      "_active": true,
+      "_components": [],
+      "_prefab": {
+        "__id__": 39
+      },
+      "_lpos": {
+        "__type__": "cc.Vec3",
+        "x": 30.0,
+        "y": 0,
+        "z": -30.0
+      },
+      "_lrot": {
+        "__type__": "cc.Quat",
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "_lscale": {
+        "__type__": "cc.Vec3",
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "_mobility": 0,
+      "_layer": 1073741824,
+      "_euler": {
+        "__type__": "cc.Vec3",
+        "x": 0,
+        "y": 90,
+        "z": 0
+      },
+      "_id": ""
+    },
+    {
+      "__type__": "cc.Node",
+      "_name": "ArenaRoadCapSW",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "_parent": {
+        "__id__": 32
+      },
+      "_children": [],
+      "_active": true,
+      "_components": [],
+      "_prefab": {
+        "__id__": 39
+      },
+      "_lpos": {
+        "__type__": "cc.Vec3",
+        "x": -30.0,
+        "y": 0,
+        "z": -30.0
+      },
+      "_lrot": {
+        "__type__": "cc.Quat",
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "_lscale": {
+        "__type__": "cc.Vec3",
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "_mobility": 0,
+      "_layer": 1073741824,
+      "_euler": {
+        "__type__": "cc.Vec3",
+        "x": 0,
+        "y": 90,
+        "z": 0
+      },
+      "_id": ""
     }
 ]
