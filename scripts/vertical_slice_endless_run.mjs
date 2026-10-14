@@ -12,7 +12,7 @@
  *   timeToFirstEdibleRecognition  an object first shows the edible cue, i.e.
  *                              the game is telling the player what can be eaten
  *   timeToFirstAbsorb          the first real absorption
- *   timeToFirstLockedFeedback  the first "需要 LV.X" prompt on a body too big
+ *   timeToFirstLockedFeedback  the first "LV.X 可吞噬" prompt on a body too big
  *   timeToFirstLevelUp         the first real level-up
  *
  * It also captures frame sequences (default 120 ms apart) across the movement

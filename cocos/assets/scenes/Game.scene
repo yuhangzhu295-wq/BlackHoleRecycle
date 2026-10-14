@@ -27657,7 +27657,9 @@
     "_parent": {
       "__id__": 705
     },
-    "_children": [],
+    "_children": [{
+        "__id__": 1412
+      }],
     "_active": true,
     "_components": [
       {
@@ -28184,7 +28186,9 @@
     "_parent": {
       "__id__": 705
     },
-    "_children": [],
+    "_children": [{
+        "__id__": 1426
+      }],
     "_active": true,
     "_components": [
       {
@@ -54178,5 +54182,1041 @@
       },
       "_shadowBlur": 2,
       "_id": "18Vyx9fddAAKcnInaLKraF"
+    },
+    {
+      "__type__": "cc.Node",
+      "_name": "ArenaCardText",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "_parent": {
+        "__id__": 719
+      },
+      "_children": [
+        {
+          "__id__": 1414
+        },
+        {
+          "__id__": 1418
+        },
+        {
+          "__id__": 1422
+        }
+      ],
+      "_active": true,
+      "_components": [
+        {
+          "__id__": 1413
+        }
+      ],
+      "_prefab": null,
+      "_lpos": {
+        "__type__": "cc.Vec3",
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "_lrot": {
+        "__type__": "cc.Quat",
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "_lscale": {
+        "__type__": "cc.Vec3",
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "_mobility": 0,
+      "_layer": 33554432,
+      "_euler": {
+        "__type__": "cc.Vec3",
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "_id": "56lXi+JPhCl6SXfU/gSQoe"
+    },
+    {
+      "__type__": "cc.UITransform",
+      "_name": "",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "node": {
+        "__id__": 1412
+      },
+      "_enabled": true,
+      "__prefab": null,
+      "_contentSize": {
+        "__type__": "cc.Size",
+        "width": 610,
+        "height": 278
+      },
+      "_anchorPoint": {
+        "__type__": "cc.Vec2",
+        "x": 0.5,
+        "y": 0.5
+      },
+      "_id": "9a4BiAGe9OsqrrAmpRIcEG"
+    },
+    {
+      "__type__": "cc.Node",
+      "_name": "ArenaCardTitle",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "_parent": {
+        "__id__": 1412
+      },
+      "_children": [],
+      "_active": true,
+      "_components": [
+        {
+          "__id__": 1415
+        },
+        {
+          "__id__": 1416
+        },
+        {
+          "__id__": 1417
+        }
+      ],
+      "_prefab": null,
+      "_lpos": {
+        "__type__": "cc.Vec3",
+        "x": -270,
+        "y": 80.0,
+        "z": 0
+      },
+      "_lrot": {
+        "__type__": "cc.Quat",
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "_lscale": {
+        "__type__": "cc.Vec3",
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "_mobility": 0,
+      "_layer": 33554432,
+      "_euler": {
+        "__type__": "cc.Vec3",
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "_id": "56lXi+JPhCl6SXfU/gSQoe-title"
+    },
+    {
+      "__type__": "cc.UITransform",
+      "_name": "",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "node": {
+        "__id__": 1414
+      },
+      "_enabled": true,
+      "__prefab": null,
+      "_contentSize": {
+        "__type__": "cc.Size",
+        "width": 420,
+        "height": 52
+      },
+      "_anchorPoint": {
+        "__type__": "cc.Vec2",
+        "x": 0,
+        "y": 0.5
+      },
+      "_id": "9a4BiAGe9OsqrrAmpRIcEG"
+    },
+    {
+      "__type__": "cc.Label",
+      "_name": "",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "node": {
+        "__id__": 1414
+      },
+      "_enabled": true,
+      "__prefab": null,
+      "_customMaterial": null,
+      "_srcBlendFactor": 2,
+      "_dstBlendFactor": 4,
+      "_color": {
+        "__type__": "cc.Color",
+        "r": 255,
+        "g": 255,
+        "b": 255,
+        "a": 255
+      },
+      "_string": "",
+      "_horizontalAlign": 0,
+      "_verticalAlign": 1,
+      "_actualFontSize": 17,
+      "_fontSize": 44,
+      "_fontFamily": "Arial",
+      "_lineHeight": 52,
+      "_overflow": 0,
+      "_enableWrapText": false,
+      "_font": null,
+      "_isSystemFontUsed": true,
+      "_spacingX": 0,
+      "_isItalic": false,
+      "_isBold": true,
+      "_isUnderline": false,
+      "_underlineHeight": 2,
+      "_cacheMode": 0,
+      "_enableOutline": true,
+      "_outlineColor": {
+        "__type__": "cc.Color",
+        "r": 23,
+        "g": 32,
+        "b": 50,
+        "a": 255
+      },
+      "_outlineWidth": 5,
+      "_enableShadow": false,
+      "_shadowColor": {
+        "__type__": "cc.Color",
+        "r": 0,
+        "g": 0,
+        "b": 0,
+        "a": 255
+      },
+      "_shadowOffset": {
+        "__type__": "cc.Vec2",
+        "x": 2,
+        "y": 2
+      },
+      "_shadowBlur": 2,
+      "_id": "d8PoHGJoxPQbLRwgJr3NGc"
+    },
+    {
+      "__type__": "cc.LabelOutline",
+      "_name": "",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "node": {
+        "__id__": 726
+      },
+      "_enabled": false,
+      "__prefab": null,
+      "_id": "6260DKcWhGC7nPUOx2orD5"
+    },
+    {
+      "__type__": "cc.Node",
+      "_name": "ArenaCardSubtitle",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "_parent": {
+        "__id__": 1412
+      },
+      "_children": [],
+      "_active": true,
+      "_components": [
+        {
+          "__id__": 1419
+        },
+        {
+          "__id__": 1420
+        },
+        {
+          "__id__": 1421
+        }
+      ],
+      "_prefab": null,
+      "_lpos": {
+        "__type__": "cc.Vec3",
+        "x": -266,
+        "y": 23.5,
+        "z": 0
+      },
+      "_lrot": {
+        "__type__": "cc.Quat",
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "_lscale": {
+        "__type__": "cc.Vec3",
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "_mobility": 0,
+      "_layer": 33554432,
+      "_euler": {
+        "__type__": "cc.Vec3",
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "_id": "56lXi+JPhCl6SXfU/gSQoe-subtitle"
+    },
+    {
+      "__type__": "cc.UITransform",
+      "_name": "",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "node": {
+        "__id__": 1418
+      },
+      "_enabled": true,
+      "__prefab": null,
+      "_contentSize": {
+        "__type__": "cc.Size",
+        "width": 420,
+        "height": 30
+      },
+      "_anchorPoint": {
+        "__type__": "cc.Vec2",
+        "x": 0,
+        "y": 0.5
+      },
+      "_id": "9a4BiAGe9OsqrrAmpRIcEG"
+    },
+    {
+      "__type__": "cc.Label",
+      "_name": "",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "node": {
+        "__id__": 1418
+      },
+      "_enabled": true,
+      "__prefab": null,
+      "_customMaterial": null,
+      "_srcBlendFactor": 2,
+      "_dstBlendFactor": 4,
+      "_color": {
+        "__type__": "cc.Color",
+        "r": 255,
+        "g": 255,
+        "b": 255,
+        "a": 255
+      },
+      "_string": "",
+      "_horizontalAlign": 0,
+      "_verticalAlign": 1,
+      "_actualFontSize": 17,
+      "_fontSize": 25,
+      "_fontFamily": "Arial",
+      "_lineHeight": 30,
+      "_overflow": 0,
+      "_enableWrapText": false,
+      "_font": null,
+      "_isSystemFontUsed": true,
+      "_spacingX": 0,
+      "_isItalic": false,
+      "_isBold": true,
+      "_isUnderline": false,
+      "_underlineHeight": 2,
+      "_cacheMode": 0,
+      "_enableOutline": true,
+      "_outlineColor": {
+        "__type__": "cc.Color",
+        "r": 23,
+        "g": 32,
+        "b": 50,
+        "a": 255
+      },
+      "_outlineWidth": 3,
+      "_enableShadow": false,
+      "_shadowColor": {
+        "__type__": "cc.Color",
+        "r": 0,
+        "g": 0,
+        "b": 0,
+        "a": 255
+      },
+      "_shadowOffset": {
+        "__type__": "cc.Vec2",
+        "x": 2,
+        "y": 2
+      },
+      "_shadowBlur": 2,
+      "_id": "d8PoHGJoxPQbLRwgJr3NGc"
+    },
+    {
+      "__type__": "cc.LabelOutline",
+      "_name": "",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "node": {
+        "__id__": 726
+      },
+      "_enabled": false,
+      "__prefab": null,
+      "_id": "6260DKcWhGC7nPUOx2orD5"
+    },
+    {
+      "__type__": "cc.Node",
+      "_name": "ArenaCardCallout",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "_parent": {
+        "__id__": 1412
+      },
+      "_children": [],
+      "_active": true,
+      "_components": [
+        {
+          "__id__": 1423
+        },
+        {
+          "__id__": 1424
+        },
+        {
+          "__id__": 1425
+        }
+      ],
+      "_prefab": null,
+      "_lpos": {
+        "__type__": "cc.Vec3",
+        "x": -266,
+        "y": -15.5,
+        "z": 0
+      },
+      "_lrot": {
+        "__type__": "cc.Quat",
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "_lscale": {
+        "__type__": "cc.Vec3",
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "_mobility": 0,
+      "_layer": 33554432,
+      "_euler": {
+        "__type__": "cc.Vec3",
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "_id": "56lXi+JPhCl6SXfU/gSQoe-callout"
+    },
+    {
+      "__type__": "cc.UITransform",
+      "_name": "",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "node": {
+        "__id__": 1422
+      },
+      "_enabled": true,
+      "__prefab": null,
+      "_contentSize": {
+        "__type__": "cc.Size",
+        "width": 420,
+        "height": 24
+      },
+      "_anchorPoint": {
+        "__type__": "cc.Vec2",
+        "x": 0,
+        "y": 0.5
+      },
+      "_id": "9a4BiAGe9OsqrrAmpRIcEG"
+    },
+    {
+      "__type__": "cc.Label",
+      "_name": "",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "node": {
+        "__id__": 1422
+      },
+      "_enabled": true,
+      "__prefab": null,
+      "_customMaterial": null,
+      "_srcBlendFactor": 2,
+      "_dstBlendFactor": 4,
+      "_color": {
+        "__type__": "cc.Color",
+        "r": 255,
+        "g": 242,
+        "b": 100,
+        "a": 255
+      },
+      "_string": "",
+      "_horizontalAlign": 0,
+      "_verticalAlign": 1,
+      "_actualFontSize": 17,
+      "_fontSize": 19,
+      "_fontFamily": "Arial",
+      "_lineHeight": 24,
+      "_overflow": 0,
+      "_enableWrapText": false,
+      "_font": null,
+      "_isSystemFontUsed": true,
+      "_spacingX": 0,
+      "_isItalic": false,
+      "_isBold": true,
+      "_isUnderline": false,
+      "_underlineHeight": 2,
+      "_cacheMode": 0,
+      "_enableOutline": true,
+      "_outlineColor": {
+        "__type__": "cc.Color",
+        "r": 53,
+        "g": 40,
+        "b": 14,
+        "a": 255
+      },
+      "_outlineWidth": 2,
+      "_enableShadow": false,
+      "_shadowColor": {
+        "__type__": "cc.Color",
+        "r": 0,
+        "g": 0,
+        "b": 0,
+        "a": 255
+      },
+      "_shadowOffset": {
+        "__type__": "cc.Vec2",
+        "x": 2,
+        "y": 2
+      },
+      "_shadowBlur": 2,
+      "_id": "d8PoHGJoxPQbLRwgJr3NGc"
+    },
+    {
+      "__type__": "cc.LabelOutline",
+      "_name": "",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "node": {
+        "__id__": 726
+      },
+      "_enabled": false,
+      "__prefab": null,
+      "_id": "6260DKcWhGC7nPUOx2orD5"
+    },
+    {
+      "__type__": "cc.Node",
+      "_name": "EndlessCardText",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "_parent": {
+        "__id__": 733
+      },
+      "_children": [
+        {
+          "__id__": 1428
+        },
+        {
+          "__id__": 1432
+        },
+        {
+          "__id__": 1436
+        }
+      ],
+      "_active": true,
+      "_components": [
+        {
+          "__id__": 1427
+        }
+      ],
+      "_prefab": null,
+      "_lpos": {
+        "__type__": "cc.Vec3",
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "_lrot": {
+        "__type__": "cc.Quat",
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "_lscale": {
+        "__type__": "cc.Vec3",
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "_mobility": 0,
+      "_layer": 33554432,
+      "_euler": {
+        "__type__": "cc.Vec3",
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "_id": "56lXi+JPhCl6SXfU/gSQoe"
+    },
+    {
+      "__type__": "cc.UITransform",
+      "_name": "",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "node": {
+        "__id__": 1426
+      },
+      "_enabled": true,
+      "__prefab": null,
+      "_contentSize": {
+        "__type__": "cc.Size",
+        "width": 610,
+        "height": 278
+      },
+      "_anchorPoint": {
+        "__type__": "cc.Vec2",
+        "x": 0.5,
+        "y": 0.5
+      },
+      "_id": "9a4BiAGe9OsqrrAmpRIcEG"
+    },
+    {
+      "__type__": "cc.Node",
+      "_name": "EndlessCardTitle",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "_parent": {
+        "__id__": 1426
+      },
+      "_children": [],
+      "_active": true,
+      "_components": [
+        {
+          "__id__": 1429
+        },
+        {
+          "__id__": 1430
+        },
+        {
+          "__id__": 1431
+        }
+      ],
+      "_prefab": null,
+      "_lpos": {
+        "__type__": "cc.Vec3",
+        "x": -270,
+        "y": 80.0,
+        "z": 0
+      },
+      "_lrot": {
+        "__type__": "cc.Quat",
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "_lscale": {
+        "__type__": "cc.Vec3",
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "_mobility": 0,
+      "_layer": 33554432,
+      "_euler": {
+        "__type__": "cc.Vec3",
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "_id": "56lXi+JPhCl6SXfU/gSQoe-title"
+    },
+    {
+      "__type__": "cc.UITransform",
+      "_name": "",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "node": {
+        "__id__": 1428
+      },
+      "_enabled": true,
+      "__prefab": null,
+      "_contentSize": {
+        "__type__": "cc.Size",
+        "width": 420,
+        "height": 52
+      },
+      "_anchorPoint": {
+        "__type__": "cc.Vec2",
+        "x": 0,
+        "y": 0.5
+      },
+      "_id": "9a4BiAGe9OsqrrAmpRIcEG"
+    },
+    {
+      "__type__": "cc.Label",
+      "_name": "",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "node": {
+        "__id__": 1428
+      },
+      "_enabled": true,
+      "__prefab": null,
+      "_customMaterial": null,
+      "_srcBlendFactor": 2,
+      "_dstBlendFactor": 4,
+      "_color": {
+        "__type__": "cc.Color",
+        "r": 255,
+        "g": 255,
+        "b": 255,
+        "a": 255
+      },
+      "_string": "",
+      "_horizontalAlign": 0,
+      "_verticalAlign": 1,
+      "_actualFontSize": 17,
+      "_fontSize": 44,
+      "_fontFamily": "Arial",
+      "_lineHeight": 52,
+      "_overflow": 0,
+      "_enableWrapText": false,
+      "_font": null,
+      "_isSystemFontUsed": true,
+      "_spacingX": 0,
+      "_isItalic": false,
+      "_isBold": true,
+      "_isUnderline": false,
+      "_underlineHeight": 2,
+      "_cacheMode": 0,
+      "_enableOutline": true,
+      "_outlineColor": {
+        "__type__": "cc.Color",
+        "r": 23,
+        "g": 32,
+        "b": 50,
+        "a": 255
+      },
+      "_outlineWidth": 5,
+      "_enableShadow": false,
+      "_shadowColor": {
+        "__type__": "cc.Color",
+        "r": 0,
+        "g": 0,
+        "b": 0,
+        "a": 255
+      },
+      "_shadowOffset": {
+        "__type__": "cc.Vec2",
+        "x": 2,
+        "y": 2
+      },
+      "_shadowBlur": 2,
+      "_id": "d8PoHGJoxPQbLRwgJr3NGc"
+    },
+    {
+      "__type__": "cc.LabelOutline",
+      "_name": "",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "node": {
+        "__id__": 726
+      },
+      "_enabled": false,
+      "__prefab": null,
+      "_id": "6260DKcWhGC7nPUOx2orD5"
+    },
+    {
+      "__type__": "cc.Node",
+      "_name": "EndlessCardSubtitle",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "_parent": {
+        "__id__": 1426
+      },
+      "_children": [],
+      "_active": true,
+      "_components": [
+        {
+          "__id__": 1433
+        },
+        {
+          "__id__": 1434
+        },
+        {
+          "__id__": 1435
+        }
+      ],
+      "_prefab": null,
+      "_lpos": {
+        "__type__": "cc.Vec3",
+        "x": -266,
+        "y": 23.5,
+        "z": 0
+      },
+      "_lrot": {
+        "__type__": "cc.Quat",
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "_lscale": {
+        "__type__": "cc.Vec3",
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "_mobility": 0,
+      "_layer": 33554432,
+      "_euler": {
+        "__type__": "cc.Vec3",
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "_id": "56lXi+JPhCl6SXfU/gSQoe-subtitle"
+    },
+    {
+      "__type__": "cc.UITransform",
+      "_name": "",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "node": {
+        "__id__": 1432
+      },
+      "_enabled": true,
+      "__prefab": null,
+      "_contentSize": {
+        "__type__": "cc.Size",
+        "width": 420,
+        "height": 30
+      },
+      "_anchorPoint": {
+        "__type__": "cc.Vec2",
+        "x": 0,
+        "y": 0.5
+      },
+      "_id": "9a4BiAGe9OsqrrAmpRIcEG"
+    },
+    {
+      "__type__": "cc.Label",
+      "_name": "",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "node": {
+        "__id__": 1432
+      },
+      "_enabled": true,
+      "__prefab": null,
+      "_customMaterial": null,
+      "_srcBlendFactor": 2,
+      "_dstBlendFactor": 4,
+      "_color": {
+        "__type__": "cc.Color",
+        "r": 255,
+        "g": 255,
+        "b": 255,
+        "a": 255
+      },
+      "_string": "",
+      "_horizontalAlign": 0,
+      "_verticalAlign": 1,
+      "_actualFontSize": 17,
+      "_fontSize": 25,
+      "_fontFamily": "Arial",
+      "_lineHeight": 30,
+      "_overflow": 0,
+      "_enableWrapText": false,
+      "_font": null,
+      "_isSystemFontUsed": true,
+      "_spacingX": 0,
+      "_isItalic": false,
+      "_isBold": true,
+      "_isUnderline": false,
+      "_underlineHeight": 2,
+      "_cacheMode": 0,
+      "_enableOutline": true,
+      "_outlineColor": {
+        "__type__": "cc.Color",
+        "r": 23,
+        "g": 32,
+        "b": 50,
+        "a": 255
+      },
+      "_outlineWidth": 3,
+      "_enableShadow": false,
+      "_shadowColor": {
+        "__type__": "cc.Color",
+        "r": 0,
+        "g": 0,
+        "b": 0,
+        "a": 255
+      },
+      "_shadowOffset": {
+        "__type__": "cc.Vec2",
+        "x": 2,
+        "y": 2
+      },
+      "_shadowBlur": 2,
+      "_id": "d8PoHGJoxPQbLRwgJr3NGc"
+    },
+    {
+      "__type__": "cc.LabelOutline",
+      "_name": "",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "node": {
+        "__id__": 726
+      },
+      "_enabled": false,
+      "__prefab": null,
+      "_id": "6260DKcWhGC7nPUOx2orD5"
+    },
+    {
+      "__type__": "cc.Node",
+      "_name": "EndlessCardCallout",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "_parent": {
+        "__id__": 1426
+      },
+      "_children": [],
+      "_active": true,
+      "_components": [
+        {
+          "__id__": 1437
+        },
+        {
+          "__id__": 1438
+        },
+        {
+          "__id__": 1439
+        }
+      ],
+      "_prefab": null,
+      "_lpos": {
+        "__type__": "cc.Vec3",
+        "x": -266,
+        "y": -15.5,
+        "z": 0
+      },
+      "_lrot": {
+        "__type__": "cc.Quat",
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "_lscale": {
+        "__type__": "cc.Vec3",
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "_mobility": 0,
+      "_layer": 33554432,
+      "_euler": {
+        "__type__": "cc.Vec3",
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "_id": "56lXi+JPhCl6SXfU/gSQoe-callout"
+    },
+    {
+      "__type__": "cc.UITransform",
+      "_name": "",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "node": {
+        "__id__": 1436
+      },
+      "_enabled": true,
+      "__prefab": null,
+      "_contentSize": {
+        "__type__": "cc.Size",
+        "width": 420,
+        "height": 24
+      },
+      "_anchorPoint": {
+        "__type__": "cc.Vec2",
+        "x": 0,
+        "y": 0.5
+      },
+      "_id": "9a4BiAGe9OsqrrAmpRIcEG"
+    },
+    {
+      "__type__": "cc.Label",
+      "_name": "",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "node": {
+        "__id__": 1436
+      },
+      "_enabled": true,
+      "__prefab": null,
+      "_customMaterial": null,
+      "_srcBlendFactor": 2,
+      "_dstBlendFactor": 4,
+      "_color": {
+        "__type__": "cc.Color",
+        "r": 255,
+        "g": 242,
+        "b": 100,
+        "a": 255
+      },
+      "_string": "",
+      "_horizontalAlign": 0,
+      "_verticalAlign": 1,
+      "_actualFontSize": 17,
+      "_fontSize": 19,
+      "_fontFamily": "Arial",
+      "_lineHeight": 24,
+      "_overflow": 0,
+      "_enableWrapText": false,
+      "_font": null,
+      "_isSystemFontUsed": true,
+      "_spacingX": 0,
+      "_isItalic": false,
+      "_isBold": true,
+      "_isUnderline": false,
+      "_underlineHeight": 2,
+      "_cacheMode": 0,
+      "_enableOutline": true,
+      "_outlineColor": {
+        "__type__": "cc.Color",
+        "r": 53,
+        "g": 40,
+        "b": 14,
+        "a": 255
+      },
+      "_outlineWidth": 2,
+      "_enableShadow": false,
+      "_shadowColor": {
+        "__type__": "cc.Color",
+        "r": 0,
+        "g": 0,
+        "b": 0,
+        "a": 255
+      },
+      "_shadowOffset": {
+        "__type__": "cc.Vec2",
+        "x": 2,
+        "y": 2
+      },
+      "_shadowBlur": 2,
+      "_id": "d8PoHGJoxPQbLRwgJr3NGc"
+    },
+    {
+      "__type__": "cc.LabelOutline",
+      "_name": "",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "node": {
+        "__id__": 726
+      },
+      "_enabled": false,
+      "__prefab": null,
+      "_id": "6260DKcWhGC7nPUOx2orD5"
     }
 ]

@@ -1,5 +1,5 @@
 /**
- * V4 reference 10 (State A) — the readable "需要 LV.X" prompt for a target the
+ * V4 reference 10 (State A) — the readable "LV.X 可吞噬" prompt for a target the
  * machine is still not allowed to swallow.
  *
  * `CompressibleObject` already owns the mechanic: the locked body is only pulled

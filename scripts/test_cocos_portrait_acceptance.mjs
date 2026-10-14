@@ -1245,7 +1245,11 @@ async function verifyArenaFlow(cdp, page, canvasRect, modeSnapshot) {
   assert(initial.ui?.arenaHUD?.joystick?.active,
     `FAIL_ARENA_VISIBLE_JOYSTICK: ${JSON.stringify(initial.ui?.arenaHUD)}`);
   const localNameplate = initial.ui?.arenaHUD?.nameplates?.find((entry) => entry.id === 'local-player');
-  assert(localNameplate?.active && localNameplate.label === '我',
+  // Was `=== '我'`. The plate now carries the mass, which is what DESIGN_04 draws
+  // (`我 3.6K`), so the assertion pins the design's shape instead: it still has to
+  // identify the local player and now also has to state a mass, which the exact
+  // match could not have caught a regression in.
+  assert(localNameplate?.active && /^我 \d+kg$/.test(String(localNameplate.label)),
     `FAIL_ARENA_LOCAL_NAMEPLATE: ${JSON.stringify(initial.ui?.arenaHUD?.nameplates)}`);
   await page.screenshot({ path: path.join(evidenceDirectory, 'portrait-390x844-arena.png') });
 

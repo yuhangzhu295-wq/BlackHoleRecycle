@@ -182,7 +182,7 @@ record('V4_ARENA_HUD_UPGRADE_WIRED',
 
 // ---- 9. tier lock feedback is unchanged and still truthful ------------------
 const compressible = readFile('cocos/assets/scripts/gameplay/CompressibleObject.ts');
-record('V4_TIER_LOCK_TEXT', compressible.includes('需要 LV.'), 'lock feedback still reads 需要 LV.X');
+record('V4_TIER_LOCK_TEXT', compressible.includes('可吞噬'), 'lock feedback still names the unlocking level (V12 DESIGN_03 wording)');
 // The file mentions `constructionCone` only in the comment that documents its
 // removal, so assert on the mechanism instead: the indicator must be a Label
 // node and no mesh/primitive may be built for it.

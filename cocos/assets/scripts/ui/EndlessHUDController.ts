@@ -29,7 +29,7 @@ export class EndlessHUDController extends Component {
    */
   private tierUpgrade: TierUpgradePresenter | null = null;
   /**
-   * V4 reference 10 State A. The readable "需要 LV.X" prompt, projected onto the
+   * V4 reference 10 State A. The readable "LV.X 可吞噬" prompt, projected onto the
    * screen because a Label on a code-built node never renders in a built player.
    */
   private tierLock: TierLockPresenter | null = null;

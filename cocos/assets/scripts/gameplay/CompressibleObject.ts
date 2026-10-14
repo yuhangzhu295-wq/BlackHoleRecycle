@@ -158,7 +158,7 @@ export class CompressibleObject extends Component {
 
     // 等级不足反馈是轻量文字提示，而不是 3.5 倍放大的交通锥模型。
     // 此前的 constructionCone 警告锥会在每辆 T5 车顶形成"红色帽子"，
-    // 属于视觉污染；正式反馈只有一行短暂的 "需要 LV.X" 文字。
+    // 属于视觉污染；正式反馈只有一行短暂的 "LV.X 可吞噬" 文字。
     this.lockIndicatorNode = new Node('TierLockWarning');
     this.lockIndicatorNode.setPosition(0, 1.2, 0);
     this.node.addChild(this.lockIndicatorNode);
@@ -312,7 +312,9 @@ export class CompressibleObject extends Component {
     this.isLockAlertActive = true;
     this.lockTimer = 1.4;
     this.lockCooldownTimer = 1.4 + 3.5;
-    if (this.lockLabel) this.lockLabel.string = '需要 LV.' + this.template.tier;
+    // DESIGN_03 prints this as `LV.4 可吞噬` on the locked body, not as a
+    // requirement. Same fact, framed as the reward rather than the barrier.
+    if (this.lockLabel) this.lockLabel.string = `LV.${this.template.tier} 可吞噬`;
     // 提示文字浮在目标本体上方，目标越大浮得越高，但不遮挡远处视野。
     if (this.lockIndicatorNode) {
       this.lockIndicatorNode.setPosition(0, 0.9 + Math.min(1.8, this.template.radius * 0.7), 0);
@@ -330,7 +332,7 @@ export class CompressibleObject extends Component {
    * built player (no RenderRoot2D ancestor, wrong layer).
    */
   public getLockAlertText(): string {
-    return this.isLockAlertActive ? `需要 LV.${this.template.tier}` : '';
+    return this.isLockAlertActive ? `LV.${this.template.tier} 可吞噬` : '';
   }
 
   /**
@@ -385,7 +387,16 @@ export class CompressibleObject extends Component {
       const perceptionRadius = suctionRadius * 2.0;
       if (isEdible && distSq < perceptionRadius * perceptionRadius) {
         this.ediblePulseTimer += dt;
-        const pulse = 1.0 + Math.sin(this.ediblePulseTimer * 5.0) * 0.08;
+        // DESIGN_03 asks for the edible bodies to be readable at a glance. The
+        // amplitude is set from a measurement, not by eye: at 0.08 the largest
+        // nearby edible body (`soda_can`, 29.7px radius on screen) moved its edge
+        // 2.38px, which is not a cue anyone reads. 0.18 takes that to ~5.4px.
+        //
+        // Raising it is safe because the channel is not shared: this runs only in
+        // IDLE, never while a body is being sucked, and it scales `visualNode`
+        // while the suction shrink scales the parent `node` -- so a breathing
+        // object can never be mistaken for one already going in.
+        const pulse = 1.0 + Math.sin(this.ediblePulseTimer * 5.0) * 0.18;
         this.visualNode?.setScale(pulse, pulse, pulse);
       } else if (this.ediblePulseTimer > 0) {
         this.ediblePulseTimer = 0;

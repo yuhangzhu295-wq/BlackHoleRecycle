@@ -345,7 +345,16 @@ def mode_card_shelf():
     save("mode_card_shelf.png", asset)
 
 
-def mode_card(name, endless=False):
+def mode_card(name, endless=False, with_text=True):
+    """Draw one mode card. `with_text=False` leaves the four strings to Labels.
+
+    The strings are drawn here by default because the shipped art carried them
+    baked in, which made the mode names untranslatable and meant any new card art
+    would take the titles with it. The scene now binds them as real Labels, so the
+    shipped cards are rendered without text; the badge's blue box stays either
+    way, because the live `ArenaAvailabilityLabel` / `EndlessBestCaption` sit on
+    it and a box with no label under it would read as an empty chip.
+    """
     asset = image(610, 278)
     draw = ImageDraw.Draw(asset)
     if endless:
@@ -376,11 +385,14 @@ def mode_card(name, endless=False):
         ellipse(draw, rect, c)
     ellipse(draw, (hero_x-93, hero_y-72, hero_x+93, hero_y+72), None, "#d9f6ff", 4)
     polygon(draw, [(hero_x+126, hero_y), (hero_x+103, hero_y-17), (hero_x+103, hero_y+17)], "#ffffff", "#346dcb")
-    draw.text((35 * SCALE, 37 * SCALE), title, font=font(44), fill="#ffffff", stroke_width=5 * SCALE, stroke_fill="#172032")
-    draw.text((39 * SCALE, 103 * SCALE), sub, font=font(25), fill="#ffffff", stroke_width=3 * SCALE, stroke_fill="#172032")
-    draw.text((39 * SCALE, 145 * SCALE), callout, font=font(19), fill="#fff264", stroke_width=2 * SCALE, stroke_fill="#35280e")
     box(draw, (36, 208, 252, 257), 12, "#277fd6", "#c3ecff", 3)
-    draw.text((55 * SCALE, 216 * SCALE), badge, font=font(18), fill="#ffffff", stroke_width=2 * SCALE, stroke_fill="#213455")
+    if with_text:
+        # Kept behind the flag rather than deleted: this is the only place the
+        # cards' typography is defined, and the Labels are matched to it.
+        draw.text((35 * SCALE, 37 * SCALE), title, font=font(44), fill="#ffffff", stroke_width=5 * SCALE, stroke_fill="#172032")
+        draw.text((39 * SCALE, 103 * SCALE), sub, font=font(25), fill="#ffffff", stroke_width=3 * SCALE, stroke_fill="#172032")
+        draw.text((39 * SCALE, 145 * SCALE), callout, font=font(19), fill="#fff264", stroke_width=2 * SCALE, stroke_fill="#35280e")
+        draw.text((55 * SCALE, 216 * SCALE), badge, font=font(18), fill="#ffffff", stroke_width=2 * SCALE, stroke_fill="#213455")
     save(name, asset)
 
 
@@ -391,5 +403,8 @@ if __name__ == "__main__":
     action_button("home_action_machine.png", "#b7ef6d", "#63b742", "#33742b", "machine")
     coin(); settings()
     mode_back(); mode_background(); mode_header(); mode_card_shelf()
-    mode_card("mode_arena_card.png", endless=False)
-    mode_card("mode_endless_card.png", endless=True)
+    # Shipped without text: the mode names, subtitles and callouts are real Labels
+    # in Game.scene now (`ModeSelectPageController` binds them), so the art must
+    # not carry a second copy that cannot be translated.
+    mode_card("mode_arena_card.png", endless=False, with_text=False)
+    mode_card("mode_endless_card.png", endless=True, with_text=False)

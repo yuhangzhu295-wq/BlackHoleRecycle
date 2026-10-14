@@ -4,7 +4,7 @@ import { eventBus } from '../core/EventBus';
 import { HUD_SEMANTIC, UI_METRICS, colorFromToken, tierUpgradeColor } from './UIStyleTokens';
 import { ArenaMatchSnapshot } from '../gameplay/ArenaMatchManager';
 import { CompressibleObject } from '../gameplay/CompressibleObject';
-import { applyHudSafeAreaInset } from './HudSafeAreaInset';
+import { applyHudSafeAreaInset, hudVisibleHalfWidth } from './HudSafeAreaInset';
 import { PickupFeedbackDiagnostics, PickupFeedbackPresenter } from './PickupFeedbackPresenter';
 import { TierLockDiagnostics, TierLockPresenter } from './TierLockPresenter';
 import { TierUpgradeDiagnostics, TierUpgradePresenter } from './TierUpgradePresenter';
@@ -17,6 +17,9 @@ const KILL_FEEDBACK_SECONDS = 1.1;
 
 const TITLE_HOLD_SECONDS = 2.0;
 const TITLE_FADE_SECONDS = 0.8;
+
+/** Breathing room between a nameplate's edge and the frame, in design px. */
+const NAMEPLATE_EDGE_INSET = 6;
 
 const formatClock = (seconds: number): string => {
   const remaining = Math.max(0, Math.ceil(seconds));
@@ -54,7 +57,7 @@ export class ArenaHUDController extends Component {
    */
   private tierUpgrade: TierUpgradePresenter | null = null;
   /**
-   * V4 reference 10 State A. Readable "需要 LV.X" prompt, projected onto the HUD
+   * V4 reference 10 State A. Readable "LV.X 可吞噬" prompt, projected onto the HUD
    * because a Label on a code-built node never renders in a built player.
    */
   private tierLock: TierLockPresenter | null = null;
@@ -222,10 +225,22 @@ export class ArenaHUDController extends Component {
       );
       const normalizedX = (screen.x - viewport.x) / viewport.width;
       const normalizedY = (screen.y - viewport.y) / viewport.height;
-      // Reserve the actual 184-design-unit nameplate width so a moving
-      // competitor never leaves a clipped half-name at a portrait edge.
-      // Off-screen opponents retain the existing direction arrows instead.
-      const inside = normalizedX >= 0.15 && normalizedX <= 0.85 && normalizedY >= 0.04 && normalizedY <= 0.94;
+      // Reserve the nameplate's ACTUAL width so a moving competitor never leaves
+      // a clipped half-name at a portrait edge; off-screen opponents keep the
+      // direction arrows instead.
+      //
+      // The bound is the VISIBLE half-width, not the HUD's 720. Only `1280/aspect`
+      // of the HUD is on screen (288.2 design px at 412x915), so dividing by 720
+      // left the guard far too permissive: a 128.7-unit plate whose centre sat at
+      // the old 0.891 limit had its right edge 58 design px past the frame, which
+      // `verify:gameplay-visuals` caught as 5 clipped samples the moment the mass
+      // widened the plates.
+      const plateTransform = nameplate.getComponent(UITransform);
+      const visibleHalfWidth = hudVisibleHalfWidth(this.node) || hudTransform.width / 2;
+      const halfPlate = (plateTransform?.width || 184) / 2;
+      const marginX = 0.5 - Math.max(0, visibleHalfWidth - NAMEPLATE_EDGE_INSET - halfPlate) / hudTransform.width;
+      const inside = normalizedX >= marginX && normalizedX <= 1 - marginX
+        && normalizedY >= 0.04 && normalizedY <= 0.94;
       nameplate.active = inside;
       if (!inside) continue;
 
@@ -235,9 +250,14 @@ export class ArenaHUDController extends Component {
         // the first thing lost to a busy background or a colour-blind player.
         const isThreat = !competitor.isLocal && threatIds.has(competitor.id);
         const isKillable = !competitor.isLocal && !isThreat && killableIds.has(competitor.id);
-        label.string = competitor.isLocal ? '我'
-          : isThreat ? `危险 ${competitor.name}`
-            : isKillable ? `可追 ${competitor.name}` : competitor.name;
+        // DESIGN_04 prints the mass on the plate (`风暴 5.2K`), which is what
+        // makes "can I take that one" answerable from the field rather than from
+        // the leaderboard. Same `kg` unit the leaderboard and the rank block use,
+        // so the three cannot disagree about what the number means.
+        const mass = `${Math.round(competitor.mass)}kg`;
+        label.string = competitor.isLocal ? `我 ${mass}`
+          : isThreat ? `危险 ${competitor.name} ${mass}`
+            : isKillable ? `可追 ${competitor.name} ${mass}` : `${competitor.name} ${mass}`;
         label.color = competitor.isLocal ? colorFromToken(HUD_SEMANTIC.localPlayer)
           : isThreat ? colorFromToken(HUD_SEMANTIC.danger)
             : isKillable ? colorFromToken(HUD_SEMANTIC.killable)

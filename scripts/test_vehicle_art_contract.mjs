@@ -187,7 +187,7 @@ const labelNode = warning?.getChildByName('TierLockLabel');
 const labelText = labelNode?.components?.[0]?.string ?? '';
 record('LOCK_FEEDBACK_ACTIVE_ON_LOW_LEVEL', Boolean(warning?.active) && vehicle.isShowingLockAlert(),
   'lock indicator visible while tier-insufficient');
-record('LOCK_FEEDBACK_TEXT', /需要 LV\.5/.test(labelText),
+record('LOCK_FEEDBACK_TEXT', /LV\.5 可吞噬/.test(labelText),
   `label text: ${labelText || '(none)'}`);
 record('LOCK_FEEDBACK_STILL_NO_CONE', !collectNames(vehicle.node).some((name) => /cone/i.test(name)),
   'still no cone node while the lock feedback is visible');
