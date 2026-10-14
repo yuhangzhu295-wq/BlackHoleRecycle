@@ -554,12 +554,24 @@ const clusterBudget = Math.max(2, Math.round(count * 0.15));   // = 3 或 4 件
 
 ## 仍未完成
 
-- **PHASE D 剩余**：Endless 与 Arena 的真实完整走查已跑 `ui-full-flow`（两模式端到端）、
-  `arena-timer`（自然时间结束）通过；`revive` 在修复后待复跑确认。
-- **PHASE B 尾项**：DESIGN_07 的功能分区与 T1–T3 分层。
-- **PHASE J**：全页三尺寸视觉验收复跑（结算页已单独在 375/390/412/430 四档 PASS）。
-- **两个必须由所有者决定的产品问题**：摇杆位置（现在右下 x=+232，两张设计图都画在左下）、
-  是否暴露技能按钮（`triggerMagnetStorm` 从未被调用）。
-- **外部阻塞**：微信 AppID 访问权限、抖音真实 AppID（需扫码）。
-- **`FAIL_TRAFFIC_REPLENISHMENT`**：4 次 `progression` 里出现过 1 次，此后未复现也未证伪。
-- **推送**：GitHub 443 间歇不可达，本地领先远端若干提交，恢复后重试。
+**已完成并验证**（2026-10-13）：
+
+- **PHASE D 端到端**：`ui-full-flow`（两模式 Home→…→Settlement→Home）、`arena-timer`（自然
+  时间结束）、`revive`（**修好后 6/6 PASS**）、`arena-ai`、`pages`、`settlement` 全部 PASS；
+  `test:full` **529 PASS / 0 FAIL**。
+- **PHASE J**：八个页面 × 三档尺寸的截图与展板已生成（`cocos/docs/evidence/v95/pages/`）并
+  **逐页看过**，无裁切；`verify:layout` 独立复核同样三档 PASS。
+- **PHASE B 审计**：六条设计要点逐条量过，五条成立（见上）；第六条需要专门授权的 cell。
+
+**留给所有者决定的四件事**（都不是我能单方面完成的）：
+
+1. **摇杆位置**：现在右下 `x=+232`，两张设计图都画在左下。改它是改操控，不是修视觉。
+2. **技能按钮**：`triggerMagnetStorm` 机制在代码里但**从未被调用**，加按钮＝新增玩法技能。
+3. **簇预算改法**：让 `clusterBudget` 覆盖簇数（`max(clusterCount, round(count*0.15))`）
+   能让授权布局真正落地，**但会改变全部街区的物件构成**，是全局平衡改动。
+4. **微信 AppID 访问权限 / 抖音真实 AppID（需扫码）**——外部阻塞，如实标注，不冒充 PASS。
+
+**未复现的一项**：`FAIL_TRAFFIC_REPLENISHMENT` 在 4 次 `progression` 里出现过 1 次，
+此后未复现也未证伪。
+
+**推送**：GitHub 443 间歇不可达，本地领先远端 4 个提交，恢复后重试。
