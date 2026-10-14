@@ -73,6 +73,31 @@ TRAFFIC_LANE_HALF_WIDTH = 8.0
 FRAME_MIN_X, FRAME_MAX_X = -31.0, 31.0
 FRAME_MIN_Z, FRAME_MAX_Z = -43.0, 11.0
 
+# The arena's contested mid-field.
+#
+# Measured: filtering the play band for the flat road colour, it is 34.9% of the
+# band and exceeds 60% of the frame width at y 406..430, which projects to the
+# middle of the visible field. DESIGN_07 puts its 中段争夺区 exactly there --
+# "城市中心，T2/T3 密集，多路线汇聚，高价值载具/建筑". Ours is an open crossroad.
+#
+# It cannot go at the literal centre: the arena spawns seven competitors on a ring
+# of radius 14, so the inner 14 units must stay clear, and the first version of this
+# list was correctly refused by the guard. So the cluster sits in the contested band
+# between the spawn ring and the frame edge -- z -12..-26 at |x| 10..18 -- which is
+# inside the camera and off the driving lanes.
+CONTEST_CLUSTER = (
+    ('ArenaContestPodW', -11.0, -12.0, 'SupermarketBoxStack', 2.0, 0),
+    ('ArenaContestPodE', 11.0, -12.0, 'SupermarketBoxStack', 2.0, 0),
+    ('ArenaContestPodWN', -11.0, -24.0, 'SupermarketBoxStack', 1.8, 0),
+    ('ArenaContestPodEN', 11.0, -24.0, 'SupermarketBoxStack', 1.8, 0),
+    ('ArenaContestSedanW', -16.0, -18.0, 'SupermarketKerbsideSedanE', 1.5, 90),
+    ('ArenaContestSedanE', 16.0, -18.0, 'SupermarketKerbsideSedanE', 1.5, 90),
+    ('ArenaContestDividerNW', -12.0, -28.0, 'SupermarketBoundaryFence', 1.3, 0),
+    ('ArenaContestDividerNE', 12.0, -28.0, 'SupermarketBoundaryFence', 1.3, 0),
+    ('ArenaContestLightW', -11.0, -20.0, 'DistrictStreetLight', 1.5, 0),
+    ('ArenaContestLightE', 11.0, -20.0, 'DistrictStreetLight', 1.5, 0),
+)
+
 
 def clone_subtree(scene, source_id, suffix):
     """Deep-clone a node and its whole subtree, remapping ids, and keep the meshes.
@@ -164,7 +189,7 @@ def main():
         raise SystemExit('%s / %s not found' % (PROPS, BUILDINGS))
 
     plans = []
-    for name, x, z, source, scale, rot in CLUSTERS:
+    for name, x, z, source, scale, rot in CLUSTERS + CONTEST_CLUSTER:
         validate(name, x, z)
         plans.append((props, name, x, z, scene.find(source), scale, rot))
     for name, x, z, source, scale, rot in BUILDING_ROWS:
