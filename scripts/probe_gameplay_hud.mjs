@@ -167,8 +167,58 @@ try {
   await sleep(6000);
   await page.screenshot({ path: path.join(outDir, `endless-hud-${sizeArg}.png`) });
   report.endless = { dump: await dumpHud('EndlessHUD'), snapshot: await snapshot() };
+  // DESIGN_03 asks for the edible objects to be highlighted so "10秒看懂能吞什么".
+  // The implementation is a scale pulse, so the question is not whether the cue is
+  // on (the QA bridge reports `edibleCue`) but whether it can be SEEN: an 8% scale
+  // change on an object a few pixels across is sub-pixel.
+  //
+  // Watched DURING the drive, not after it. The cue only shows within
+  // `suctionRadius * 2` of the player, and measuring once the player had driven
+  // away reported "0 objects showing the cue" -- which says nothing about the
+  // amplitude and everything about where the player had ended up.
+  await page.evaluate(() => {
+    const engine = globalThis.cc || globalThis.__cc__;
+    window.__BHR_EDIBLE_WATCH__ = { samples: 0, max: null, seen: 0 };
+    const tick = () => {
+      const watch = window.__BHR_EDIBLE_WATCH__;
+      const scene = engine?.director?.getScene?.() || null;
+      const camera = scene?.getChildByName('Main Camera')?.getComponent('cc.Camera') || null;
+      if (!scene || !camera) return;
+      const walk = (node) => {
+        const comp = node.getComponent?.('CompressibleObject') || null;
+        if (comp?.template && comp.isShowingEdibleCue?.()) {
+          watch.seen += 1;
+          const centre = node.worldPosition;
+          const radius = comp.template.radius || 0.25;
+          const sa = camera.worldToScreen(new engine.Vec3(centre.x, centre.y, centre.z), new engine.Vec3());
+          const sb = camera.worldToScreen(new engine.Vec3(centre.x + radius, centre.y, centre.z), new engine.Vec3());
+          const radiusPx = Math.hypot(sb.x - sa.x, sb.y - sa.y);
+          if (!watch.max || radiusPx > watch.max.radiusPx) {
+            watch.max = { type: comp.template.type, tier: comp.template.tier, radiusPx };
+          }
+        }
+        for (const child of node.children) walk(child);
+      };
+      walk(scene);
+      watch.samples += 1;
+      if (watch.samples < 400) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
   report.endless.drive = await driveHold((await snapshot()).ui.runtimeHUD.joystick, 0, -90, 9000);
   await page.screenshot({ path: path.join(outDir, `endless-after-drive-${sizeArg}.png`) });
+
+  const edibleVisibility = await page.evaluate(() => window.__BHR_EDIBLE_WATCH__);
+  console.log('\n  [endless] edible-cue visibility:');
+  console.log(`    cue observed on ${edibleVisibility.seen} object-frames over ${edibleVisibility.samples} frames`);
+  if (edibleVisibility.max) {
+    const { type, tier, radiusPx } = edibleVisibility.max;
+    // The pulse is 1.0 + sin(t*5)*0.08, so the edge moves 8% of the radius each way.
+    console.log(`    largest: ${type} T${tier} radius ${radiusPx.toFixed(1)} px on screen`);
+    console.log(`    the pulse moves its edge ${(radiusPx * 0.08).toFixed(2)} px either way`);
+  } else {
+    console.log('    the cue never appeared during the drive');
+  }
 
   // ---- Arena --------------------------------------------------------------
   s = await snapshot();
