@@ -21,6 +21,36 @@ const TITLE_FADE_SECONDS = 0.8;
 /** Breathing room between a nameplate's edge and the frame, in design px. */
 const NAMEPLATE_EDGE_INSET = 6;
 
+/**
+ * The vertical band a nameplate may occupy, as a fraction of the frame. Named
+ * because the diagnostics publish them: a reader checking the visibility
+ * decision needs the same numbers the decision used, not a copy that can drift.
+ */
+const NAMEPLATE_FRAME_MIN_Y = 0.04;
+const NAMEPLATE_FRAME_MAX_Y = 0.94;
+
+/** One competitor's nameplate decision, as made, with the geometry behind it. */
+interface NameplateDecision {
+  id: string;
+  alive: boolean;
+  inside: boolean;
+  /** Normalized screen position of the body, or null when it is not alive. */
+  nx: number | null;
+  ny: number | null;
+  /** The x-limit this decision used; null when the competitor was not alive. */
+  marginX: number | null;
+  plateWidth: number | null;
+}
+
+/** The frame geometry every decision in a frame was measured against. */
+interface NameplateFrame {
+  hudWidth: number;
+  visibleHalfWidth: number;
+  edgeInset: number;
+  minY: number;
+  maxY: number;
+}
+
 const formatClock = (seconds: number): string => {
   const remaining = Math.max(0, Math.ceil(seconds));
   return `${Math.floor(remaining / 60).toString().padStart(2, '0')}:${(remaining % 60).toString().padStart(2, '0')}`;
@@ -49,6 +79,21 @@ export class ArenaHUDController extends Component {
    */
   private lastThreatIds: readonly string[] = [];
   private lastKillableIds: readonly string[] = [];
+  /**
+   * The visibility decision made for each competitor this frame, recorded where
+   * it was made, plus the geometry it was made from.
+   *
+   * A reader outside this class can only see the plate node's `active` flag, so
+   * any check of "does every on-screen body have a name, and only those" has to
+   * know what this HUD counted as on-screen. That used to be re-derived by the
+   * caller from a hardcoded 0.15..0.85 window, which is not this rule: the rule
+   * reserves each plate's own width inside the VISIBLE half-width, so its limit
+   * moves per competitor and per aspect ratio. The two disagreed in the band
+   * between them and the caller reported a defect that was its own. Publishing
+   * the decision, and the numbers behind it, leaves one copy of the rule.
+   */
+  private lastNameplateDecisions: NameplateDecision[] = [];
+  private lastNameplateFrame: NameplateFrame | null = null;
   private pickupFeedback: PickupFeedbackPresenter | null = null;
   /**
    * V4 reference 10 State B. Short, non-blocking upgrade banner driven by the
@@ -210,12 +255,23 @@ export class ArenaHUDController extends Component {
     this.lastThreatIds = snapshot.localThreatIds || [];
     this.lastKillableIds = snapshot.localKillableIds || [];
     const positionedNameplates: Array<{ node: Node; x: number; y: number }> = [];
+    this.lastNameplateDecisions = [];
+    this.lastNameplateFrame = null;
 
     for (const competitor of snapshot.leaderboard) {
       const nameplate = this.getOrCreateNameplate(competitor.id);
       activeIds.add(competitor.id);
       if (!competitor.alive) {
         nameplate.active = false;
+        this.lastNameplateDecisions.push({
+          id: competitor.id,
+          alive: false,
+          inside: false,
+          nx: null,
+          ny: null,
+          marginX: null,
+          plateWidth: null,
+        });
         continue;
       }
 
@@ -240,8 +296,27 @@ export class ArenaHUDController extends Component {
       const halfPlate = (plateTransform?.width || 184) / 2;
       const marginX = 0.5 - Math.max(0, visibleHalfWidth - NAMEPLATE_EDGE_INSET - halfPlate) / hudTransform.width;
       const inside = normalizedX >= marginX && normalizedX <= 1 - marginX
-        && normalizedY >= 0.04 && normalizedY <= 0.94;
+        && normalizedY >= NAMEPLATE_FRAME_MIN_Y && normalizedY <= NAMEPLATE_FRAME_MAX_Y;
       nameplate.active = inside;
+      // The geometry this decision used, published alongside it. `hudWidth` and
+      // `visibleHalfWidth` are the two numbers the visible-width bug turned on,
+      // so a reader can redo this arithmetic from the same inputs.
+      this.lastNameplateFrame = {
+        hudWidth: hudTransform.width,
+        visibleHalfWidth,
+        edgeInset: NAMEPLATE_EDGE_INSET,
+        minY: NAMEPLATE_FRAME_MIN_Y,
+        maxY: NAMEPLATE_FRAME_MAX_Y,
+      };
+      this.lastNameplateDecisions.push({
+        id: competitor.id,
+        alive: true,
+        inside,
+        nx: normalizedX,
+        ny: normalizedY,
+        marginX,
+        plateWidth: plateTransform?.width || 184,
+      });
       if (!inside) continue;
 
       const label = nameplate.getComponent(Label);
@@ -391,15 +466,32 @@ export class ArenaHUDController extends Component {
     return nameplate;
   }
 
-  /** Read-only Web Mobile evidence for the live entity labels. */
+  /**
+   * Read-only Web Mobile evidence for the live entity labels: the plate node's
+   * state, paired with the visibility decision that produced it.
+   */
   public getNameplateDiagnostics(): ReadonlyArray<Record<string, unknown>> {
-    return Array.from(this.competitorNameplates, ([id, node]) => ({
-      id,
-      active: node.isValid && node.activeInHierarchy,
-      label: node.getComponent(Label)?.string || '',
-      x: node.position.x,
-      y: node.position.y,
-    }));
+    return Array.from(this.competitorNameplates, ([id, node]) => {
+      const decision = this.lastNameplateDecisions.find((row) => row.id === id);
+      return {
+        id,
+        active: node.isValid && node.activeInHierarchy,
+        label: node.getComponent(Label)?.string || '',
+        x: node.position.x,
+        y: node.position.y,
+        alive: decision ? decision.alive : null,
+        inside: decision ? decision.inside : null,
+        nx: decision ? decision.nx : null,
+        ny: decision ? decision.ny : null,
+        marginX: decision ? decision.marginX : null,
+        plateWidth: decision ? decision.plateWidth : null,
+      };
+    });
+  }
+
+  /** The frame geometry the last decision pass measured against. */
+  public getNameplateFrameDiagnostics(): Readonly<NameplateFrame> | null {
+    return this.lastNameplateFrame;
   }
 
   /**

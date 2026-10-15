@@ -18,12 +18,84 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { launchBrowser, openPage, serve, sleep } from './lib/page_layout_geometry.mjs';
 
+/**
+ * Everything wrong with one nameplate row, as the HUD's own decision and the
+ * geometry it reported describe it. Pure, so `--selftest` can hand it
+ * counter-examples and prove the checks can fire at all.
+ */
+function nameplateProblems(row) {
+  const problems = [];
+  // The node must be in the state the decision asked for. The end of the pass
+  // hides plates whose competitor left the snapshot, so a plate can still be
+  // stale here even when the decision itself was right.
+  const wanted = row.alive === true && row.inside === true;
+  if (row.active !== wanted) {
+    problems.push(`plate=${row.active} but decision says ${wanted}`);
+  }
+  // The decision must follow from the geometry the HUD reported for it.
+  if (!row.decisionMatchesGeometry) {
+    problems.push(`inside=${row.inside} but the reported geometry says ${row.strictInside}`);
+  }
+  // An active plate must have a body in the frame and text in it.
+  if (row.active === true && !row.bodyInFrame) {
+    problems.push('an active nameplate for a body outside the frame -- an orphan name');
+  }
+  if (row.active === true && !row.label) {
+    problems.push('an active nameplate with no text -- a name with nothing in it');
+  }
+  return problems;
+}
+
+// A check that has only ever been seen to pass is not evidence. These are the
+// counter-examples the assertions above must reject, each a defect the arena has
+// actually shipped at some point: a name over an empty cell, a plate left behind
+// by a departed rival, a plate hidden for a body that is on screen.
+if (process.argv.includes('--selftest')) {
+  const base = {
+    id: 'synthetic',
+    alive: true,
+    inside: true,
+    active: true,
+    label: 'bot 100kg',
+    nx: 0.5,
+    ny: 0.5,
+    marginX: 0.2,
+    plateWidth: 184,
+    strictInside: true,
+    decisionMatchesGeometry: true,
+    bodyInFrame: true,
+  };
+  const cases = [
+    ['healthy plate', {}, null],
+    ['orphan name: active plate over a body outside the frame', { bodyInFrame: false }, 'orphan name'],
+    ['stale plate: the decision hid it, the node is still active', { inside: false, strictInside: false }, 'plate=true but decision says false'],
+    ['missing plate: the decision showed it, the node is inactive', { active: false }, 'plate=false but decision says true'],
+    ['blank plate: active with no text', { label: '' }, 'no text'],
+    ['decision contradicts the geometry it reported', { decisionMatchesGeometry: false }, 'reported geometry'],
+    ['dead competitor leaves a name behind', { alive: false, inside: false, strictInside: false, bodyInFrame: false }, 'plate=true but decision says false'],
+  ];
+  let bad = 0;
+  for (const [name, patch, expect] of cases) {
+    const problems = nameplateProblems({ ...base, ...patch });
+    const hit = expect === null ? problems.length === 0 : problems.some((p) => p.includes(expect));
+    if (!hit) bad += 1;
+    console.log(`${hit ? 'ok  ' : 'FAIL'} ${name}${expect === null ? ' (expected no problem)' : ` (expected "${expect}")`}`
+      + (problems.length ? ` -> ${JSON.stringify(problems)}` : ''));
+  }
+  console.log(`[selftest] ${cases.length - bad} of ${cases.length} cases behaved as intended`);
+  process.exit(bad === 0 ? 0 : 1);
+}
+
 const [width, height] = (process.argv[2] || '390x844').split('x').map(Number);
 // PHASE B/I evidence: the arena frame at a given size. PHASE B needs a before/after
 // pair and PHASE I needs all three sizes, and both were previously only obtainable
 // by driving a full acceptance scope.
+//
+// Writes to v13, not v12: `artifacts/qa/v12/arena/` is V12's frozen acceptance
+// evidence (`V12_EXECUTION_CHECKPOINT.md` names its three sizes) and a probe run
+// must not overwrite a closed phase's record with a frame from a later build.
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const shotDir = path.join(repoRoot, 'artifacts', 'qa', 'v12', 'arena');
+const shotDir = path.join(repoRoot, 'artifacts', 'qa', 'v13', 'arena');
 mkdirSync(shotDir, { recursive: true });
 const shotPath = path.join(shotDir, `arena-${width}x${height}.png`);
 
@@ -163,50 +235,87 @@ try {
   // PHASE A #4/#5: the nameplate must belong to a body that is on screen, and a
   // body off screen must not leave a name behind. This is the contract the
   // original symptom broke, so it is asserted rather than eyeballed.
+  //
+  // The comparison is against the HUD's OWN decision, read from
+  // `arenaHUD.nameplates` / `arenaHUD.nameplateFrame`, not against a window
+  // re-derived here. This probe used to hardcode 0.15..0.85 and call anything
+  // inside it "on screen", but the HUD reserves each plate's actual width inside
+  // the VISIBLE half-width, so its limit moves per competitor and per aspect
+  // ratio -- measured between 0.17 and 0.22 at 390x844. A bot at nx 0.837 sat
+  // inside the hardcoded window and outside the real rule, and the probe failed
+  // about one run in two with a defect that was its own. Two copies of one rule
+  // is the bug; the HUD now publishes the one copy.
   const nameplateReport = await page.evaluate(() => {
-    const cc = window.cc;
-    const scene = cc.director.getScene();
-    const camera = scene.getChildByName('Main Camera')?.getComponent('cc.Camera') || null;
-    const canvas = scene.getChildByName('Canvas');
-    const hud = canvas?.getChildByName('ArenaHUD') || null;
     const snapshot = window.__BHR_QA__.snapshot();
-    const viewport = cc.view.getViewportRect();
-    if (!camera || !hud) return { error: 'missing camera or ArenaHUD' };
+    // The HUD block hangs off `ui`, beside the page descriptions -- reading it
+    // from the snapshot root returned undefined and the probe reported "no
+    // geometry" for a HUD that was publishing it. (`initialLayout.arenaHUD` in
+    // the acceptance reports is that runner's own regrouping, not the live path.)
+    const hud = snapshot.ui?.arenaHUD || {};
+    const plates = hud.nameplates || [];
+    const frame = hud.nameplateFrame || null;
+    if (!frame) return { error: 'the HUD published no nameplate frame geometry' };
+    if (!plates.length) return { error: 'the HUD published no nameplates' };
     const rows = [];
-    for (const entry of snapshot.arena?.leaderboard || []) {
-      const plate = hud.getChildByName(`ArenaCompetitorNameplate_${entry.id}`) || null;
-      const screen = camera.worldToScreen(
-        new cc.Vec3(entry.position.x, 1.35, entry.position.z), new cc.Vec3());
-      const nx = (screen.x - viewport.x) / viewport.width;
-      const ny = (screen.y - viewport.y) / viewport.height;
-      // Same bounds ArenaHUDController uses for `inside`.
-      const modelOnScreen = nx >= 0.15 && nx <= 0.85 && ny >= 0.04 && ny <= 0.94;
+    // The HUD tests `nx >= 0.5 - slack/W`; this recomputes it as
+    // `|nx - 0.5| * W <= slack`. Algebraically the same test, but the two forms
+    // can differ in the last bit when a value sits exactly on the bound, so a
+    // boundary case is accepted as consistent rather than reported as a defect
+    // the HUD does not have.
+    const EPS = 1e-6;
+    for (const plate of plates) {
+      // The rule restated from the HUD's own numbers: the plate's half-width plus
+      // the edge inset must fit inside the visible half-width, with the same
+      // clamp on the slack. No constant is written here -- every input comes from
+      // `nameplateFrame`, so this cannot drift from the HUD the way a literal did.
+      const slack = Math.max(0, frame.visibleHalfWidth - frame.edgeInset - plate.plateWidth / 2);
+      const alive = plate.alive === true;
+      const hasPosition = plate.nx !== null && plate.ny !== null;
+      const xDistance = hasPosition ? Math.abs(plate.nx - 0.5) * frame.hudWidth : Number.POSITIVE_INFINITY;
+      const strictInside = alive && hasPosition && xDistance <= slack
+        && plate.ny >= frame.minY && plate.ny <= frame.maxY;
+      const relaxedInside = alive && hasPosition && xDistance <= slack + EPS
+        && plate.ny >= frame.minY - EPS && plate.ny <= frame.maxY + EPS;
+      const decisionMatchesGeometry = alive
+        ? (plate.inside === strictInside || plate.inside === relaxedInside)
+        : plate.inside === false;
+      // A plate drawn for a body outside the frame is the orphan name DESIGN_04
+      // forbids; this needs no rule of the HUD's, only the frame itself.
+      const bodyInFrame = hasPosition
+        && plate.nx >= 0 && plate.nx <= 1 && plate.ny >= 0 && plate.ny <= 1;
       rows.push({
-        id: entry.id,
-        alive: entry.alive,
-        plateExists: Boolean(plate),
-        plateActive: plate ? plate.activeInHierarchy : null,
-        modelOnScreen,
-        nx: Number(nx.toFixed(3)),
-        ny: Number(ny.toFixed(3)),
+        id: plate.id,
+        alive: plate.alive,
+        inside: plate.inside,
+        active: plate.active,
+        label: plate.label,
+        nx: hasPosition ? Number(plate.nx.toFixed(3)) : null,
+        ny: hasPosition ? Number(plate.ny.toFixed(3)) : null,
+        marginX: plate.marginX === null ? null : Number(plate.marginX.toFixed(4)),
+        plateWidth: plate.plateWidth,
+        strictInside,
+        decisionMatchesGeometry,
+        bodyInFrame,
       });
     }
-    return { rows };
+    return { rows, frame };
   });
 
   if (nameplateReport.error) {
     failures.push(nameplateReport.error);
   } else {
-    console.log('\n[plate] nameplate vs model (PHASE A #4/#5)');
+    console.log('\n[plate] nameplate vs the HUD\'s own decision (PHASE A #4/#5)');
+    console.log(`  frame: hudWidth=${nameplateReport.frame.hudWidth}`
+      + ` visibleHalfWidth=${nameplateReport.frame.visibleHalfWidth}`
+      + ` edgeInset=${nameplateReport.frame.edgeInset}`
+      + ` y=[${nameplateReport.frame.minY},${nameplateReport.frame.maxY}]`);
     for (const row of nameplateReport.rows) {
-      const expected = row.alive && row.modelOnScreen;
-      const ok = row.plateActive === expected;
-      console.log(`  ${row.id}: alive=${row.alive} onScreen=${row.modelOnScreen}`
-        + ` (${row.nx},${row.ny}) plate=${row.plateActive} ${ok ? 'ok' : 'MISMATCH'}`);
-      if (!ok) {
-        failures.push(`${row.id}: nameplate active=${row.plateActive} but model`
-          + ` alive=${row.alive} onScreen=${row.modelOnScreen} -- an orphan name or a missing one`);
-      }
+      const at = row.nx === null ? 'not alive' : `(${row.nx},${row.ny}) marginX=${row.marginX}`;
+      const problems = nameplateProblems(row);
+      console.log(`  ${row.id}: alive=${row.alive} inside=${row.inside} plate=${row.active}`
+        + ` ${at} label=${JSON.stringify(row.label)}`
+        + ` ${problems.length ? 'MISMATCH' : 'ok'}`);
+      for (const problem of problems) failures.push(`${row.id}: ${problem}`);
     }
   }
 
