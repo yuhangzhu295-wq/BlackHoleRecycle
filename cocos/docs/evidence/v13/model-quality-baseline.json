@@ -1,0 +1,24 @@
+{
+  "note": "Known model-quality findings. The gate fails when a finding appears that is not here, and also when the total changes -- a fixed-then-reintroduced defect is invisible to a membership test alone.",
+  "count": 18,
+  "findings": [
+    "cocos/assets/art/machine-modules/magnetic-turbine.glb: NOT_GROUNDED -- the model rests at y=-0.150 (top 0.075), not 0",
+    "cocos/assets/art/machines/poly-google-bulldozer.glb: NOT_GROUNDED -- the model rests at y=-1.103 (top 10.420), not 0",
+    "cocos/assets/art/props/tire.glb: NOT_GROUNDED -- the model rests at y=-0.300 (top 0.300), not 0",
+    "cocos/assets/art/props/turbine-wheel.glb: NOT_GROUNDED -- the model rests at y=-0.300 (top 0.300), not 0",
+    "cocos/assets/art/recyclables/furniture/book-stack.glb: OFF_CENTRE_PIVOT -- the pivot is 0.089 from the footprint centre (footprint 0.15 x 0.09)",
+    "cocos/assets/art/recyclables/furniture/cardboard-box.glb: OFF_CENTRE_PIVOT -- the pivot is 0.150 from the footprint centre (footprint 0.21 x 0.21)",
+    "cocos/assets/art/recyclables/furniture/chair.glb: OFF_CENTRE_PIVOT -- the pivot is 0.141 from the footprint centre (footprint 0.20 x 0.20)",
+    "cocos/assets/art/recyclables/furniture/monitor.glb: OFF_CENTRE_PIVOT -- the pivot is 0.203 from the footprint centre (footprint 0.39 x 0.10)",
+    "cocos/assets/art/recyclables/furniture/shelf.glb: OFF_CENTRE_PIVOT -- the pivot is 0.236 from the footprint centre (footprint 0.40 x 0.25)",
+    "cocos/assets/art/recyclables/furniture/sofa.glb: OFF_CENTRE_PIVOT -- the pivot is 0.531 from the footprint centre (footprint 0.98 x 0.41)",
+    "cocos/assets/art/recyclables/props/battery.glb: NO_UV -- mesh[0] prim[0] has no TEXCOORD_0, so no texture can vary across it",
+    "cocos/assets/art/recyclables/props/battery.glb: NO_UV -- mesh[0] prim[1] has no TEXCOORD_0, so no texture can vary across it",
+    "cocos/assets/art/recyclables/props/battery.glb: NO_UV -- mesh[0] prim[2] has no TEXCOORD_0, so no texture can vary across it",
+    "cocos/assets/art/recyclables/props/paper-scrap.glb: DEGENERATE_UV -- mesh[0] prim[0] maps all 312 vertices to one texel (0.01623,0.01551), so it cannot show any texture detail",
+    "cocos/assets/art/recyclables/props/trash-bag.glb: DEGENERATE_UV -- mesh[0] prim[0] maps all 886 vertices to one texel (0.13959,0.39063), so it cannot show any texture detail",
+    "cocos/assets/art/vehicles/delivery-van.glb: NOT_GROUNDED -- the model rests at y=-1.000 (top 1.500), not 0",
+    "cocos/assets/art/vehicles/garbage-truck.glb: NOT_GROUNDED -- the model rests at y=-0.300 (top 1.475), not 0",
+    "cocos/assets/art/vehicles/sedan.glb: NOT_GROUNDED -- the model rests at y=-0.300 (top 1.150), not 0"
+  ]
+}

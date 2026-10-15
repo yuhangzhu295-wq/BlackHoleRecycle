@@ -1,0 +1,27 @@
+{
+  "note": "Composition floor for the arena frame. `buckets_floor` is the lowest play-band bucket count accepted, `top_share_ceiling` the highest share one colour may take. Both are set from a measurement of a frame that was looked at, not from the reference: the gap to DESIGN_07 is content density, and a floor near the reference would fail every run.",
+  "capture": "artifacts/qa/v13/arena/arena-390x844.png",
+  "reference": "artifacts/qa/v12/ref/07-arena-gameplay.png",
+  "measured": {
+    "size": [
+      390,
+      844
+    ],
+    "buckets": 388,
+    "top_share": 33.67,
+    "mean_luma": 144.2,
+    "distinct_colours": 9104
+  },
+  "reference_measured": {
+    "size": [
+      820,
+      615
+    ],
+    "buckets": 860,
+    "top_share": 23.12,
+    "mean_luma": 175.2,
+    "distinct_colours": 170655
+  },
+  "buckets_floor": 368,
+  "top_share_ceiling": 35.35
+}

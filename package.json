@@ -28,6 +28,11 @@
     "capture:page-sheets": "node scripts/capture_v95_page_sheets.mjs",
     "test:perf": "node scripts/test_s11_performance_benchmark.mjs",
     "audit:object-art": "node scripts/validate-object-art-coverage.mjs",
+    "review:art": "node scripts/review_art_direction.mjs && node scripts/review_model_quality.mjs && node scripts/review_level_composition.mjs && python scripts/review_visual_reference.py",
+    "review:art-direction": "node scripts/review_art_direction.mjs",
+    "review:model-quality": "node scripts/review_model_quality.mjs",
+    "review:level-composition": "node scripts/review_level_composition.mjs",
+    "review:visual-reference": "python scripts/review_visual_reference.py",
     "design:v4-references": "node scripts/render_ui_v4_references.mjs",
     "author:golden-city": "node scripts/author_golden_city.mjs"
   },

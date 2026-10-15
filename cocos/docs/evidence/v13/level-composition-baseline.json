@@ -1,0 +1,33 @@
+{
+  "note": "Known arena-composition violations. Recorded rather than fixed: each one is a placement inside the shipped map prefab, and moving authored content is a separate piece of work. The gate fails when a violation appears that is not here, and when the count changes -- a fixed-then-reintroduced one is invisible to a membership test.",
+  "count": 27,
+  "findings": [
+    "DistrictStreetLight at (-5.3, -15.5) sits in a traffic lane (half-width 8)",
+    "DistrictStreetLight at (-5.3, -5.5) sits in a traffic lane (half-width 8)",
+    "DistrictStreetLight at (-5.3, 10.5) sits in a traffic lane (half-width 8)",
+    "DistrictStreetLight at (5.3, -17.5) sits in a traffic lane (half-width 8)",
+    "DistrictStreetLight at (5.3, -7.5) sits in a traffic lane (half-width 8)",
+    "DistrictStreetLight at (5.3, 10.5) sits in a traffic lane (half-width 8)",
+    "DistrictStreetLight at radius 14.87 sits on the spawn ring (14 +/- 1.5), where rivals are placed",
+    "DistrictStreetLight at radius 14.87 sits on the spawn ring (14 +/- 1.5), where rivals are placed",
+    "DistrictStreetLight at radius 14.87 sits on the spawn ring (14 +/- 1.5), where rivals are placed",
+    "DistrictStreetLight at radius 14.87 sits on the spawn ring (14 +/- 1.5), where rivals are placed",
+    "SpawnPoint_1 at (-11.2, 13.0) is outside the camera frame (x -31..31, z -43..11)",
+    "SpawnPoint_1 at (15.8, 14.0) is outside the camera frame (x -31..31, z -43..11)",
+    "SpawnPoint_2 at (-13.9, 14.6) is outside the camera frame (x -31..31, z -43..11)",
+    "SpawnPoint_2 at (13.1, 15.6) is outside the camera frame (x -31..31, z -43..11)",
+    "SpawnPoint_3 at (-13.9, 11.4) is outside the camera frame (x -31..31, z -43..11)",
+    "SpawnPoint_3 at (13.1, 12.4) is outside the camera frame (x -31..31, z -43..11)",
+    "SupermarketBoundaryFence at (0.0, -26.0) sits in a traffic lane (half-width 8)",
+    "SupermarketBuilding at radius 14.88 sits on the spawn ring (14 +/- 1.5), where rivals are placed",
+    "SupermarketBuildingSouth5 at (0.0, -40.0) sits in a traffic lane (half-width 8)",
+    "SupermarketTreeEastEdge at (24.0, 0.0) sits in a traffic lane (half-width 8)",
+    "SupermarketTreeWestEdge at (-24.0, 0.0) sits in a traffic lane (half-width 8)",
+    "building-a at (0.0, -40.0) sits in a traffic lane (half-width 8)",
+    "building-a at radius 14.88 sits on the spawn ring (14 +/- 1.5), where rivals are placed",
+    "building-d at radius 14.88 sits on the spawn ring (14 +/- 1.5), where rivals are placed",
+    "building-h at (0.0, -22.0) sits in a traffic lane (half-width 8)",
+    "tree-small at (-24.0, 0.0) sits in a traffic lane (half-width 8)",
+    "tree-small at (24.0, 0.0) sits in a traffic lane (half-width 8)"
+  ]
+}
