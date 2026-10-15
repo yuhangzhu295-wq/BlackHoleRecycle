@@ -37,6 +37,10 @@
         "b": 76,
         "a": 255
       },
+      "mainTexture": {
+        "__uuid__": "df4064c7-0bae-47a6-a9b5-344ace0e24de@6c48a",
+        "__expectedType__": "cc.Texture2D"
+      },
       "tilingOffset": {
         "__type__": "cc.Vec4",
         "x": 1,
