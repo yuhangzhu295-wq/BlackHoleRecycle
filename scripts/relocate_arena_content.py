@@ -1,23 +1,27 @@
-"""Move six arena spawn points into the camera frame, keeping their cluster shape.
+"""Move authored arena content that `LEVEL_COMPOSITION_REVIEW` flags.
 
-`LEVEL_COMPOSITION_REVIEW` records 24 spawn points, 6 of them outside the camera
-frame (z 11.4..15.6 against a frame limit of z=11) -- a quarter of the authored
-collectibles that can never be seen in the arena. They are the three points of
-`produce-discard` and the three of `parking-recycling`, two clusters sitting
-beyond the north-east frame corner.
+Two jobs, both from that gate's findings:
 
-Each point keeps its offset from its own cluster centre and only the centre
-moves, so each cluster lands as the same 3-point ring it was authored as. The two
-new centres are the diagonals the far clusters do not already use, at a radius
-comparable to the ones that do live there.
+1. Six spawn points outside the camera frame (z 11.4..15.6 against a frame limit
+   of z=11) -- a quarter of the authored collectibles that could never be seen in
+   the arena. They are the three points of `produce-discard` and the three of
+   `parking-recycling`, two clusters beyond the north-east frame corner. Each
+   point keeps its offset from its own cluster centre and only the centre moves,
+   so each cluster lands as the same 3-point ring it was authored as.
+
+2. `SupermarketCenterOfficeN`, which stands at (0, -22) -- the centre of the south
+   road surface (`RoadSouth` covers x -6..6, z -24..-8). A building in the roadway
+   is what the district's own lane rule exists to prevent, and the frame shows it
+   plainly: the road splits around it. It moves south to (0, -30), clear of the
+   road, in the same column and between two existing south buildings.
 
 Edited by directed text replacement, not by a JSON round trip: this prefab is 620
 elements and rewriting it through `json.dumps` reformats every line, which buries a
-six-number change under hundreds of lines of noise and is the failure mode this
-project already recorded in its scene-editing rules. Every edit is computed and
-validated before anything is written, so a rejected plan cannot half-apply.
+handful of number changes under hundreds of lines of noise and is the failure mode
+this project already recorded in its scene-editing rules. Every edit is computed
+and validated before anything is written, so a rejected plan cannot half-apply.
 
-Run: python scripts/relocate_arena_spawn_clusters.py [--write]
+Run: python scripts/relocate_arena_content.py [--write]
 """
 import json
 import math
@@ -38,6 +42,33 @@ TARGETS = {
     'produce-discard': (17.0, -17.5),
     'parking-recycling': (-17.0, -17.5),
 }
+
+# Whole nodes that move, by name -> (x, z). Only the top of each subtree moves;
+# its children keep their offsets.
+NODE_MOVES = {
+    'SupermarketCenterOfficeN': (0.0, -30.0),
+}
+
+# Nodes standing in the spawn ring, pushed radially outward until their body
+# clears it. Named with the position they currently occupy, because several
+# buildings share a name and only these two are on the ring -- and the two are
+# mirrored copies under DIFFERENT names (`SupermarketBuilding` on the west,
+# `SupermarketAnnex` on the east), so a name alone would not find them.
+RING_PUSH = (
+    ('SupermarketBuilding', -8.8, -12.0, 4.0),
+    ('SupermarketAnnex', 8.8, -12.0, 4.0),
+)
+
+# Road surfaces, as the prefab places them, so a move can be checked against the
+# road rather than against the guard's 8-unit authoring margin (the road is 12
+# wide, so that margin is wider than the road it protects).
+ROAD_RECTS = (
+    (-7.5, 7.5, -7.5, 7.5),      # MainCrossroad, 16x16 with a 0.5 inset
+    (-5.5, 5.5, 8.5, 23.5),      # RoadNorth
+    (-5.5, 5.5, -23.5, -8.5),    # RoadSouth
+    (-21.5, -10.5, -7.5, 7.5),   # RoadWest
+    (10.5, 21.5, -7.5, 7.5),     # RoadEast
+)
 
 
 def element_spans(text):
@@ -150,25 +181,85 @@ def main():
                 'new': (new_x, new_z),
             })
 
+    # Whole-node moves. Idempotent like the cluster move: the target is absolute,
+    # so re-running after a successful write is a no-op.
+    for name, (target_x, target_z) in NODE_MOVES.items():
+        matches = [index for index, node in enumerate(arr)
+                   if node and node.get('__type__') == 'cc.Node'
+                   and node.get('_name') == name]
+        if len(matches) != 1:
+            print('expected exactly one node named %s, found %d' % (name, len(matches)))
+            return 1
+        index = matches[0]
+        pos = arr[index].get('_lpos') or {}
+        print('%s: (%+.1f, %+.1f) -> (%.1f, %.1f)'
+              % (name, pos.get('x', 0.0), pos.get('z', 0.0), target_x, target_z))
+        edits.append({
+            'index': index,
+            'name': name,
+            'old': (pos.get('x', 0.0), pos.get('z', 0.0)),
+            'new': (round(target_x, 3), round(target_z, 3)),
+            'whole_node': True,
+        })
+
+    # Radial pushes: keep the direction, move the node out until its body clears
+    # the spawn ring. Matching by name AND current position, because the name is
+    # not unique.
+    for name, near_x, near_z, distance in RING_PUSH:
+        matches = [index for index, node in enumerate(arr)
+                   if node and node.get('__type__') == 'cc.Node'
+                   and node.get('_name') == name
+                   and abs((node.get('_lpos') or {}).get('x', 0.0) - near_x) < 0.6
+                   and abs((node.get('_lpos') or {}).get('z', 0.0) - near_z) < 0.6]
+        if len(matches) != 1:
+            print('expected one %s near (%.1f, %.1f), found %d'
+                  % (name, near_x, near_z, len(matches)))
+            return 1
+        index = matches[0]
+        pos = arr[index].get('_lpos') or {}
+        old_x, old_z = pos.get('x', 0.0), pos.get('z', 0.0)
+        radius = math.hypot(old_x, old_z)
+        if radius <= 0:
+            print('%s is at the origin; a radial push has no direction' % name)
+            return 1
+        scale = (radius + distance) / radius
+        print('%s: (%+.1f, %+.1f) r=%.2f -> pushed %.1f outward'
+              % (name, old_x, old_z, radius, distance))
+        edits.append({
+            'index': index,
+            'name': '%s r%.1f' % (name, radius),
+            'old': (old_x, old_z),
+            'new': (round(old_x * scale, 3), round(old_z * scale, 3)),
+            'whole_node': True,
+        })
+
     failures = []
     for edit in edits:
         new_x, new_z = edit['new']
         if not (FRAME_MIN_X < new_x < FRAME_MAX_X and FRAME_MIN_Z < new_z < FRAME_MAX_Z):
             failures.append('%s -> (%.1f, %.1f) is outside the camera frame'
                             % (edit['name'], new_x, new_z))
-        if abs(new_x) <= TRAFFIC_LANE_HALF_WIDTH or abs(new_z) <= TRAFFIC_LANE_HALF_WIDTH:
-            failures.append('%s -> (%.1f, %.1f) is in a traffic lane'
-                            % (edit['name'], new_x, new_z))
-        for ax, az in anchor_positions:
-            if math.hypot(new_x - ax, new_z - az) < MIN_GAP:
-                failures.append('%s -> (%.1f, %.1f) is within %.1f of an existing point'
-                                ' at (%.1f, %.1f)' % (edit['name'], new_x, new_z, MIN_GAP, ax, az))
-        for other in edits:
-            if other is edit:
-                continue
-            if math.hypot(new_x - other['new'][0], new_z - other['new'][1]) < MIN_GAP:
-                failures.append('%s -> (%.1f, %.1f) is within %.1f of another moved point'
-                                % (edit['name'], new_x, new_z, MIN_GAP))
+        # Checked against the road SURFACE, not the guard's 8-unit margin: the road
+        # is 12 wide, so a band of 8 is wider than the thing it protects and would
+        # reject the kerb the street lights legitimately stand on.
+        for left, right, bottom, top in ROAD_RECTS:
+            if left < new_x < right and bottom < new_z < top:
+                failures.append('%s -> (%.1f, %.1f) stands on a road surface'
+                                % (edit['name'], new_x, new_z))
+        # Spawn points are collectibles and may sit close together by design, so
+        # the spacing rule is only applied to the points being moved as a group.
+        if not edit.get('whole_node'):
+            for ax, az in anchor_positions:
+                if math.hypot(new_x - ax, new_z - az) < MIN_GAP:
+                    failures.append('%s -> (%.1f, %.1f) is within %.1f of an existing point'
+                                    ' at (%.1f, %.1f)'
+                                    % (edit['name'], new_x, new_z, MIN_GAP, ax, az))
+            for other in edits:
+                if other is edit or other.get('whole_node'):
+                    continue
+                if math.hypot(new_x - other['new'][0], new_z - other['new'][1]) < MIN_GAP:
+                    failures.append('%s -> (%.1f, %.1f) is within %.1f of another moved point'
+                                    % (edit['name'], new_x, new_z, MIN_GAP))
 
     for edit in edits:
         print('  %-14s (%+6.1f, %+6.1f) -> (%+6.1f, %+6.1f)'
@@ -213,10 +304,14 @@ def main():
             if len(matches) != 1:
                 raise SystemExit('"_lpos" has "%s": %d time(s) in %s'
                                  % (key, len(matches), edit['name']))
-            region = pattern.sub('"%s": %s' % (key, value), region, count=1)
-            replaced += 1
-        if replaced != 2:
-            raise SystemExit('expected to replace 2 numbers, replaced %d' % replaced)
+            # Skip a component whose value is numerically unchanged: rewriting
+            # `0` as `0.0` is a diff line that says nothing and makes the change
+            # look bigger than it is.
+            if float(matches[0]) != float(value):
+                region = pattern.sub('"%s": %s' % (key, value), region, count=1)
+                replaced += 1
+        if replaced == 0:
+            continue
         block = block[:lpos] + region + block[lpos_end:]
         replacements.append((span_start, span_end, block))
 

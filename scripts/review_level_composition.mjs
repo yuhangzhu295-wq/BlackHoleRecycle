@@ -33,11 +33,56 @@ const ARENA_MAP = path.join(repoRoot, 'cocos', 'assets', 'game_art', 'maps', 'Su
 // Mirrors `scripts/author_supermarket_content.py`. Literals on purpose: if the
 // guard is loosened, this gate must fail rather than follow it.
 const SPAWN_RING_RADIUS = 14.0;
-const TRAFFIC_LANE_HALF_WIDTH = 8.0;
 const FRAME_MIN_X = -31.0;
 const FRAME_MAX_X = 31.0;
 const FRAME_MIN_Z = -43.0;
 const FRAME_MAX_Z = 11.0;
+
+/**
+ * Road tiles, as the prefab places them. Used to derive where the traffic
+ * actually drives, because neither a magic band nor the road surface answers the
+ * question this check is for.
+ *
+ * The guard's `TRAFFIC_LANE_HALF_WIDTH = 8` is an authoring margin, and it is
+ * wider than the road it protects: the arms are 12 wide (`road-straight` at scale
+ * 12x16) and the crossroad 16x16. Checking the whole surface instead is too
+ * strict the other way -- it flagged five street lights standing on the kerb,
+ * 0.7 units inside a 12-wide road, which is where street lights belong.
+ *
+ * What the rule is actually for is that nothing blocks the path the vehicles
+ * drive, so this measures the CENTRE of each road and flags geometry inside it.
+ * That still catches a building in the roadway, which is the defect it was
+ * written after: `SupermarketCenterOfficeN` stood at (0, -22) on the RoadSouth
+ * centre line.
+ */
+const ROAD_NODES = /^(RoadNorth|RoadSouth|RoadEast|RoadWest|MainCrossroad)$/;
+/** Half-width of the band around a road's centre line that must stay clear. */
+const LANE_CLEARANCE = 2.5;
+
+function laneBands(positions) {
+  const bands = [];
+  for (const entry of positions) {
+    if (!ROAD_NODES.test(entry.name)) continue;
+    const alongZ = entry.halfZ >= entry.halfX;
+    bands.push({
+      name: entry.name,
+      alongZ,
+      // The centre line runs along the longer axis; the band is the cross axis.
+      crossMin: (alongZ ? entry.x : entry.z) - LANE_CLEARANCE,
+      crossMax: (alongZ ? entry.x : entry.z) + LANE_CLEARANCE,
+      alongMin: (alongZ ? entry.z : entry.x) - (alongZ ? entry.halfZ : entry.halfX),
+      alongMax: (alongZ ? entry.z : entry.x) + (alongZ ? entry.halfZ : entry.halfX),
+    });
+  }
+  return bands;
+}
+
+function inBand(band, x, z) {
+  const cross = band.alongZ ? x : z;
+  const along = band.alongZ ? z : x;
+  return cross > band.crossMin && cross < band.crossMax
+    && along > band.alongMin && along < band.alongMax;
+}
 
 /** Names that are static geometry rather than something a player can eat. */
 const STATIC_OBSTACLE = /^(SupermarketBuilding|SupermarketBoundaryFence|SupermarketTree|DistrictStreetLight|building-|tree-)/;
@@ -70,7 +115,13 @@ function localPositions(arr) {
     const x = parentX + localX * cos - localZ * sin;
     const z = parentZ + localX * sin + localZ * cos;
     const scale = node._lscale || { x: 1, y: 1, z: 1 };
-    positions.set(index, { x, z, name: node._name || '' });
+    const worldScaleX = parentScaleX * (scale.x ?? 1);
+    const worldScaleZ = parentScaleZ * (scale.z ?? 1);
+    // The mesh is a 1x1 unit quad, so the node's world scale IS its footprint.
+    positions.set(index, {
+      x, z, name: node._name || '', scaleX: worldScaleX, scaleZ: worldScaleZ,
+      halfX: worldScaleX / 2, halfZ: worldScaleZ / 2,
+    });
     const euler = node._euler || { x: 0, y: 0, z: 0 };
     const angle = parentAngle + ((euler.y || 0) * Math.PI) / 180;
     for (const child of node._children || []) {
@@ -110,23 +161,56 @@ function main() {
     }
   }
 
-  // 2. Nothing static ON the spawn ring: seven rivals are placed on radius 14.
-  const RING_BAND = 1.5;
+  // 2. No static body may overlap the annulus the seven rivals spawn in.
+  //
+  //    Two earlier versions of this check were wrong in opposite directions: a
+  //    +/-1.5 band around radius 14 flagged street lights whose poles end at
+  //    14.22, outside the ring; and "inner edge < 14" flagged lights at radius
+  //    7.65, nowhere near the ring. What matters is whether a body's radial span
+  //    INTERSECTS the band a spawned rival occupies, and the rival's reach is
+  //    measured, not guessed: the arena probe reports all eight bodies at 4.4
+  //    bounds, so a spawn at radius 14 sweeps 11.8..16.2.
+  const RIVAL_SPAWN_REACH = 2.2;
+  const annulusInner = SPAWN_RING_RADIUS - RIVAL_SPAWN_REACH;
+  const annulusOuter = SPAWN_RING_RADIUS + RIVAL_SPAWN_REACH;
+  let closestGap = Number.POSITIVE_INFINITY;
+  let closestName = '';
   for (const obstacle of obstacles) {
     const radius = Math.hypot(obstacle.x, obstacle.z);
-    if (Math.abs(radius - SPAWN_RING_RADIUS) <= RING_BAND) {
-      failures.push(`${obstacle.name} at radius ${radius.toFixed(2)} sits on the spawn ring`
-        + ` (${SPAWN_RING_RADIUS} +/- ${RING_BAND}), where rivals are placed`);
+    const half = Math.max(obstacle.halfX, obstacle.halfZ);
+    const innerEdge = radius - half;
+    const outerEdge = radius + half;
+    const gap = Math.max(annulusInner - outerEdge, innerEdge - annulusOuter);
+    if (gap < closestGap) {
+      closestGap = gap;
+      closestName = `${obstacle.name} at (${obstacle.x.toFixed(1)}, ${obstacle.z.toFixed(1)})`;
     }
-  }
-
-  // 3. Static geometry in the traffic lanes: the lanes carry moving vehicles.
-  for (const obstacle of obstacles) {
-    if (Math.abs(obstacle.x) <= TRAFFIC_LANE_HALF_WIDTH || Math.abs(obstacle.z) <= TRAFFIC_LANE_HALF_WIDTH) {
+    if (innerEdge < annulusOuter && outerEdge > annulusInner) {
       failures.push(`${obstacle.name} at (${obstacle.x.toFixed(1)}, ${obstacle.z.toFixed(1)})`
-        + ` sits in a traffic lane (half-width ${TRAFFIC_LANE_HALF_WIDTH})`);
+        + ` spans radius ${innerEdge.toFixed(2)}..${outerEdge.toFixed(2)}, overlapping the band`
+        + ` ${annulusInner.toFixed(1)}..${annulusOuter.toFixed(1)} that a spawned rival occupies`);
     }
   }
+  reports.push(`closest static body to the rival spawn band: ${closestName}`
+    + `, gap ${closestGap.toFixed(2)}`);
+
+  // 3. Nothing static in the band the vehicles drive through.
+  const bands = laneBands(positions);
+  if (!bands.length) {
+    console.error('[level-composition] FAIL: no road tiles matched ' + ROAD_NODES
+      + ', so the lane check would pass vacuously.');
+    process.exit(1);
+  }
+  for (const obstacle of obstacles) {
+    const hit = bands.find((band) => inBand(band, obstacle.x, obstacle.z));
+    if (hit) {
+      failures.push(`${obstacle.name} at (${obstacle.x.toFixed(1)}, ${obstacle.z.toFixed(1)})`
+        + ` stands in the lane the ${hit.name} traffic drives`);
+    }
+  }
+  reports.push(`lane bands (+/-${LANE_CLEARANCE} around each road centre line): `
+    + bands.map((band) => `${band.name} ${band.alongZ ? 'x' : 'z'}`
+      + `[${band.crossMin.toFixed(1)},${band.crossMax.toFixed(1)}]`).join('; '));
 
   // 4. Reported, not failed: static geometry inside radius 14 but off the ring.
   //    District street furniture legitimately sits there, and the authoring
@@ -178,9 +262,9 @@ function main() {
     }
     process.exit(1);
   }
-  console.log(`[level-composition] PASS against the baseline: ${sorted.length} known violation(s),`
-    + ' none added. These are recorded defects, not accepted ones -- see'
-    + ' V13_ART_DIRECTION.md §六.');
+  console.log(`[level-composition] PASS against the baseline: ${sorted.length} known finding(s),`
+    + ' none added. The baseline\'s note records what each one is and which were fixed rather'
+    + ' than judged acceptable; see also V13_ART_DIRECTION.md §六.');
 }
 
 main();
