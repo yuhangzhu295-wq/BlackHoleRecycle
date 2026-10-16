@@ -32,6 +32,22 @@ const BASELINE = path.join(repoRoot, 'cocos', 'docs', 'evidence', 'v13', 'model-
 const GROUND_EPSILON = 0.02;
 const PIVOT_TOLERANCE = 0.05;
 
+/**
+ * Models that are MOUNTED PARTS rather than ground-resting objects, so resting at
+ * y=0 is the wrong test for them.
+ *
+ * This is an explicit, reasoned list rather than an inferred rule, because the
+ * check cannot know intent: `turbine-wheel` spans -0.3..0.3, symmetric about its
+ * origin, which is what a wheel spinning on an axle needs and is the opposite of
+ * a defect. The same shape on a collectible would be one.
+ */
+const MOUNTED_PARTS = new Map([
+  ['cocos/assets/art/props/turbine-wheel.glb',
+    'spans -0.3..0.3, symmetric about its origin so it can spin on an axle'],
+  ['cocos/assets/art/machine-modules/magnetic-turbine.glb',
+    'a module mounted on the machine, not placed on the ground'],
+]);
+
 function findGlbs(dir, out = []) {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const full = path.join(dir, entry.name);
@@ -58,6 +74,7 @@ export function auditGlb(filePath, label) {
   let uvMeshCount = 0;
   let groundedCount = 0;
   let centredCount = 0;
+  const mountedParts = [];
   // Grounding and pivot are properties of the MODEL, not of each part: a wheel
   // primitive sits at y=-0.3 because it is authored around its axle, and its
   // pivot is its own centre, which is correct. Judging parts reported every
@@ -104,11 +121,17 @@ export function auditGlb(filePath, label) {
 
   const minY = Math.min(...allY);
   const maxY = Math.max(...allY);
-  if (Math.abs(minY) <= GROUND_EPSILON) groundedCount += 1;
-  else findings.push({
-    code: 'NOT_GROUNDED',
-    detail: `the model rests at y=${minY.toFixed(3)} (top ${maxY.toFixed(3)}), not 0`,
-  });
+  const mountedPart = MOUNTED_PARTS.get(label);
+  if (mountedPart) {
+    mountedParts.push(`${label}: ${mountedPart}`);
+  } else if (Math.abs(minY) <= GROUND_EPSILON) {
+    groundedCount += 1;
+  } else {
+    findings.push({
+      code: 'NOT_GROUNDED',
+      detail: `the model rests at y=${minY.toFixed(3)} (top ${maxY.toFixed(3)}), not 0`,
+    });
+  }
 
   const minX = Math.min(...allX);
   const maxX = Math.max(...allX);
@@ -137,6 +160,7 @@ export function auditGlb(filePath, label) {
     uvMeshes: uvMeshCount,
     grounded: groundedCount,
     centred: centredCount,
+    mountedParts,
   };
 }
 

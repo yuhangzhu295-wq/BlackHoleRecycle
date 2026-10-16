@@ -1,22 +1,27 @@
 /**
- * Read a GLB, and rewrite one of its UV channels.
+ * Read a GLB, and edit one UV channel or the vertical placement of its geometry.
  *
  * V13 needs the road meshes to stop sampling a five-pixel sliver of a shared
  * atlas, and the fix is a UV change on the mesh -- which means editing a binary
  * container this project has no DCC tool for. The container is documented: a
- * 12-byte header, a JSON chunk and a BIN chunk. Only the FLOAT values inside the
- * BIN chunk change here, never its length, so the container stays byte-for-byte
- * valid and the JSON chunk (accessors, bufferViews, offsets) needs no repair.
+ * 12-byte header, a JSON chunk and a BIN chunk. Only FLOAT values inside the BIN
+ * chunk change here, never its length, so the container stays byte-for-byte valid
+ * and the JSON chunk (accessors, bufferViews, offsets) needs no repair.
  *
  * Usage:
  *   node scripts/glb_uv_tool.mjs inspect <file.glb>
  *   node scripts/glb_uv_tool.mjs set-uv <file.glb> --axis u|v --values <a,b> [--write]
+ *   node scripts/glb_uv_tool.mjs ground <file.glb> [--write]
  *
  * `set-uv` maps each vertex's chosen axis onto the given pair by its rank: the
  * lowest current value becomes `a`, the highest becomes `b`, everything between
  * is interpolated. Roads are quad strips whose UVs only ever take a handful of
  * distinct values, so a rank mapping is exact and needs no assumption about
  * which end of the strip is which.
+ *
+ * `ground` shifts every vertex's Y so the model's lowest point sits at 0. The
+ * vehicle and prop templates are placed at y=0 and the placement code passes only
+ * x and z, so a model whose geometry starts below zero sinks into the road.
  */
 import { readFileSync, writeFileSync } from 'node:fs';
 
@@ -186,6 +191,45 @@ function main() {
     }
     console.log(`${axis} -> [${low}, ${high}] over ${touched} vertices (from [${bounds(readAccessor(glb,
       glb.json.meshes[0].primitives[0].attributes.TEXCOORD_0).values, component).map((n) => n.toFixed(4))}])`);
+    if (write) {
+      writeFileSync(filePath, glb.buffer);
+      console.log(`wrote ${filePath}`);
+    } else {
+      console.log('(dry run; pass --write to save)');
+    }
+    return;
+  }
+
+  if (command === 'ground') {
+    const write = process.argv.includes('--write');
+    // The lowest point across every mesh, then one uniform shift so the whole
+    // model moves together -- lifting meshes independently would break the
+    // relationship between a body and its wheels.
+    let lowest = Infinity;
+    for (const mesh of glb.json.meshes || []) {
+      for (const primitive of mesh.primitives) {
+        const position = readAccessor(glb, primitive.attributes.POSITION);
+        for (const row of position.values) lowest = Math.min(lowest, row[1]);
+      }
+    }
+    if (!Number.isFinite(lowest)) throw new Error('no POSITION accessor found');
+    if (Math.abs(lowest) <= 1e-4) {
+      console.log(`${filePath}: already grounded (lowest y=${lowest.toFixed(4)})`);
+      return;
+    }
+    const shift = -lowest;
+    for (const mesh of glb.json.meshes || []) {
+      for (const primitive of mesh.primitives) {
+        const position = readAccessor(glb, primitive.attributes.POSITION);
+        writeAccessorComponent(glb, primitive.attributes.POSITION, 1,
+          position.values.map((row) => row[1] + shift));
+        // The accessor's declared min/max must move with the data, or the engine
+        // culls and bounds the model using the old extent.
+        if (position.accessor.min) position.accessor.min[1] += shift;
+        if (position.accessor.max) position.accessor.max[1] += shift;
+      }
+    }
+    console.log(`${filePath}: lowest y ${lowest.toFixed(4)} -> 0 (shift ${shift.toFixed(4)})`);
     if (write) {
       writeFileSync(filePath, glb.buffer);
       console.log(`wrote ${filePath}`);
