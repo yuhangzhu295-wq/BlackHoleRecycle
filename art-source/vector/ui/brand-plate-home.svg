@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="180" viewBox="0 0 600 180">
+  <defs>
+    <linearGradient id="plate" gradientUnits="userSpaceOnUse" x1="300" y1="30" x2="300" y2="152">
+      <stop offset="0" stop-color="#00154b"/>
+      <stop offset="0.24" stop-color="#0a2a60"/>
+      <stop offset="0.46" stop-color="#031d4d"/>
+      <stop offset="1" stop-color="#031d4d"/>
+    </linearGradient>
+  </defs>
+  <rect x="27.5" y="32.5" width="545" height="117" rx="22" fill="url(#plate)" stroke="#f7e171" stroke-width="5"/>
+  <g transform="translate(520 90) rotate(-18)">
+    <ellipse rx="24" ry="6.5" fill="none" stroke="#8fd0f5" stroke-width="3" opacity="0.9"/>
+    <circle r="17.5" fill="#3090e0"/>
+    <ellipse rx="11" ry="4.5" cx="-2" cy="-6" fill="#7fc4f0" opacity="0.55"/>
+  </g>
+  <path d="M40 23 L43.4 36.6 L57 40 L43.4 43.4 L40 57 L36.6 43.4 L23 40 L36.6 36.6 Z" fill="#ffffff"/>
+  <path d="M46 135 L48.6 145.4 L59 148 L48.6 150.6 L46 161 L43.4 150.6 L33 148 L43.4 145.4 Z" fill="#ffffff"/>
+</svg>

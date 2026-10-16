@@ -149,6 +149,59 @@ AVATAR = 96
 AVATAR_VOID = '#0a0618'
 
 
+BRAND_W, BRAND_H = 600, 180
+BRAND_GOLD = '#f7e171'
+
+
+def sparkle(cx, cy, radius):
+    """A four-point star: the two decorative marks on the brand plate."""
+    waist = radius * 0.20
+    return (f'<path d="M{cx} {cy - radius} L{cx + waist} {cy - waist}'
+            f' L{cx + radius} {cy} L{cx + waist} {cy + waist}'
+            f' L{cx} {cy + radius} L{cx - waist} {cy + waist}'
+            f' L{cx - radius} {cy} L{cx - waist} {cy - waist} Z" fill="#ffffff"/>')
+
+
+def brand_svg():
+    """The Home brand plate: a gold-bordered rounded rect with a ringed planet.
+
+    Carries NO text -- the brand name is a Creator Label beside it, because baked
+    text is uneditable and unlocalisable.
+
+    Measured from the shipped PNG: the solid extent is x 25..575, y 30..152 in a
+    600x180 canvas; the border is 5px of #f7e171; the fill is a gradient whose
+    lightest point (#0a2a60) sits a quarter down and settles to #031d4d below
+    halfway; the planet is a 35px disc at (520, 90) in #3090e0. The two four-point
+    sparkles sit at the plate's left corners.
+    """
+    return '\n'.join([
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{BRAND_W}" height="{BRAND_H}"'
+        f' viewBox="0 0 {BRAND_W} {BRAND_H}">',
+        '  <defs>',
+        '    <linearGradient id="plate" gradientUnits="userSpaceOnUse"'
+        ' x1="300" y1="30" x2="300" y2="152">',
+        '      <stop offset="0" stop-color="#00154b"/>',
+        '      <stop offset="0.24" stop-color="#0a2a60"/>',
+        '      <stop offset="0.46" stop-color="#031d4d"/>',
+        '      <stop offset="1" stop-color="#031d4d"/>',
+        '    </linearGradient>',
+        '  </defs>',
+        '  <rect x="27.5" y="32.5" width="545" height="117" rx="22"'
+        ' fill="url(#plate)" stroke="' + BRAND_GOLD + '" stroke-width="5"/>',
+        '  <g transform="translate(520 90) rotate(-18)">',
+        '    <ellipse rx="24" ry="6.5" fill="none" stroke="#8fd0f5"'
+        ' stroke-width="3" opacity="0.9"/>',
+        '    <circle r="17.5" fill="#3090e0"/>',
+        '    <ellipse rx="11" ry="4.5" cx="-2" cy="-6" fill="#7fc4f0"'
+        ' opacity="0.55"/>',
+        '  </g>',
+        '  ' + sparkle(40, 40, 17),
+        '  ' + sparkle(46, 148, 13),
+        '</svg>',
+        '',
+    ])
+
+
 def avatar_svg():
     """The leaderboard avatar: a soft white glow, a near-black disc, a sheen.
 
@@ -205,14 +258,18 @@ def main():
     for name, markup in icons().items():
         sets[f'icon-stat-{name}'] = (SIZE, markup, f'icon_stat_{name}')
     sets['avatar-blackhole'] = (AVATAR, avatar_svg(), 'avatar_blackhole')
+    sets['brand-plate-home'] = (None, brand_svg(), 'logo_brand_home')
     for name, (size, markup, stem) in sets.items():
+        # `None` means the SVG carries its own width/height, so the rasteriser
+        # takes the intrinsic size rather than a square one.
+        size_arg = f'{size}x{size}' if size else f'{BRAND_W}x{BRAND_H}'
         svg_path = os.path.join(SVG_DIR, f'{name}.svg')
         with open(svg_path, 'w', encoding='utf-8', newline='\n') as handle:
             handle.write(markup)
         png_path = os.path.join(png_dir, f'{stem}.png')
         result = subprocess.run(
             ['node', os.path.join(ROOT, 'scripts', 'rasterize_svg.mjs'),
-             svg_path, png_path, f'{size}x{size}'],
+             svg_path, png_path, size_arg],
             cwd=ROOT, capture_output=True, text=True, shell=(os.name == 'nt'))
         if result.returncode != 0:
             print(result.stdout)
