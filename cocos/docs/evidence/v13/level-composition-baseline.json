@@ -1,6 +1,6 @@
 {
-  "note": "Known arena-composition violations. Recorded rather than fixed: each one is a placement inside the shipped map prefab, and moving authored content is a separate piece of work. The gate fails when a violation appears that is not here, and when the count changes -- a fixed-then-reintroduced one is invisible to a membership test.",
-  "count": 27,
+  "note": "Known arena-composition violations. Recorded rather than fixed: each is a placement inside the shipped map prefab, and moving authored content is a separate piece of work. The gate fails when a violation appears that is not here, and when the count changes -- a fixed-then-reintroduced one is invisible to a membership test. WAS 27: the six out-of-frame SpawnPoints were fixed on 2026-10-15 by moving the produce-discard and parking-recycling clusters inside the frame (relocate_arena_spawn_clusters.py). WAS 21 after that; the remaining 7 on-ring and 14 in-lane findings are open.",
+  "count": 21,
   "findings": [
     "DistrictStreetLight at (-5.3, -15.5) sits in a traffic lane (half-width 8)",
     "DistrictStreetLight at (-5.3, -5.5) sits in a traffic lane (half-width 8)",
@@ -12,12 +12,6 @@
     "DistrictStreetLight at radius 14.87 sits on the spawn ring (14 +/- 1.5), where rivals are placed",
     "DistrictStreetLight at radius 14.87 sits on the spawn ring (14 +/- 1.5), where rivals are placed",
     "DistrictStreetLight at radius 14.87 sits on the spawn ring (14 +/- 1.5), where rivals are placed",
-    "SpawnPoint_1 at (-11.2, 13.0) is outside the camera frame (x -31..31, z -43..11)",
-    "SpawnPoint_1 at (15.8, 14.0) is outside the camera frame (x -31..31, z -43..11)",
-    "SpawnPoint_2 at (-13.9, 14.6) is outside the camera frame (x -31..31, z -43..11)",
-    "SpawnPoint_2 at (13.1, 15.6) is outside the camera frame (x -31..31, z -43..11)",
-    "SpawnPoint_3 at (-13.9, 11.4) is outside the camera frame (x -31..31, z -43..11)",
-    "SpawnPoint_3 at (13.1, 12.4) is outside the camera frame (x -31..31, z -43..11)",
     "SupermarketBoundaryFence at (0.0, -26.0) sits in a traffic lane (half-width 8)",
     "SupermarketBuilding at radius 14.88 sits on the spawn ring (14 +/- 1.5), where rivals are placed",
     "SupermarketBuildingSouth5 at (0.0, -40.0) sits in a traffic lane (half-width 8)",
