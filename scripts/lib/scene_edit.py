@@ -153,6 +153,28 @@ class Scene:
             refs = existing + ',' + NL + '      ' + refs
         self.edits.append((start + at + len(marker), start + close, refs))
 
+    def replace_children(self, parent_id, child_ids):
+        """Set a node's `_children` to exactly `child_ids`.
+
+        `set_children` only appends, which is the right default: replacing is the
+        silent, catastrophic direction its docstring warns about. This exists for
+        the deliberate case -- dropping duplicates and empty placeholders that
+        earlier runs appended -- and it is deliberately a separate, named call so
+        that using it is a decision rather than an accident.
+
+        The caller must assert the resulting count in `commit(expect=...)`; the
+        assertion there counts ADDED children, so a replace is verified by the
+        caller comparing the parsed file, not by that map.
+        """
+        start, end = self.spans[parent_id]
+        block = self.text[start:end]
+        marker = QUOTE + '_children' + QUOTE + ': ['
+        at = block.index(marker)
+        close = block.index(']', at)
+        refs = (',' + NL + '      ').join(
+            '{%s        "__id__": %d%s      }' % (NL, child_id, NL) for child_id in child_ids)
+        self.edits.append((start + at + len(marker), start + close, refs))
+
     def append_elements(self, elements):
         """Queue new array elements; returns their ids."""
         first = len(self.arr)

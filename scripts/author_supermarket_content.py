@@ -110,22 +110,30 @@ def clone_subtree(scene, source_id, suffix):
     """
     mapping = {}
     order = []
+    # Ids are assigned as `base + position in order`, NOT as `len(scene.arr)`.
+    # Nothing is appended while collecting, so `len(scene.arr)` is the same number
+    # for every element and the whole mapping collapses to one id: the rewrite
+    # loop then writes each element's references into the SAME slot, the last
+    # element wins, and the clone ends up with no children and no components.
+    # That is what made every clone this script has ever produced invisible --
+    # 30 of the 44 Props and 6 of the 19 Buildings draw nothing.
+    base = len(scene.arr)
 
     def collect(id):
-        mapping[id] = len(scene.arr)
+        mapping[id] = base + len(order)
         order.append(id)
         for ref in scene.arr[id].get('_children', []):
             collect(ref['__id__'])
         for ref in scene.arr[id].get('_components', []):
             if ref['__id__'] in mapping:
                 continue
-            mapping[ref['__id__']] = len(scene.arr)
+            mapping[ref['__id__']] = base + len(order)
             order.append(ref['__id__'])
         comp_ids = [c['__id__'] for c in scene.arr[id].get('_components', [])
                     if scene.arr[c['__id__']].get('__type__') == 'cc.PrefabInfo']
         for comp_id in comp_ids:
             if comp_id not in mapping:
-                mapping[comp_id] = len(scene.arr)
+                mapping[comp_id] = base + len(order)
                 order.append(comp_id)
 
     collect(source_id)

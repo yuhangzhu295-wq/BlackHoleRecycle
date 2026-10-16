@@ -1,13 +1,9 @@
 {
-  "note": "Known arena-composition violations. The gate fails when one appears that is not here, and when the count changes -- a fixed-then-reintroduced violation is invisible to a membership test. History: 27 findings (6 out-of-frame SpawnPoints, 7 on the ring, 14 in the lanes). 2026-10-15 FIXED: the 6 out-of-frame SpawnPoints (relocate_arena_content.py moved the produce-discard and parking-recycling clusters into the frame); SupermarketCenterOfficeN, which stood at (0,-22) in the middle of the RoadSouth lane; and two buildings (SupermarketBuilding / SupermarketAnnex at (+/-8.8,-12)) whose bodies reached radius 12.63, INSIDE the ring the seven rivals spawn on, so a rival could spawn inside a building. The 14 in-lane findings were retracted rather than fixed: they came from the guard's 8-unit authoring margin, which is wider than the 12-wide road it protects, and they flagged kerbside street furniture. REMAINING, JUDGED ACCEPTABLE: 7 street lights whose bounding boxes clip the 11.8..16.2 spawn band. The bounding box includes the lamp arm, so it overstates the pole; the arm is above the rivals and the pole is thin, and a rival passes it for an instant. Precise judgement would need the seven spawn ANGLES rather than the whole annulus.",
-  "count": 7,
+  "note": "Known arena-composition violations. Recorded rather than fixed: each one is a placement inside the shipped map prefab, and moving authored content is a separate piece of work. The gate fails when a violation appears that is not here, and when the count changes -- a fixed-then-reintroduced one is invisible to a membership test. 2026-10-15 V13.1: the count fell 7 -> 3 because the duplicated prop subtrees were removed; the duplicates had each produced their own identical finding.",
+  "count": 3,
   "findings": [
-    "DistrictStreetLight at (-11.0, 10.0) spans radius 14.22..15.52, overlapping the band 11.8..16.2 that a spawned rival occupies",
-    "DistrictStreetLight at (-11.0, 10.0) spans radius 14.22..15.52, overlapping the band 11.8..16.2 that a spawned rival occupies",
     "DistrictStreetLight at (-5.3, -15.5) spans radius 14.48..18.28, overlapping the band 11.8..16.2 that a spawned rival occupies",
     "DistrictStreetLight at (-5.3, 10.5) spans radius 9.86..13.66, overlapping the band 11.8..16.2 that a spawned rival occupies",
-    "DistrictStreetLight at (11.0, 10.0) spans radius 14.22..15.52, overlapping the band 11.8..16.2 that a spawned rival occupies",
-    "DistrictStreetLight at (11.0, 10.0) spans radius 14.22..15.52, overlapping the band 11.8..16.2 that a spawned rival occupies",
     "DistrictStreetLight at (5.3, 10.5) spans radius 9.86..13.66, overlapping the band 11.8..16.2 that a spawned rival occupies"
   ]
 }
