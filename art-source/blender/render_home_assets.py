@@ -17,6 +17,12 @@ Scale baseline is taken from the game, not chosen by eye:
 A card vignette therefore frames a patch a few blocks wide, not one block, so the
 vehicles and the hole read at the size the player sees them in play.
 
+NOTE (V13.1): this script's `home_city_band.png` output is SUPERSEDED and is not
+referenced by the scene -- Home binds `home_field.png` (1 reference) and the band
+file has no `.meta`, i.e. it was never imported. It is a 1.2 MB byproduct, so it is
+deleted rather than committed; re-running this script recreates it and it must be
+removed again. Only `home_hero_blackhole.png` is a live output here.
+
 Run: blender -b -P art-source/blender/render_home_assets.py
 """
 import math

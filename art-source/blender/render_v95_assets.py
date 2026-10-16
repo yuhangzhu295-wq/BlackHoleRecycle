@@ -110,7 +110,14 @@ def add_black_hole(x, y, radius=0.9, ring_colour=(0.42, 0.24, 1.0), name='hole')
     core = bpy.data.materials.new(f'{name}-core-mat')
     core.use_nodes = True
     principled = principled_of(core)
-    principled.inputs['Base Color'].default_value = (0.02, 0.01, 0.05, 1.0)
+    # V13.1: was (0.02, 0.01, 0.05), which the stage lights render at (63,60,99)
+    # -- a medium purple disc. The gameplay hole is a near-black void measured at
+    # (2,2,7), because the game renders unlit while these previews are lit, so the
+    # same base colour does not produce the same picture. Measured on the shipped
+    # hero: base 0.02 -> 63/255, so the base is scaled to land the void near 10/255
+    # and the three pages that share this asset stop drawing a different hole from
+    # the one the player plays.
+    principled.inputs['Base Color'].default_value = (0.004, 0.002, 0.008, 1.0)
     # V12: was 0.25, which rendered the core as a LIT grey-blue coin -- a broad
     # specular picked up the sky and the squashed sphere read as a shiny disc
     # lying at an angle, not as a hole. Every design sheet draws the opposite: a
