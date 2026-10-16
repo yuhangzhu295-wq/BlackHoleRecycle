@@ -35971,13 +35971,7 @@
     "_customMaterial": null,
     "_srcBlendFactor": 2,
     "_dstBlendFactor": 4,
-    "_color": {
-      "__type__": "cc.Color",
-      "r": 5,
-      "g": 13,
-      "b": 31,
-      "a": 208
-    },
+    "_color": {"__type__": "cc.Color", "r": 5, "g": 13, "b": 31, "a": 140},
     "_spriteFrame": {
       "__uuid__": "76476413-d01d-4275-b8e4-c1d56c05d00c@f9941",
       "__expectedType__": "cc.SpriteFrame"
