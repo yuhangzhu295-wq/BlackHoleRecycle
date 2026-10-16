@@ -1,18 +1,22 @@
-"""Author the five stat-card icons as editable SVG, then rasterise them.
+"""Author UI art as editable SVG, then rasterise it.
 
-PHASE F of V13: UI art moves off PIL and onto vector sources. The stat icons are
-the first set because they are small, self-contained and high-visibility -- they
-lead every Settlement stat card -- and because the shapes are pure geometry
-(outline sticker, inset fill), which is what a vector file is good at.
+PHASE F of V13: UI art moves off PIL and onto vector sources. Two sets so far,
+both chosen because they are small, self-contained, high-visibility and pure
+geometry:
 
-Colours are sampled from the shipped PNGs rather than chosen, so this is a change
-of TOOL, not a change of look. That matters: the previous art is accepted, and a
-"redesign" hidden inside a pipeline migration is exactly what the brief forbids.
+  * the five stat-card icons, which lead every Settlement stat card;
+  * the leaderboard avatar disc, which appears in every Settlement row.
+
+Colours and geometry are MEASURED from the shipped PNGs rather than chosen, so
+this is a change of TOOL, not a change of look. That matters: the previous art is
+accepted, and a "redesign" hidden inside a pipeline migration is exactly what the
+brief forbids. The check after each set is the shipped icon's own ink box and
+outline weight, not a look.
 
 The emitted SVG is the editable source; `scripts/rasterize_svg.mjs` turns it into
 the PNG Creator imports. Run:
 
-    python scripts/author_stat_icon_vectors.py
+    python scripts/author_ui_vectors.py [output-dir]
 """
 import os
 import subprocess
@@ -141,6 +145,54 @@ def icons():
     }
 
 
+AVATAR = 96
+AVATAR_VOID = '#0a0618'
+
+
+def avatar_svg():
+    """The leaderboard avatar: a soft white glow, a near-black disc, a sheen.
+
+    Tint-neutral by construction, which is what lets one asset serve seven
+    opponents: the glow is pure white so `white * tint` is the tint, and the disc
+    is near-black so `void * tint` stays a void under every tint.
+
+    Measured from the shipped PNG, not eyeballed, and composited over a dark
+    background: reading the raw RGB of a transparent PNG misleads, because Chromium
+    stores transparent pixels as white where the shipped asset stores them as black,
+    and the first comparison read 255 for "nothing here". Composited, the dark disc
+    runs to r=29.5, a pure-white ring covers r=31..39, and the glow falls to 0.30
+    opacity at r=40, 0.13 at r=44 and ~0.02 at r=48. Along the brightest direction
+    the sheen is a flat-topped patch of #4d4a57 from r=10 to r=24, so it is a
+    soft-edged solid ellipse and not a gradient.
+    """
+    return '\n'.join([
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{AVATAR}" height="{AVATAR}"'
+        f' viewBox="0 0 {AVATAR} {AVATAR}">',
+        '  <defs>',
+        '    <filter id="soften" x="-70%" y="-70%" width="240%" height="240%">',
+        '      <feGaussianBlur stdDeviation="2.6"/>',
+        '    </filter>',
+        '    <clipPath id="disc"><circle cx="48" cy="48" r="29.5"/></clipPath>',
+        '  </defs>',
+        # The ring is drawn twice. The crisp copy sets the silhouette: blurring a
+        # single 8-wide band leaves its centre at 185 instead of 255, because a
+        # Gaussian never saturates a band that thin. The blurred copy sits under it
+        # and is what produces the outward falloff, which is the glow; its opacity is
+        # set so that falloff matches the measured 0.30 at r=40 and 0.13 at r=44.
+        '  <circle cx="48" cy="48" r="39" fill="none" stroke="#ffffff"'
+        ' stroke-width="6" opacity="0.5" filter="url(#soften)"/>',
+        f'  <circle cx="48" cy="48" r="29.5" fill="{AVATAR_VOID}"/>',
+        '  <g clip-path="url(#disc)">',
+        '    <ellipse cx="39" cy="34" rx="14" ry="10" fill="#4d4a57"'
+        ' filter="url(#soften)"/>',
+        '  </g>',
+        '  <circle cx="48" cy="48" r="35" fill="none" stroke="#ffffff"'
+        ' stroke-width="8"/>',
+        '</svg>',
+        '',
+    ])
+
+
 def main():
     # An output directory argument exists so a new render can be compared against
     # the shipped PNGs before it replaces them. Overwriting accepted art and then
@@ -148,14 +200,19 @@ def main():
     png_dir = sys.argv[1] if len(sys.argv) > 1 else PNG_DIR
     os.makedirs(SVG_DIR, exist_ok=True)
     os.makedirs(png_dir, exist_ok=True)
+    # name -> (size, markup, output stem)
+    sets = {}
     for name, markup in icons().items():
-        svg_path = os.path.join(SVG_DIR, f'icon-stat-{name}.svg')
+        sets[f'icon-stat-{name}'] = (SIZE, markup, f'icon_stat_{name}')
+    sets['avatar-blackhole'] = (AVATAR, avatar_svg(), 'avatar_blackhole')
+    for name, (size, markup, stem) in sets.items():
+        svg_path = os.path.join(SVG_DIR, f'{name}.svg')
         with open(svg_path, 'w', encoding='utf-8', newline='\n') as handle:
             handle.write(markup)
-        png_path = os.path.join(png_dir, f'icon_stat_{name}.png')
+        png_path = os.path.join(png_dir, f'{stem}.png')
         result = subprocess.run(
             ['node', os.path.join(ROOT, 'scripts', 'rasterize_svg.mjs'),
-             svg_path, png_path, f'{SIZE}x{SIZE}'],
+             svg_path, png_path, f'{size}x{size}'],
             cwd=ROOT, capture_output=True, text=True, shell=(os.name == 'nt'))
         if result.returncode != 0:
             print(result.stdout)
