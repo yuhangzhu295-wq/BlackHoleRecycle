@@ -42,7 +42,7 @@ TASK ID: BLACKHOLE_V14_AUTONOMOUS_PRODUCT_COMPLETION
 | F3 | FLOW-03 Arena 正常竞技 | F1 | P0 | PASS | elapsed/rank/mass + arena-ai PASS |
 | F4 | FLOW-04 竞技死亡与复活 | F3 | P0 | PASS | 真实死亡→REVIVING→放弃→结算；revive PASS |
 | F5 | FLOW-05 结算与金币幂等 | F1,F3 | P0 | PARTIAL | 发放自洽；重复领取未实验 |
-| F6 | FLOW-06 机器与皮肤 | E2 | P1 | PARTIAL | 导航 PASS；交易未跑 |
+| F6 | FLOW-06 机器与皮肤 | E2 | P1 | PASS | 免费装备 / 0 币不扣 / 扣 1500 实证 |
 | F7 | FLOW-07 平台/广告/异常/边界 | E2 | P1 | **FAIL** | cell-lifecycle 停在 cell −3（目标 −4） |
 | G1 | 性能：节点/渲染器/帧时间/内存趋势 | B1 | P1 | NOT_MEASURABLE | 本阶段未采集，不用旧值冒充 |
 | G2 | 微信主包压缩后尺寸 | — | P1 | BLOCKED_EXTERNAL | 需开发者工具权威口径 |

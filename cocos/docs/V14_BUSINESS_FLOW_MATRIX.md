@@ -105,14 +105,16 @@ TASK ID: BLACKHOLE_V14_AUTONOMOUS_PRODUCT_COMPLETION
 | 字段 | 值 |
 | --- | --- |
 | FROM | HOME |
-| ACTIONS | 进入机器页 → 返回 → 进入皮肤页 → 返回 |
-| EXPECTED | 页面可达、数据真实、返回正常 |
-| ACTUAL | `--scope=ui-full-flow` PASS（覆盖页面导航与真实触摸） |
-| EVIDENCE | `acceptance-report-ui-full-flow.json` |
-| STATUS | **PARTIAL** |
+| ACTIONS | 进入机器页 → 返回 → 皮肤页：装备免费皮肤 / 点锁定皮肤（余额不足）/ 购买付费皮肤 |
+| EXPECTED | 免费可装备；余额不足不扣钱；购买原子扣款；返回正常 |
+| ACTUAL | **免费装备**：`previousSkinId: skin_classic → selectedSkinId: skin_violet_vortex`<br>**余额不足**：锁定皮肤点击时 `coinsBeforeLockedTap: 0`，未扣款<br>**付费购买**：`coinsBefore: 198560 → coinsAfter: 197060`（正好 1500）、`skinId: skin_orange_force` |
+| EVIDENCE | `acceptance-report-skins.json`、`acceptance-report-skin-unlock.json`（均 PASS）；`ui-full-flow` PASS |
+| STATUS | **PROVEN**（装备 / 余额不足 / 扣款） |
 
-未证部分：**购买/余额不足/重复购买/装备持久化**未跑（`--scope=skins` 与
-`--scope=skin-unlock` 存在但本阶段未执行）。
+**测试环境标注**：`coinsBefore 198560` 是**预置的测试余额**，不是自然游玩所得——
+指令允许隔离测试存档里的合法前置条件，但必须标明，这里标明。
+
+未证部分：**重启后装备与已购状态持久化**、**已购皮肤重复购买不重复扣款**。
 
 ---
 
@@ -140,7 +142,7 @@ TASK ID: BLACKHOLE_V14_AUTONOMOUS_PRODUCT_COMPLETION
 | FLOW-03 Arena 正常竞技 | PROVEN |
 | FLOW-04 竞技死亡与复活 | PROVEN（两条退出路径） |
 | FLOW-05 结算与金币 | PROVEN（发放）；幂等仅标记 |
-| FLOW-06 机器与皮肤 | PARTIAL（导航已证，交易未证） |
+| FLOW-06 机器与皮肤 | **PROVEN**（装备/余额不足/扣款）；持久化未证 |
 | FLOW-07 平台/异常/边界 | NOT_PROVEN（cell 生命周期）；广告/断网 BLOCKED_PLATFORM |
 
 **GAMEPLAY_READY = NO**。依据：FLOW-02 与 FLOW-07 未证（FLOW-01 已补齐）。
