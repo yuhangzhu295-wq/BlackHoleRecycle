@@ -35,21 +35,21 @@ TASK ID: BLACKHOLE_V14_AUTONOMOUS_PRODUCT_COMPLETION
 | C3 | 逐城区真实移动/收集/车辆/生命周期验收 | C2 | P1 | TODO | 探针输出 |
 | D1 | 模型质量审计复跑（不重改已修项） | — | P1 | PASS | 1 条（推土机，待所有者） |
 | D2 | 推土机只读引用分析 + 合法替代方案准备 | — | P2 | TODO | 引用清单 |
-| E1 | 页面清单（从 UIPageRouter/Game.scene 读） | — | P0 | TODO | 页面表 |
-| E2 | 逐页真实交互验收（点完看状态变化） | E1 | P0 | TODO | 每控件结果 |
-| F1 | FLOW-01 无尽主流程 | E2 | P0 | TODO | 步骤日志 + 快照 |
-| F2 | FLOW-02 LV1–LV5 真实成长 | F1 | P0 | TODO | 等级证据 |
-| F3 | FLOW-03 Arena 正常竞技 | F1 | P0 | TODO | 排名/击杀/结算 |
-| F4 | FLOW-04 竞技死亡与复活 | F3 | P0 | TODO | 三种退出路径 |
-| F5 | FLOW-05 结算与金币幂等 | F1,F3 | P0 | TODO | 账本对比 |
-| F6 | FLOW-06 机器与皮肤 | E2 | P1 | TODO | 余额/装备/持久化 |
-| F7 | FLOW-07 平台/广告/异常/边界 | E2 | P1 | TODO | 逐项结果 |
-| G1 | 性能：节点/渲染器/帧时间/内存趋势 | B1 | P1 | TODO | 实测值 |
+| E1 | 页面清单（从 UIPageRouter/Game.scene 读） | — | P0 | PASS | 9 页 + `formalPages` 键已读 |
+| E2 | 逐页真实交互验收（点完看状态变化） | E1 | P0 | PARTIAL | `ui-full-flow` PASS；逐控件未做 |
+| F1 | FLOW-01 无尽主流程 | E2 | P0 | PARTIAL | 画面已证；快照字段路径错，数值未取到 |
+| F2 | FLOW-02 LV1–LV5 真实成长 | F1 | P0 | **FAIL** | 三次跑五个不同目标，0.51–3.94 |
+| F3 | FLOW-03 Arena 正常竞技 | F1 | P0 | PASS | elapsed/rank/mass + arena-ai PASS |
+| F4 | FLOW-04 竞技死亡与复活 | F3 | P0 | PASS | 真实死亡→REVIVING→放弃→结算；revive PASS |
+| F5 | FLOW-05 结算与金币幂等 | F1,F3 | P0 | PARTIAL | 发放自洽；重复领取未实验 |
+| F6 | FLOW-06 机器与皮肤 | E2 | P1 | PARTIAL | 导航 PASS；交易未跑 |
+| F7 | FLOW-07 平台/广告/异常/边界 | E2 | P1 | **FAIL** | cell-lifecycle 停在 cell −3（目标 −4） |
+| G1 | 性能：节点/渲染器/帧时间/内存趋势 | B1 | P1 | NOT_MEASURABLE | 本阶段未采集，不用旧值冒充 |
 | G2 | 微信主包压缩后尺寸 | — | P1 | BLOCKED_EXTERNAL | 需开发者工具权威口径 |
 | G3 | 抖音真实 AppID | — | P1 | BLOCKED_EXTERNAL | 需账号 |
-| H1 | 最终报告 `V14_FINAL_PRODUCT_ACCEPTANCE_REPORT.md` | 全部 | P0 | TODO | — |
-| H2 | 业务流矩阵 `V14_BUSINESS_FLOW_MATRIX.md` | F1–F7 | P0 | TODO | — |
-| H3 | 视觉矩阵 `V14_VISUAL_ACCEPTANCE_MATRIX.md` | B2,C3 | P0 | TODO | — |
+| H1 | 最终报告 `V14_FINAL_PRODUCT_ACCEPTANCE_REPORT.md` | 全部 | P0 | PASS | 已写，含五项判定 |
+| H2 | 业务流矩阵 `V14_BUSINESS_FLOW_MATRIX.md` | F1–F7 | P0 | PASS | 七条流程逐条判定 |
+| H3 | 视觉矩阵 `V14_VISUAL_ACCEPTANCE_MATRIX.md` | B2,C3 | P0 | PASS | 18 帧逐张 + 评分 85/100 |
 
 ---
 
@@ -57,11 +57,11 @@ TASK ID: BLACKHOLE_V14_AUTONOMOUS_PRODUCT_COMPLETION
 
 | 判定 | 状态 | 依据 |
 | --- | --- | --- |
-| GAMEPLAY_READY | NOT_RUN | FLOW-01..07 未跑 |
-| VISUAL_READY | NOT_RUN | 18 张状态图未采集 |
-| DATA_READY | NOT_RUN | 金币幂等/存档未验 |
-| ENGINEERING_READY | PASS（历史） | 529 测试 + 四道 review + 构建，本阶段未改动相关代码 |
-| RELEASE_READY | BLOCKED_EXTERNAL | 抖音 AppID；微信压缩包体未测 |
+| GAMEPLAY_READY | **NO** | FLOW-02 / FLOW-07 NOT_PROVEN；FLOW-01 数值证据缺失 |
+| VISUAL_READY | **NO** | 18 帧 5/6 通过，竞技场草地 1 项 P1 |
+| DATA_READY | **PARTIAL** | 金币发放自洽 + `claimed:true`；重复领取未实验 |
+| ENGINEERING_READY | **YES** | 529 测试 0 失败 + 四道 review + 三平台构建 |
+| RELEASE_READY | **BLOCKED_EXTERNAL** | 抖音 AppID；微信压缩包体未测；真机未验 |
 
 ---
 
