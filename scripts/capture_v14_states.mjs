@@ -101,6 +101,17 @@ try {
       canvasRect.top + canvasRect.height * startNode.screen.y);
     await waitState('PLAYING');
     await sleep(1200);
+    // Read the machine before the drags: the fields are `machine.mass` and
+    // `compression.bufferCount`. The first version read `player.mass` and
+    // `compression.absorbed`, which do not exist, so the endless evidence came
+    // back as `{"mass":null,"absorbed":null}` -- a silent hole in the proof.
+    const endlessBefore = await page.evaluate(() => {
+      const s = window.__BHR_QA__.snapshot();
+      return { mass: s.machine?.mass ?? null, level: s.machine?.level ?? null,
+        maxTier: s.machine?.maxTier ?? null,
+        absorbed: s.compression?.bufferCount ?? null,
+        player: s.player ? { x: s.player.x, z: s.player.z } : null };
+    });
     const cx = canvasRect.left + canvasRect.width / 2;
     const cy = canvasRect.top + canvasRect.height * 0.72;
     // Four real drags so the player actually travels and eats.
@@ -112,10 +123,19 @@ try {
 
     const endlessState = await page.evaluate(() => {
       const s = window.__BHR_QA__.snapshot();
-      return { state: s.gameState, mass: s.player?.mass ?? null,
-        absorbed: s.compression?.absorbed ?? null };
+      return { state: s.gameState, mass: s.machine?.mass ?? null,
+        level: s.machine?.level ?? null, maxTier: s.machine?.maxTier ?? null,
+        absorbed: s.compression?.bufferCount ?? null,
+        stored: s.compression?.storedResources ?? null,
+        player: s.player ? { x: s.player.x, z: s.player.z } : null };
     });
-    console.log(`  endless evidence @ ${size}: ${JSON.stringify(endlessState)}`);
+    const travelled = endlessBefore.player && endlessState.player
+      ? Math.hypot(endlessState.player.x - endlessBefore.player.x,
+        endlessState.player.z - endlessBefore.player.z)
+      : null;
+    console.log(`  endless before @ ${size}: ${JSON.stringify(endlessBefore)}`);
+    console.log(`  endless after  @ ${size}: ${JSON.stringify(endlessState)}`
+      + ` travelled=${travelled === null ? 'n/a' : travelled.toFixed(2)}`);
 
     // Back to Home through the pause page, then into the arena.
     await tapUi('runtimeHUD.pauseButton');

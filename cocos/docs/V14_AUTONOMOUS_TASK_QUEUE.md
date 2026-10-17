@@ -37,7 +37,7 @@ TASK ID: BLACKHOLE_V14_AUTONOMOUS_PRODUCT_COMPLETION
 | D2 | 推土机只读引用分析 + 合法替代方案准备 | — | P2 | TODO | 引用清单 |
 | E1 | 页面清单（从 UIPageRouter/Game.scene 读） | — | P0 | PASS | 9 页 + `formalPages` 键已读 |
 | E2 | 逐页真实交互验收（点完看状态变化） | E1 | P0 | PARTIAL | `ui-full-flow` PASS；逐控件未做 |
-| F1 | FLOW-01 无尽主流程 | E2 | P0 | PARTIAL | 画面已证；快照字段路径错，数值未取到 |
+| F1 | FLOW-01 无尽主流程 | E2 | P0 | PASS | 位移 3.98–4.56、mass 0→345/395、absorbed 0→1/2 |
 | F2 | FLOW-02 LV1–LV5 真实成长 | F1 | P0 | **FAIL** | 三次跑五个不同目标，0.51–3.94 |
 | F3 | FLOW-03 Arena 正常竞技 | F1 | P0 | PASS | elapsed/rank/mass + arena-ai PASS |
 | F4 | FLOW-04 竞技死亡与复活 | F3 | P0 | PASS | 真实死亡→REVIVING→放弃→结算；revive PASS |

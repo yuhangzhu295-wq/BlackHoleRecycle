@@ -17,13 +17,13 @@ TASK ID: BLACKHOLE_V14_AUTONOMOUS_PRODUCT_COMPLETION
 | FROM | HOME |
 | ACTIONS | start → modeEndless → 无尽准备页 start → 真实拖拽 ×4 → 暂停 → 返回首页 |
 | EXPECTED | 进入 PLAYING，玩家真实位移、吞噬、质量增长；暂停可恢复；可回首页 |
-| ACTUAL | `capture_v14_states.mjs` 三档均进入 `PLAYING` 并完成 4 次真实拖拽；画面出现 `+50 / +60` 吞噬反馈；HUD 显示 `LV.1 初级黑洞 / 质量 155kg / 下一级 磁力黑洞` |
-| EVIDENCE | `artifacts/qa/v14/states/endless_moving-{375x667,390x844,430x932}.png`；`acceptance:v2 --scope=ui-full-flow` PASS |
-| STATUS | **PARTIAL** |
+| ACTUAL | 三档均进入 `PLAYING` 并完成 4 次真实拖拽。**数值证据（进入时 → 拖拽后）**：<br>375×667：mass **0 → 395**、absorbed **0 → 1**、stored 38、位移 **3.98**<br>390×844：mass **0 → 345**、absorbed **0 → 2**、stored 33、位移 **4.38**<br>430×932：mass **0 → 395**、absorbed **0 → 2**、stored 38、位移 **4.56**<br>画面另有 `+50 / +60` 吞噬反馈与 `LV.1 初级黑洞 / 下一级 磁力黑洞` |
+| EVIDENCE | `artifacts/qa/v14/states/endless_moving-*.png`；三档 `endless before/after` 快照；`--scope=ui-full-flow` PASS |
+| STATUS | **PROVEN** |
 
-未证部分：拖拽距离/吸收数量的**数值**没有从快照里取到（我的探针读的是 `player.mass` /
-`compression.absorbed`，实际字段路径不同，返回 `null`）。画面证据成立，数值证据缺失——
-**标注为未取到，不冒充**。修复动作：改正快照字段路径后重采。
+**修正记录**：第一版探针读 `player.mass` 与 `compression.absorbed`，两个字段都不存在，返回 `null`——
+数值证据曾整段缺失。真实路径是 `snapshot.machine.mass` / `snapshot.machine.level` /
+`snapshot.compression.bufferCount` / `snapshot.player.x|z`。改正后重采三档。
 
 ---
 
@@ -135,7 +135,7 @@ TASK ID: BLACKHOLE_V14_AUTONOMOUS_PRODUCT_COMPLETION
 
 | FLOW | 状态 |
 | --- | --- |
-| FLOW-01 无尽主流程 | PARTIAL（画面已证，数值未取到） |
+| FLOW-01 无尽主流程 | **PROVEN**（位移 + 质量 + 吸收计数三档齐全） |
 | FLOW-02 LV1–LV5 成长 | **NOT_PROVEN**（路线收敛不稳定，五次不同目标） |
 | FLOW-03 Arena 正常竞技 | PROVEN |
 | FLOW-04 竞技死亡与复活 | PROVEN（两条退出路径） |
@@ -143,4 +143,4 @@ TASK ID: BLACKHOLE_V14_AUTONOMOUS_PRODUCT_COMPLETION
 | FLOW-06 机器与皮肤 | PARTIAL（导航已证，交易未证） |
 | FLOW-07 平台/异常/边界 | NOT_PROVEN（cell 生命周期）；广告/断网 BLOCKED_PLATFORM |
 
-**GAMEPLAY_READY = NO**。依据：FLOW-02 与 FLOW-07 未证，FLOW-01 的数值证据缺失。
+**GAMEPLAY_READY = NO**。依据：FLOW-02 与 FLOW-07 未证（FLOW-01 已补齐）。
