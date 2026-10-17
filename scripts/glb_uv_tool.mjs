@@ -177,9 +177,12 @@ function main() {
     const component = axis === 'u' ? 0 : 1;
     const [low, high] = pair;
     let touched = 0;
+    const seenUv = new Set();
     for (const mesh of glb.json.meshes || []) {
       for (const primitive of mesh.primitives) {
         const uvIndex = primitive.attributes.TEXCOORD_0;
+        if (uvIndex !== undefined && seenUv.has(uvIndex)) continue;
+        if (uvIndex !== undefined) seenUv.add(uvIndex);
         if (uvIndex === undefined) continue;
         const uv = readAccessor(glb, uvIndex);
         const [min, max] = bounds(uv.values, component);
@@ -191,6 +194,101 @@ function main() {
     }
     console.log(`${axis} -> [${low}, ${high}] over ${touched} vertices (from [${bounds(readAccessor(glb,
       glb.json.meshes[0].primitives[0].attributes.TEXCOORD_0).values, component).map((n) => n.toFixed(4))}])`);
+    if (write) {
+      writeFileSync(filePath, glb.buffer);
+      console.log(`wrote ${filePath}`);
+    } else {
+      console.log('(dry run; pass --write to save)');
+    }
+    return;
+  }
+
+  if (command === 'centre') {
+    const write = process.argv.includes('--write');
+    // Shift X and Z so the footprint's centre sits on the origin. The pivot is
+    // where the game places and rotates the object, so a pivot 0.53 units off the
+    // centre of a 0.98-wide sofa puts the visible mesh half a unit from its
+    // logical position.
+    let minX = Infinity; let maxX = -Infinity; let minZ = Infinity; let maxZ = -Infinity;
+    for (const mesh of glb.json.meshes || []) {
+      for (const primitive of mesh.primitives) {
+        const position = readAccessor(glb, primitive.attributes.POSITION);
+        for (const row of position.values) {
+          minX = Math.min(minX, row[0]); maxX = Math.max(maxX, row[0]);
+          minZ = Math.min(minZ, row[2]); maxZ = Math.max(maxZ, row[2]);
+        }
+      }
+    }
+    if (!Number.isFinite(minX)) throw new Error('no POSITION accessor found');
+    const shiftX = -(minX + maxX) / 2;
+    const shiftZ = -(minZ + maxZ) / 2;
+    if (Math.abs(shiftX) < 1e-4 && Math.abs(shiftZ) < 1e-4) {
+      console.log(`${filePath}: already centred (offset ${shiftX.toFixed(4)}, ${shiftZ.toFixed(4)})`);
+      return;
+    }
+    // One shift per ACCESSOR, not per primitive: several primitives can share a
+    // POSITION accessor, and shifting it once per primitive moved `book-stack`
+    // four times and left it further off centre than before.
+    const seen = new Set();
+    for (const mesh of glb.json.meshes || []) {
+      for (const primitive of mesh.primitives) {
+        const accessorIndex = primitive.attributes.POSITION;
+        if (seen.has(accessorIndex)) continue;
+        seen.add(accessorIndex);
+        const position = readAccessor(glb, accessorIndex);
+        writeAccessorComponent(glb, accessorIndex, 0,
+          position.values.map((row) => row[0] + shiftX));
+        writeAccessorComponent(glb, accessorIndex, 2,
+          position.values.map((row) => row[2] + shiftZ));
+        if (position.accessor.min) { position.accessor.min[0] += shiftX; position.accessor.min[2] += shiftZ; }
+        if (position.accessor.max) { position.accessor.max[0] += shiftX; position.accessor.max[2] += shiftZ; }
+      }
+    }
+    console.log(`${filePath}: footprint centre shifted by (${shiftX.toFixed(4)}, ${shiftZ.toFixed(4)})`);
+    if (write) {
+      writeFileSync(filePath, glb.buffer);
+      console.log(`wrote ${filePath}`);
+    } else {
+      console.log('(dry run; pass --write to save)');
+    }
+    return;
+  }
+
+  if (command === 'project-uv') {
+    const write = process.argv.includes('--write');
+    // Planar projection from X/Z onto 0..1. For a model with no UV layer or a
+    // degenerate one this gives the surface actual variation; it is not a
+    // substitute for authored UVs, but it removes the case where binding a
+    // texture could not change anything at all.
+    let touched = 0;
+    const seenUv = new Set();
+    for (const mesh of glb.json.meshes || []) {
+      for (const primitive of mesh.primitives) {
+        const uvIndex = primitive.attributes.TEXCOORD_0;
+        if (uvIndex !== undefined && seenUv.has(uvIndex)) continue;
+        if (uvIndex !== undefined) seenUv.add(uvIndex);
+        const position = readAccessor(glb, primitive.attributes.POSITION);
+        const xs = position.values.map((row) => row[0]);
+        const zs = position.values.map((row) => row[2]);
+        const minX = Math.min(...xs); const maxX = Math.max(...xs);
+        const minZ = Math.min(...zs); const maxZ = Math.max(...zs);
+        const spanX = maxX - minX || 1;
+        const spanZ = maxZ - minZ || 1;
+        const uvs = position.values.map((row) => [(row[0] - minX) / spanX, (row[2] - minZ) / spanZ]);
+        if (uvIndex === undefined) {
+          throw new Error('this model has no TEXCOORD_0 accessor to write into;'
+            + ' adding one means extending the binary chunk, which this tool does not do');
+        }
+        const uv = readAccessor(glb, uvIndex);
+        if (uv.values.length !== uvs.length) {
+          throw new Error('UV count does not match vertex count');
+        }
+        writeAccessorComponent(glb, uvIndex, 0, uvs.map((pair) => pair[0]));
+        writeAccessorComponent(glb, uvIndex, 1, uvs.map((pair) => pair[1]));
+        touched += uvs.length;
+      }
+    }
+    console.log(`${filePath}: planar UV projected over ${touched} vertices`);
     if (write) {
       writeFileSync(filePath, glb.buffer);
       console.log(`wrote ${filePath}`);
@@ -218,10 +316,14 @@ function main() {
       return;
     }
     const shift = -lowest;
+    const seenGround = new Set();
     for (const mesh of glb.json.meshes || []) {
       for (const primitive of mesh.primitives) {
-        const position = readAccessor(glb, primitive.attributes.POSITION);
-        writeAccessorComponent(glb, primitive.attributes.POSITION, 1,
+        const accessorIndex = primitive.attributes.POSITION;
+        if (seenGround.has(accessorIndex)) continue;
+        seenGround.add(accessorIndex);
+        const position = readAccessor(glb, accessorIndex);
+        writeAccessorComponent(glb, accessorIndex, 1,
           position.values.map((row) => row[1] + shift));
         // The accessor's declared min/max must move with the data, or the engine
         // culls and bounds the model using the old extent.
