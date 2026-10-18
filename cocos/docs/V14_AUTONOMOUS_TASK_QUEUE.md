@@ -38,10 +38,10 @@ TASK ID: BLACKHOLE_V14_AUTONOMOUS_PRODUCT_COMPLETION
 | E1 | 页面清单（从 UIPageRouter/Game.scene 读） | — | P0 | PASS | 9 页 + `formalPages` 键已读 |
 | E2 | 逐页真实交互验收（点完看状态变化） | E1 | P0 | PARTIAL | `ui-full-flow` PASS；逐控件未做 |
 | F1 | FLOW-01 无尽主流程 | E2 | P0 | PASS | 位移 3.98–4.56、mass 0→345/395、absorbed 0→1/2 |
-| F2 | FLOW-02 LV1–LV5 真实成长 | F1 | P0 | **FAIL** | 三次跑五个不同目标，0.51–3.94 |
+| F2 | FLOW-02 LV1–LV5 真实成长 | F1 | P0 | **PASS** | 450 次真实吸收、压缩五状态全观测、五级质量 0→211745 |
 | F3 | FLOW-03 Arena 正常竞技 | F1 | P0 | PASS | elapsed/rank/mass + arena-ai PASS |
 | F4 | FLOW-04 竞技死亡与复活 | F3 | P0 | PASS | 真实死亡→REVIVING→放弃→结算；revive PASS |
-| F5 | FLOW-05 结算与金币幂等 | F1,F3 | P0 | PARTIAL | 发放自洽；重复领取未实验 |
+| F5 | FLOW-05 结算与金币幂等 | F1,F3 | P0 | **PASS** | 真实重复投递 0/5、重载后 key 恰好 1 次 |
 | F6 | FLOW-06 机器与皮肤 | E2 | P1 | PASS | 免费装备 / 0 币不扣 / 扣 1500 实证 |
 | F7 | FLOW-07 平台/广告/异常/边界 | E2 | P1 | **FAIL** | cell-lifecycle 停在 cell −3（目标 −4） |
 | G1 | 性能：节点/渲染器/帧时间/内存趋势 | B1 | P1 | NOT_MEASURABLE | 本阶段未采集，不用旧值冒充 |
@@ -57,9 +57,9 @@ TASK ID: BLACKHOLE_V14_AUTONOMOUS_PRODUCT_COMPLETION
 
 | 判定 | 状态 | 依据 |
 | --- | --- | --- |
-| GAMEPLAY_READY | **NO** | FLOW-02 / FLOW-07 NOT_PROVEN；FLOW-01 数值证据缺失 |
-| VISUAL_READY | **NO** | 18 帧 5/6 通过，竞技场草地 1 项 P1 |
-| DATA_READY | **PARTIAL** | 金币发放自洽 + `claimed:true`；重复领取未实验 |
+| GAMEPLAY_READY | **NO** | 六条 PROVEN；仅 FLOW-07（cell 生命周期）不稳定未证 |
+| VISUAL_READY | **NO** | 四态 + 三尺寸 PASS；竞技场近带密度待所有者取舍 |
+| DATA_READY | **实质 YES** | 发放 + 重复投递 0/5 + 重载后 key 恰好 1 次；存档恢复未单独实验 |
 | ENGINEERING_READY | **YES** | 529 测试 0 失败 + 四道 review + 三平台构建 |
 | RELEASE_READY | **BLOCKED_EXTERNAL** | 抖音 AppID；微信压缩包体未测；真机未验 |
 

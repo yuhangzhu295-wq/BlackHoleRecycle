@@ -12,8 +12,8 @@
 ## 现在从哪继续
 
 1. 读 `cocos/docs/V14_AUTONOMOUS_TASK_QUEUE.md` 的任务表——状态是唯一的进度来源。
-2. 读 `cocos/docs/V14_BUSINESS_FLOW_MATRIX.md` 看 FLOW-02 / FLOW-07 为什么没过。
-3. 读 `cocos/docs/V14_VISUAL_ACCEPTANCE_MATRIX.md` 看那 1 项 P1。
+2. 读 `cocos/docs/V14_BUSINESS_FLOW_MATRIX.md` —— 六条流程已 PROVEN，FLOW-07 仍未证。
+3. 读 `cocos/docs/V14_VISUAL_REVIEW_LOG.md` —— 三轮审查结论；竞技场近带密度待所有者取舍。
 
 ## 已完成（本阶段）
 
@@ -29,11 +29,13 @@
 
 | 项 | 状态 | 卡在哪 |
 | --- | --- | --- |
-| FLOW-02 成长 | NOT_PROVEN | 路线收敛不稳定，五次跑五个不同目标（0.51–3.94） |
-| FLOW-07 cell 生命周期 | NOT_PROVEN | `CELL_LIFECYCLE_WEST` 玩家最终停在 cell −3，目标在 cell −4 |
-| FLOW-01 数值证据 | PARTIAL | 探针读的快照字段路径不对（`player.mass` 返回 null） |
-| FLOW-06 交易 | PARTIAL | `--scope=skins` / `skin-unlock` 未跑 |
-| 竞技场草地 P1 | OPEN | 需"按区域地面变体"功能或 Creator 编辑器会话 |
+| FLOW-02 成长 | **PASS** | 450 次真实吸收、压缩五状态全观测、五级质量 0→211745 |
+| FLOW-07 cell 生命周期 | NOT_PROVEN | 六次三过三败，超限 2.46/4.57/3.21/3.03/0.03/6.58（"对的 cell / 9cell 网格 / 无重复 id"从未失败） |
+| FLOW-01 数值证据 | **PASS** | 已改正快照字段路径，位移 3.98–4.56 实测 |
+| FLOW-06 交易 | **PASS** | `--scope=skins` / `skin-unlock` 均 PASS（装备/0 币不扣/扣 1500） |
+| FLOW-05 重复领取 | **PASS** | 真实接口投递 0/5，重载后 key 恰好 1 次 |
+| 竞技场草地 P1 | **已修** | 铺装网格 + Blender UV，绿色像素 46.5%→18.6% |
+| 竞技场近带密度 | OPEN（受玩法约束） | 近带 city 8.2% vs 参考 25.7%；对应出生环 11.8–16.2 与车道，**需所有者取舍** |
 | PHASE C 六城区推广 | TODO | 依赖上面的地面变体决策 |
 | PHASE E 逐页真实交互 | TODO | `ui-full-flow` 已 PASS，逐控件未做 |
 | 微信压缩包体 | BLOCKED_EXTERNAL | 需开发者工具权威口径 |
