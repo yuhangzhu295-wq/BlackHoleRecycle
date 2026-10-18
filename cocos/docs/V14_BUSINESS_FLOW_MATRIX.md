@@ -93,10 +93,20 @@ T5 的 450 次吸收来自 `absorbedTiers` 计数，不是结构测试。
 | EXPECTED | 金币 = 各分项之和；同一 matchId 不重复发放 |
 | ACTUAL | 三次真实结算，拆解自洽：<br>`coins 20 = 收集4 + 淘汰8 + 生存2 + 名次6`<br>`coins 14 = 收集4 + 存活1 + 名次9`<br>`coins 9 = 收集2 + 存活1 + 名次6`<br>快照含 `matchId: local-arena-…` 与 **`claimed: true`** |
 | EVIDENCE | `artifacts/qa/v14/states/settlement-*.png`；三次运行的 `settlement` 快照 |
-| STATUS | **PROVEN**（发放正确）；幂等**只有标记，没有重复领取实验** |
+| STATUS | **PROVEN**（发放 + 幂等） |
 
-未证部分：同一 matchId **重复领取**（刷新/重复点击/重进结算）未被主动触发过；
-`claimed: true` 是标记存在，不是"第二次不发"的实验结果。
+**幂等实验（2026-10-15，`scripts/probe_reward_idempotency.mjs`）**：
+真实打一局 → 死亡 → 结算，然后**对同一 matchId 连续 5 次取奖励**，
+金币读数 `5,5,5,5,5`（一次没动），再回首页重开一局仍是 5。
+页面自身分项也自洽：`coins 5 = 生存 2 + 名次 3`。
+
+**这个保护不是我原先以为的那个字段**：`claimedArenaSettlementIds` 看起来像幂等键，
+grep 全文只找到读和存档透传、**没有任何写入方**——它不是护栏。
+真正的护栏是 `ArenaMatchManager.settlementRewardClaimed`：`claimSettlementReward()`
+只返回一次奖励，之后返回 null。实验守住的是它。
+
+**建议（未改，因为不是缺陷）**：`claimedArenaSettlementIds` 是死键，
+要么接上要么删掉；留着一个看起来在保护、实际不保护的字段比没有更危险。
 
 ---
 
@@ -158,7 +168,7 @@ T5 的 450 次吸收来自 `absorbedTiers` 计数，不是结构测试。
 | FLOW-02 LV1–LV5 成长 | **PROVEN**（450 次真实吸收，压缩五状态全观测） |
 | FLOW-03 Arena 正常竞技 | PROVEN |
 | FLOW-04 竞技死亡与复活 | PROVEN（两条退出路径） |
-| FLOW-05 结算与金币 | PROVEN（发放）；幂等仅标记 |
+| FLOW-05 结算与金币 | **PROVEN**（发放 + 5 次重复领取幂等） |
 | FLOW-06 机器与皮肤 | **PROVEN**（装备/余额不足/扣款）；持久化未证 |
 | FLOW-07 平台/异常/边界 | NOT_PROVEN（cell 生命周期）；广告/断网 BLOCKED_PLATFORM |
 
