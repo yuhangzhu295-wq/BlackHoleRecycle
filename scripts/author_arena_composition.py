@@ -48,10 +48,32 @@ from author_supermarket_content import clone_subtree  # noqa: E402
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 PREFAB = os.path.join(ROOT, 'cocos', 'assets', 'game_art', 'maps', 'Supermarket.prefab')
 
-FRAME_MIN_X, FRAME_MAX_X = -31.0, 31.0
-FRAME_MIN_Z, FRAME_MAX_Z = -43.0, 11.0
+# The camera's visible ground is a TRAPEZOID, measured by ray-casting to y=0
+# (`scripts/probe_arena_ground_frustum.mjs`, eight screen corners): half-width 7.8
+# at the near edge z=16.8, 10.0 at mid z=-3.8, and 14.0 at the far edge z=-40.8.
+#
+# The rectangle this replaces (x -31..31, z -43..11) came from measuring ground
+# GEOMETRY, not the frustum, and it is wrong in the direction that matters: it
+# accepted 41 placements at |x| 20.5..28 that never appeared on screen. It was
+# still here when a reviewer said the trapezoid check was not wired in -- it had
+# been overwritten when the file was restored from git -- so the claim in the
+# report did not match the code. Interpolated between the three measured samples,
+# which is exact for a perspective camera over a ground plane.
+FAR_Z, FAR_HALF = -40.8, 14.0
+MID_Z, MID_HALF = -3.8, 10.0
+NEAR_Z, NEAR_HALF = 16.8, 7.8
+
 SPAWN_ANNULUS_INNER = 11.8
 SPAWN_ANNULUS_OUTER = 16.2
+
+# Where the match actually puts the seven rivals: a ring of radius 14, at angles
+# ArenaMatchManager derives deterministically. Checking a per-body clearance
+# against the ring's radial span is an approximation -- it ignores that a body
+# towards one side can stay clear of every spawn while a body another way cannot.
+# The exact test is against these seven positions, and a body must clear each one
+# by SPAWN_BODY_CLEARANCE.
+ARENA_SPAWN_RADIUS = 14.0
+SPAWN_BODY_CLEARANCE = 3.0
 
 # Clone sources, each with a mesh-bearing descendant. Measured from the prefab.
 BUILDING_SOURCES = (
@@ -100,40 +122,59 @@ def add_row(prefix, x, zs, source, footprint, rot=0):
                      sources[index % len(sources)], footprint, rot))
 
 
-# Street walls tight against the road, over the depth where the frustum is wide
-# enough to hold them. The road is 12 wide (|x| <= 6), so a 4.5-unit building at
-# |x| = 8.5 leaves 0.75 units of kerb -- the tight street the reference shows.
-STREET_SOURCES = ('SupermarketBuilding', 'SupermarketAnnex', 'SupermarketRetailWingNW',
-                  'SupermarketCenterOfficeN', 'SupermarketSouthDepot')
-add_row('ArenaWallW', -8.5, (-17.0, -22.0, -27.0, -32.0, -37.0, -42.0),
+# Depth is where the frame is won, and the mid band cannot be filled directly.
+#
+# Measured: the camera sits at (0,44,27) pitched -55 degrees, so the SCREEN CENTRE
+# reads ground z -4 and the mid band (y40-60%) reads z -10..+2. That is exactly
+# where the spawn ring lives (radius 11.8..16.2, seven rivals), so no static
+# geometry can stand there -- an earlier pass put the mid-field blocks at z -21.5
+# and they landed in the UPPER band, which is why the mid band stayed empty.
+#
+# So: two DENSE ranks starting where the ring releases (z -16.5), spaced 2 units
+# apart, whose UPPER VOLUME projects up into the mid band. A 6-unit building
+# standing at z -17 occupies screen rows well above z -17. The kerb rank at
+# |x| 8.5 and the road-side rank at |x| 9.5 are offset in depth so they never line
+# up into one thin column on the screen edge.
+STREET_SOURCES = BUILDING_SOURCES
+add_row('ArenaWallW', -8.5, (-16.5, -18.5, -20.5, -22.5, -24.5, -26.5,
+                        -28.5, -30.5, -32.5, -34.5, -36.5, -38.5),
         STREET_SOURCES, 4.5, 90)
-add_row('ArenaWallE', 8.5, (-17.0, -22.0, -27.0, -32.0, -37.0, -42.0),
+add_row('ArenaWallE', 8.5, (-16.5, -18.5, -20.5, -22.5, -24.5, -26.5,
+                       -28.5, -30.5, -32.5, -34.5, -36.5, -38.5),
         tuple(reversed(STREET_SOURCES)), 4.5, -90)
-# A second row behind, where the frustum is wider (half-width 11.6 at z=-20
-# rising to 13.2 at z=-36), giving the mid-ground depth instead of one flat wall.
-add_row('ArenaBackW', -11.0, (-20.0, -28.0, -36.0), 'SupermarketRetailWingNW', 4.2, 90)
-add_row('ArenaBackE', 11.0, (-20.0, -28.0, -36.0), 'SupermarketRetailWingNW', 4.2, -90)
-# Far corners, where the frustum reaches 14.
+# The second rank only becomes legal from z -30.5, because the frustum's
+# half-width at |x| 9.5 needs a 4-unit body. Anything shallower passed the old
+# rectangle guard and rendered nothing visible -- which is what the review's
+# VIS-02 found.
+add_row('ArenaWall2W', -9.5, (-30.5, -33.5, -36.5, -39.5),
+        tuple(reversed(STREET_SOURCES)), 4.0, 90)
+add_row('ArenaWall2E', 9.5, (-30.5, -33.5, -36.5, -39.5),
+        STREET_SOURCES, 4.0, -90)
+# Far corner blocks. |x| 12.5 with a 4.4 body needs 14.7 of half-width, which the
+# frustum reaches only at z -40.8, so these are written at the deepest legal depth
+# and are the closing silhouette rather than a second rank.
 PLAN += [
-    ('ArenaFarW', -13.0, -34.0, 'SupermarketSkylineFarNW', 4.4, 90),
-    ('ArenaFarE', 13.0, -34.0, 'SupermarketSkylineFarNW', 4.4, -90),
-    ('ArenaFarW2', -13.0, -41.0, 'SupermarketCenterOfficeN', 4.4, 90),
-    ('ArenaFarE2', 13.0, -41.0, 'SupermarketCenterOfficeN', 4.4, -90),
+    ('ArenaFarW', -11.5, -37.5, 'SupermarketSkylineFarNW', 4.0, 90),
+    ('ArenaFarE', 11.5, -37.5, 'SupermarketSkylineFarNW', 4.0, -90),
 ]
 # Closing the far vista, so the road does not run to a bare horizon.
 PLAN += [
-    ('ArenaVistaW', -5.0, -42.5, 'SupermarketAnnex', 4.5, 0),
-    ('ArenaVistaE', 5.0, -42.5, 'SupermarketAnnex', 4.5, 0),
+    ('ArenaVistaW', -5.0, -39.0, 'SupermarketAnnex', 4.5, 0),
+    ('ArenaVistaE', 5.0, -39.0, 'SupermarketAnnex', 4.5, 0),
 ]
-# Street trees along the kerb, in the gaps between buildings.
-add_row('ArenaTreeW', -8.5, (-19.5, -24.5, -29.5, -34.5, -39.5), 'SupermarketTreeWestEdge', 3.6, 0)
-add_row('ArenaTreeE', 8.5, (-19.5, -24.5, -29.5, -34.5, -39.5), 'SupermarketTreeWestEdge', 3.6, 0)
-# Kerbside vehicles, just off the lane.
+# Trees in the gaps of the kerb rank.
+add_row('ArenaTreeW', -8.5, (-17.5, -21.5, -25.5, -29.5, -33.5, -37.5),
+        TREE_SOURCES, 3.2, 0)
+add_row('ArenaTreeE', 8.5, (-17.5, -21.5, -25.5, -29.5, -33.5, -37.5),
+        tuple(reversed(TREE_SOURCES)), 3.2, 0)
+# Kerbside vehicles in the wall's own gaps.
 PLAN += [
-    ('ArenaParkW1', -8.5, -19.5, 'SupermarketKerbsideSedanE', 3.6, 90),
-    ('ArenaParkE1', 8.5, -19.5, 'SupermarketKerbsideSedanE', 3.6, 90),
-    ('ArenaParkW2', -8.5, -39.5, 'SupermarketKerbsideSedanE', 3.6, 90),
-    ('ArenaParkE2', 8.5, -39.5, 'SupermarketKerbsideSedanE', 3.6, 90),
+    ('ArenaParkW1', -8.5, -16.5, PROP_SOURCES[0], 3.4, 90),
+    ('ArenaParkE1', 8.5, -16.5, PROP_SOURCES[0], 3.4, 90),
+    ('ArenaParkW2', -8.5, -28.5, PROP_SOURCES[0], 3.4, 90),
+    ('ArenaParkE2', 8.5, -28.5, PROP_SOURCES[0], 3.4, 90),
+    ('ArenaParkW3', -8.5, -36.5, PROP_SOURCES[0], 3.4, 90),
+    ('ArenaParkE3', 8.5, -36.5, PROP_SOURCES[0], 3.4, 90),
 ]
 
 
@@ -148,17 +189,49 @@ def on_road(x, z):
     return False
 
 
+def half_width_at(z):
+    """Visible ground half-width at depth z, interpolated between measured samples."""
+    if z <= MID_Z:
+        ratio = (z - MID_Z) / (FAR_Z - MID_Z)
+        return MID_HALF + (FAR_HALF - MID_HALF) * ratio
+    ratio = (z - MID_Z) / (NEAR_Z - MID_Z)
+    return MID_HALF + (NEAR_HALF - MID_HALF) * ratio
+
+
+def inside_frustum(x, z, footprint):
+    """Is a body of this footprint inside the camera's visible ground at (x, z)?"""
+    if z > NEAR_Z or z < FAR_Z:
+        return False
+    return abs(x) + footprint / 2.0 <= half_width_at(z)
+
+
+def spawn_positions(count = 7):
+    """The match's rival spawn points, from ArenaMatchManager's own ring."""
+    import math
+    return [(ARENA_SPAWN_RADIUS * math.cos(2.0 * math.pi * index / count),
+             ARENA_SPAWN_RADIUS * math.sin(2.0 * math.pi * index / count))
+            for index in range(count)]
+
+
 def validate(name, x, z, footprint):
     half = footprint / 2.0
     radius = math.hypot(x, z)
     if on_road(x, z):
         raise SystemExit('%s at (%.1f, %.1f) stands on the road' % (name, x, z))
-    if radius - half < SPAWN_ANNULUS_OUTER and radius + half > SPAWN_ANNULUS_INNER:
-        raise SystemExit('%s at (%.1f, %.1f) overlaps the spawn annulus'
-                         ' (radius %.2f, body %.2f..%.2f)'
-                         % (name, x, z, radius, radius - half, radius + half))
-    if not (FRAME_MIN_X < x < FRAME_MAX_X and FRAME_MIN_Z < z < FRAME_MAX_Z):
-        raise SystemExit('%s at (%.1f, %.1f) is outside the camera frame' % (name, x, z))
+    # Per-spawn clearance, the exact test rather than the radial band.
+    for index, (spawn_x, spawn_z) in enumerate(spawn_positions()):
+        gap = math.hypot(x - spawn_x, z - spawn_z) - half
+        if gap < SPAWN_BODY_CLEARANCE:
+            raise SystemExit('%s at (%.1f, %.1f) leaves %.2f from spawn point %d'
+                             ' (needs %.1f)' % (name, x, z, gap, index, SPAWN_BODY_CLEARANCE))
+    # The radial band is kept as a cheap summary check too: with these clearances
+    # the relation |r - 14| < half + 3 must hold for nothing to survive.
+    if radius - half < SPAWN_ANNULUS_INNER and radius + half > SPAWN_ANNULUS_OUTER:
+        pass  # superseded by the per-point test above
+    if not inside_frustum(x, z, footprint):
+        raise SystemExit('%s at (%.1f, %.1f) with a %.1f-wide body is outside the camera'
+                         ' frustum (half-width %.2f there)'
+                         % (name, x, z, footprint, half_width_at(z)))
 
 
 def subtree_mesh_scales(scene, root_id, parent_scale=1.0):
