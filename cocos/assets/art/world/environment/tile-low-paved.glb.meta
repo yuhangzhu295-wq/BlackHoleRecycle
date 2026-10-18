@@ -1,0 +1,143 @@
+{
+  "ver": "2.3.13",
+  "importer": "gltf",
+  "imported": true,
+  "uuid": "42ef9a12-b131-4f4e-99e2-16c7fbbc8363",
+  "files": [],
+  "subMetas": {
+    "8399d": {
+      "importer": "gltf-mesh",
+      "uuid": "42ef9a12-b131-4f4e-99e2-16c7fbbc8363@8399d",
+      "displayName": "",
+      "id": "8399d",
+      "name": "tile-low.mesh",
+      "userData": {
+        "gltfIndex": 0,
+        "triangleCount": 12
+      },
+      "ver": "1.1.1",
+      "imported": true,
+      "files": [
+        ".bin",
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "2b33f": {
+      "importer": "gltf-embeded-image",
+      "uuid": "42ef9a12-b131-4f4e-99e2-16c7fbbc8363@2b33f",
+      "displayName": "",
+      "id": "2b33f",
+      "name": "colormap.image",
+      "userData": {
+        "gltfIndex": 0,
+        "fixAlphaTransparencyArtifacts": true,
+        "hasAlpha": false,
+        "type": "texture"
+      },
+      "ver": "1.0.3",
+      "imported": true,
+      "files": [
+        ".json",
+        ".png"
+      ],
+      "subMetas": {}
+    },
+    "e39f7": {
+      "importer": "texture",
+      "uuid": "42ef9a12-b131-4f4e-99e2-16c7fbbc8363@e39f7",
+      "displayName": "",
+      "id": "e39f7",
+      "name": "UnnamedTexture.texture",
+      "userData": {
+        "wrapModeS": "repeat",
+        "wrapModeT": "repeat",
+        "minfilter": "nearest",
+        "magfilter": "nearest",
+        "mipfilter": "nearest",
+        "anisotropy": 0,
+        "isUuid": true,
+        "imageUuidOrDatabaseUri": "42ef9a12-b131-4f4e-99e2-16c7fbbc8363@2b33f"
+      },
+      "ver": "1.0.22",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "9991c": {
+      "importer": "gltf-material",
+      "uuid": "42ef9a12-b131-4f4e-99e2-16c7fbbc8363@9991c",
+      "displayName": "",
+      "id": "9991c",
+      "name": "colormap.material",
+      "userData": {
+        "gltfIndex": 0
+      },
+      "ver": "1.0.14",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "0043d": {
+      "importer": "gltf-scene",
+      "uuid": "42ef9a12-b131-4f4e-99e2-16c7fbbc8363@0043d",
+      "displayName": "",
+      "id": "0043d",
+      "name": "tile-low-paved.prefab",
+      "userData": {
+        "gltfIndex": 0
+      },
+      "ver": "1.0.14",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    }
+  },
+  "userData": {
+    "imageMetas": [
+      {
+        "name": "colormap",
+        "uri": "42ef9a12-b131-4f4e-99e2-16c7fbbc8363@2b33f"
+      }
+    ],
+    "lods": {
+      "enable": false,
+      "hasBuiltinLOD": false,
+      "options": [
+        {
+          "screenRatio": 0.25,
+          "faceCount": 1
+        },
+        {
+          "screenRatio": 0.125,
+          "faceCount": 0.25
+        },
+        {
+          "screenRatio": 0.01,
+          "faceCount": 0.1
+        }
+      ]
+    },
+    "assetFinder": {
+      "meshes": [
+        "42ef9a12-b131-4f4e-99e2-16c7fbbc8363@8399d"
+      ],
+      "skeletons": [],
+      "textures": [
+        "42ef9a12-b131-4f4e-99e2-16c7fbbc8363@e39f7"
+      ],
+      "materials": [
+        "42ef9a12-b131-4f4e-99e2-16c7fbbc8363@9991c"
+      ],
+      "scenes": [
+        "42ef9a12-b131-4f4e-99e2-16c7fbbc8363@0043d"
+      ]
+    }
+  }
+}
