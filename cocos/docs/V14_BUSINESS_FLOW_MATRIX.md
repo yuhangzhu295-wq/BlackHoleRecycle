@@ -95,18 +95,42 @@ T5 的 450 次吸收来自 `absorbedTiers` 计数，不是结构测试。
 | EVIDENCE | `artifacts/qa/v14/states/settlement-*.png`；三次运行的 `settlement` 快照 |
 | STATUS | **PROVEN**（发放 + 幂等） |
 
-**幂等实验（2026-10-15，`scripts/probe_reward_idempotency.mjs`）**：
-真实打一局 → 死亡 → 结算，然后**对同一 matchId 连续 5 次取奖励**，
-金币读数 `5,5,5,5,5`（一次没动），再回首页重开一局仍是 5。
-页面自身分项也自洽：`coins 5 = 生存 2 + 名次 3`。
+**幂等实验（2026-10-19 重做，`scripts/probe_reward_idempotency.mjs`）**
 
-**这个保护不是我原先以为的那个字段**：`claimedArenaSettlementIds` 看起来像幂等键，
-grep 全文只找到读和存档透传、**没有任何写入方**——它不是护栏。
-真正的护栏是 `ArenaMatchManager.settlementRewardClaimed`：`claimSettlementReward()`
-只返回一次奖励，之后返回 null。实验守住的是它。
+**第一次实验是假的，这里如实记录。** 第一版探针声称"连续 5 次取奖励，金币 5,5,5,5,5"，
+但它的循环只是反复读快照的同一个 `coins` 字段，且 `before` 就取自同一次读取——
+`delta` 恒为 0，**根本没有调用过领取接口**。那是"永远通过的测量"，比不测量更糟。
+审查代理抓到这一点。
 
-**建议（未改，因为不是缺陷）**：`claimedArenaSettlementIds` 是死键，
-要么接上要么删掉；留着一个看起来在保护、实际不保护的字段比没有更危险。
+**重做后**（调用真实生产接口 `SaveService.claimArenaSettlement`，
+即 `GameManager.showArenaSettlement` 发币用的同一个方法）：
+
+```
+match local-arena-mve2zun9-... | reward coins 5 = 生存2 + 名次3
+coins after the page's own claim: 5
+  baseline   paid=null  coins=5 claimedKeys=1
+  deliver#1  paid=false coins=5 claimedKeys=1
+  deliver#2  paid=false coins=5 claimedKeys=1
+  deliver#3  paid=false coins=5 claimedKeys=1
+  deliver#4  paid=false coins=5 claimedKeys=1
+  deliver#5  paid=false coins=5 claimedKeys=1
+granted 0 time(s); coins moved 0
+after reload: coins 5; the match id appears 1 time(s)
+```
+
+**两道护栏，都真实存在**（我曾写错成"`claimedArenaSettlementIds` 是死键"，这是错的）：
+
+1. `ArenaMatchManager.settlementRewardClaimed` —— 单次比赛内，`claimSettlementReward()`
+   只返回一次奖励（`ArenaMatchManager.ts:438-441`）。
+2. `SaveService.claimArenaSettlement(matchId, amount)` —— **按 matchId 持久化去重**：
+   查 `claimedArenaSettlementIds`，已存在则 `return false`，否则 push + 加币 + save
+   （`SaveService.ts:177-190`），由 `GameManager.showArenaSettlement` 调用。
+
+**我曾把它误判为死键的原因**：只用 grep 搜字段名、读它出现的行，没读方法体，
+就把"我没看到"当成"不存在"。这是查证不彻底，不是证据不足。
+
+`window.__BHR_SAVE__` 是 V13.1 为这个实验加的唯一挂载点，QA bridge 在 `?qa=1`
+运行时才安装，正常玩家会话不执行任何诊断代码。
 
 ---
 
@@ -168,7 +192,7 @@ grep 全文只找到读和存档透传、**没有任何写入方**——它不�
 | FLOW-02 LV1–LV5 成长 | **PROVEN**（450 次真实吸收，压缩五状态全观测） |
 | FLOW-03 Arena 正常竞技 | PROVEN |
 | FLOW-04 竞技死亡与复活 | PROVEN（两条退出路径） |
-| FLOW-05 结算与金币 | **PROVEN**（发放 + 5 次重复领取幂等） |
+| FLOW-05 结算与金币 | **PROVEN**（发放 + 真实重复投递 0/5 + 重载后 key 恰好 1 次） |
 | FLOW-06 机器与皮肤 | **PROVEN**（装备/余额不足/扣款）；持久化未证 |
 | FLOW-07 平台/异常/边界 | NOT_PROVEN（cell 生命周期）；广告/断网 BLOCKED_PLATFORM |
 
