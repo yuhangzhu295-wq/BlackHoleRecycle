@@ -3313,6 +3313,15 @@ async function verifyCellLifecycle(cdp, page, joystick) {
  * joystick. The QA bridge is read-only: it supplies the live camera basis and
  * position so CDP can issue the same camera-relative touch a player would.
  */
+/** Every route attempt, including the ones that throw.
+ *
+ * FLOW-02 failed three times on three different targets, and the only
+ * evidence was the message of an exception: the summary block never ran,
+ * so the report carried no distances at all. Recording here means a failing
+ * route still tells us HOW far it got and whether the target was absorbed.
+ */
+const routeAttempts = [];
+
 async function driveJoystickToLogicalPoint(cdp, page, joystick, target, label, arrivalRadius = 1.6, timeoutMs = 30_000, allowMiss = false, onSnapshot = null, releaseDelayMs = 220) {
   const deadline = Date.now() + timeoutMs;
   let bestDistance = Number.POSITIVE_INFINITY;
@@ -3332,6 +3341,7 @@ async function driveJoystickToLogicalPoint(cdp, page, joystick, target, label, a
     bestDistance = Math.min(bestDistance, distance);
     if (distance <= arrivalRadius) {
       finalSnapshot.routeMetrics = { iterations, bestDistance, arrived: true, arrivalRadius, label, target };
+      routeAttempts.push({ label, iterations, bestDistance, arrivalRadius, arrived: true, target, reason: 'arrived' });
       return finalSnapshot;
     }
 
@@ -3379,6 +3389,7 @@ async function driveJoystickToLogicalPoint(cdp, page, joystick, target, label, a
         if (onSnapshot(engaged)) {
           finalSnapshot = engaged;
           finalSnapshot.routeMetrics = { iterations, bestDistance, arrived: true, arrivalRadius, label, target };
+          routeAttempts.push({ label, iterations, bestDistance, arrivalRadius, arrived: true, target, reason: 'engaged' });
           return finalSnapshot;
         }
       }
@@ -3413,7 +3424,12 @@ async function driveJoystickToLogicalPoint(cdp, page, joystick, target, label, a
   // samples and then coast slightly beyond it before the next sample.  The
   // route genuinely reached the target in that case; the next assertion
   // still requires the live Cocos compression system to absorb the item.
-  if (bestDistance <= arrivalRadius) return finalSnapshot;
+  const arrived = bestDistance <= arrivalRadius;
+  routeAttempts.push({
+    label, iterations, bestDistance, arrivalRadius, arrived, target,
+    reason: allowMiss ? 'allowed-miss' : arrived ? 'arrived' : 'not-arrived',
+  });
+  if (arrived) return finalSnapshot;
   if (allowMiss) return finalSnapshot;
   throw new Error(`FAIL_VERTICAL_SLICE_ROUTE_${label}: target=${JSON.stringify(target)} final=${JSON.stringify(finalPosition)} bestDistance=${bestDistance} iterations=${iterations}`);
 }
@@ -5629,6 +5645,10 @@ async function runPortraitCase(browser, baseUrl, viewport, report) {
 const report = {
   status: 'RUNNING',
   scope: acceptanceScope,
+  // Every joystick route attempt this run, including the ones that threw. The
+  // counts are what tell a stuck route apart from a route that arrived and then
+  // failed to absorb -- a distinction the raw pass/fail line cannot make.
+  routeAttempts: routeAttempts.slice(),
   runner: 'official-cocos-cli + Playwright CDP touch',
   build: null,
   bundleProvenance: null,

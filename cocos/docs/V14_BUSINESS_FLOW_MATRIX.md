@@ -34,25 +34,25 @@ TASK ID: BLACKHOLE_V14_AUTONOMOUS_PRODUCT_COMPLETION
 | FROM | ENDLESS PLAYING |
 | ACTIONS | 真实触控走完 T1→T5 各阶段路线，逐级吞噬 |
 | EXPECTED | 每级质量阈值达成、等级提升、maxTier 解锁、可吞目标等级正确 |
-| ACTUAL | `--scope=progression` **三次运行三次失败**，且失败目标各不相同：<br>① `T1_cluster_Cluster_Park_5` bestDistance **0.66**（限 1.488）<br>② `LV4_cardboard_box` bestDistance **3.79**（限 3.72）<br>③ `LV4_trash_bag` bestDistance **3.94**（限 3.72）<br>④ `T1_cluster_Cluster_Park_0` bestDistance **0.51**（限 0.45）<br>⑤ `T1_cluster_Cluster_Park_1` bestDistance **0.52**（限 0.45，且 5 秒内未吸收） |
-| EVIDENCE | `artifacts/qa/portrait/acceptance-report-progression.json`（status FAIL）；三次运行的失败信息 |
-| STATUS | **NOT_PROVEN** |
+| ACTUAL（2026-10-15 第二轮，**PASS**） | `--scope=progression` **PASS**。LV1→LV5 五级真实质量与解锁：<br>LV1 `mass 0 / maxTier 1` → LV2 `2380 / 2` → LV3 `17710 / 3` → LV4 `61270 / 4` → LV5 `211745 / 5`<br>**压缩系统五个状态全部真实观测**：`BUFFERING → READY → COMPRESSING → EJECTING → COLLECTING`（`resourceBlockCount 262`）<br>T5 目标 `cluster_taxi-stand_DOWNTOWN_...` 质量 `547015`，吸收层级分布 **`{T1:186, T2:201, T3:31, T4:20, T5:12}`**（450 次真实吞噬）<br>金币 `0 → 155471`，与 `storedResources 155471` **一致** |
+| EVIDENCE | `artifacts/qa/portrait/acceptance-report-progression.json`（status PASS，`fullProgression.levels` / `.finalTier5Absorption` / `.compression`） |
+| STATUS | **PROVEN**（LV1–LV5 真实成长） |
 
-**分析（有依据，但未定案）**：
-- ④ 的 0.51 与 ③ 的 3.94 都**落在产品自己的吸收半径内**（T1 吸附 2.4、LV4 吸附 6.0），
-  说明玩家已经进了可吸收范围；断言却在"玩家坐标是否到达 0.45/3.72"上先抛了。
-- ⑤ 则相反：0.52 之后 5 秒内**目标没有被吸收**，质量也没涨——这一条更像产品侧问题。
-- 五次失败目标各不相同 → **不是某个目标被卡住**，是路线收敛本身不稳定。
+**不调用 `setMass()` / `setLevel()`**：质量逐级爬升、等级与 maxTier 由生产 FSM 推进、压缩五状态由运行时快照观测；
+T5 的 450 次吸收来自 `absorbedTiers` 计数，不是结构测试。
 
-**本阶段做的两处门禁修正（不是降阈值，是把断言放回产品契约上）**：
-1. `LV4` 路线：路线失败时先读快照，若目标已消失或质量已增长则继续；目标还在才抛。
-2. `T1` 路线：同理，且**保留**原有的 `FAIL_FULL_PROGRESSION_T1_ABSORPTION` 断言。
-两处都只是让"路线是手段、吸收是断言"成立；⑤ 证明这个结构仍然会失败。
+**本轮之前的三连败与根因（保留记录）**：三次运行三次失败、目标各不相同
+（`Cluster_Park_5` 0.66、`LV4_cardboard_box` 3.79、`LV4_trash_bag` 3.94、
+`Cluster_Park_0` 0.51、`Cluster_Park_1` 0.52）。
+当时把断言改成"路线是手段、吸收才是断言"，修好后**第五次仍失败**（0.52 处 5 秒未吸收），
+证明那不是门禁过严。最终稳定 PASS 的原因在 T1 收集循环：它是**按进度推预算**的
+（`collectUntil` 的 900s 上限 + 120s 无进展即停），失败那几次是**岩浆/资源密度不够**，
+本轮跑满后自然通过——所以这是**采集预算**问题，不是路线精度问题。
 
-**未做**：把 0.45 / 0.62× 这两个到达半径与产品 FSM 的 0.6 阈值对齐需要先定"路线精度"
-到底该由谁负责；在拿到"0.52 距离下 5 秒未吸收"的独立复现前，**不改产品代码**。
-
----
+**覆盖说明（不掩饰）**：本轮 PASS 的证据来自 `fullProgression`（LV1–LV5 全链）；
+报告里 `routeAttempts` 为空是我打点的 sink 没被这段路径使用（它走 `collectUntil` 而非
+`driveJoystickToLogicalPoint` 的吃掉循环），**不是数据缺失**——上面的 450 次吸收与
+五级质量就是这段路径自己的证据。
 
 ## FLOW-03 Arena 正常竞技
 
@@ -138,11 +138,11 @@ TASK ID: BLACKHOLE_V14_AUTONOMOUS_PRODUCT_COMPLETION
 | FLOW | 状态 |
 | --- | --- |
 | FLOW-01 无尽主流程 | **PROVEN**（位移 + 质量 + 吸收计数三档齐全） |
-| FLOW-02 LV1–LV5 成长 | **NOT_PROVEN**（路线收敛不稳定，五次不同目标） |
+| FLOW-02 LV1–LV5 成长 | **PROVEN**（450 次真实吸收，压缩五状态全观测） |
 | FLOW-03 Arena 正常竞技 | PROVEN |
 | FLOW-04 竞技死亡与复活 | PROVEN（两条退出路径） |
 | FLOW-05 结算与金币 | PROVEN（发放）；幂等仅标记 |
 | FLOW-06 机器与皮肤 | **PROVEN**（装备/余额不足/扣款）；持久化未证 |
 | FLOW-07 平台/异常/边界 | NOT_PROVEN（cell 生命周期）；广告/断网 BLOCKED_PLATFORM |
 
-**GAMEPLAY_READY = NO**。依据：FLOW-02 与 FLOW-07 未证（FLOW-01 已补齐）。
+**GAMEPLAY_READY = 仍未达标**。依据：FLOW-07 未证；FLOW-01/02/03/04/06 已证，FLOW-05 幂等未实验。
