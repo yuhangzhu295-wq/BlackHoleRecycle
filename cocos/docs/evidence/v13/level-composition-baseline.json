@@ -1,9 +1,5 @@
 {
-  "note": "Known arena-composition violations. Recorded rather than fixed: each one is a placement inside the shipped map prefab, and moving authored content is a separate piece of work. The gate fails when a violation appears that is not here, and when the count changes -- a fixed-then-reintroduced one is invisible to a membership test. 2026-10-15 V13.1: the count fell 7 -> 3 because the duplicated prop subtrees were removed; the duplicates had each produced their own identical finding.",
-  "count": 3,
-  "findings": [
-    "DistrictStreetLight at (-5.3, -15.5) spans radius 14.48..18.28, overlapping the band 11.8..16.2 that a spawned rival occupies",
-    "DistrictStreetLight at (-5.3, 10.5) spans radius 9.86..13.66, overlapping the band 11.8..16.2 that a spawned rival occupies",
-    "DistrictStreetLight at (5.3, 10.5) spans radius 9.86..13.66, overlapping the band 11.8..16.2 that a spawned rival occupies"
-  ]
+  "note": "Known arena-composition violations. Recorded rather than fixed: each one is a placement inside the shipped map prefab, and moving authored content is a separate piece of work. The gate fails when a violation appears that is not here, and when the count changes -- a fixed-then-reintroduced one is invisible to a membership test. 2026-10-15 V13.1: the count fell 7 -> 3 because the duplicated prop subtrees were removed; the duplicates had each produced their own identical finding.  2026-10-19: 3 -> 0. The three DistrictStreetLight findings were produced by this gate measuring a lamp as a SQUARE of its node scale (3.8 wide); its mesh is a 0.05-wide pole with a 0.237-deep arm, so the real body is 0.19 x 0.90. The radial band was also only a screen: a body crossing the 11.8..16.2 annulus can be far from all seven spawn points, and the decision is now the AABB distance to each of the match's own seven spawn positions. probe_street_light_clearance.mjs measured the live scene and found no conflict; the baseline recorded defects that did not exist.",
+  "count": 0,
+  "findings": []
 }

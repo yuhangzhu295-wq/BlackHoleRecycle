@@ -102,6 +102,32 @@ function loadPrefab(file) {
  * somewhere else entirely. Rotation is composed too, so a rotated parent cannot
  * silently invalidate the result.
  */
+/** Mesh extents at scale 1, measured with `glb_uv_tool.mjs inspect`.
+ *
+ * A node's world scale is only its footprint when the mesh is a 1x1 quad, which
+ * the ground and road tiles are. `DistrictStreetLight` is not: its mesh is a
+ * 0.05-wide pole with a 0.237-deep lamp arm, so at scale 3.8 the body is 0.19
+ * wide, not 3.8. Measuring it as a square made this gate report three lamps
+ * inside the rival spawn band; `probe_street_light_clearance.mjs` checked the
+ * real geometry against the match's own seven spawn points and found no conflict
+ * at all. Anything not listed here is assumed 1x1. */
+const MESH_EXTENTS = {
+  DistrictStreetLight: { x: 0.05, z: 0.237 },
+};
+
+/** The match's own rival spawn ring: seven points at ARENA_SPAWN_RADIUS.
+ *
+ * `ArenaMatchManager` places them by evenly dividing the circle, so these are the
+ * real positions rather than a band. */
+function spawnPositions(count) {
+  const points = [];
+  for (let index = 0; index < count; index += 1) {
+    const angle = (2.0 * Math.PI * index) / count;
+    points.push({ x: SPAWN_RING_RADIUS * Math.cos(angle), z: SPAWN_RING_RADIUS * Math.sin(angle) });
+  }
+  return points;
+}
+
 function localPositions(arr) {
   const positions = new Map();
   const walk = (index, parentX, parentZ, parentScaleX, parentScaleZ, parentAngle) => {
@@ -117,10 +143,17 @@ function localPositions(arr) {
     const scale = node._lscale || { x: 1, y: 1, z: 1 };
     const worldScaleX = parentScaleX * (scale.x ?? 1);
     const worldScaleZ = parentScaleZ * (scale.z ?? 1);
-    // The mesh is a 1x1 unit quad, so the node's world scale IS its footprint.
+    // A node's world scale is NOT its footprint unless the mesh is a 1x1 quad.
+    // `DistrictStreetLight` scales 3.8 but its mesh is a 0.05-wide pole, so the
+    // naive `scale / 2` claimed a 1.9-unit half-width twenty times the real 0.095
+    // and put three lamps "inside the spawn band" -- a finding this gate produced
+    // and a live probe then disproved. The measured mesh extents live in
+    // MESH_EXTENTS; anything unlisted falls back to 1x1, which is right for the
+    // ground and road quads.
+    const extents = MESH_EXTENTS[node._name] || { x: 1, z: 1 };
     positions.set(index, {
       x, z, name: node._name || '', scaleX: worldScaleX, scaleZ: worldScaleZ,
-      halfX: worldScaleX / 2, halfZ: worldScaleZ / 2,
+      halfX: (worldScaleX * extents.x) / 2, halfZ: (worldScaleZ * extents.z) / 2,
     });
     const euler = node._euler || { x: 0, y: 0, z: 0 };
     const angle = parentAngle + ((euler.y || 0) * Math.PI) / 180;
@@ -173,26 +206,49 @@ function main() {
   const RIVAL_SPAWN_REACH = 2.2;
   const annulusInner = SPAWN_RING_RADIUS - RIVAL_SPAWN_REACH;
   const annulusOuter = SPAWN_RING_RADIUS + RIVAL_SPAWN_REACH;
+  // The band is a SCREEN, not the decision. A body whose radial span crosses the
+  // annulus can still be far from every spawn point, because the span is measured
+  // from the origin while the seven spawns sit at angles around it. A street lamp
+  // at (-5.3, 10.5) spans radius 11.31..12.21, crossing 11.8, yet it sits 1.84
+  // from the nearest spawn point -- clear. Deciding on the band reported three
+  // lamps as defects; `probe_street_light_clearance.mjs` found no conflict at all.
+  const rivalSpawnPoints = spawnPositions(7);
   let closestGap = Number.POSITIVE_INFINITY;
   let closestName = '';
+  const screenedByBand = [];
   for (const obstacle of obstacles) {
-    const radius = Math.hypot(obstacle.x, obstacle.z);
-    const half = Math.max(obstacle.halfX, obstacle.halfZ);
-    const innerEdge = radius - half;
-    const outerEdge = radius + half;
-    const gap = Math.max(annulusInner - outerEdge, innerEdge - annulusOuter);
-    if (gap < closestGap) {
-      closestGap = gap;
+    // Distance from the spawn point to the body's AXIS-ALIGNED BOX, not to its
+    // centre minus a radius. Subtracting max(halfX, halfZ) treats a 4.5x4.5 block
+    // as a 2.25-radius circle and overstates it near the corners -- that alone
+    // reported building-a as "0.02 units into a spawn point" when it actually
+    // stands 8.23 away.
+    let nearest = Number.POSITIVE_INFINITY;
+    for (const spawn of spawnPoints) {
+      const dx = Math.max(Math.abs(spawn.x - obstacle.x) - obstacle.halfX, 0);
+      const dz = Math.max(Math.abs(spawn.z - obstacle.z) - obstacle.halfZ, 0);
+      nearest = Math.min(nearest, Math.hypot(dx, dz));
+    }
+    if (nearest < closestGap) {
+      closestGap = nearest;
       closestName = `${obstacle.name} at (${obstacle.x.toFixed(1)}, ${obstacle.z.toFixed(1)})`;
     }
-    if (innerEdge < annulusOuter && outerEdge > annulusInner) {
+    // The band screen needs the radial span, so it computes its own half here.
+    const half = Math.max(obstacle.halfX, obstacle.halfZ);
+    const radius = Math.hypot(obstacle.x, obstacle.z);
+    if (radius - half < annulusOuter && radius + half > annulusInner) {
+      screenedByBand.push(`${obstacle.name} (nearest spawn ${nearest.toFixed(2)})`);
+    }
+    if (nearest < 0) {
       failures.push(`${obstacle.name} at (${obstacle.x.toFixed(1)}, ${obstacle.z.toFixed(1)})`
-        + ` spans radius ${innerEdge.toFixed(2)}..${outerEdge.toFixed(2)}, overlapping the band`
-        + ` ${annulusInner.toFixed(1)}..${annulusOuter.toFixed(1)} that a spawned rival occupies`);
+        + ` overlaps a rival spawn point by ${(-nearest).toFixed(2)} units`);
     }
   }
-  reports.push(`closest static body to the rival spawn band: ${closestName}`
-    + `, gap ${closestGap.toFixed(2)}`);
+  reports.push(`closest static body to any rival spawn point: ${closestName}`
+    + `, gap ${closestGap.toFixed(2)} (needs >= 0)`);
+  if (screenedByBand.length) {
+    reports.push(`caught by the radial band but clear of every spawn point:`
+      + ` ${screenedByBand.join('; ')}`);
+  }
 
   // 3. Nothing static in the band the vehicles drive through.
   const bands = laneBands(positions);
