@@ -48858,8 +48858,8 @@
     "__prefab": null,
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 480,
-      "height": 24
+      "width": 580,
+      "height": 30
     },
     "_anchorPoint": {
       "__type__": "cc.Vec2",
@@ -48892,11 +48892,11 @@
     "_horizontalAlign": 1,
     "_verticalAlign": 1,
     "_actualFontSize": 0,
-    "_fontSize": 14,
+    "_fontSize": 15,
     "_fontFamily": "Arial",
     "_lineHeight": 22,
     "_overflow": 0,
-    "_enableWrapText": true,
+    "_enableWrapText": false,
     "_font": null,
     "_isSystemFontUsed": true,
     "_spacingX": 0,
