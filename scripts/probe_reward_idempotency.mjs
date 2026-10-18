@@ -1,16 +1,23 @@
 /**
- * Reward idempotency: can one matchId pay twice?
+ * Reward idempotency, actually exercised.
  *
- * `claimedArenaSettlementIds` is read by the QA bridge and carried through the
- * save, but a grep for WRITERS found none -- so that key is not what guards the
- * payout. The guard that exists is `settlementRewardClaimed` inside
- * `ArenaMatchManager.claimSettlementReward()`, which returns null once claimed.
+ * The first version of this probe claimed five repeated deliveries and reported
+ * PROVEN. It did not deliver anything: its loop re-read the same snapshot field
+ * five times, with `before` taken from the very same read, so `delta` was
+ * identically zero. That is a measurement which always passes -- worse than no
+ * measurement. A reviewer caught it.
  *
- * This exercises exactly that through the real runtime: read the reward, then ask
- * for it again several times, and compare coins before and after. If a second
- * claim returns a reward, the player can farm one match.
+ * It also asserted that `claimedArenaSettlementIds` had no writer and was a dead
+ * key. That was wrong too: `SaveService.claimArenaSettlement` reads the list,
+ * pushes the match id, adds the coins and saves. The original mistake was grepping
+ * for the field name and reading only the lines it appeared on, then treating "I
+ * did not see it" as "it does not exist".
  *
- * Usage: node scripts/probe_reward_idempotency.mjs
+ * This calls the REAL production interface five times with one match id, and
+ * checks the persisted key after a reload. Two guards exist and both matter:
+ * `ArenaMatchManager.settlementRewardClaimed` (in-session) and the matchId list in
+ * the save (survives reload). The second is what this exercises, because the first
+ * cannot be re-triggered from a finished match.
  */
 import { launchBrowser, openPage, serve, sleep } from './lib/page_layout_geometry.mjs';
 
@@ -34,6 +41,23 @@ try {
   };
   const waitState = (want, ms = 60000) => page.waitForFunction(
     (state) => window.__BHR_QA__.snapshot().gameState === state, want, { timeout: ms });
+
+  await page.waitForFunction(() => !!window.__BHR_QA__?.snapshot, null, { timeout: 45000 });
+  await sleep(1200);
+
+  // Reach a real settlement so a real reward and match id exist.
+  await tapUi('start');
+  await waitState('MODE_SELECT');
+  await tapUi('modeArena');
+  await waitState('MODE_READY');
+  const ready = await page.evaluate(() => window.__BHR_QA__.snapshot());
+  await tap(canvasRect.left + canvasRect.width * ready.ui.arenaReady.start.screen.x,
+    canvasRect.top + canvasRect.height * ready.ui.arenaReady.start.screen.y);
+  await waitState('ARENA');
+  await sleep(2500);
+
+  const cx = canvasRect.left + canvasRect.width / 2;
+  const cy = canvasRect.top + canvasRect.height * 0.72;
   const drag = async (fromX, fromY, toX, toY, steps = 4, holdMs = 500) => {
     await cdp.send('Input.dispatchTouchEvent',
       { type: 'touchStart', touchPoints: [{ x: fromX, y: fromY }] });
@@ -49,21 +73,6 @@ try {
     await sleep(250);
   };
 
-  await page.waitForFunction(() => !!window.__BHR_QA__?.snapshot, null, { timeout: 45000 });
-  await sleep(1200);
-  await tapUi('start');
-  await waitState('MODE_SELECT');
-  await tapUi('modeArena');
-  await waitState('MODE_READY');
-  const ready = await page.evaluate(() => window.__BHR_QA__.snapshot());
-  await tap(canvasRect.left + canvasRect.width * ready.ui.arenaReady.start.screen.x,
-    canvasRect.top + canvasRect.height * ready.ui.arenaReady.start.screen.y);
-  await waitState('ARENA');
-  await sleep(2500);
-
-  // Drive into the biggest rival until the match kills us, then reach settlement.
-  const cx = canvasRect.left + canvasRect.width / 2;
-  const cy = canvasRect.top + canvasRect.height * 0.72;
   let settled = false;
   for (let attempt = 0; attempt < 40 && !settled; attempt += 1) {
     const target = await page.evaluate(() => {
@@ -84,15 +93,16 @@ try {
       return { state: s.gameState, reviveOpen: !!s.ui?.formalPages?.revive?.active };
     });
     if (probe.state === 'REVIVING' || probe.reviveOpen) {
-      const keys = await page.evaluate(() => {
-        const fp = window.__BHR_QA__.snapshot().ui?.formalPages || {};
-        const out = {};
-        for (const key of Object.keys(fp)) {
-          if (/revive/i.test(key)) out[key] = { active: fp[key]?.active, screen: fp[key]?.screen };
-        }
-        return out;
-      });
-      console.log(`[idem] revive keys: ${JSON.stringify(keys)}`);
+      // The revive page's buttons become interactive a moment after the page
+      // appears: tapping immediately has failed here twice. Wait for the key the
+      // QA bridge marks active rather than assuming it is ready with the page.
+      const button = await page.waitForFunction(
+        () => {
+          const fp = window.__BHR_QA__.snapshot().ui?.formalPages || {};
+          return (fp.reviveGiveUp && fp.reviveGiveUp.active) ? fp.reviveGiveUp.screen : false;
+        },
+        undefined, { timeout: 8000, polling: 150 }).catch(() => null);
+      if (!button) throw new Error('revive give-up never became active');
       await tapUi('formalPages.reviveGiveUp');
       await waitState('SETTLEMENT', 20000);
       settled = true;
@@ -103,58 +113,65 @@ try {
   if (!settled) throw new Error('could not reach a settlement in this run');
 
   await sleep(1200);
-  const before = await page.evaluate(() => {
+  const first = await page.evaluate(() => {
     const s = window.__BHR_QA__.snapshot();
     return { coins: s.save?.coins ?? null, matchId: s.arena?.matchId ?? null,
       reward: s.settlement || null };
   });
-  console.log(`[idem] match ${before.matchId} | coins before ${before.coins}`);
-  console.log(`[idem] reward shown by the page: ${JSON.stringify(before.reward)}`);
+  console.log(`[idem] match ${first.matchId} | reward ${JSON.stringify(first.reward)}`);
+  console.log(`[idem] coins after the page's own claim: ${first.coins}`);
 
-  // The claim: ask the live manager for the reward repeatedly. Each answer either
-  // grants coins (a bug) or returns null (the guard holding).
-  const results = [];
-  for (let index = 0; index < 5; index += 1) {
-    const claim = await page.evaluate(() => {
-      const s = window.__BHR_QA__.snapshot();
-      const before = s.save?.coins ?? 0;
-      // Read the guarded accessor through the QA bridge's own projection: a second
-      // claim must show no further coin movement.
-      return { coins: s.save?.coins ?? 0, delta: (s.save?.coins ?? 0) - before,
-        rewardShown: s.ui?.formalPages?.settlementData?.rewardCoins ?? null,
-        claimed: s.ui?.formalPages?.settlementData?.claimed ?? null };
-    });
-    results.push(claim);
-    await sleep(300);
-  }
+  // The real experiment: deliver the same match id five more times through the
+  // production interface. If no callable SaveService can be reached, say so --
+  // reporting a pass that was never earned is the bug this replaces.
+  const deliveries = await page.evaluate(async (matchId) => {
+    const save = window.__BHR_SAVE__ || null;
+    if (!save || typeof save.claimArenaSettlement !== 'function') {
+      return { error: 'no callable SaveService on window.__BHR_SAVE__' };
+    }
+    const log = [{ call: 'baseline', paid: null, coins: save.data.coins,
+      claimedKeys: (save.data.claimedArenaSettlementIds || []).length }];
+    for (let index = 0; index < 5; index += 1) {
+      const paid = save.claimArenaSettlement(matchId, 100);
+      log.push({ call: `deliver#${index + 1}`, paid, coins: save.data.coins,
+        claimedKeys: (save.data.claimedArenaSettlementIds || []).length });
+    }
+    return { log };
+  }, first.matchId);
 
-  // Now leave the settlement and come back through the button, re-reading coins.
-  await tapUi('formalPages.settlementHome');
-  await waitState('HOME');
-  await sleep(600);
-  await tapUi('start');
-  await waitState('MODE_SELECT');
-  await tapUi('modeArena');
-  await waitState('MODE_READY');
-  const readyAgain = await page.evaluate(() => window.__BHR_QA__.snapshot());
-  await tap(canvasRect.left + canvasRect.width * readyAgain.ui.arenaReady.start.screen.x,
-    canvasRect.top + canvasRect.height * readyAgain.ui.arenaReady.start.screen.y);
-  await waitState('ARENA');
-  await sleep(1500);
-
-  const after = await page.evaluate(() => {
-    const s = window.__BHR_QA__.snapshot();
-    return { coins: s.save?.coins ?? null, matchId: s.arena?.matchId ?? null };
-  });
-  console.log(`[idem] coins after re-entry ${after.coins} (new match ${after.matchId})`);
-  console.log(`[idem] claim answers: ${JSON.stringify(results.map((r) => r.coins))}`);
-
-  if (results.every((r) => r.delta === 0)) {
-    console.log('[idem] PASS: repeated claims moved no coins.');
+  if (deliveries.error) {
+    console.log(`[idem] ${deliveries.error}`);
+    problems.push(deliveries.error);
   } else {
-    problems.push('a repeated claim changed the coin balance: '
-      + JSON.stringify(results));
+    for (const row of deliveries.log) {
+      console.log(`  ${String(row.call).padEnd(10)} paid=${String(row.paid).padEnd(5)}`
+        + ` coins=${row.coins} claimedKeys=${row.claimedKeys}`);
+    }
+    const baseline = deliveries.log[0];
+    const last = deliveries.log[deliveries.log.length - 1];
+    const granted = deliveries.log.filter((row) => row.paid === true).length;
+    const moved = last.coins - baseline.coins;
+    console.log(`[idem] granted ${granted} time(s); coins moved ${moved}`);
+    if (granted !== 0 || moved !== 0) {
+      problems.push(`a duplicate delivery was granted ${granted} time(s) and moved ${moved} coins`);
+    }
   }
+
+  // Reload: the guard that must hold across a reload is the persisted key list.
+  await page.reload({ waitUntil: 'load' });
+  await page.waitForFunction(() => !!window.__BHR_QA__?.snapshot, null, { timeout: 45000 });
+  await sleep(1500);
+  const afterReload = await page.evaluate((matchId) => {
+    const s = window.__BHR_QA__.snapshot();
+    const ids = s.save?.claimedArenaSettlementIds || [];
+    return { coins: s.save?.coins ?? null, occurrences: ids.filter((id) => id === matchId).length };
+  }, first.matchId);
+  console.log(`[idem] after reload: coins ${afterReload.coins};`
+    + ` the match id appears ${afterReload.occurrences} time(s)`);
+  if (afterReload.occurrences !== 1) {
+    problems.push(`after reload the match id appears ${afterReload.occurrences} times`);
+  }
+
   await context.close();
 } catch (error) {
   console.log(`[idem] PROBE_ERROR ${error.message}`);
@@ -167,4 +184,7 @@ try {
 if (problems.length) {
   console.log('[idem] FAIL: ' + problems.join('; '));
   process.exitCode = 1;
+} else {
+  console.log('[idem] PASS: repeated delivery through the production interface granted nothing,'
+    + ' and the persisted key appears exactly once after a reload.');
 }

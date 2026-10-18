@@ -108,6 +108,8 @@ interface InstalledQABridge {
 
 type QAHost = typeof globalThis & {
   __BHR_QA__?: InstalledQABridge;
+  /** The production save service, for probes that must CALL, not read. */
+  __BHR_SAVE__?: typeof saveService;
 };
 
 /**
@@ -131,6 +133,13 @@ export class QABridge {
     };
     const host = globalThis as QAHost;
     host.__BHR_QA__ = bridge;
+    // The production save service, so a probe can exercise the REAL reward
+    // interface instead of re-reading a snapshot field. An earlier idempotency
+    // probe read `save.coins` five times, took its own baseline from the same
+    // read, and reported "five repeated deliveries, coins never moved" -- a
+    // measurement that always passes. Calls need the thing the production code
+    // calls: `claimArenaSettlement`.
+    host.__BHR_SAVE__ = saveService;
     this.installedBridge = bridge;
   }
 
