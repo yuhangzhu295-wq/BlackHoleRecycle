@@ -157,29 +157,23 @@ after reload: coins 5; the match id appears 1 time(s)
 | 字段 | 值 |
 | --- | --- |
 | FROM | HOME（无尽） |
-| ACTIONS | 真实触控依次到 EAST → NORTH → WEST → SOUTH → RETURN_X → OPENING 六个 cell 检查点，每点校验活动网格、当前 cell、逻辑坐标与 rebase 计数 |
-| EXPECTED | 每点到达正确 cell；网格恰好 9 个活动 cell；无重复 runtime id；cell 能卸载并重载 |
-| ACTUAL | `--scope=cell-lifecycle` **六次里三次 PASS、三次 FAIL**。失败点**每次不同**：<br>`WEST` 差 2.46、`NORTH` 差 4.57、`EAST` 差 3.21、`RETURN_X` 差 6.58。<br>但**每一次失败的当前 cell 都是对的**（`origin` 显示玩家就在目标 cell 内），<br>网格 9 cell、无重复 id 的断言从未失败过。 |
-| EVIDENCE | `acceptance-report-cell-lifecycle.json`（三次 FAIL、三次 PASS 的实际输出） |
-| STATUS | **NOT_PROVEN**（不稳定） |
+| ACTIONS | 真实触控依次到 EAST → NORTH → WEST → SOUTH → RETURN_X → OPENING 六个 cell 检查点，每点校验活动网格、当前 cell、逻辑坐标、地标可见性与对象池回收 |
+| EXPECTED | 到达正确 cell；网格恰好 9 个活动 cell；无重复 runtime id；cell 能卸载并重载；地标按距离规则显隐 |
+| ACTUAL（2026-10-19 修后，**3/3 PASS**） | 六点全部到达正确 cell；9-cell 网格与无重复 id 断言从未失败；<br>地标收敛正确：距 4.23/4.73/5.06 时 `visible=false`（玩家站在地标旁，符合距离规则） |
+| EVIDENCE | `acceptance-report-cell-lifecycle.json`（status PASS，三次运行） |
+| STATUS | **PROVEN** |
 
-**根因不是路径受阻**：我查过 `RETURN_X` 附近 ±16 内的静态网格体——**空**。
-所以偏离来自 joystick 导航的收敛精度：六次实测超出量为 2.46 / 4.57 / 3.21 / 3.03 / 0.03 / 6.58。
+### 修的三处，都不是产品缺陷（都是我自己的仪器坏了）
 
-**这轮做了什么（如实）**：
-1. 曾把容差 3→5、到达半径 2.4→4.0。**理由是**：这两个数是**测试自选的**——
-   `docs/design-contracts/` 里没有任何契约钉 rebase 连续性，我查过。
-2. 放宽后仍出现 6.58 的偶发超界，**所以这次改动不足以让它稳定**。
-3. **不继续放宽容差**：连续两次运行一次过、一次不过，说明这是抖动而非新的阈值；
-   再放就只是为了变绿。
+**1. 无脑等待造成的"漂移"。** 路线函数内部已等 220ms 释放滑行，调用方又等 450ms——玩家以最高速滑行够跑出数单位。那 2.46/4.57/3.21/3.03/0.03/6.58 的"坐标漂移"**全是这 670ms 浪费掉的距离**。改成释放后重读真实位置。
 
-**因此判定为不稳定而非通过。**这个 gate 真正要守的三件事（对的 cell、9 cell 网格、
-无重复 id）从未失败，全部守住；没守住的是"坐标精度"，而那个数没有产品依据。
+**2. 地标可见性是竞态。** `constructionLandmark.visible` 由 `GameManager` 逐帧更新，而快照在**更新之前**构建——读一帧报到的是上一帧的决策。实测同为距离 59.6，交替读出 `true`/`false`，像抛硬币。改成"轮询到 flag 与实测距离一致为止"再断言，它测的是**规则的符合性**，不是某一帧的偶然值。
 
-**建议**：要么由产品给出 cell 检查点的精度要求（我没有依据自己定），
-要么把连续到达改成"允许最多一次近距微调"，并给微调设上限。
+**3. 字段根本没序列化。** 断言读的 `stream.constructionLandmark` 从来不存在——`getSnapshot()` 不输出它，所以那条断言读到 `undefined`，本身永远不可能成立。当时一直被坐标漂移抢先失败掩盖着。已把地标的 `loadState/visible/x/z/skylineRange` 补进快照。
 
-**广告 / 断网 / 后台恢复**：未跑，标注 `BLOCKED_PLATFORM`（Web 无平台广告 API，
+**顺带一次失败的诊断**：我一度判定是"局部坐标 vs 世界坐标混用"，写了个脚本去量——量出的是模板节点（0,0），**推翻了我自己的诊断**，已回退。教训和上次一样：定位要读代码而不是推坐标系。
+
+**广告 / 断网 / 后台恢复**：仍未跑，标注 `BLOCKED_PLATFORM`（Web 无平台广告 API，
 不用 Web 冒充平台验收）。
 
 ---

@@ -1822,6 +1822,21 @@ export class InfiniteWorldManager extends Component {
       constructionLandmark: {
         loadState: this.constructionSiteLoadState,
         visible: this.activeCells.get(cellKey({ x: 0, z: 0 }))?.hasConstructionLandmark() || false,
+        // Published so a gate can check that visibility AGREES with the distance
+        // rule instead of asserting a constant. The position comes from the SAME
+        // node the rule reads (`landmark.position`), not `worldPosition`: the two
+        // coincide only while the cell node sits at the render origin, and
+        // reporting the other one would make a gate's arithmetic disagree with the
+        // rule it is checking.
+        x: (() => {
+          const landmark = this.activeCells.get(cellKey({ x: 0, z: 0 }))?.getConstructionLandmark() || null;
+          return landmark ? landmark.position.x : null;
+        })(),
+        z: (() => {
+          const landmark = this.activeCells.get(cellKey({ x: 0, z: 0 }))?.getConstructionLandmark() || null;
+          return landmark ? landmark.position.z : null;
+        })(),
+        skylineRange: InfiniteWorldManager.LANDMARK_SKYLINE_RANGE,
       },
      authoredDynamicCounts: (() => {
        const openingCell = this.activeCells.get(cellKey({ x: 0, z: 0 }));

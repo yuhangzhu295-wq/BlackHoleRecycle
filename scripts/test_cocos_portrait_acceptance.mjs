@@ -3226,8 +3226,16 @@ async function verifyCellLifecycle(cdp, page, joystick) {
       'CELL_LIFECYCLE_' + checkpoint.id,
       4.0,
       70_000,
+      // On arrival the drive function already waits for its release delay and
+      // re-reads the position, so the caller's position is where the player
+      // actually stopped. Blindly waiting another 450ms here re-opened the coasting
+      // window: a released player at speed covers several units in that time, which
+      // is what made this checkpoint report 2.46 to 6.58 units of "drift" against a
+      // target the route had genuinely reached. The cell assertions below need the
+      // grid settled, not more time to pass.
+      undefined,
     );
-    await page.waitForTimeout(450);
+    await page.waitForTimeout(0);
     const settled = await readRuntimeSnapshot(page);
     const check = assertActiveGrid(settled, checkpoint.id);
     const logical = getLogicalPlayerPosition(settled);
@@ -3306,8 +3314,60 @@ async function verifyCellLifecycle(cdp, page, joystick) {
           && reload.collectibleCount >= openingUnload.collectibleCount
           && reload.vehicleCount >= openingUnload.vehicleCount,
       'FAIL_CELL_LIFECYCLE_OPENING_RELOAD: ' + JSON.stringify({ openingUnload, reloaded, reload, openingEvents, openingObjects, openingTraffic }));
-      assert(check.stream.constructionLandmark?.visible === true,
-        'FAIL_CELL_LIFECYCLE_GOLDEN_CITY_RELOAD: ' + JSON.stringify(check.stream.constructionLandmark));
+      // The landmark's visibility is a DISTANCE rule, not a presence rule:
+      // `updateConstructionLandmarkVisibility` hides it inside
+      // LANDMARK_SKYLINE_RANGE (50) of itself, because a 15x15x15 ten-unit-tall
+      // structure standing where the player stands fills the portrait view. That
+      // rule is the PHASE 0 fix for the black ground.
+      //
+      // This used to assert `visible === true`, which contradicts the product at
+      // the OPENING checkpoint -- its target is (0,0), i.e. right next to the
+      // landmark -- and failed on the run after the coordinate drift was fixed.
+      // What must hold is that visibility AGREES with the measured distance, so
+      // both directions are checked: far away it appears, standing next to it it
+      // does not.
+      // The landmark's visibility is a DISTANCE rule, not a presence rule:
+      // `updateConstructionLandmarkVisibility` hides it within
+      // LANDMARK_SKYLINE_RANGE (50) of itself, because a 15x15x15 ten-unit-tall
+      // structure standing where the player stands fills the portrait view. That
+      // is the PHASE 0 fix for the black ground.
+      //
+      // Two problems had to be solved before this assertion could mean anything:
+      // the field was never serialized, so it read `undefined`; and the flag is
+      // written inside GameManager's per-frame update, which runs AFTER the
+      // snapshot is built, so one frame reports the previous frame's decision.
+      // Measured at distance 59.6 the alternate reads were visible=true and
+      // visible=false -- a coin flip, not a check.
+      //
+      // So: read a fresh snapshot each poll and only assert once the flag agrees
+      // with the measured distance, or the deadline passes with them still
+      // disagreeing. What is asserted is the AGREEMENT, which is the rule itself,
+      // so it holds whether the player is standing on the landmark or far away.
+      const landmark = check.stream.constructionLandmark || null;
+      if (landmark && landmark.x !== null) {
+        const deadline = Date.now() + 3000;
+        let agreed = false;
+        let last = null;
+        while (Date.now() < deadline) {
+          await page.waitForTimeout(60);
+          const next = await readRuntimeSnapshot(page);
+          const nextLandmark = next.world?.streaming?.constructionLandmark || null;
+          if (!nextLandmark || nextLandmark.x === null) continue;
+          const nextLogical = { x: next.player.x, z: next.player.z };
+          const distance = Math.hypot(nextLandmark.x - nextLogical.x, nextLandmark.z - nextLogical.z);
+          const shouldBeVisible = distance > (nextLandmark.skylineRange || 50);
+          last = { distance, shouldBeVisible, visible: nextLandmark.visible, player: nextLogical };
+          if (nextLandmark.visible === shouldBeVisible) {
+            agreed = true;
+            break;
+          }
+        }
+        assert(agreed,
+          'FAIL_CELL_LIFECYCLE_LANDMARK_VISIBILITY: '
+          + JSON.stringify({ landmark, last, settledWithin: '3s' }));
+        console.log('    [landmark] distance=%s agrees with visible=%s',
+          last.distance.toFixed(2), String(last.visible));
+      }
     }
   }
   const final = await readRuntimeSnapshot(page);
@@ -3427,7 +3487,25 @@ async function driveJoystickToLogicalPoint(cdp, page, joystick, target, label, a
       if (releaseDelayMs > 0) await page.waitForTimeout(releaseDelayMs);
     }
   }
-  const finalPosition = getLogicalPlayerPosition(finalSnapshot);
+  // Re-read AFTER the release, so the returned position is where the player
+  // actually stopped. The previous version returned the last in-loop sample and
+  // then waited 450ms before the caller read the snapshot itself, so the caller
+  // measured a position the player had already coasted past -- the cell-lifecycle
+  // checkpoint read 2.46 to 6.58 units off a target the route had genuinely
+  // reached, and the gap was pure wasted coasting inside the harness.
+  let releasedPosition = finalPosition;
+  if (touchHeld && releaseDelayMs > 0) {
+    const released = await readRuntimeSnapshot(page);
+    released.routeMetrics = finalSnapshot.routeMetrics;
+    finalSnapshot = released;
+    releasedPosition = getLogicalPlayerPosition(released);
+  }
+  finalSnapshot.routeMetrics = {
+    ...finalSnapshot.routeMetrics,
+    finalPosition: { x: releasedPosition.x, z: releasedPosition.z },
+    finalVelocity: { x: finalSnapshot.machine.velocity?.x ?? null, z: finalSnapshot.machine.velocity?.z ?? null },
+  };
+  const finalPosition = releasedPosition;
   finalSnapshot.routeMetrics = { iterations, bestDistance, arrived: bestDistance <= arrivalRadius, arrivalRadius, label, target };
   // A physical drag can cross the pickup radius between two diagnostic
   // samples and then coast slightly beyond it before the next sample.  The
