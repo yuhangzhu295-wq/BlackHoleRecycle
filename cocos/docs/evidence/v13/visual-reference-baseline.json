@@ -1,5 +1,5 @@
 {
-  "note": "Composition floor for the arena frame. Both numbers are set from MEASURED SAMPLES of frames that were looked at, not from the reference: the gap to DESIGN_07 is content density, and a floor near the reference would fail every run. The metric measures the TAKING of one frame, not the contents of the scene -- it moved when four resource clusters were added because more objects change the AI paths and therefore where the camera ends up. So the tolerance is the observed spread, not a round number. Sampled 2026-10-15 after the arena content fixes (the office building moved out of the road, two buildings pushed clear of the spawn ring, six spawn points moved into frame): play-band buckets 397, 402, 389, 387; leading colour 35.9%, 35.1%, 36.0%, 36.3%. floor = 380 (below the lowest sample) and ceiling = 38.0 (above the highest). The pre-fix ceiling was 35.4%, which the fix itself exceeded -- removing a building from the roadway gives the asphalt more of the frame. That is a consequence of a fix, not a regression, and re-baselining is the honest response to it. 2026-10-15: floor 380 -> 360 after the gate failed at 376 on a frame that looked correct. Eight samples span 376..402; the old floor was inside that spread. Evidence, not convenience: the metric measures one frame.",
+  "note": "Composition floor for the arena frame. Both numbers are set from MEASURED SAMPLES of frames that were looked at, not from the reference: the gap to DESIGN_07 is content density, and a floor near the reference would fail every run. The metric measures the TAKING of one frame, not the contents of the scene -- it moved when four resource clusters were added because more objects change the AI paths and therefore where the camera ends up. So the tolerance is the observed spread, not a round number. Sampled 2026-10-15 after the arena content fixes (the office building moved out of the road, two buildings pushed clear of the spawn ring, six spawn points moved into frame): play-band buckets 397, 402, 389, 387; leading colour 35.9%, 35.1%, 36.0%, 36.3%. floor = 380 (below the lowest sample) and ceiling = 38.0 (above the highest). The pre-fix ceiling was 35.4%, which the fix itself exceeded -- removing a building from the roadway gives the asphalt more of the frame. That is a consequence of a fix, not a regression, and re-baselining is the honest response to it. 2026-10-15: floor 380 -> 360 after the gate failed at 376 on a frame that looked correct. Eight samples span 376..402; the old floor was inside that spread. Evidence, not convenience: the metric measures one frame. 2026-10-20: floor 360 -> 190 after the arena camera moved pitch -55 -> -45 (offset (0,44,27) -> (0,48,30)). The flatter angle is the DESIGN_07 framing -- it reads building FACES instead of roofs -- but it also pulls more of the same district into the frustum, so the bucket count fell from 388 to 204-207 across three stable samples. This is verified as the camera, not as lost content: the frame still carries both street walls, kerb trees, vehicles, pickups, the crosswalk, the black hole and the full HUD. A floor of 360 was calibrated on the OLD frustum and could never have held for a deliberate camera change. The floor is now just below the lowest sample, so it still alarms on a real loss of variety.",
   "capture": "artifacts/qa/v13/arena/arena-390x844.png",
   "reference": "artifacts/qa/v12/ref/07-arena-gameplay.png",
   "measured": {
@@ -22,7 +22,7 @@
     "mean_luma": 175.2,
     "distinct_colours": 170655
   },
-  "buckets_floor": 360,
+  "buckets_floor": 190,
   "top_share_ceiling": 38.0,
   "samples_after_fix": {
     "buckets": [
@@ -58,5 +58,17 @@
       36.3
     ],
     "note": "Eight captures of the arena across two sessions. Range 376..402, spread 26. The previous floor of 380 sat INSIDE that spread, so the gate flapped on match-to-match variation rather than on a visual regression. The floor is now 360, i.e. below the lowest sample with margin, and this metric is a coarse regression alarm (a drop of more than ~40 buckets), not a quality gate. Art acceptance is by looking at the frame; the art direction already records that a bucket count says we are flatter than the reference without saying where."
+  },
+  "samples_after_camera": {
+    "buckets": [
+      207,
+      206,
+      204
+    ],
+    "top_share": [
+      32.9,
+      33.0,
+      32.9
+    ]
   }
 }

@@ -342,7 +342,7 @@ export const CAMERA_PROFILE = {
   // frame. It trades both the composition and the P0 requirement of seeing the
   // opponents for larger props. So the distance stays, and PHASE B's lever is the
   // field's content and scale, not the camera.
-  arena: { offset: new Vec3(0, 44.0, 27.0), pitchDegrees: -55 },
+  arena: { offset: new Vec3(0, 48.0, 30.0), pitchDegrees: -45 },
 } as const;
 
 /**
