@@ -107,12 +107,26 @@ class Scene:
 
     def set_lpos(self, node_id, x, y):
         """Rewrite a node's `_lpos` x/y. Two value edits, never the node span."""
+        self._set_lpos_keys(node_id, (('x', x), ('y', y)))
+
+    def set_lpos_xz(self, node_id, x, z):
+        """Rewrite a node's `_lpos` x/z, leaving y alone.
+
+        The gameplay world is laid out on the xz-plane, so moving a node there is
+        the common case while `set_lpos` is the 2D screen case. Using `set_lpos`
+        for an xz move silently rewrites the node's height instead of its depth:
+        the edit lands, the file parses, and the object ends up in a different
+        place than intended.
+        """
+        self._set_lpos_keys(node_id, (('x', x), ('z', z)))
+
+    def _set_lpos_keys(self, node_id, keys):
         start, end = self.spans[node_id]
         block = self.text[start:end]
         at = block.index(QUOTE + '_lpos' + QUOTE + ': {')
-        for key, value in (('x', x), ('y', y)):
+        for key, value in keys:
             # Searched from the `_lpos` marker, so this cannot land on `_lrot`'s
-            # or `_lscale`'s own x/y, which come later in the node.
+            # or `_lscale`'s own x/y/z, which come later in the node.
             k = block.index(QUOTE + key + QUOTE + ':', at)
             vs = k + len(key) + 3
             while block[vs] == ' ':

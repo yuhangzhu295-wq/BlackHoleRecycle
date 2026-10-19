@@ -2470,8 +2470,24 @@ async function collectGoldenCityBaseline(cdp, page, canvasRect, homeSnapshot) {
 
   const before = await readRuntimeSnapshot(page);
   const streaming = before.world?.streaming;
-  assert(streaming?.currentCellSource === 'AUTHORED_GOLDEN_CITY',
-    `FAIL_GOLDEN_CITY_SOURCE: ${JSON.stringify(streaming)}`);
+  // 2026-10-12 (b850644 "feat(arena): play the commercial block, not the park")
+  // moved the arena from the world origin to ARENA_WORLD_ORIGIN (384, 0, 0) =
+  // cell (6,0), which is the supermarket district. This assertion still
+  // demanded currentCellSource === 'AUTHORED_GOLDEN_CITY', i.e. the one-off
+  // opening cell, so it had thrown FAIL_GOLDEN_CITY_SOURCE on every run since
+  // that commit -- and '--scope=full' never reaches this block, so nothing else
+  // ever surfaced it. The 31 composition checks below are all measured against
+  // the cell the player is standing in (WorldCompositionProbe derives
+  // targetCell from world.currentCell, not a hardcoded coordinate), so what the
+  // gate must assert is that the composition was measured in a real authored
+  // cell -- not that it was measured in one particular cell.
+  const measuredCellKey = streaming?.goldenCityComposition?.targetCell?.key || null;
+  assert(/^-?\d+:-?\d+$/.test(measuredCellKey || ''),
+    `FAIL_GOLDEN_CITY_TARGET_CELL: ${JSON.stringify(streaming?.goldenCityComposition?.targetCell || null)}`);
+  assert(streaming?.currentCellSource === 'AUTHORED_GOLDEN_CITY'
+      || streaming?.currentCellSource === 'AUTHORED_DISTRICT_MAP',
+    `FAIL_GOLDEN_CITY_SOURCE: currentCellSource is ${JSON.stringify(streaming?.currentCellSource)}, `
+    + `neither authored cell kind, in ${JSON.stringify({ currentCell: streaming?.currentCell })}`);
   const composition = before.world?.streaming?.goldenCityComposition;
   assert(before.arena?.competitorCount === 8,
     `FAIL_GOLDEN_CITY_COMPETITOR_ROSTER: ${JSON.stringify(before.arena)}`);

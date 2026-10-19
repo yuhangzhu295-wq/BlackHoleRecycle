@@ -422,8 +422,8 @@ export class WorldCompositionProbe {
       emptyGround: this.estimateEmptyGround(entries, viewport),
       playableOpenArea: this.estimatePlayableOpenArea(entries),
       playerInsideSolidOccupant: this.estimatePlayerInsideSolidOccupant(entries, playerNode),
-      authoredCollectibleSlots: this.collectAuthoredCollectibleSlots(targetCell, camera, viewport, collectibles.length),
-      authoredResourceClusters: this.collectAuthoredResourceClusters(targetCell, camera, viewport),
+      authoredCollectibleSlots: this.collectAuthoredCollectibleSlots(targetCell, camera, viewport, collectibles.length, world.logicalOrigin),
+      authoredResourceClusters: this.collectAuthoredResourceClusters(targetCell, camera, viewport, world.logicalOrigin),
     };
   }
 
@@ -729,10 +729,11 @@ export class WorldCompositionProbe {
     camera: Camera,
     viewport: Readonly<{ x: number; y: number; width: number; height: number }>,
     liveCountable: number,
+    logicalOrigin: Readonly<Vec3>,
   ): GoldenCityCompositionDiagnostics['authoredCollectibleSlots'] {
     let visible = 0;
     for (const slot of cell.collectibleSlots) {
-      if (this.projectAuthoredSlot(camera, viewport, slot).visible) visible++;
+      if (this.projectAuthoredSlot(camera, viewport, slot, logicalOrigin).visible) visible++;
     }
     return {
       method: 'authored slot positions projected through the gameplay camera',
@@ -748,6 +749,7 @@ export class WorldCompositionProbe {
     cell: WorldCellRuntimeContent,
     camera: Camera,
     viewport: Readonly<{ x: number; y: number; width: number; height: number }>,
+    logicalOrigin: Readonly<Vec3>,
   ): GoldenCityCompositionDiagnostics['authoredResourceClusters'] {
     const groups = new Map<string, { slots: number; visibleSlots: number }>();
     for (const slot of cell.collectibleSlots) {
@@ -755,7 +757,7 @@ export class WorldCompositionProbe {
       if (!clusterId) continue;
       const group = groups.get(clusterId) || { slots: 0, visibleSlots: 0 };
       group.slots++;
-      if (this.projectAuthoredSlot(camera, viewport, slot).visible) group.visibleSlots++;
+      if (this.projectAuthoredSlot(camera, viewport, slot, logicalOrigin).visible) group.visibleSlots++;
       groups.set(clusterId, group);
     }
     // Do not spread this Map. Cocos Creator's Web Mobile Babel output rewrites
@@ -1027,17 +1029,29 @@ export class WorldCompositionProbe {
     camera: Camera,
     viewport: Readonly<{ x: number; y: number; width: number; height: number }>,
     slot: WorldCellAuthoredCollectibleSlot,
+    logicalOrigin: Readonly<Vec3>,
   ): GoldenCityProjection {
+    // `collectibleSlots` store LOGICAL x/z -- every writer on the population
+    // paths stores `worldPos + logicalOrigin` (procedural `centerX + localX`,
+    // authored `worldPos.x + logicalOrigin.x`), while the gameplay camera is
+    // framed in the cell's LOCAL space and live objects spawn at
+    // `slot - logicalOrigin`. Projecting the raw logical value put every slot
+    // 384 units off the frame: the arena-cell reading was "0 of 24 authored
+    // slots visible" while the same slots rendered on screen at screen x 59-71.
+    // Convert here, mirroring the respawn system, so the metric describes the
+    // frame instead of two coordinate systems disagreeing.
+    const x = slot.x - logicalOrigin.x;
+    const z = slot.z - logicalOrigin.z;
     return this.projectBounds(camera, viewport, {
       min: new Vec3(
-        slot.x - AUTHORED_SLOT_HALF_EXTENT,
+        x - AUTHORED_SLOT_HALF_EXTENT,
         AUTHORED_SLOT_CENTER_Y - AUTHORED_SLOT_HALF_EXTENT,
-        slot.z - AUTHORED_SLOT_HALF_EXTENT,
+        z - AUTHORED_SLOT_HALF_EXTENT,
       ),
       max: new Vec3(
-        slot.x + AUTHORED_SLOT_HALF_EXTENT,
+        x + AUTHORED_SLOT_HALF_EXTENT,
         AUTHORED_SLOT_CENTER_Y + AUTHORED_SLOT_HALF_EXTENT,
-        slot.z + AUTHORED_SLOT_HALF_EXTENT,
+        z + AUTHORED_SLOT_HALF_EXTENT,
       ),
     });
   }
