@@ -43,11 +43,11 @@ TASK ID: BLACKHOLE_V14_AUTONOMOUS_PRODUCT_COMPLETION
 | F4 | FLOW-04 竞技死亡与复活 | F3 | P0 | PASS | 真实死亡→REVIVING→放弃→结算；revive PASS |
 | F5 | FLOW-05 结算与金币幂等 | F1,F3 | P0 | **PASS** | 真实重复投递 0/5、重载后 key 恰好 1 次 |
 | F6 | FLOW-06 机器与皮肤 | E2 | P1 | PASS | 免费装备 / 0 币不扣 / 扣 1500 实证 |
-| F7 | FLOW-07 平台/广告/异常/边界 | E2 | P1 | **FAIL** | cell-lifecycle 停在 cell −3（目标 −4） |
+| F7 | FLOW-07 平台/广告/异常/边界 | E2 | P1 | **PASS** | 3/3；六点全到正确 cell + 地标距离规则收敛 |
 | G1 | 性能：节点/渲染器/帧时间/内存趋势 | B1 | P1 | NOT_MEASURABLE | 本阶段未采集，不用旧值冒充 |
 | G2 | 微信主包压缩后尺寸 | — | P1 | BLOCKED_EXTERNAL | 需开发者工具权威口径 |
 | G3 | 抖音真实 AppID | — | P1 | BLOCKED_EXTERNAL | 需账号 |
-| H1 | 最终报告 `V14_FINAL_PRODUCT_ACCEPTANCE_REPORT.md` | 全部 | P0 | PASS | 已写，含五项判定 |
+| H1 | 最终报告 `V14_FINAL_PRODUCT_ACCEPTANCE_REPORT.md` | 全部 | P0 | PASS | 已写，含五项判定与误判记录 |
 | H2 | 业务流矩阵 `V14_BUSINESS_FLOW_MATRIX.md` | F1–F7 | P0 | PASS | 七条流程逐条判定 |
 | H3 | 视觉矩阵 `V14_VISUAL_ACCEPTANCE_MATRIX.md` | B2,C3 | P0 | PASS | 18 帧逐张 + 评分 85/100 |
 
@@ -57,7 +57,7 @@ TASK ID: BLACKHOLE_V14_AUTONOMOUS_PRODUCT_COMPLETION
 
 | 判定 | 状态 | 依据 |
 | --- | --- | --- |
-| GAMEPLAY_READY | **NO** | 六条 PROVEN；仅 FLOW-07（cell 生命周期）不稳定未证 |
+| GAMEPLAY_READY | **YES** | 七条流程全部 PROVEN（FLOW-07 修三处仪器故障后 3/3） |
 | VISUAL_READY | **NO** | 四态 + 三尺寸 PASS；竞技场近带密度待所有者取舍 |
 | DATA_READY | **实质 YES** | 发放 + 重复投递 0/5 + 重载后 key 恰好 1 次；存档恢复未单独实验 |
 | ENGINEERING_READY | **YES** | 529 测试 0 失败 + 四道 review + 三平台构建 |
