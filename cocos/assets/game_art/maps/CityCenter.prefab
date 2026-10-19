@@ -1789,8 +1789,7 @@
     "_parent": {
       "__id__": 1
     },
-    "_children": [
-      {
+    "_children": [{
         "__id__": 70
       },
       {
@@ -1822,8 +1821,37 @@
       },
       {
         "__id__": 152
-      }
-    ],
+      },
+      {
+        "__id__": 388
+      },
+      {
+        "__id__": 391
+      },
+      {
+        "__id__": 394
+      },
+      {
+        "__id__": 397
+      },
+      {
+        "__id__": 400
+      },
+      {
+        "__id__": 404
+      },
+      {
+        "__id__": 407
+      },
+      {
+        "__id__": 410
+      },
+      {
+        "__id__": 413
+      },
+      {
+        "__id__": 417
+      }],
     "_active": true,
     "_components": [],
     "_prefab": {
@@ -9993,5 +10021,1355 @@
     "instance": null,
     "targetOverrides": null,
     "nestedPrefabInstanceRoots": null
-  }
+  },
+    {
+      "__type__": "cc.Node",
+      "_name": "DensifyCityCenter_W1",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "_parent": {
+        "__id__": 69
+      },
+      "_children": [
+        {
+          "__id__": 389
+        }
+      ],
+      "_active": true,
+      "_components": [],
+      "_lpos": {
+        "__type__": "cc.Vec3",
+        "x": -8.5,
+        "y": 0,
+        "z": -16.5
+      },
+      "_lrot": {
+        "__type__": "cc.Quat",
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "_lscale": {
+        "__type__": "cc.Vec3",
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "_mobility": 0,
+      "_layer": 1073741824,
+      "_euler": {
+        "__type__": "cc.Vec3",
+        "x": 0,
+        "y": 90,
+        "z": 0
+      },
+      "_id": ""
+    },
+    {
+      "__type__": "cc.Node",
+      "_name": "building-a",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "_parent": {
+        "__id__": 388
+      },
+      "_children": [],
+      "_active": true,
+      "_components": [
+        {
+          "__id__": 390
+        }
+      ],
+      "_lpos": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "_lrot": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "_lscale": {
+        "x": 1.8,
+        "y": 1.8,
+        "z": 1.8
+      },
+      "_mobility": 0,
+      "_layer": 1073741824,
+      "_euler": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "_id": ""
+    },
+    {
+      "__type__": "cc.MeshRenderer",
+      "_name": "",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "node": {
+        "__id__": 389
+      },
+      "_enabled": true,
+      "__prefab": {
+        "__id__": 73
+      },
+      "_materials": [
+        {
+          "__uuid__": "71f7d10e-9030-441f-bfd8-6e857aba199c",
+          "__expectedType__": "cc.Material"
+        }
+      ],
+      "_visFlags": 0,
+      "bakeSettings": {
+        "__id__": 74
+      },
+      "_mesh": {
+        "__uuid__": "5cef1a38-6af5-4c76-86b0-a08995b23be7@359ab",
+        "__expectedType__": "cc.Mesh"
+      },
+      "_shadowCastingMode": 0,
+      "_shadowReceivingMode": 1,
+      "_shadowBias": 0,
+      "_shadowNormalBias": 0,
+      "_reflectionProbeId": -1,
+      "_reflectionProbeBlendId": -1,
+      "_reflectionProbeBlendWeight": 0,
+      "_enabledGlobalStandardSkinObject": false,
+      "_enableMorph": true,
+      "_id": "",
+      "_children": [],
+      "_components": []
+    },
+    {
+      "__type__": "cc.Node",
+      "_name": "DensifyCityCenter_W2",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "_parent": {
+        "__id__": 69
+      },
+      "_children": [
+        {
+          "__id__": 392
+        }
+      ],
+      "_active": true,
+      "_components": [],
+      "_lpos": {
+        "__type__": "cc.Vec3",
+        "x": -8.5,
+        "y": 0,
+        "z": -22.0
+      },
+      "_lrot": {
+        "__type__": "cc.Quat",
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "_lscale": {
+        "__type__": "cc.Vec3",
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "_mobility": 0,
+      "_layer": 1073741824,
+      "_euler": {
+        "__type__": "cc.Vec3",
+        "x": 0,
+        "y": 90,
+        "z": 0
+      },
+      "_id": ""
+    },
+    {
+      "__type__": "cc.Node",
+      "_name": "building-d",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "_parent": {
+        "__id__": 391
+      },
+      "_children": [],
+      "_active": true,
+      "_components": [
+        {
+          "__id__": 393
+        }
+      ],
+      "_lpos": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "_lrot": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "_lscale": {
+        "x": 1.8,
+        "y": 1.8,
+        "z": 1.8
+      },
+      "_mobility": 0,
+      "_layer": 1073741824,
+      "_euler": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "_id": ""
+    },
+    {
+      "__type__": "cc.MeshRenderer",
+      "_name": "",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "node": {
+        "__id__": 392
+      },
+      "_enabled": true,
+      "__prefab": {
+        "__id__": 80
+      },
+      "_materials": [
+        {
+          "__uuid__": "71f7d10e-9030-441f-bfd8-6e857aba199c",
+          "__expectedType__": "cc.Material"
+        }
+      ],
+      "_visFlags": 0,
+      "bakeSettings": {
+        "__id__": 81
+      },
+      "_mesh": {
+        "__uuid__": "6d726725-5eb7-462c-99b8-6e1cf831bbb5@9d802",
+        "__expectedType__": "cc.Mesh"
+      },
+      "_shadowCastingMode": 0,
+      "_shadowReceivingMode": 1,
+      "_shadowBias": 0,
+      "_shadowNormalBias": 0,
+      "_reflectionProbeId": -1,
+      "_reflectionProbeBlendId": -1,
+      "_reflectionProbeBlendWeight": 0,
+      "_enabledGlobalStandardSkinObject": false,
+      "_enableMorph": true,
+      "_id": "",
+      "_children": [],
+      "_components": []
+    },
+    {
+      "__type__": "cc.Node",
+      "_name": "DensifyCityCenter_W3",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "_parent": {
+        "__id__": 69
+      },
+      "_children": [
+        {
+          "__id__": 395
+        }
+      ],
+      "_active": true,
+      "_components": [],
+      "_lpos": {
+        "__type__": "cc.Vec3",
+        "x": -8.5,
+        "y": 0,
+        "z": -27.5
+      },
+      "_lrot": {
+        "__type__": "cc.Quat",
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "_lscale": {
+        "__type__": "cc.Vec3",
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "_mobility": 0,
+      "_layer": 1073741824,
+      "_euler": {
+        "__type__": "cc.Vec3",
+        "x": 0,
+        "y": 90,
+        "z": 0
+      },
+      "_id": ""
+    },
+    {
+      "__type__": "cc.Node",
+      "_name": "building-d",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "_parent": {
+        "__id__": 394
+      },
+      "_children": [],
+      "_active": true,
+      "_components": [
+        {
+          "__id__": 396
+        }
+      ],
+      "_lpos": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "_lrot": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "_lscale": {
+        "x": 1.8,
+        "y": 1.8,
+        "z": 1.8
+      },
+      "_mobility": 0,
+      "_layer": 1073741824,
+      "_euler": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "_id": ""
+    },
+    {
+      "__type__": "cc.MeshRenderer",
+      "_name": "",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "node": {
+        "__id__": 395
+      },
+      "_enabled": true,
+      "__prefab": {
+        "__id__": 87
+      },
+      "_materials": [
+        {
+          "__uuid__": "71f7d10e-9030-441f-bfd8-6e857aba199c",
+          "__expectedType__": "cc.Material"
+        }
+      ],
+      "_visFlags": 0,
+      "bakeSettings": {
+        "__id__": 88
+      },
+      "_mesh": {
+        "__uuid__": "6d726725-5eb7-462c-99b8-6e1cf831bbb5@9d802",
+        "__expectedType__": "cc.Mesh"
+      },
+      "_shadowCastingMode": 0,
+      "_shadowReceivingMode": 1,
+      "_shadowBias": 0,
+      "_shadowNormalBias": 0,
+      "_reflectionProbeId": -1,
+      "_reflectionProbeBlendId": -1,
+      "_reflectionProbeBlendWeight": 0,
+      "_enabledGlobalStandardSkinObject": false,
+      "_enableMorph": true,
+      "_id": "",
+      "_children": [],
+      "_components": []
+    },
+    {
+      "__type__": "cc.Node",
+      "_name": "DensifyCityCenter_W4",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "_parent": {
+        "__id__": 69
+      },
+      "_children": [
+        {
+          "__id__": 398
+        }
+      ],
+      "_active": true,
+      "_components": [],
+      "_lpos": {
+        "__type__": "cc.Vec3",
+        "x": -8.5,
+        "y": 0,
+        "z": -33.0
+      },
+      "_lrot": {
+        "__type__": "cc.Quat",
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "_lscale": {
+        "__type__": "cc.Vec3",
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "_mobility": 0,
+      "_layer": 1073741824,
+      "_euler": {
+        "__type__": "cc.Vec3",
+        "x": 0,
+        "y": 90,
+        "z": 0
+      },
+      "_id": ""
+    },
+    {
+      "__type__": "cc.Node",
+      "_name": "building-a",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "_parent": {
+        "__id__": 397
+      },
+      "_children": [],
+      "_active": true,
+      "_components": [
+        {
+          "__id__": 399
+        }
+      ],
+      "_lpos": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "_lrot": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "_lscale": {
+        "x": 1.8,
+        "y": 1.8,
+        "z": 1.8
+      },
+      "_mobility": 0,
+      "_layer": 1073741824,
+      "_euler": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "_id": ""
+    },
+    {
+      "__type__": "cc.MeshRenderer",
+      "_name": "",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "node": {
+        "__id__": 398
+      },
+      "_enabled": true,
+      "__prefab": {
+        "__id__": 94
+      },
+      "_materials": [
+        {
+          "__uuid__": "71f7d10e-9030-441f-bfd8-6e857aba199c",
+          "__expectedType__": "cc.Material"
+        }
+      ],
+      "_visFlags": 0,
+      "bakeSettings": {
+        "__id__": 95
+      },
+      "_mesh": {
+        "__uuid__": "5cef1a38-6af5-4c76-86b0-a08995b23be7@359ab",
+        "__expectedType__": "cc.Mesh"
+      },
+      "_shadowCastingMode": 0,
+      "_shadowReceivingMode": 1,
+      "_shadowBias": 0,
+      "_shadowNormalBias": 0,
+      "_reflectionProbeId": -1,
+      "_reflectionProbeBlendId": -1,
+      "_reflectionProbeBlendWeight": 0,
+      "_enabledGlobalStandardSkinObject": false,
+      "_enableMorph": true,
+      "_id": "",
+      "_children": [],
+      "_components": []
+    },
+    {
+      "__type__": "cc.Node",
+      "_name": "DensifyCityCenter_W5",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "_parent": {
+        "__id__": 69
+      },
+      "_children": [
+        {
+          "__id__": 401
+        }
+      ],
+      "_active": true,
+      "_components": [],
+      "_lpos": {
+        "__type__": "cc.Vec3",
+        "x": -8.5,
+        "y": 0,
+        "z": -38.0
+      },
+      "_lrot": {
+        "__type__": "cc.Quat",
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "_lscale": {
+        "__type__": "cc.Vec3",
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "_mobility": 0,
+      "_layer": 1073741824,
+      "_euler": {
+        "__type__": "cc.Vec3",
+        "x": 0,
+        "y": 90,
+        "z": 0
+      },
+      "_id": ""
+    },
+    {
+      "__type__": "cc.Node",
+      "_name": "commercial-skyscraper-a",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "_parent": {
+        "__id__": 400
+      },
+      "_children": [
+        {
+          "__id__": 402
+        }
+      ],
+      "_active": true,
+      "_components": [],
+      "_lpos": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "_lrot": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "_lscale": {
+        "x": 1.65,
+        "y": 1.65,
+        "z": 1.65
+      },
+      "_mobility": 0,
+      "_layer": 1073741824,
+      "_euler": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "_id": ""
+    },
+    {
+      "__type__": "cc.Node",
+      "_name": "building-skyscraper-a",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "_parent": {
+        "__id__": 401
+      },
+      "_children": [],
+      "_active": true,
+      "_components": [
+        {
+          "__id__": 403
+        }
+      ],
+      "_lpos": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "_lrot": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "_lscale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "_mobility": 0,
+      "_layer": 1073741824,
+      "_euler": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "_id": ""
+    },
+    {
+      "__type__": "cc.MeshRenderer",
+      "_name": "",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "node": {
+        "__id__": 402
+      },
+      "_enabled": true,
+      "__prefab": {
+        "__id__": 102
+      },
+      "_materials": [
+        {
+          "__uuid__": "71f7d10e-9030-441f-bfd8-6e857aba199c",
+          "__expectedType__": "cc.Material"
+        }
+      ],
+      "_visFlags": 0,
+      "bakeSettings": {
+        "__id__": 103
+      },
+      "_mesh": {
+        "__uuid__": "684f4ad6-0c3c-4a32-b8fb-a215d09cc6a3@57a6c",
+        "__expectedType__": "cc.Mesh"
+      },
+      "_shadowCastingMode": 0,
+      "_shadowReceivingMode": 1,
+      "_shadowBias": 0,
+      "_shadowNormalBias": 0,
+      "_reflectionProbeId": -1,
+      "_reflectionProbeBlendId": -1,
+      "_reflectionProbeBlendWeight": 0,
+      "_enabledGlobalStandardSkinObject": false,
+      "_enableMorph": true,
+      "_id": "",
+      "_children": [],
+      "_components": []
+    },
+    {
+      "__type__": "cc.Node",
+      "_name": "DensifyCityCenter_E1",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "_parent": {
+        "__id__": 69
+      },
+      "_children": [
+        {
+          "__id__": 405
+        }
+      ],
+      "_active": true,
+      "_components": [],
+      "_lpos": {
+        "__type__": "cc.Vec3",
+        "x": 8.5,
+        "y": 0,
+        "z": -16.5
+      },
+      "_lrot": {
+        "__type__": "cc.Quat",
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "_lscale": {
+        "__type__": "cc.Vec3",
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "_mobility": 0,
+      "_layer": 1073741824,
+      "_euler": {
+        "__type__": "cc.Vec3",
+        "x": 0,
+        "y": -90,
+        "z": 0
+      },
+      "_id": ""
+    },
+    {
+      "__type__": "cc.Node",
+      "_name": "building-d",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "_parent": {
+        "__id__": 404
+      },
+      "_children": [],
+      "_active": true,
+      "_components": [
+        {
+          "__id__": 406
+        }
+      ],
+      "_lpos": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "_lrot": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "_lscale": {
+        "x": 1.8,
+        "y": 1.8,
+        "z": 1.8
+      },
+      "_mobility": 0,
+      "_layer": 1073741824,
+      "_euler": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "_id": ""
+    },
+    {
+      "__type__": "cc.MeshRenderer",
+      "_name": "",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "node": {
+        "__id__": 405
+      },
+      "_enabled": true,
+      "__prefab": {
+        "__id__": 80
+      },
+      "_materials": [
+        {
+          "__uuid__": "71f7d10e-9030-441f-bfd8-6e857aba199c",
+          "__expectedType__": "cc.Material"
+        }
+      ],
+      "_visFlags": 0,
+      "bakeSettings": {
+        "__id__": 81
+      },
+      "_mesh": {
+        "__uuid__": "6d726725-5eb7-462c-99b8-6e1cf831bbb5@9d802",
+        "__expectedType__": "cc.Mesh"
+      },
+      "_shadowCastingMode": 0,
+      "_shadowReceivingMode": 1,
+      "_shadowBias": 0,
+      "_shadowNormalBias": 0,
+      "_reflectionProbeId": -1,
+      "_reflectionProbeBlendId": -1,
+      "_reflectionProbeBlendWeight": 0,
+      "_enabledGlobalStandardSkinObject": false,
+      "_enableMorph": true,
+      "_id": "",
+      "_children": [],
+      "_components": []
+    },
+    {
+      "__type__": "cc.Node",
+      "_name": "DensifyCityCenter_E2",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "_parent": {
+        "__id__": 69
+      },
+      "_children": [
+        {
+          "__id__": 408
+        }
+      ],
+      "_active": true,
+      "_components": [],
+      "_lpos": {
+        "__type__": "cc.Vec3",
+        "x": 8.5,
+        "y": 0,
+        "z": -22.0
+      },
+      "_lrot": {
+        "__type__": "cc.Quat",
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "_lscale": {
+        "__type__": "cc.Vec3",
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "_mobility": 0,
+      "_layer": 1073741824,
+      "_euler": {
+        "__type__": "cc.Vec3",
+        "x": 0,
+        "y": -90,
+        "z": 0
+      },
+      "_id": ""
+    },
+    {
+      "__type__": "cc.Node",
+      "_name": "building-d",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "_parent": {
+        "__id__": 407
+      },
+      "_children": [],
+      "_active": true,
+      "_components": [
+        {
+          "__id__": 409
+        }
+      ],
+      "_lpos": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "_lrot": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "_lscale": {
+        "x": 1.8,
+        "y": 1.8,
+        "z": 1.8
+      },
+      "_mobility": 0,
+      "_layer": 1073741824,
+      "_euler": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "_id": ""
+    },
+    {
+      "__type__": "cc.MeshRenderer",
+      "_name": "",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "node": {
+        "__id__": 408
+      },
+      "_enabled": true,
+      "__prefab": {
+        "__id__": 87
+      },
+      "_materials": [
+        {
+          "__uuid__": "71f7d10e-9030-441f-bfd8-6e857aba199c",
+          "__expectedType__": "cc.Material"
+        }
+      ],
+      "_visFlags": 0,
+      "bakeSettings": {
+        "__id__": 88
+      },
+      "_mesh": {
+        "__uuid__": "6d726725-5eb7-462c-99b8-6e1cf831bbb5@9d802",
+        "__expectedType__": "cc.Mesh"
+      },
+      "_shadowCastingMode": 0,
+      "_shadowReceivingMode": 1,
+      "_shadowBias": 0,
+      "_shadowNormalBias": 0,
+      "_reflectionProbeId": -1,
+      "_reflectionProbeBlendId": -1,
+      "_reflectionProbeBlendWeight": 0,
+      "_enabledGlobalStandardSkinObject": false,
+      "_enableMorph": true,
+      "_id": "",
+      "_children": [],
+      "_components": []
+    },
+    {
+      "__type__": "cc.Node",
+      "_name": "DensifyCityCenter_E3",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "_parent": {
+        "__id__": 69
+      },
+      "_children": [
+        {
+          "__id__": 411
+        }
+      ],
+      "_active": true,
+      "_components": [],
+      "_lpos": {
+        "__type__": "cc.Vec3",
+        "x": 8.5,
+        "y": 0,
+        "z": -27.5
+      },
+      "_lrot": {
+        "__type__": "cc.Quat",
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "_lscale": {
+        "__type__": "cc.Vec3",
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "_mobility": 0,
+      "_layer": 1073741824,
+      "_euler": {
+        "__type__": "cc.Vec3",
+        "x": 0,
+        "y": -90,
+        "z": 0
+      },
+      "_id": ""
+    },
+    {
+      "__type__": "cc.Node",
+      "_name": "building-a",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "_parent": {
+        "__id__": 410
+      },
+      "_children": [],
+      "_active": true,
+      "_components": [
+        {
+          "__id__": 412
+        }
+      ],
+      "_lpos": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "_lrot": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "_lscale": {
+        "x": 1.8,
+        "y": 1.8,
+        "z": 1.8
+      },
+      "_mobility": 0,
+      "_layer": 1073741824,
+      "_euler": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "_id": ""
+    },
+    {
+      "__type__": "cc.MeshRenderer",
+      "_name": "",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "node": {
+        "__id__": 411
+      },
+      "_enabled": true,
+      "__prefab": {
+        "__id__": 94
+      },
+      "_materials": [
+        {
+          "__uuid__": "71f7d10e-9030-441f-bfd8-6e857aba199c",
+          "__expectedType__": "cc.Material"
+        }
+      ],
+      "_visFlags": 0,
+      "bakeSettings": {
+        "__id__": 95
+      },
+      "_mesh": {
+        "__uuid__": "5cef1a38-6af5-4c76-86b0-a08995b23be7@359ab",
+        "__expectedType__": "cc.Mesh"
+      },
+      "_shadowCastingMode": 0,
+      "_shadowReceivingMode": 1,
+      "_shadowBias": 0,
+      "_shadowNormalBias": 0,
+      "_reflectionProbeId": -1,
+      "_reflectionProbeBlendId": -1,
+      "_reflectionProbeBlendWeight": 0,
+      "_enabledGlobalStandardSkinObject": false,
+      "_enableMorph": true,
+      "_id": "",
+      "_children": [],
+      "_components": []
+    },
+    {
+      "__type__": "cc.Node",
+      "_name": "DensifyCityCenter_E4",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "_parent": {
+        "__id__": 69
+      },
+      "_children": [
+        {
+          "__id__": 414
+        }
+      ],
+      "_active": true,
+      "_components": [],
+      "_lpos": {
+        "__type__": "cc.Vec3",
+        "x": 8.5,
+        "y": 0,
+        "z": -33.0
+      },
+      "_lrot": {
+        "__type__": "cc.Quat",
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "_lscale": {
+        "__type__": "cc.Vec3",
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "_mobility": 0,
+      "_layer": 1073741824,
+      "_euler": {
+        "__type__": "cc.Vec3",
+        "x": 0,
+        "y": -90,
+        "z": 0
+      },
+      "_id": ""
+    },
+    {
+      "__type__": "cc.Node",
+      "_name": "commercial-skyscraper-a",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "_parent": {
+        "__id__": 413
+      },
+      "_children": [
+        {
+          "__id__": 415
+        }
+      ],
+      "_active": true,
+      "_components": [],
+      "_lpos": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "_lrot": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "_lscale": {
+        "x": 1.65,
+        "y": 1.65,
+        "z": 1.65
+      },
+      "_mobility": 0,
+      "_layer": 1073741824,
+      "_euler": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "_id": ""
+    },
+    {
+      "__type__": "cc.Node",
+      "_name": "building-skyscraper-a",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "_parent": {
+        "__id__": 414
+      },
+      "_children": [],
+      "_active": true,
+      "_components": [
+        {
+          "__id__": 416
+        }
+      ],
+      "_lpos": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "_lrot": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "_lscale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "_mobility": 0,
+      "_layer": 1073741824,
+      "_euler": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "_id": ""
+    },
+    {
+      "__type__": "cc.MeshRenderer",
+      "_name": "",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "node": {
+        "__id__": 415
+      },
+      "_enabled": true,
+      "__prefab": {
+        "__id__": 102
+      },
+      "_materials": [
+        {
+          "__uuid__": "71f7d10e-9030-441f-bfd8-6e857aba199c",
+          "__expectedType__": "cc.Material"
+        }
+      ],
+      "_visFlags": 0,
+      "bakeSettings": {
+        "__id__": 103
+      },
+      "_mesh": {
+        "__uuid__": "684f4ad6-0c3c-4a32-b8fb-a215d09cc6a3@57a6c",
+        "__expectedType__": "cc.Mesh"
+      },
+      "_shadowCastingMode": 0,
+      "_shadowReceivingMode": 1,
+      "_shadowBias": 0,
+      "_shadowNormalBias": 0,
+      "_reflectionProbeId": -1,
+      "_reflectionProbeBlendId": -1,
+      "_reflectionProbeBlendWeight": 0,
+      "_enabledGlobalStandardSkinObject": false,
+      "_enableMorph": true,
+      "_id": "",
+      "_children": [],
+      "_components": []
+    },
+    {
+      "__type__": "cc.Node",
+      "_name": "DensifyCityCenter_E5",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "_parent": {
+        "__id__": 69
+      },
+      "_children": [
+        {
+          "__id__": 418
+        }
+      ],
+      "_active": true,
+      "_components": [],
+      "_lpos": {
+        "__type__": "cc.Vec3",
+        "x": 8.5,
+        "y": 0,
+        "z": -38.0
+      },
+      "_lrot": {
+        "__type__": "cc.Quat",
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "_lscale": {
+        "__type__": "cc.Vec3",
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "_mobility": 0,
+      "_layer": 1073741824,
+      "_euler": {
+        "__type__": "cc.Vec3",
+        "x": 0,
+        "y": -90,
+        "z": 0
+      },
+      "_id": ""
+    },
+    {
+      "__type__": "cc.Node",
+      "_name": "commercial-skyscraper-b",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "_parent": {
+        "__id__": 417
+      },
+      "_children": [
+        {
+          "__id__": 419
+        }
+      ],
+      "_active": true,
+      "_components": [],
+      "_lpos": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "_lrot": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "_lscale": {
+        "x": 1.65,
+        "y": 1.65,
+        "z": 1.65
+      },
+      "_mobility": 0,
+      "_layer": 1073741824,
+      "_euler": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "_id": ""
+    },
+    {
+      "__type__": "cc.Node",
+      "_name": "building-skyscraper-b",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "_parent": {
+        "__id__": 418
+      },
+      "_children": [],
+      "_active": true,
+      "_components": [
+        {
+          "__id__": 420
+        }
+      ],
+      "_lpos": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "_lrot": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "_lscale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "_mobility": 0,
+      "_layer": 1073741824,
+      "_euler": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "_id": ""
+    },
+    {
+      "__type__": "cc.MeshRenderer",
+      "_name": "",
+      "_objFlags": 0,
+      "__editorExtras__": {},
+      "node": {
+        "__id__": 419
+      },
+      "_enabled": true,
+      "__prefab": {
+        "__id__": 111
+      },
+      "_materials": [
+        {
+          "__uuid__": "71f7d10e-9030-441f-bfd8-6e857aba199c",
+          "__expectedType__": "cc.Material"
+        }
+      ],
+      "_visFlags": 0,
+      "bakeSettings": {
+        "__id__": 112
+      },
+      "_mesh": {
+        "__uuid__": "2cbe6492-d5a7-4351-a7ff-34d4ae9c03af@24146",
+        "__expectedType__": "cc.Mesh"
+      },
+      "_shadowCastingMode": 0,
+      "_shadowReceivingMode": 1,
+      "_shadowBias": 0,
+      "_shadowNormalBias": 0,
+      "_reflectionProbeId": -1,
+      "_reflectionProbeBlendId": -1,
+      "_reflectionProbeBlendWeight": 0,
+      "_enabledGlobalStandardSkinObject": false,
+      "_enableMorph": true,
+      "_id": "",
+      "_children": [],
+      "_components": []
+    }
 ]
