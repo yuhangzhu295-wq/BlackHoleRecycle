@@ -43,7 +43,22 @@ const argOf = (name, fallback) => {
   return hit ? hit.split('=')[1] : fallback;
 };
 const SECONDS = Number(argOf('seconds', '45'));
-const SIZE = { width: 412, height: 915, label: 'pixel-20:9' };
+
+/**
+ * All three shipped portrait viewports, not just one.
+ *
+ * This gate sampled 412x915 alone, which is how the arena HUD's clipped
+ * "第 1 名 / 暴风 427kg" block escaped: at 375x667 the visible ground width is
+ * narrower, so the same camera framing pushed that corner block off the left edge
+ * while the single-viewport run kept reporting "no clipped samples". Each size
+ * gets its own pass, because the framing that is safe at one aspect is not safe at
+ * another.
+ */
+const VIEWPORTS = [
+  { width: 375, height: 667, label: 'small-16:9' },
+  { width: 412, height: 915, label: 'pixel-20:9' },
+  { width: 430, height: 932, label: 'large-16:9' },
+];
 
 /**
  * Transient HUD nodes that only exist while a specific thing is happening. A
@@ -225,6 +240,8 @@ async function sampleMatch(page, cdp, canvasRect, hudNode, label) {
 }
 
 try {
+  for (const SIZE of VIEWPORTS) {
+  console.log(`\n[verify:gameplay-visuals] ${SIZE.label} ${SIZE.width}x${SIZE.height}`);
   const { context, page, cdp, canvasRect } = await openPage(browser, port, SIZE);
   const snapshot = () => page.evaluate(() => window.__BHR_QA__.snapshot());
   const tapPoint = async (node, name) => {
@@ -343,6 +360,7 @@ try {
     `the hero stayed ${HERO_EDGE_MARGIN} inside the frame vertically in Arena (${Math.min(...aYs).toFixed(3)}..${Math.max(...aYs).toFixed(3)})`);
 
   await context.close();
+  }
 } finally {
   await browser.close();
   server.close();
