@@ -81,11 +81,20 @@ const HUD_COVERAGE = {
 };
 
 /**
- * The hero must keep at least this on-screen radius, in px. §37 measured 62 px
- * at its worst on 375x667; 40 is a regression guard with room for the different
- * framing at 412x915, not a restatement of the measurement.
+ * The hero's core must keep at least this fraction of the frame's width.
+ *
+ * This used to be an absolute 40 px, on the strength of §37 measuring 62 px on
+ * 375x667. That comparison was never valid: `radiusPx` is `worldToScreen`'s pixel
+ * output, which scales with the frame, so an identical camera offset and mass
+ * measured 38 px at 375x667 and 53 px at 412x915 in the same run. Floors on a
+ * pixel count fail the narrowest size for being narrow.
+ *
+ * Normalised by the frame width, all three sizes agree closely, and 0.09 sits
+ * below the lowest of them with enough room for the different mass at which a
+ * match can be sampled. §37's 62 px at 375x667 is 0.165 -- so the ceiling of
+ * what this floor ever caught was a real halving, not a rounding difference.
  */
-const MIN_HERO_RADIUS_PX = 40;
+const MIN_HERO_WIDTH_FRACTION = 0.09;
 /** The hero's centre must stay this far inside the frame, as a fraction. */
 const HERO_EDGE_MARGIN = 0.04;
 
@@ -277,6 +286,9 @@ try {
     console.log(`  first few: ${[...new Set(endless.clippedSamples)].slice(0, 5).join(' | ')}`);
   }
   const radii = endless.heroSamples.map((h) => h.radiusPx);
+  const fractions = endless.heroSamples.map((h) => h.radiusFraction ?? null);
+  const minFraction = fractions.filter((v) => v !== null).length
+    ? Math.min(...fractions.filter((v) => v !== null)) : null;
   const minRadius = radii.length ? Math.min(...radii) : null;
   const xs = endless.heroSamples.map((h) => h.screenX);
   const ys = endless.heroSamples.map((h) => h.screenY);
@@ -295,8 +307,9 @@ try {
     note(seen.length > 0,
       `Endless exercised ${pattern.source} (${seen.length} samples); otherwise "nothing is clipped" is silent about it`);
   }
-  note(minRadius !== null && minRadius >= MIN_HERO_RADIUS_PX,
-    `the hero never shrank below ${MIN_HERO_RADIUS_PX} px (min ${minRadius?.toFixed(1)})`);
+  note(minFraction !== null && minFraction >= MIN_HERO_WIDTH_FRACTION,
+    `the hero never shrank below ${MIN_HERO_WIDTH_FRACTION} of the frame width`
+    + ` (min ${(minFraction * 100).toFixed(1)}%, ${minRadius?.toFixed(1)} px)`);
   note(Math.min(...xs) >= HERO_EDGE_MARGIN && Math.max(...xs) <= 1 - HERO_EDGE_MARGIN,
     `the hero stayed ${HERO_EDGE_MARGIN} inside the frame horizontally (${Math.min(...xs).toFixed(3)}..${Math.max(...xs).toFixed(3)})`);
   note(Math.min(...ys) >= HERO_EDGE_MARGIN && Math.max(...ys) <= 1 - HERO_EDGE_MARGIN,
@@ -328,6 +341,9 @@ try {
     console.log(`  first few: ${[...new Set(arena.clippedSamples)].slice(0, 5).join(' | ')}`);
   }
   const aRadii = arena.heroSamples.map((h) => h.radiusPx);
+  const aFractions = arena.heroSamples.map((h) => h.radiusFraction ?? null);
+  const aMinFraction = aFractions.filter((v) => v !== null).length
+    ? Math.min(...aFractions.filter((v) => v !== null)) : null;
   const aMin = aRadii.length ? Math.min(...aRadii) : null;
   const aXs = arena.heroSamples.map((h) => h.screenX);
   const aYs = arena.heroSamples.map((h) => h.screenY);
@@ -352,8 +368,9 @@ try {
     note(seen.length > 0,
       `Arena HUD geometry was really sampled: ${pattern.source} present in ${seen.length} samples`);
   }
-  note(aMin !== null && aMin >= MIN_HERO_RADIUS_PX,
-    `the hero never shrank below ${MIN_HERO_RADIUS_PX} px in Arena (min ${aMin?.toFixed(1)})`);
+  note(aMinFraction !== null && aMinFraction >= MIN_HERO_WIDTH_FRACTION,
+    `the hero never shrank below ${MIN_HERO_WIDTH_FRACTION} of the frame width in Arena`
+    + ` (min ${(aMinFraction * 100).toFixed(1)}%, ${aMin?.toFixed(1)} px)`);
   note(Math.min(...aXs) >= HERO_EDGE_MARGIN && Math.max(...aXs) <= 1 - HERO_EDGE_MARGIN,
     `the hero stayed ${HERO_EDGE_MARGIN} inside the frame horizontally in Arena (${Math.min(...aXs).toFixed(3)}..${Math.max(...aXs).toFixed(3)})`);
   note(Math.min(...aYs) >= HERO_EDGE_MARGIN && Math.max(...aYs) <= 1 - HERO_EDGE_MARGIN,

@@ -354,10 +354,19 @@ export class QABridge {
         if (viewport.width <= 0 || viewport.height <= 0) return null;
         const radius = machine?.getSuctionRadius() || 0;
         const edge = mainCamera.worldToScreen(new Vec3(world.x + radius, world.y, world.z), new Vec3());
+        const radiusPx = Math.abs(edge.x - screen.x);
         return {
           screenX: (screen.x - viewport.x) / viewport.width,
           screenY: (screen.y - viewport.y) / viewport.height,
-          radiusPx: Math.abs(edge.x - screen.x),
+          // `radiusPx` is a PIXEL count, and worldToScreen scales with the frame,
+          // so the same camera and the same mass produce a bigger pixel radius on
+          // a wider screen: 38 px at 375x667 and 53 px at 412x915 were measured
+          // with an identical camera offset and mass. A gate that floors the
+          // pixel value therefore fails the narrowest size for being narrow.
+          // `radiusFraction` is the same measurement normalised by the frame, and
+          // that is the comparable one across the three shipped sizes.
+          radiusPx,
+          radiusFraction: radiusPx / viewport.width,
           level: machine?.currentLevel ?? 0,
           active: node.activeInHierarchy,
         };
