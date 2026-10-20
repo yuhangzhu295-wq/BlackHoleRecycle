@@ -3509,20 +3509,36 @@ async function driveJoystickToLogicalPoint(cdp, page, joystick, target, label, a
   // measured a position the player had already coasted past -- the cell-lifecycle
   // checkpoint read 2.46 to 6.58 units off a target the route had genuinely
   // reached, and the gap was pure wasted coasting inside the harness.
-  let releasedPosition = finalPosition;
+  //
+  // `releasedPosition` is seeded from the in-loop snapshot, not from
+  // `finalPosition`: that name is declared below, so reading it here was a
+  // temporal-dead-zone ReferenceError, and it made every `--scope=progression`
+  // run die with "Cannot access 'finalPosition' before initialization" instead of
+  // measuring anything. The two values are the same thing -- the position after
+  // release -- so seeding from the snapshot is the correct source, not a
+  // workaround.
+  let releasedPosition = getLogicalPlayerPosition(finalSnapshot);
   if (touchHeld && releaseDelayMs > 0) {
     const released = await readRuntimeSnapshot(page);
     released.routeMetrics = finalSnapshot.routeMetrics;
     finalSnapshot = released;
     releasedPosition = getLogicalPlayerPosition(released);
   }
+  const finalPosition = releasedPosition;
+  // One assignment, not two. The previous pair wrote finalPosition/finalVelocity
+  // and then replaced routeMetrics wholesale on the next line, so the two fields
+  // it had just recorded never reached the report.
   finalSnapshot.routeMetrics = {
     ...finalSnapshot.routeMetrics,
-    finalPosition: { x: releasedPosition.x, z: releasedPosition.z },
+    finalPosition: { x: finalPosition.x, z: finalPosition.z },
     finalVelocity: { x: finalSnapshot.machine.velocity?.x ?? null, z: finalSnapshot.machine.velocity?.z ?? null },
+    iterations,
+    bestDistance,
+    arrived: bestDistance <= arrivalRadius,
+    arrivalRadius,
+    label,
+    target,
   };
-  const finalPosition = releasedPosition;
-  finalSnapshot.routeMetrics = { iterations, bestDistance, arrived: bestDistance <= arrivalRadius, arrivalRadius, label, target };
   // A physical drag can cross the pickup radius between two diagnostic
   // samples and then coast slightly beyond it before the next sample.  The
   // route genuinely reached the target in that case; the next assertion
@@ -3805,8 +3821,9 @@ async function verifyFiveLevelProgression(cdp, page, joystick) {
       // still there AND no mass was gained. If the item disappeared, the route
       // did its job and the absorption assertion below still has to pass.
       let routeMiss = null;
+      let routed = null;
       try {
-        await driveJoystickToLogicalPoint(cdp, page, joystick, { x: target.logicalX, z: target.logicalZ }, `LV${stage.level}_${target.type}`, Math.max(1.0, latest.machine.suctionRadius * 0.62), 60_000);
+        routed = await driveJoystickToLogicalPoint(cdp, page, joystick, { x: target.logicalX, z: target.logicalZ }, `LV${stage.level}_${target.type}`, Math.max(1.0, latest.machine.suctionRadius * 0.62), 60_000);
       } catch (routeError) {
         routeMiss = routeError;
       }
@@ -3827,7 +3844,24 @@ async function verifyFiveLevelProgression(cdp, page, joystick) {
       }
       const disappeared = !latest.objects.some((object) => object.runtimeId === target.runtimeId && object.state === 'IDLE');
       assert(disappeared || latest.machine.mass > massBefore,
-        `FAIL_FULL_PROGRESSION_NO_ABSORPTION_${stage.region.toUpperCase()}: ${JSON.stringify({ target, massBefore, machine: { level: latest.machine.level, mass: latest.machine.mass } })}`);
+        `FAIL_FULL_PROGRESSION_NO_ABSORPTION_${stage.region.toUpperCase()}: ${JSON.stringify({
+          target,
+          massBefore,
+          machine: { level: latest.machine.level, mass: latest.machine.mass },
+          // The route's own numbers, so the next failure says whether the player
+          // ever got inside the suction radius: arrivalRadius is
+          // 0.62 x suctionRadius and absorption starts at suctionRadius, so a
+          // bestDistance below `suctionRadius` with no absorption is a product
+          // question, while one above it is a routing question.
+          route: {
+            bestDistance: routed?.routeMetrics?.bestDistance ?? null,
+            arrivalRadius,
+            suctionRadius: latest.machine.suctionRadius ?? null,
+            iterations,
+            routeMiss: routeMiss ? routeMiss.message : null,
+          },
+          player: { x: latest.player?.x ?? null, z: latest.player?.z ?? null },
+        })}`);
       absorbed.push({ runtimeId: target.runtimeId, type: target.type, tier: target.tier, massBefore, massAfter: latest.machine.mass });
     }
     // Summarise the machine instead of dumping it: `visualMaterials` alone is
