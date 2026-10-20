@@ -47,3 +47,10 @@ Thumbs.db
 
 # Generated per-platform build option files (see verify_cocos_minigame_builds.mjs).
 cocos/build-configs/
+
+# Hunyuan world-rebuild raw outputs: judged offline references, too large for git.
+# See cocos/docs/V13.1_HUNYUAN3D_PIPELINE.md — the collider mesh is a Poisson shell,
+# the splats cannot be rendered by Cocos 3.8.3, and the 32 MB source PNG is the only
+# full-resolution master (the 5120 JPEG beside it is the committed copy).
+art-source/references/hunyuan-output/*.ply
+art-source/references/hunyuan-output/hunyuan-world-panorama-7680x3840.png

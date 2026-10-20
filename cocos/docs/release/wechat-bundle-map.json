@@ -19,31 +19,24 @@
   "bundles": [
     {
       "name": "main",
-      "bytes": 13545535,
-      "KB": 13228,
+      "bytes": 17667216,
+      "KB": 17253,
       "builtIn": true,
-      "assetBytes": 13545535
+      "assetBytes": 17667216
     },
     {
       "name": "shared-gameplay",
-      "bytes": 3281764,
-      "KB": 3205,
+      "bytes": 402647,
+      "KB": 393,
       "builtIn": false,
-      "assetBytes": 3281764
-    },
-    {
-      "name": "endless",
-      "bytes": 253722,
-      "KB": 248,
-      "builtIn": false,
-      "assetBytes": 253722
+      "assetBytes": 402647
     },
     {
       "name": "world-opening",
-      "bytes": 12717,
-      "KB": 12,
+      "bytes": 19203,
+      "KB": 19,
       "builtIn": false,
-      "assetBytes": 12717
+      "assetBytes": 19203
     },
     {
       "name": "arena",
@@ -125,11 +118,11 @@
     }
   ],
   "totals": {
-    "proposedMainBytes": 13545535,
-    "proposedMainKB": 13228,
-    "proposedSubpackageBytes": 3548204,
-    "proposedSubpackageKB": 3465,
-    "proposedTotalKB": 16693
+    "proposedMainBytes": 17667216,
+    "proposedMainKB": 17253,
+    "proposedSubpackageBytes": 421850,
+    "proposedSubpackageKB": 412,
+    "proposedTotalKB": 17665
   },
   "verdict": {
     "mainUnderOfficialLimit": false,
